@@ -1,9 +1,9 @@
 import { list } from '@keystone-6/core'
 import { allOperations, denyAll } from '@keystone-6/core/access'
-import { checkbox, password, relationship, text } from '@keystone-6/core/fields'
+import { checkbox, password, relationship, select, text, timestamp } from '@keystone-6/core/fields'
+import { trackingFields } from './trackingFields'
 
 import { isSignedIn, permissions, rules } from '../access'
-import type { Session } from '../access'
 
 export const User = list({
   access: {
@@ -28,7 +28,7 @@ export const User = list({
     hideCreate: args => !permissions.canManagePeople(args),
     hideDelete: args => !permissions.canManagePeople(args),
     listView: {
-      initialColumns: ['name', 'email', 'role', 'tasks'],
+      initialColumns: ['name', 'email', 'title', 'role', 'kind'],
     },
     itemView: {
       defaultFieldMode: ({ session, item }) => {
@@ -77,20 +77,25 @@ export const User = list({
         },
       },
     }),
-    tasks: relationship({
-      ref: 'Todo.assignedTo',
-      many: true,
-      access: {
-        create: permissions.canManageAllTodos,
-        update: ({ session, item }) =>
-          permissions.canManageAllTodos({ session }) || session?.itemId === item.id,
-      },
-      ui: {
-        createView: {
-          fieldMode: args => (permissions.canManageAllTodos(args) ? 'edit' : 'hidden'),
-        },
-        // itemView: { fieldMode: 'read' },
-      },
+    kind: select({
+      type: 'enum',
+      options: ['staff', 'portal', 'surveyor', 'auditor', 'administrator'].map(value => ({ label: value, value })),
+      defaultValue: 'staff',
+      access: { create: permissions.canManagePeople, update: permissions.canManagePeople },
     }),
+    title: text(),
+    assignments: relationship({ ref: 'StaffAssignment.user', many: true, access: { create: () => false, update: () => false } }),
+    portalAccount: relationship({ ref: 'PortalAccount.user', access: { create: () => false, update: () => false } }),
+    synthetic: checkbox({ defaultValue: false, access: { create: () => false, update: () => false } }),
+    mfaEnrolled: checkbox({ defaultValue: false, access: { create: () => false, update: () => false } }),
+    accessExpiresAt: timestamp({
+      access: { create: permissions.canManagePeople, update: permissions.canManagePeople },
+      ui: { description: 'Time-boxed access for surveyors, auditors and temporary administrator users.' },
+    }),
+    onboardingStatus: select({
+      options: ['not_started', 'in_progress', 'completed', 'dismissed'].map(value => ({ label: value.replaceAll('_', ' '), value })),
+      defaultValue: 'not_started',
+    }),
+    ...trackingFields,
   },
 });

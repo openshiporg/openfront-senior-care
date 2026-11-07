@@ -8,6 +8,9 @@ import { keystoneContext } from '@/features/keystone/context';
 import { permissions } from '@/features/keystone/access';
 import { PUBLIC_REQUEST_ERROR, safeErrorSummary } from '@/features/dashboard/lib/security';
 import { createScopedMcpFetch } from './scopedMcpFetch';
+import { DOMAIN_TOOLS } from '@/features/keystone/mcp/registry';
+
+const WRITE_TOOLS = new Set(DOMAIN_TOOLS.filter((tool) => tool.writes).map((tool) => tool.name));
 
 export async function POST(req: Request) {
   let mcpClient: any = null;
@@ -89,84 +92,22 @@ export async function POST(req: Request) {
     mcpClient = await createMCPClient({ transport });
     const aiTools = await mcpClient.tools();
 
-    const systemInstructions = `You're an expert at converting natural language to GraphQL queries for our KeystoneJS API.
+    const systemInstructions = `You are the assistant inside Openfront Senior Care, the system of record for a senior living and skilled nursing operator. You act as the signed-in user, with exactly their permissions and community assignments.
 
-YOUR EXPERTISE:
-You understand how KeystoneJS transforms models into GraphQL CRUD operations. Users will mention model names in natural language ("create a todo", "update the product"), and you need to apply the SAME transformation rules that Keystone uses to convert those user mentions into the correct API calls. When a user says "todo", you transform it the same way Keystone does: "todo" → "Todo" model → "TodoCreateInput" → "createTodo" operation.
+READING DATA:
+You read only through named domain tools: censusSummary (counts for a community and date, no names), bedBoard (every bed and apartment with its status), residentRoster (residents by stay status) and verifyStay (rebuild a stay's census and check its hash chain). Resident names and details are protected health information: show them only when the user asked, never repeat more than the question needs, and remember every read is audited.
 
-HANDLING MODEL IDENTIFICATION:
-Generally, users will say the model name directly ("todo", "product", "user"). However, they might use synonyms, typos, or related terms ("task" instead of "todo", "item" instead of "product"). In these cases, use searchModels to find the correct model that matches their intent.
+CHANGING DATA:
+There are no generic create, update or delete tools. The only change you can make is logSalesActivity. Admissions, transfers, discharges, notices, census sign-off, corrections, portal access and break-glass are done by a person in the dashboard; point the user to the right screen (Census, Residents, Sales, Approvals).
 
-YOUR TOOLS:
-You have schema discovery tools (searchModels, lookupInputType, createData, updateData, deleteData) when you need to verify specifics or get exact field requirements.
-
-ENHANCED SEARCH CAPABILITY:
-You now have access to a modelSpecificSearch tool that provides intelligent search functionality similar to the dashboard. This tool:
-- Automatically finds the correct model and GraphQL operation
-- Performs case-insensitive searching across common text fields (name, title, description, etc.)
-- Supports ID-based exact matching
-- Uses the same search logic as the dashboard for consistent results
-
-YOUR KNOWLEDGE - How Keystone generates the API from models:
-- Models become {Model}CreateInput, {Model}UpdateInput, etc.
-- Operations become create{Model}, update{Model}, etc.
-- You apply these same rules to user's natural language
-
-YOUR APPROACH:
-- User says "Create a todo" → You know they mean the "todo" model
-- User says "Create a task" → Use searchModels("task") to find it might be "Todo" model
-- Apply Keystone transformation: "todo" → "createTodo" operation with "TodoCreateInput"
-- Use tools to verify/get exact field structure if needed
-- Execute the GraphQL mutation
-
-You're essentially doing the same model-to-API transformation that Keystone does, but starting from the user's natural language that mentions those models.
-
-WORKFLOW for any data request:
-1. Use searchModels to find the right model/operation
-2. Use getFieldsForType to discover available fields
-3. For relationship fields, ALSO use getFieldsForType on the related type to see what fields are available
-4. Use queryData with the discovered operation and relevant fields (including sub-selections for relationships)
-
-WORKFLOW for searching specific data:
-1. If the user wants to search for specific items (e.g., "find product with name X", "search for users containing Y"), use modelSpecificSearch directly
-2. This tool handles model discovery, operation mapping, and intelligent searching automatically
-3. It returns actual search results, not just schema information
-
-WORKFLOW for creating any type of data:
-1. Identify the model from user's natural language (use searchModels if unclear)
-2. Apply Keystone transformation rules to get operation names
-3. Use lookupInputType to get exact field structure if needed
-4. Use createData to execute the mutation
-
-WORKFLOW for updating any type of data:
-1. Identify the model from user's natural language (use searchModels if unclear)
-2. Apply Keystone transformation rules to get operation names (update{Model})
-3. Use lookupInputType to get exact field structure for {Model}UpdateInput if needed
-4. Use updateData to execute the mutation with where clause and data
-
-WORKFLOW for deleting any type of data:
-1. Identify the model from user's natural language (use searchModels if unclear)
-2. Apply Keystone transformation rules to get operation names (delete{Model})
-3. Use deleteData to execute the mutation with where clause
-
-RELATIONSHIP HANDLING:
-- If getFieldsForType shows a relationship field (like "productVariants" on Product), also call getFieldsForType("ProductVariant") 
-- Include relationships with sub-selections: fields="id title productVariants { id name price }"
-- For single relationships: fields="id name user { email name }"
-- For list relationships: fields="id title variants { id name price }"
+You never approve anything, never sign anything and never write to a resident's chart.
 
 EXAMPLES:
-- "List all widgets" → searchModels("widget") → getFieldsForType("Widget") → queryData(operation="widgets", fields="id name")
-- "Show all gadgets" → searchModels("gadget") → getFieldsForType("Gadget") → queryData(operation="gadgets", fields="id title")
-- "Find products with name Penrose" → modelSpecificSearch(modelName="Product", searchQuery="Penrose", fields="id name description")
-- "Search for users with email john" → modelSpecificSearch(modelName="User", searchQuery="john", fields="id name email")
-- "Find todos containing meeting" → modelSpecificSearch(modelName="Todo", searchQuery="meeting", fields="id title description status")
-- "Create a widget" → searchModels("widget") → lookupInputType("WidgetCreateInput") → createData(operation="createWidget", data='{"name": "New Widget"}', fields="id name")
-- "Create a gadget" → searchModels("gadget") → lookupInputType("GadgetCreateInput") → createData(operation="createGadget", data='{"title": "New Gadget"}', fields="id title")
-- "Update widget with id 123" → searchModels("widget") → lookupInputType("WidgetUpdateInput") → updateData(operation="updateWidget", where='{"id": "123"}', data='{"name": "Updated Widget"}', fields="id name")
-- "Delete the gadget with id 456" → searchModels("gadget") → deleteData(operation="deleteGadget", where='{"id": "456"}', fields="id title")
+- "How many residents are in the building today?" → censusSummary(communityId)
+- "Which beds are open on Birch?" → bedBoard(communityId, unitId)
+- "Is the audit log intact?" → verifyAuditChain()
 
-Always complete the full workflow and return actual data, not just schema discovery. The system works with any model type dynamically.`;
+Always finish the workflow and return actual data.`;
 
     const openrouter = createOpenRouter({ apiKey, baseURL });
 
@@ -188,9 +129,9 @@ Always complete the full workflow and return actual data, not just schema discov
       onStepFinish: async (step: { toolCalls?: any[] }) => {
         if (step.toolCalls && step.toolCalls.length > 0) {
           for (const toolCall of step.toolCalls) {
-            if (['createData', 'updateData', 'deleteData'].includes(toolCall.toolName)) {
+            if (WRITE_TOOLS.has(toolCall.toolName)) {
               dataHasChanged = true;
-              console.log(`CRUD operation detected: ${toolCall.toolName}`);
+              console.log('Domain command completed');
               break;
             }
           }

@@ -15,6 +15,8 @@ export type McpSessionMarker = {
   clientId: string
   scopes: McpScope[]
   tokenId: string
+  /** The MCP endpoint (RFC 8707 audience) the token was issued for. */
+  resource: string
 }
 
 type Strategy = { get: (args: { context: any }) => Promise<any> }
@@ -41,6 +43,7 @@ export async function resolveMcpAccessToken(context: any, token: string, listKey
       clientId: record.clientId,
       scopes: storedScopes(record.scopes),
       tokenId: String(record.id),
+      resource: String(record.resource ?? ''),
     }
     return { itemId: String(record.userId), listKey, mcp }
   } catch {
