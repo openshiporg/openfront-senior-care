@@ -87,8 +87,8 @@ export type OpenClockInput = ClockSubject & {
  * Opens a clock for an active obligation that applies to the setting/payer. Returns null when the
  * obligation is dormant, absent from the community's packs or does not apply. Idempotent.
  */
-export async function openClock(uow: UnitOfWork, actor: Actor, input: OpenClockInput) {
-  const ctx = await communityClockContext(uow.tx, input.communityId)
+export async function openClock(uow: UnitOfWork, actor: Actor, input: OpenClockInput, known?: CommunityClockContext) {
+  const ctx = known?.id === input.communityId ? known : await communityClockContext(uow.tx, input.communityId)
   const obligation = await uow.tx.regulatoryObligation.findFirst({ where: { code: input.obligationCode, active: true, packId: { in: ctx.packIds } } })
   if (!obligation) return null
   const applies = (obligation.appliesTo ?? {}) as { settings?: string[]; payerKinds?: string[] }
@@ -131,7 +131,7 @@ export async function openClocksForFact(uow: UnitOfWork, actor: Actor, input: Om
   const obligations = await uow.tx.regulatoryObligation.findMany({ where: { startFact: input.fact, active: true, packId: { in: ctx.packIds } }, select: { code: true, evidenceTypes: true } })
   const opened: string[] = []
   for (const obligation of obligations) {
-    const clock = await openClock(uow, actor, { ...input, obligationCode: obligation.code })
+    const clock = await openClock(uow, actor, { ...input, obligationCode: obligation.code }, ctx)
     if (!clock) continue
     opened.push(clock.id)
     const evidenceTypes = Array.isArray(obligation.evidenceTypes) ? (obligation.evidenceTypes as string[]) : []

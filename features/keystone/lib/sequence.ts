@@ -1,15 +1,16 @@
 import { randomBytes } from 'node:crypto'
-import { advisoryLock, type Tx } from './db'
+import type { Tx } from './db'
 
 /**
  * Human references for staff (RES-2026-000412, STY-…, INQ-…): sequential, gap-free within a
- * committed transaction, under an advisory lock (SCHEMA G10). Family- and public-visible codes use
+ * committed transaction, under the sequence row's lock (SCHEMA G10). Family- and public-visible codes use
  * publicCode() instead, which is random and reveals no volume.
  */
 export async function nextReference(tx: Tx, prefix: string, now = new Date(), width = 6) {
   if (!/^[A-Z]{2,5}$/.test(prefix)) throw new Error('Reference prefix must be 2-5 capital letters')
   const key = `${prefix}-${now.getUTCFullYear()}`
-  await advisoryLock(tx, `sequence:${key}`)
+  // One INSERT … ON CONFLICT DO UPDATE: its row lock serialises callers until commit, so values stay
+  // gap-free across committed transactions without a separate advisory lock round trip.
   const row = await tx.sequence.upsert({ where: { key }, create: { key, nextValue: 2 }, update: { nextValue: { increment: 1 } } })
   const value = row.nextValue - 1
   return `${key}-${String(value).padStart(width, '0')}`

@@ -137,3 +137,31 @@ export const PAYERS = [
 
 export const FAMILY_NAMES = ['Abbott', 'Bauer', 'Castillo', 'Delgado', 'Eastman', 'Fischer', 'Gallagher', 'Hoffman', 'Iverson', 'Jablonski', 'Kowalski', 'Lindgren', 'Mahoney', 'Novak', 'Ortega', 'Pruitt', 'Quinlan', 'Rasmussen', 'Sorensen', 'Takahashi', 'Underwood', 'Vasquez', 'Whitaker', 'Yoder']
 export const GIVEN_NAMES = ['Dorothy', 'Harold', 'Evelyn', 'Walter', 'Margaret', 'Eugene', 'Ruth', 'Clarence', 'Betty', 'Raymond', 'Shirley', 'Howard', 'Virginia', 'Earl', 'Lorraine', 'Gerald', 'Marion', 'Lloyd', 'Doris', 'Vernon', 'Irene', 'Leonard', 'Bernice', 'Floyd']
+
+/* Place generators (pure): the platform seed creates these rows, the census seed places people in them. */
+
+export function nfRooms(unit: (typeof NF_UNITS)[number]) {
+  const rooms: { number: string; kind: string; isolation: boolean; beds: string[] }[] = []
+  let remaining: number = unit.beds
+  for (let i = 0; remaining > 0; i += 1) {
+    const isolation = i < unit.isolationRooms
+    const number = String(unit.firstRoom + i)
+    const beds = isolation || remaining === 1 ? ['A'] : ['A', 'B']
+    rooms.push({ number, kind: beds.length === 1 ? 'private' : 'semi_private', isolation, beds })
+    remaining -= beds.length
+  }
+  return rooms
+}
+
+/** Apartments of a residential unit: ids, numbers (A2-14, H6, I3), types and capacity. */
+export const residentialApartments = (unit: (typeof RESIDENTIAL_UNITS)[number]) =>
+  Array.from({ length: unit.count }, (_, index) => {
+    const floor = unit.code === 'MEA' ? 1 + Math.floor(index / 16) : 1
+    const number = unit.code === 'MEA' ? `${unit.prefix}${floor}-${String((index % 16) + 1).padStart(2, '0')}` : `${unit.prefix}${index + 1}`
+    const apartmentTypeId = apartmentTypeFor(unit.code, index)
+    return { id: `seed_apartment_${unit.code.toLowerCase()}_${index + 1}`, number, apartmentTypeId, capacity: apartmentTypeId === 'seed_apt_companion' ? 2 : 1 }
+  })
+
+/** Bed ids of a nursing unit in room order, with their labels (e.g. 112A). */
+export const nfBeds = (unit: (typeof NF_UNITS)[number]) =>
+  nfRooms(unit).flatMap(room => room.beds.map(label => ({ id: `seed_room_${unit.code.toLowerCase()}_${room.number}_${label.toLowerCase()}`, label: `${room.number}${label}` })))

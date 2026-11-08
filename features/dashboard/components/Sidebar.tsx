@@ -55,6 +55,7 @@ interface User {
   name?: string;
   onboardingStatus?: string;
   menuItemsCount?: number | null;
+  workspaceName?: string | null;
   role?: {
     canAccessDashboard?: boolean;
     canManageOnboarding?: boolean;
@@ -152,6 +153,11 @@ export function Sidebar({ adminMeta, user, onOpenDialog }: SidebarProps) {
             <Logo variant="sidebar" />
           </div>
         </SidebarMenuButton>
+        {user?.workspaceName ? (
+          <p className="group-has-[[data-collapsible=icon]]/sidebar-wrapper:hidden whitespace-normal break-words px-2 text-sm font-medium leading-snug text-sidebar-foreground">
+            {user.workspaceName}
+          </p>
+        ) : null}
         <SidebarMenuButton asChild>
           <div className="hidden group-has-[[data-collapsible=icon]]/sidebar-wrapper:block">
             <LogoIcon className="size-5" color="#0f766e" />

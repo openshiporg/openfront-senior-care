@@ -22,6 +22,8 @@ const LABELS: Record<string, string> = {
   placement_agency: 'Placement agency', pasrr_level1: 'PASRR Level I', reviewed_ok: 'Reviewed, no concern', reviewed_violation: 'Reviewed, violation',
   self_hosted_only: 'Self-hosted only', baa_hosted: 'BAA-covered hosting', dem: 'Demographic', clin: 'Clinical', fin: 'Financial',
   full_time: 'Full time', part_time: 'Part time', prn: 'PRN (as needed)', either: 'In person or video', warn: 'Warning', csr: 'Customer service',
+  in_house: 'In house', on_leave_hold: 'On leave, bed held', on_leave_no_hold: 'On leave, no hold', not_admitted: 'Not admitted', pre_admit: 'Pre-admission', satisfied_late: 'Satisfied late',
+  hospital: 'Hospital', medicaid_mco: 'Medicaid managed care', commercial: 'Commercial insurance', hold_release: 'Bed-hold released', leave_start: 'Leave started', leave_end: 'Returned from leave',
   operations: 'Operations', pub: 'Public', op: 'Operational', sens: 'Sensitive', ident: 'Identifier', approve: 'Approve', reject: 'Reject', treatment_operations: 'Treatment and operations', family_access: 'Family access',
 }
 

@@ -5,6 +5,7 @@ import { advisoryLock, type Tx } from './db'
 import { DomainError, Codes } from './errors'
 import { nextReference } from './sequence'
 import type { UnitOfWork } from './unitOfWork'
+import { label } from '../../../lib/labels'
 
 /**
  * Place commands outside census (STATE-MACHINES §2-3): reservations, housekeeping turnover and
@@ -53,7 +54,7 @@ export async function reservePlace(uow: UnitOfWork, actor: Actor, input: Reserve
   if (!communityId) throw new DomainError(Codes.NOT_FOUND, 'Place not found.')
   // An apartment with room for a companion can be reserved while partly occupied.
   const reservable = place.model === 'Bed' ? place.row.status === 'available' : place.row.status === 'available' || (place.row.status === 'occupied' && (place.row.occupantCount ?? 0) < Number((place.row as Record<string, unknown>).capacity ?? 1))
-  if (!reservable) throw new DomainError(Codes.PLACE_UNAVAILABLE, `${place.name} is ${place.row.status.replaceAll('_', ' ')}.`, { currentStatus: place.row.status })
+  if (!reservable) throw new DomainError(Codes.PLACE_UNAVAILABLE, `${place.name} is ${label(place.row.status).toLowerCase()}.`, { currentStatus: place.row.status })
   const active = await uow.tx.placeReservation.findFirst({ where: { status: 'active', ...(input.bedId ? { bedId: input.bedId } : { apartmentId: input.apartmentId }) }, select: { id: true } })
   if (active) throw new DomainError(Codes.PLACE_UNAVAILABLE, `${place.name} already has an active reservation.`, { currentStatus: 'reserved' })
   const reservation = await uow.tx.placeReservation.create({
@@ -106,7 +107,7 @@ export async function setPlaceService(uow: UnitOfWork, actor: Actor, input: Plac
   if (input.expectedVersion != null && input.expectedVersion !== place.row.version) throw new DomainError(Codes.STALE_STATE, `${place.name} changed since you loaded it.`, { currentStatus: place.row.status, currentVersion: place.row.version })
   if (!input.inService) {
     const from = place.model === 'Bed' ? ['available', 'cleaning'] : ['available', 'turnover']
-    if (!from.includes(place.row.status)) throw new DomainError(Codes.INVALID_TRANSITION, `${place.name} is ${place.row.status.replaceAll('_', ' ')}; only an empty, unreserved place can go out of service.`, { currentStatus: place.row.status })
+    if (!from.includes(place.row.status)) throw new DomainError(Codes.INVALID_TRANSITION, `${place.name} is ${label(place.row.status).toLowerCase()}; only an empty, unreserved place can go out of service.`, { currentStatus: place.row.status })
     await casUpdate(uow, { model: place.model, id: place.id, version: place.row.version, from, to: 'out_of_service', actor, eventType: `${place.model.toLowerCase()}.out_of_service`, reason: input.reason.trim(), data: { statusReason: input.reason.trim() } })
     return { id: place.id, status: 'out_of_service' }
   }

@@ -35,11 +35,18 @@ const OPS: Record<string, Record<string, string>> = {
   addToWaitlist: { communityId: 'ID!', leadId: 'ID', prospectId: 'ID', apartmentTypeId: 'ID', setting: 'String!', priorityReason: 'String' },
   offerWaitlistPlace: { waitlistEntryId: 'ID!', apartmentId: 'ID', bedId: 'ID', hours: 'Int!', expectedVersion: 'Int!' },
   resolveWaitlistOffer: { waitlistEntryId: 'ID!', to: 'String!', expectedVersion: 'Int!' },
+  recordAdmissionAgreement: { stayId: 'ID!', signedAt: 'String!', signedByRepresentativeId: 'ID', note: 'String' },
+  recordReferral: { input: 'JSON!' },
+  openTourSlots: { communityId: 'ID!', slots: 'JSON!' },
+  scheduleTour: { leadId: 'ID!', slotId: 'ID!', kind: 'String!', notes: 'String' },
+  setStorefrontPublished: { communityId: 'ID!', published: 'Boolean!' },
+  movePublishedPrice: { priceId: 'ID!', to: 'String!', expectedVersion: 'Int!' },
   invitePortalRepresentative: { representativeId: 'ID!' },
   proposePortalScope: { representativeId: 'ID!', scope: 'String!' },
   grantPortalScope: { grantId: 'ID!', expectedVersion: 'Int' },
   revokePortalScope: { grantId: 'ID!', reason: 'String!', expectedVersion: 'Int' },
   openBreakGlass: { residentId: 'ID!', reason: 'String!', note: 'String!', hours: 'Int' },
+  endBreakGlass: { grantId: 'ID!' },
   reviewBreakGlass: { grantId: 'ID!', outcome: 'String!', note: 'String!', expectedVersion: 'Int' },
 };
 

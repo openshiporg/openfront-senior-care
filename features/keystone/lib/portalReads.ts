@@ -35,6 +35,8 @@ export async function portalResidents(tx: Tx, principal: PortalPrincipal) {
     row.scopes.push(grant.scope)
     byResident.set(grant.residentId, row)
   }
+  // Names are resident data: each listed resident gets an audit row like any other portal read.
+  for (const residentId of byResident.keys()) await auditPortalRead(tx, principal, 'portalMe', residentId, ['Resident.firstName', 'Resident.community'], 1)
   return { mfaEnrolled: account.mfaEnrolled, residents: [...byResident.values()] }
 }
 

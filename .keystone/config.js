@@ -186,6 +186,133 @@ var rules = {
   canUpdatePeople: ({ session }) => !isSignedIn({ session }) ? false : session.data.role?.canEditOtherPeople || session.data.role?.canManagePeople ? true : { id: { equals: session.itemId } }
 };
 
+// lib/labels.ts
+var ACRONYMS = {
+  nf: "NF",
+  snf: "SNF",
+  al: "AL",
+  mc: "MC",
+  il: "IL",
+  pasrr: "PASRR",
+  poa: "POA",
+  ma: "MA",
+  mds: "MDS",
+  rn: "RN",
+  lpn: "LPN",
+  mco: "MCO",
+  ltc: "LTC",
+  irf: "IRF",
+  ltch: "LTCH",
+  ffs: "FFS",
+  phi: "PHI",
+  mfa: "MFA",
+  ed: "ED",
+  don: "DON",
+  adon: "ADON",
+  mcp: "MCP",
+  api: "API",
+  id: "ID",
+  a: "A",
+  b: "B",
+  ccrc: "CCRC",
+  us: "US",
+  oh: "OH",
+  ip: "IP"
+};
+var LABELS = {
+  nursing_facility: "Nursing facility",
+  assisted_living: "Assisted living",
+  memory_care: "Memory care",
+  independent_living: "Independent living",
+  medicare_a: "Medicare Part A",
+  medicare_advantage: "Medicare Advantage",
+  medicaid_pending: "Medicaid pending",
+  medicaid_ffs: "Medicaid",
+  private_pay: "Private pay",
+  ltc_insurance: "Long-term care insurance",
+  hospice_agency: "Hospice agency",
+  out_of_service: "Out of service",
+  on_leave: "On leave",
+  moved_in: "Moved in",
+  no_show: "No-show",
+  tour_scheduled: "Tour scheduled",
+  healthcare_poa: "Healthcare POA",
+  financial_responsible: "Financial responsible party",
+  guardian: "Court guardian",
+  self: "Self",
+  bed_hold_policy: "Bed-hold policy",
+  bed_hold_at_transfer: "Bed-hold notice at transfer",
+  transfer_discharge: "Transfer or discharge notice",
+  privacy_practices: "Notice of privacy practices",
+  room_change: "Room change",
+  admission_agreement: "Admission agreement",
+  residency_agreement: "Residency agreement",
+  in_person: "In person",
+  phone_then_mail: "Phone, then mail",
+  refused_witnessed: "Refused (witnessed)",
+  not_required: "Not required",
+  acute_hospital: "Acute-care hospital",
+  community_home: "Home in the community",
+  another_nursing_facility: "Another nursing facility",
+  psychiatric_hospital: "Psychiatric hospital",
+  date_order: "Date order",
+  internal_transfer: "Internal transfer",
+  continuing_care: "Continuing-care contract",
+  chose_competitor: "Chose another community",
+  care_needs_exceed: "Care needs exceed what we offer",
+  stayed_home: "Stayed home",
+  no_response: "No response",
+  clinical_review: "Clinical review",
+  payer_check: "Payer check",
+  placement_agency: "Placement agency",
+  pasrr_level1: "PASRR Level I",
+  reviewed_ok: "Reviewed, no concern",
+  reviewed_violation: "Reviewed, violation",
+  self_hosted_only: "Self-hosted only",
+  baa_hosted: "BAA-covered hosting",
+  dem: "Demographic",
+  clin: "Clinical",
+  fin: "Financial",
+  full_time: "Full time",
+  part_time: "Part time",
+  prn: "PRN (as needed)",
+  either: "In person or video",
+  warn: "Warning",
+  csr: "Customer service",
+  in_house: "In house",
+  on_leave_hold: "On leave, bed held",
+  on_leave_no_hold: "On leave, no hold",
+  not_admitted: "Not admitted",
+  pre_admit: "Pre-admission",
+  satisfied_late: "Satisfied late",
+  hospital: "Hospital",
+  medicaid_mco: "Medicaid managed care",
+  commercial: "Commercial insurance",
+  hold_release: "Bed-hold released",
+  leave_start: "Leave started",
+  leave_end: "Returned from leave",
+  operations: "Operations",
+  pub: "Public",
+  op: "Operational",
+  sens: "Sensitive",
+  ident: "Identifier",
+  approve: "Approve",
+  reject: "Reject",
+  treatment_operations: "Treatment and operations",
+  family_access: "Family access"
+};
+var word = (w) => ACRONYMS[w.toLowerCase()] ?? w.toLowerCase();
+function label(value) {
+  if (!value) return "";
+  if (LABELS[value]) return LABELS[value];
+  if (value.includes(".")) return value.split(".").map(label).join(" \xB7 ");
+  const words = value.replace(/([a-z])([A-Z])/g, "$1 $2").split(/[_\s-]+/).filter(Boolean).map(word);
+  if (!words.length) return "";
+  const first = words[0];
+  words[0] = first === first.toUpperCase() ? first : first[0].toUpperCase() + first.slice(1);
+  return words.join(" ");
+}
+
 // features/keystone/models/User.ts
 var User = (0, import_core.list)({
   access: {
@@ -267,7 +394,7 @@ var User = (0, import_core.list)({
       ui: { description: "Time-boxed access for surveyors, auditors and temporary administrator users." }
     }),
     onboardingStatus: (0, import_fields2.select)({
-      options: ["not_started", "in_progress", "completed", "dismissed"].map((value) => ({ label: value.replaceAll("_", " "), value })),
+      options: ["not_started", "in_progress", "completed", "dismissed"].map((value) => ({ label: label(value), value })),
       defaultValue: "not_started"
     }),
     ...trackingFields
@@ -624,123 +751,6 @@ __export(platform_exports, {
   Sequence: () => Sequence,
   StaffAssignment: () => StaffAssignment
 });
-
-// features/keystone/lib/labels.ts
-var ACRONYMS = {
-  nf: "NF",
-  snf: "SNF",
-  al: "AL",
-  mc: "MC",
-  il: "IL",
-  pasrr: "PASRR",
-  poa: "POA",
-  ma: "MA",
-  mds: "MDS",
-  rn: "RN",
-  lpn: "LPN",
-  mco: "MCO",
-  ltc: "LTC",
-  irf: "IRF",
-  ltch: "LTCH",
-  ffs: "FFS",
-  phi: "PHI",
-  mfa: "MFA",
-  ed: "ED",
-  don: "DON",
-  adon: "ADON",
-  mcp: "MCP",
-  api: "API",
-  id: "ID",
-  a: "A",
-  b: "B",
-  ccrc: "CCRC",
-  us: "US",
-  oh: "OH",
-  ip: "IP"
-};
-var LABELS = {
-  nursing_facility: "Nursing facility",
-  assisted_living: "Assisted living",
-  memory_care: "Memory care",
-  independent_living: "Independent living",
-  medicare_a: "Medicare Part A",
-  medicare_advantage: "Medicare Advantage",
-  medicaid_pending: "Medicaid pending",
-  medicaid_ffs: "Medicaid",
-  private_pay: "Private pay",
-  ltc_insurance: "Long-term care insurance",
-  hospice_agency: "Hospice agency",
-  out_of_service: "Out of service",
-  on_leave: "On leave",
-  moved_in: "Moved in",
-  no_show: "No-show",
-  tour_scheduled: "Tour scheduled",
-  healthcare_poa: "Healthcare POA",
-  financial_responsible: "Financial responsible party",
-  guardian: "Court guardian",
-  self: "Self",
-  bed_hold_policy: "Bed-hold policy",
-  bed_hold_at_transfer: "Bed-hold notice at transfer",
-  transfer_discharge: "Transfer or discharge notice",
-  privacy_practices: "Notice of privacy practices",
-  room_change: "Room change",
-  admission_agreement: "Admission agreement",
-  residency_agreement: "Residency agreement",
-  in_person: "In person",
-  phone_then_mail: "Phone, then mail",
-  refused_witnessed: "Refused (witnessed)",
-  not_required: "Not required",
-  acute_hospital: "Acute-care hospital",
-  community_home: "Home in the community",
-  another_nursing_facility: "Another nursing facility",
-  psychiatric_hospital: "Psychiatric hospital",
-  date_order: "Date order",
-  internal_transfer: "Internal transfer",
-  continuing_care: "Continuing-care contract",
-  chose_competitor: "Chose another community",
-  care_needs_exceed: "Care needs exceed what we offer",
-  stayed_home: "Stayed home",
-  no_response: "No response",
-  clinical_review: "Clinical review",
-  payer_check: "Payer check",
-  placement_agency: "Placement agency",
-  pasrr_level1: "PASRR Level I",
-  reviewed_ok: "Reviewed, no concern",
-  reviewed_violation: "Reviewed, violation",
-  self_hosted_only: "Self-hosted only",
-  baa_hosted: "BAA-covered hosting",
-  dem: "Demographic",
-  clin: "Clinical",
-  fin: "Financial",
-  full_time: "Full time",
-  part_time: "Part time",
-  prn: "PRN (as needed)",
-  either: "In person or video",
-  warn: "Warning",
-  csr: "Customer service",
-  operations: "Operations",
-  pub: "Public",
-  op: "Operational",
-  sens: "Sensitive",
-  ident: "Identifier",
-  approve: "Approve",
-  reject: "Reject",
-  treatment_operations: "Treatment and operations",
-  family_access: "Family access"
-};
-var word = (w) => ACRONYMS[w.toLowerCase()] ?? w.toLowerCase();
-function label(value) {
-  if (!value) return "";
-  if (LABELS[value]) return LABELS[value];
-  if (value.includes(".")) return value.split(".").map(label).join(" \xB7 ");
-  const words = value.replace(/([a-z])([A-Z])/g, "$1 $2").split(/[_\s-]+/).filter(Boolean).map(word);
-  if (!words.length) return "";
-  const first = words[0];
-  words[0] = first === first.toUpperCase() ? first : first[0].toUpperCase() + first.slice(1);
-  return words.join(" ");
-}
-
-// features/keystone/models/platform.ts
 var import_core7 = require("@keystone-6/core");
 var import_fields7 = require("@keystone-6/core/fields");
 
@@ -1707,7 +1717,7 @@ function phiFields(listKey, spec) {
 // features/keystone/models/residents.ts
 var sys3 = () => false;
 var ro = readOnly;
-var opt = (values) => ({ type: "string", options: values.map((value) => ({ label: value.replaceAll("_", " "), value })) });
+var opt = (values) => ({ type: "string", options: values.map((value) => ({ label: label(value), value })) });
 var residentScope = (path, residentPath) => async ({ session, context }) => {
   const scope = await assignedCommunities(session, context);
   if (scope === "all") return true;
@@ -2097,7 +2107,7 @@ var import_core11 = require("@keystone-6/core");
 var import_fields11 = require("@keystone-6/core/fields");
 var ro2 = readOnly;
 var sys4 = () => false;
-var opt2 = (values) => ({ type: "string", options: values.map((value) => ({ label: value.replaceAll("_", " "), value })) });
+var opt2 = (values) => ({ type: "string", options: values.map((value) => ({ label: label(value), value })) });
 var salesRead = ["canReadSales", "canManageSales"];
 var LEAD_STATUSES = ["new", "contacted", "tour_scheduled", "toured", "assessment_scheduled", "assessed", "deposit_received", "move_in_scheduled", "moved_in", "waitlisted", "nurture", "lost"];
 var Inquiry = (0, import_core11.list)({
@@ -2519,6 +2529,7 @@ function actorFromSession(session) {
   const granted = new Set(role ? permissionNames.filter((name) => role[name] === true) : []);
   return { kind: "user", userId: session.itemId, name: session.data.name, permissions: granted };
 }
+var systemActor = (name) => ({ kind: "system", name });
 function can(actor, permission) {
   return actor.kind === "user" && actor.permissions.has(permission);
 }
@@ -2760,23 +2771,13 @@ var UnitOfWork = class {
   }
 };
 async function flushOutbox(tx, messages, now) {
-  for (const message of messages) {
+  if (!messages.length) return;
+  const rows = messages.map((message) => {
     const payload = toJsonValue(message.payload);
     const dedupeKey = message.dedupeKey ?? `${message.topic}:${message.aggregateType}:${message.aggregateId}:${sha256(canonicalJson(payload))}`;
-    await tx.outboxEvent.upsert({
-      where: { dedupeKey },
-      create: {
-        topic: message.topic,
-        aggregateType: message.aggregateType,
-        aggregateId: message.aggregateId,
-        dedupeKey,
-        payload,
-        status: "pending",
-        nextAttemptAt: message.availableAt ?? now
-      },
-      update: {}
-    });
-  }
+    return { topic: message.topic, aggregateType: message.aggregateType, aggregateId: message.aggregateId, dedupeKey, payload, status: "pending", nextAttemptAt: message.availableAt ?? now };
+  });
+  await tx.outboxEvent.createMany({ data: rows, skipDuplicates: true });
 }
 async function runInTransaction(db, work, options = {}) {
   return db.$transaction(async (tx) => {
@@ -3094,6 +3095,26 @@ var PAYERS = [
   { id: "seed_payer_lakeshore_ltc", name: "Lakeshore Long-Term Care Insurance (fictional)", kind: "ltc_insurance", claimFormat: "invoice", dayCountingRule: "count_admit_not_discharge" },
   { id: "seed_payer_private", name: "Private pay", kind: "private_pay", claimFormat: "invoice", dayCountingRule: "count_admit_not_discharge" }
 ];
+var FAMILY_NAMES = ["Abbott", "Bauer", "Castillo", "Delgado", "Eastman", "Fischer", "Gallagher", "Hoffman", "Iverson", "Jablonski", "Kowalski", "Lindgren", "Mahoney", "Novak", "Ortega", "Pruitt", "Quinlan", "Rasmussen", "Sorensen", "Takahashi", "Underwood", "Vasquez", "Whitaker", "Yoder"];
+var GIVEN_NAMES = ["Dorothy", "Harold", "Evelyn", "Walter", "Margaret", "Eugene", "Ruth", "Clarence", "Betty", "Raymond", "Shirley", "Howard", "Virginia", "Earl", "Lorraine", "Gerald", "Marion", "Lloyd", "Doris", "Vernon", "Irene", "Leonard", "Bernice", "Floyd"];
+function nfRooms(unit) {
+  const rooms = [];
+  let remaining = unit.beds;
+  for (let i = 0; remaining > 0; i += 1) {
+    const isolation = i < unit.isolationRooms;
+    const number = String(unit.firstRoom + i);
+    const beds = isolation || remaining === 1 ? ["A"] : ["A", "B"];
+    rooms.push({ number, kind: beds.length === 1 ? "private" : "semi_private", isolation, beds });
+    remaining -= beds.length;
+  }
+  return rooms;
+}
+var residentialApartments = (unit) => Array.from({ length: unit.count }, (_, index) => {
+  const floor = unit.code === "MEA" ? 1 + Math.floor(index / 16) : 1;
+  const number = unit.code === "MEA" ? `${unit.prefix}${floor}-${String(index % 16 + 1).padStart(2, "0")}` : `${unit.prefix}${index + 1}`;
+  const apartmentTypeId = apartmentTypeFor(unit.code, index);
+  return { id: `seed_apartment_${unit.code.toLowerCase()}_${index + 1}`, number, apartmentTypeId, capacity: apartmentTypeId === "seed_apt_companion" ? 2 : 1 };
+});
 
 // features/keystone/seed/packs.ts
 var NF = ["nursing_facility"];
@@ -3164,18 +3185,6 @@ var PACKS = [US_FED_PACK, US_OH_PACK];
 var UNUSABLE_PASSWORD_HASH = "$2a$10$3dITCbIvf5zFA.1U8KZDhOHC3EEexi3KYy5ysZK1cRF6LHMm0H.ya";
 var day = (date2) => /* @__PURE__ */ new Date(`${date2}T00:00:00Z`);
 var seedMeta = { metadata: { seed: true } };
-function nfRooms(unit) {
-  const rooms = [];
-  let remaining = unit.beds;
-  for (let i = 0; remaining > 0; i += 1) {
-    const isolation = i < unit.isolationRooms;
-    const number = String(unit.firstRoom + i);
-    const beds = isolation || remaining === 1 ? ["A"] : ["A", "B"];
-    rooms.push({ number, kind: beds.length === 1 ? "private" : "semi_private", isolation, beds });
-    remaining -= beds.length;
-  }
-  return rooms;
-}
 async function seedOperatorPlatform(uow, actor) {
   const { tx } = uow;
   const created = { operator: 0, roles: 0, staff: 0, assignments: 0, approvalPolicies: 0, calendars: 0, holidays: 0, packs: 0, obligations: 0, communities: 0, units: 0, rooms: 0, beds: 0, apartments: 0, payers: 0 };
@@ -3266,12 +3275,7 @@ async function seedOperatorPlatform(uow, actor) {
     if (await tx.unit.findUnique({ where: { id: unit.id } })) continue;
     await tx.unit.create({ data: { id: unit.id, communityId: community.id, buildingId: "seed_building_residences", name: unit.name, code: unit.code, setting: unit.setting, secured: unit.secured, specialty: "none", status: "active" } });
     created.units += 1;
-    const rows = Array.from({ length: unit.count }, (_, index) => {
-      const floor = unit.code === "MEA" ? 1 + Math.floor(index / 16) : 1;
-      const number = unit.code === "MEA" ? `${unit.prefix}${floor}-${String(index % 16 + 1).padStart(2, "0")}` : `${unit.prefix}${index + 1}`;
-      const typeId = apartmentTypeFor(unit.code, index);
-      return { id: `seed_apartment_${unit.code.toLowerCase()}_${index + 1}`, unitId: unit.id, number, apartmentTypeId: typeId, capacity: typeId === "seed_apt_companion" ? 2 : 1, allowsUnrelatedCompanion: false, status: "available", occupantCount: 0 };
-    });
+    const rows = residentialApartments(unit).map((row) => ({ ...row, unitId: unit.id, allowsUnrelatedCompanion: false, status: "available", occupantCount: 0 }));
     await tx.apartment.createMany({ data: rows });
     created.apartments += rows.length;
   }
@@ -3305,12 +3309,2651 @@ async function seedOperatorPlatform(uow, actor) {
   return { communityId: community.id, created };
 }
 
+// features/keystone/lib/clocks.ts
+var END_OF_DAY = "23:59";
+async function communityClockContext(tx, communityId) {
+  const community = await tx.community.findUnique({ where: { id: communityId }, select: { id: true, timeZone: true, jurisdictionPackId: true, holidayCalendarId: true } });
+  if (!community) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
+  const fed = await tx.jurisdictionPack.findUnique({ where: { code: "US-FED" }, select: { id: true } });
+  const packIds = [fed?.id, community.jurisdictionPackId].filter((id) => Boolean(id));
+  let calendar = null;
+  if (community.holidayCalendarId) {
+    const row = await tx.holidayCalendar.findUnique({ where: { id: community.holidayCalendarId }, include: { dates: { select: { date: true } } } });
+    if (row?.coverageThrough) {
+      calendar = {
+        code: row.code,
+        timeZone: row.timeZone,
+        weekendDays: Array.isArray(row.weekendDays) ? row.weekendDays : [0, 6],
+        holidays: new Set(row.dates.map((d) => d.date.toISOString().slice(0, 10))),
+        coverageThrough: row.coverageThrough.toISOString().slice(0, 10)
+      };
+    }
+  }
+  return { id: community.id, timeZone: community.timeZone, calendar, packIds };
+}
+async function computeDueAt(tx, rule3, startedAt, ctx) {
+  const startDate = localDate(ctx.timeZone, startedAt);
+  switch (rule3.kind) {
+    case "duration":
+      return new Date(startedAt.getTime() + rule3.hours * 36e5);
+    case "at_start":
+      return startedAt;
+    case "calendar_days":
+      return zonedInstant(ctx.timeZone, addDays(startDate, rule3.days), END_OF_DAY);
+    case "working_days": {
+      if (!ctx.calendar) throw new DomainError(Codes.GUARD_FAILED, "This community has no holiday calendar, so working-day deadlines cannot be computed.");
+      return zonedInstant(ctx.timeZone, addWorkingDays(ctx.calendar, startDate, rule3.days), END_OF_DAY);
+    }
+    case "operator_setting_hours": {
+      const settings = await tx.operatorSettings.findUnique({ where: { id: 1 }, select: { bedHoldNoticeGraceHours: true } });
+      return new Date(startedAt.getTime() + (settings?.bedHoldNoticeGraceHours ?? 24) * 36e5);
+    }
+    case "published_dates": {
+      const next = [...rule3.dates].sort().find((date2) => date2 >= startDate);
+      if (!next) throw new DomainError(Codes.GUARD_FAILED, "The pack has no published deadline after this date. Load the next pack version.");
+      return zonedInstant(ctx.timeZone, next, END_OF_DAY);
+    }
+  }
+}
+async function openClock(uow, actor, input, known) {
+  const ctx = known?.id === input.communityId ? known : await communityClockContext(uow.tx, input.communityId);
+  const obligation = await uow.tx.regulatoryObligation.findFirst({ where: { code: input.obligationCode, active: true, packId: { in: ctx.packIds } } });
+  if (!obligation) return null;
+  const applies = obligation.appliesTo ?? {};
+  if (applies.settings?.length && input.setting && !applies.settings.includes(input.setting)) return null;
+  if (applies.payerKinds?.length && (!input.payerKind || !applies.payerKinds.includes(input.payerKind))) return null;
+  const occurrenceKey = input.occurrenceKey ?? "default";
+  const existing = await uow.tx.complianceClock.findFirst({ where: { obligationCode: input.obligationCode, subjectType: input.subjectType, subjectId: input.subjectId, occurrenceKey, current: true } });
+  if (existing) return existing;
+  const dueAt = await computeDueAt(uow.tx, obligation.dueRule, input.startedAt, ctx);
+  const clock = await uow.tx.complianceClock.create({
+    data: {
+      obligationId: obligation.id,
+      obligationCode: obligation.code,
+      communityId: input.communityId,
+      residentId: input.residentId ?? null,
+      subjectType: input.subjectType,
+      subjectId: input.subjectId,
+      occurrenceKey,
+      startedAt: input.startedAt,
+      dueAt,
+      status: "open",
+      ownerRole: obligation.ownerRole,
+      ruleRef: obligation.ruleRef,
+      verifyNote: obligation.verifyNote,
+      current: true
+    }
+  });
+  uow.audit({ eventType: "clock.opened", entityType: "ComplianceClock", entityId: clock.id, actorUserId: actorUserId(actor), actorAgentId: actorAgentId(actor), after: { obligationCode: clock.obligationCode, subjectType: clock.subjectType, subjectId: clock.subjectId, dueAt: clock.dueAt } });
+  uow.emit({ topic: "clock.opened", aggregateType: "ComplianceClock", aggregateId: clock.id, payload: { obligationCode: clock.obligationCode, dueAt: clock.dueAt }, dedupeKey: `clock.opened:${clock.id}` });
+  return clock;
+}
+async function openClocksForFact(uow, actor, input) {
+  const ctx = await communityClockContext(uow.tx, input.communityId);
+  const obligations = await uow.tx.regulatoryObligation.findMany({ where: { startFact: input.fact, active: true, packId: { in: ctx.packIds } }, select: { code: true, evidenceTypes: true } });
+  const opened = [];
+  for (const obligation of obligations) {
+    const clock = await openClock(uow, actor, { ...input, obligationCode: obligation.code }, ctx);
+    if (!clock) continue;
+    opened.push(clock.id);
+    const evidenceTypes = Array.isArray(obligation.evidenceTypes) ? obligation.evidenceTypes : [];
+    if (input.evidence && evidenceTypes.includes(input.evidence.type)) {
+      await satisfyClocks(uow, actor, { obligationCodes: [obligation.code], subjectType: input.subjectType, subjectId: input.subjectId, occurrenceKey: input.occurrenceKey ?? "default" }, { ...input.evidence, at: input.startedAt });
+    }
+  }
+  return opened;
+}
+async function satisfyByEvidence(uow, actor, subject, evidence) {
+  const open = await uow.tx.complianceClock.findMany({
+    where: { subjectType: subject.subjectType, subjectId: subject.subjectId, ...subject.occurrenceKey ? { occurrenceKey: subject.occurrenceKey } : {}, current: true, status: { in: ["open", "overdue"] } },
+    select: { obligationCode: true, obligation: { select: { evidenceTypes: true } } }
+  });
+  const codes = open.filter((clock) => Array.isArray(clock.obligation?.evidenceTypes) && clock.obligation.evidenceTypes.includes(evidence.type)).map((clock) => clock.obligationCode);
+  if (!codes.length) return [];
+  return satisfyClocks(uow, actor, { obligationCodes: [...new Set(codes)], ...subject }, evidence);
+}
+async function satisfyClocks(uow, actor, where, evidence) {
+  const clocks = await uow.tx.complianceClock.findMany({
+    where: { obligationCode: { in: where.obligationCodes }, subjectType: where.subjectType, subjectId: where.subjectId, ...where.occurrenceKey ? { occurrenceKey: where.occurrenceKey } : {}, current: true, status: { in: ["open", "overdue"] } }
+  });
+  const satisfied = [];
+  for (const clock of clocks) {
+    const late = clock.dueAt ? evidence.at.getTime() > clock.dueAt.getTime() : false;
+    const to = late ? "satisfied_late" : "satisfied";
+    const result = await uow.tx.complianceClock.updateMany({
+      where: { id: clock.id, version: clock.version, status: { in: ["open", "overdue"] } },
+      data: { status: to, satisfiedAt: evidence.at, satisfiedBy: [{ type: evidence.type, id: evidence.id }], version: { increment: 1 } }
+    });
+    if (result.count !== 1) throw new DomainError(Codes.STALE_STATE, "A compliance clock changed while it was being satisfied. Try again.", { currentVersion: clock.version });
+    uow.audit({ eventType: `clock.${to}`, entityType: "ComplianceClock", entityId: clock.id, actorUserId: actorUserId(actor), actorAgentId: actorAgentId(actor), before: { status: clock.status }, after: { status: to, evidence } });
+    satisfied.push(clock.id);
+  }
+  return satisfied;
+}
+async function sweepClocks(uow, actor) {
+  const due = await uow.tx.complianceClock.findMany({ where: { current: true, status: "open", dueAt: { lt: uow.now } }, take: 500, orderBy: { dueAt: "asc" } });
+  let overdue = 0;
+  for (const clock of due) {
+    const result = await uow.tx.complianceClock.updateMany({ where: { id: clock.id, version: clock.version, status: "open" }, data: { status: "overdue", escalationLevel: { increment: 1 }, version: { increment: 1 } } });
+    if (result.count !== 1) continue;
+    overdue += 1;
+    uow.audit({ eventType: "clock.overdue", entityType: "ComplianceClock", entityId: clock.id, actorUserId: actorUserId(actor), before: { status: "open" }, after: { status: "overdue", escalationLevel: (clock.escalationLevel ?? 0) + 1 } });
+    uow.emit({ topic: "clock.overdue", aggregateType: "ComplianceClock", aggregateId: clock.id, payload: { obligationCode: clock.obligationCode, communityId: clock.communityId, ownerRole: clock.ownerRole }, dedupeKey: `clock.overdue:${clock.id}:${(clock.escalationLevel ?? 0) + 1}` });
+  }
+  return { checked: due.length, overdue };
+}
+
+// features/keystone/lib/sequence.ts
+var import_node_crypto4 = require("node:crypto");
+async function nextReference(tx, prefix, now = /* @__PURE__ */ new Date(), width = 6) {
+  if (!/^[A-Z]{2,5}$/.test(prefix)) throw new Error("Reference prefix must be 2-5 capital letters");
+  const key = `${prefix}-${now.getUTCFullYear()}`;
+  const row = await tx.sequence.upsert({ where: { key }, create: { key, nextValue: 2 }, update: { nextValue: { increment: 1 } } });
+  const value = row.nextValue - 1;
+  return `${key}-${String(value).padStart(width, "0")}`;
+}
+var CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+function publicCode(prefix, groups = 2) {
+  const bytes = (0, import_node_crypto4.randomBytes)(groups * 4);
+  const chars = Array.from(bytes, (byte) => CROCKFORD[byte % 32]);
+  const parts = Array.from({ length: groups }, (_, i) => chars.slice(i * 4, i * 4 + 4).join(""));
+  return `${prefix}-${parts.join("-")}`;
+}
+
+// features/keystone/lib/censusProjection.ts
+var EMPTY_PROJECTION = {
+  status: "pre_admit",
+  presence: "not_admitted",
+  currentBedId: null,
+  currentApartmentId: null,
+  heldBedId: null,
+  admittedAt: null,
+  endedAt: null,
+  dischargeDisposition: null,
+  openLeave: null,
+  medicaidHoldDaysByYear: {},
+  leaveCount: 0,
+  lastSeq: 0,
+  lastEffectiveAt: null
+};
+var fail = (message, details = {}) => {
+  throw new DomainError(Codes.INVALID_TRANSITION, message, details);
+};
+function leaveDaysByYear(timeZone, from, to) {
+  const out = {};
+  if (to.getTime() <= from.getTime()) return out;
+  let day3 = localDate(timeZone, from);
+  const last = localDate(timeZone, to);
+  for (let i = 0; i < 800 && day3 <= last; i += 1) {
+    const midnight = zonedInstant(timeZone, day3, "23:59").getTime();
+    if (midnight >= from.getTime() && midnight < to.getTime()) out[day3.slice(0, 4)] = (out[day3.slice(0, 4)] ?? 0) + 1;
+    day3 = addDays(day3, 1);
+  }
+  return out;
+}
+function addDaysByYear(into, add) {
+  const out = { ...into };
+  for (const [year, days] of Object.entries(add)) out[year] = (out[year] ?? 0) + days;
+  return out;
+}
+function openLeaveMedicaidDays(timeZone, leave, asOf) {
+  if (!leave || !leave.holdElected || leave.holdPaidBy !== "medicaid") return {};
+  const end = leave.holdEndedAt ? new Date(leave.holdEndedAt) : asOf;
+  return leaveDaysByYear(timeZone, new Date(leave.startedAt), end);
+}
+function applyCensusEvent(state, event, timeZone) {
+  if (event.seq !== state.lastSeq + 1) fail("Census events must be applied in order.", { reason: "sequence" });
+  const at = event.effectiveAt.toISOString();
+  if (state.lastEffectiveAt && event.effectiveAt.getTime() < new Date(state.lastEffectiveAt).getTime()) {
+    fail("This event is dated before the stay's latest census event. Record it as a correction.", { reason: "out_of_order" });
+  }
+  const next = { ...state, lastSeq: event.seq, lastEffectiveAt: at };
+  const terminal = state.status === "discharged" || state.status === "deceased";
+  switch (event.kind) {
+    case "admission":
+    case "readmission": {
+      if (state.status !== "pre_admit") fail("The stay is already admitted.", { currentStatus: state.status });
+      if (!event.toBedId === !event.toApartmentId) fail("An admission needs exactly one bed or apartment.");
+      return { ...next, status: "admitted", presence: "in_house", currentBedId: event.toBedId ?? null, currentApartmentId: event.toApartmentId ?? null, admittedAt: at };
+    }
+    case "room_change": {
+      if (state.status !== "admitted" || state.presence !== "in_house") fail("A room change needs the resident in house.", { currentStatus: state.presence });
+      if (!event.toBedId === !event.toApartmentId) fail("A room change needs exactly one target bed or apartment.");
+      if (event.toBedId && event.toBedId === state.currentBedId || event.toApartmentId && event.toApartmentId === state.currentApartmentId) fail("The resident is already there.");
+      return { ...next, currentBedId: event.toBedId ?? null, currentApartmentId: event.toApartmentId ?? null };
+    }
+    case "leave_start": {
+      if (state.status !== "admitted" || state.presence !== "in_house") fail("A leave can start only while the resident is in house.", { currentStatus: state.presence });
+      const holdElected = Boolean(event.holdElected);
+      const apartment = Boolean(state.currentApartmentId);
+      const keepsPlace = holdElected || apartment;
+      const leave = { startedAt: at, kind: event.leaveKind ?? "other", holdElected: keepsPlace, holdPaidBy: keepsPlace ? event.holdPaidBy ?? (apartment ? "private" : "none") : "none", holdEndedAt: null, bedId: state.currentBedId, apartmentId: state.currentApartmentId };
+      return {
+        ...next,
+        presence: keepsPlace ? "on_leave_hold" : "on_leave_no_hold",
+        heldBedId: holdElected && state.currentBedId ? state.currentBedId : null,
+        currentBedId: keepsPlace ? state.currentBedId : null,
+        currentApartmentId: state.currentApartmentId,
+        openLeave: leave,
+        leaveCount: state.leaveCount + 1
+      };
+    }
+    case "hold_release": {
+      if (state.presence !== "on_leave_hold" || !state.openLeave || !state.heldBedId) fail("There is no bed hold to release.", { currentStatus: state.presence });
+      const used = openLeaveMedicaidDays(timeZone, state.openLeave, event.effectiveAt);
+      return {
+        ...next,
+        presence: "on_leave_no_hold",
+        heldBedId: null,
+        currentBedId: null,
+        medicaidHoldDaysByYear: addDaysByYear(state.medicaidHoldDaysByYear, used),
+        openLeave: { ...state.openLeave, holdElected: false, holdPaidBy: "none", holdEndedAt: at }
+      };
+    }
+    case "leave_end": {
+      if (state.status !== "admitted" || !state.openLeave) fail("There is no open leave to end.", { currentStatus: state.presence });
+      const leave = state.openLeave;
+      const used = leave.holdEndedAt ? {} : openLeaveMedicaidDays(timeZone, leave, event.effectiveAt);
+      let bedId2 = state.currentBedId;
+      let apartmentId = state.currentApartmentId;
+      if (state.presence === "on_leave_no_hold") {
+        if (!event.toBedId === !event.toApartmentId) fail("The resident returns without a held bed: choose an available bed or apartment.");
+        bedId2 = event.toBedId ?? null;
+        apartmentId = event.toApartmentId ?? null;
+      } else if (event.toBedId || event.toApartmentId) {
+        fail("The resident returns to the held place; use a room change afterwards to move them.");
+      }
+      return { ...next, presence: "in_house", heldBedId: null, currentBedId: bedId2, currentApartmentId: apartmentId, openLeave: null, medicaidHoldDaysByYear: addDaysByYear(state.medicaidHoldDaysByYear, used) };
+    }
+    case "coverage_change": {
+      if (state.status !== "admitted") fail("Coverage changes need an admitted stay.", { currentStatus: state.status });
+      return next;
+    }
+    case "discharge":
+    case "death": {
+      if (terminal || state.status !== "admitted") fail("Only an admitted stay can end.", { currentStatus: state.status });
+      const used = state.openLeave && !state.openLeave.holdEndedAt ? openLeaveMedicaidDays(timeZone, state.openLeave, event.effectiveAt) : {};
+      return {
+        ...next,
+        status: event.kind === "death" ? "deceased" : "discharged",
+        presence: "gone",
+        currentBedId: null,
+        currentApartmentId: null,
+        heldBedId: null,
+        openLeave: null,
+        endedAt: at,
+        dischargeDisposition: event.kind === "death" ? "deceased" : event.dischargeDisposition ?? "other",
+        medicaidHoldDaysByYear: addDaysByYear(state.medicaidHoldDaysByYear, used)
+      };
+    }
+    case "correction":
+      return fail("Corrections are recorded through the census correction flow.");
+  }
+}
+function foldCensus(events, timeZone) {
+  return [...events].sort((a, b) => a.seq - b.seq).reduce((state, event) => applyCensusEvent(state, event, timeZone), EMPTY_PROJECTION);
+}
+var projectionHash = (projection) => sha256(canonicalJson(projection));
+function presenceAt(events, timeZone, date2) {
+  const cutoff = zonedInstant(timeZone, date2, "23:59").getTime();
+  const upto = [...events].sort((a, b) => a.seq - b.seq).filter((event) => event.effectiveAt.getTime() <= cutoff);
+  return foldCensus(upto, timeZone);
+}
+
+// features/keystone/lib/census.ts
+var MAX_FUTURE_SKEW_MS = 5 * 6e4;
+var CERTIFICATION_FOR_PAYER = {
+  medicare_a: ["dual", "medicare"],
+  medicare_advantage: ["dual", "medicare"],
+  medicaid_ffs: ["dual", "medicaid"],
+  medicaid_mco: ["dual", "medicaid"]
+};
+var NOTICE_EXCEPTIONS = ["safety_of_individuals", "health_of_individuals", "health_improved", "urgent_medical_needs", "resided_less_than_30_days"];
+function assertEffectiveAt(uow, effectiveAt, projection) {
+  if (Number.isNaN(effectiveAt.getTime())) throw new DomainError(Codes.INVALID_INPUT, "The event time is not a valid time.", { field: "effectiveAt" });
+  if (effectiveAt.getTime() > uow.now.getTime() + MAX_FUTURE_SKEW_MS) throw new DomainError(Codes.INVALID_INPUT, "Census events cannot be dated in the future.", { field: "effectiveAt" });
+  if (projection.lastEffectiveAt && effectiveAt.getTime() < new Date(projection.lastEffectiveAt).getTime()) {
+    throw new DomainError(Codes.GUARD_FAILED, "This is dated before the stay's latest census event. Record it as a late entry.", { reason: "late_entry" });
+  }
+}
+async function lockStay(tx, stayId, expectedVersion) {
+  const stay = await lockRow(tx, "Stay", stayId);
+  if (expectedVersion !== void 0 && expectedVersion !== null && expectedVersion !== stay.version) {
+    throw new DomainError(Codes.STALE_STATE, "The stay changed since you loaded it. Reload and try again.", { currentStatus: stay.status, currentVersion: stay.version });
+  }
+  return stay;
+}
+async function communityTimeZone(tx, communityId) {
+  const community = await tx.community.findUnique({ where: { id: communityId }, select: { timeZone: true } });
+  if (!community) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
+  return community.timeZone;
+}
+async function loadCensusEvents(tx, stayId) {
+  const rows = await tx.censusEvent.findMany({ where: { stayId, voidsEventId: null, kind: { not: "correction" } }, orderBy: [{ effectiveAt: "asc" }, { seq: "asc" }] });
+  const voided = new Set((await tx.censusEvent.findMany({ where: { stayId, voidsEventId: { not: null } }, select: { voidsEventId: true } })).map((row) => row.voidsEventId));
+  return rows.filter((row) => !voided.has(row.id)).map((row) => ({
+    id: row.id,
+    hash: row.hash,
+    seq: row.seq,
+    kind: row.kind,
+    effectiveAt: row.effectiveAt,
+    toBedId: row.toBedId,
+    toApartmentId: row.toApartmentId,
+    leaveKind: row.leaveKind,
+    holdElected: row.holdElected,
+    holdPaidBy: row.holdPaidBy,
+    dischargeDisposition: row.dischargeDisposition
+  }));
+}
+function foldStored(events, timeZone) {
+  return foldCensus(events.map((event, index) => ({ ...event, seq: index + 1 })), timeZone);
+}
+function placeClaims(projection) {
+  const claims = /* @__PURE__ */ new Map();
+  if (projection.presence === "in_house" && projection.currentBedId) claims.set(`bed:${projection.currentBedId}`, "occupied");
+  if (projection.presence === "on_leave_hold" && projection.heldBedId) claims.set(`bed:${projection.heldBedId}`, "held");
+  if (projection.currentApartmentId && (projection.presence === "in_house" || projection.presence === "on_leave_hold")) claims.set(`apartment:${projection.currentApartmentId}`, "resident");
+  return claims;
+}
+async function reconcilePlaces(uow, actor, stay, before, after, options) {
+  const was = placeClaims(before);
+  const now = placeClaims(after);
+  const keys = [.../* @__PURE__ */ new Set([...was.keys(), ...now.keys()])].sort();
+  for (const key of keys) await advisoryLock(uow.tx, key);
+  for (const key of keys) {
+    const from = was.get(key) ?? null;
+    const to = now.get(key) ?? null;
+    if (from === to) continue;
+    const [kind, id] = key.split(":");
+    if (kind === "bed") await reconcileBed(uow, actor, stay, id, from, to, options);
+    else await reconcileApartment(uow, actor, stay, id, from !== null, to !== null, options);
+  }
+}
+async function reconcileBed(uow, actor, stay, bedId2, from, to, options) {
+  const bed = await lockRow(uow.tx, "Bed", bedId2);
+  const metadata = { stayId: stay.id, censusEventId: options.eventId };
+  if (!from && to) {
+    if (bed.status === "reserved") {
+      const reservation = await uow.tx.placeReservation.findFirst({ where: { bedId: bedId2, status: "active" } });
+      if (!reservation || reservation.id !== options.reservationId) throw new DomainError(Codes.PLACE_UNAVAILABLE, `Bed ${bed.label} is reserved for someone else.`, { currentStatus: bed.status });
+      await consumeReservation(uow, actor, reservation.id, reservation.version, stay.id);
+    } else if (bed.status !== "available") {
+      throw new DomainError(Codes.PLACE_UNAVAILABLE, `Bed ${bed.label} is ${label(bed.status).toLowerCase()}.`, { currentStatus: bed.status });
+    }
+    await casUpdate(uow, { model: "Bed", id: bedId2, version: bed.version, from: [bed.status], to: to === "held" ? "held" : "occupied", actor, eventType: "bed.claimed", data: { currentStayId: stay.id, statusReason: "" }, audit: { currentStayId: stay.id }, metadata });
+    const occupancy = await uow.tx.bedOccupancy.create({ data: { bedId: bedId2, stayId: stay.id, startAt: options.effectiveAt, openedByEventId: options.eventId } });
+    auditCreate(uow, actor, "BedOccupancy", occupancy.id, "bed_occupancy.opened", { bedId: bedId2, stayId: stay.id, startAt: options.effectiveAt });
+    return;
+  }
+  if (bed.currentStayId !== stay.id) throw new DomainError(Codes.PROJECTION_MISMATCH, `Bed ${bed.label} is not held by this stay.`, { currentStatus: bed.status });
+  if (from && to) {
+    await casUpdate(uow, { model: "Bed", id: bedId2, version: bed.version, from: [from === "held" ? "held" : "occupied"], to: to === "held" ? "held" : "occupied", actor, eventType: to === "held" ? "bed.held" : "bed.reoccupied", metadata });
+    return;
+  }
+  await casUpdate(uow, { model: "Bed", id: bedId2, version: bed.version, from: [from === "held" ? "held" : "occupied"], to: "cleaning", actor, eventType: "bed.released", data: { currentStayId: null }, audit: { currentStayId: null }, metadata });
+  const open = await uow.tx.bedOccupancy.findFirst({ where: { bedId: bedId2, stayId: stay.id, endAt: null } });
+  if (open) {
+    const endAt = options.effectiveAt.getTime() < open.startAt.getTime() ? open.startAt : options.effectiveAt;
+    await uow.tx.bedOccupancy.update({ where: { id: open.id }, data: { endAt, closedByEventId: options.eventId } });
+    uow.audit({ eventType: "bed_occupancy.closed", entityType: "BedOccupancy", entityId: open.id, actorUserId: actorUserId(actor), actorAgentId: actorAgentId(actor), after: { endAt } });
+  }
+  uow.emit({ topic: "housekeeping.turnover", aggregateType: "Bed", aggregateId: bedId2, payload: { bedId: bedId2, reason: "census_release" }, dedupeKey: `housekeeping.turnover:${bedId2}:${options.eventId}` });
+}
+async function reconcileApartment(uow, actor, stay, apartmentId, had, has, options) {
+  const apartment = await lockRow(uow.tx, "Apartment", apartmentId);
+  const metadata = { stayId: stay.id, censusEventId: options.eventId };
+  if (!had && has) {
+    if (apartment.status === "out_of_service" || apartment.status === "turnover") throw new DomainError(Codes.PLACE_UNAVAILABLE, `Apartment ${apartment.number} is ${label(apartment.status).toLowerCase()}.`, { currentStatus: apartment.status });
+    if (apartment.occupantCount >= apartment.capacity) throw new DomainError(Codes.PLACE_UNAVAILABLE, `Apartment ${apartment.number} is full.`, { currentStatus: apartment.status });
+    if (apartment.occupantCount > 0 && !apartment.allowsUnrelatedCompanion && !options.companionRelationship?.trim()) {
+      throw new DomainError(Codes.GUARD_FAILED, "A second resident in this apartment needs a recorded relationship to the first (spouse, partner, sibling).", { field: "companionRelationship" });
+    }
+    if (apartment.status === "reserved") {
+      const reservation = await uow.tx.placeReservation.findFirst({ where: { apartmentId, status: "active" } });
+      if (!reservation || reservation.id !== options.reservationId) throw new DomainError(Codes.PLACE_UNAVAILABLE, `Apartment ${apartment.number} is reserved for someone else.`, { currentStatus: apartment.status });
+      await consumeReservation(uow, actor, reservation.id, reservation.version, stay.id);
+    }
+    await casUpdate(uow, { model: "Apartment", id: apartmentId, version: apartment.version, from: [apartment.status], to: "occupied", actor, eventType: "apartment.occupant_added", data: { occupantCount: apartment.occupantCount + 1 }, metadata: { ...metadata, companionRelationship: options.companionRelationship ?? null } });
+    return;
+  }
+  const remaining = Math.max(0, apartment.occupantCount - 1);
+  await casUpdate(uow, { model: "Apartment", id: apartmentId, version: apartment.version, from: ["occupied"], to: remaining === 0 ? "turnover" : "occupied", actor, eventType: "apartment.occupant_removed", data: { occupantCount: remaining }, metadata });
+  if (remaining === 0) uow.emit({ topic: "housekeeping.turnover", aggregateType: "Apartment", aggregateId: apartmentId, payload: { apartmentId, reason: "census_release" }, dedupeKey: `housekeeping.turnover:${apartmentId}:${options.eventId}` });
+}
+async function consumeReservation(uow, actor, reservationId, version2, stayId) {
+  await casUpdate(uow, { model: "PlaceReservation", id: reservationId, version: version2, from: ["active"], to: "consumed", actor, eventType: "reservation.consumed", data: { consumedByStayId: stayId } });
+}
+async function appendCensusEvents(uow, actor, stay, inputs, options = {}) {
+  if (!inputs.length) throw new DomainError(Codes.INVALID_INPUT, "Nothing to record.");
+  const timeZone = await communityTimeZone(uow.tx, stay.communityId);
+  const stored = await loadCensusEvents(uow.tx, stay.id);
+  const before = foldStored(stored, timeZone);
+  const closed = await closedThrough(uow.tx, stay.communityId);
+  for (const input of inputs) {
+    if (Number.isNaN(input.effectiveAt.getTime())) throw new DomainError(Codes.INVALID_INPUT, "The event time is not a valid time.", { field: "effectiveAt" });
+    if (input.effectiveAt.getTime() > uow.now.getTime() + MAX_FUTURE_SKEW_MS) throw new DomainError(Codes.INVALID_INPUT, "Census events cannot be dated in the future.", { field: "effectiveAt" });
+    if (!options.late) assertEffectiveAt(uow, input.effectiveAt, before);
+    if (closed && localDate(timeZone, input.effectiveAt) <= closed && !input.approvalId) {
+      throw new DomainError(Codes.APPROVAL_REQUIRED, `The census through ${closed} is signed off. Ask for a closed-period correction; a second person approves it.`, { reason: "closed_period" });
+    }
+  }
+  const last = await uow.tx.censusEvent.findFirst({ where: { stayId: stay.id }, orderBy: { seq: "desc" }, select: { seq: true, hash: true } });
+  let seq = last?.seq ?? 0;
+  const candidates = inputs.map((input) => ({ input, event: { seq: ++seq, kind: input.kind, effectiveAt: input.effectiveAt, toBedId: input.toBedId ?? null, toApartmentId: input.toApartmentId ?? null, leaveKind: input.leaveKind ?? null, holdElected: Boolean(input.holdElected), holdPaidBy: input.holdPaidBy ?? null, dischargeDisposition: input.dischargeDisposition ?? null } }));
+  const voided = new Set(inputs.map((input) => input.voidsEventId).filter(Boolean));
+  for (const id of voided) if (!stored.some((event) => event.id === id)) throw new DomainError(Codes.INVALID_INPUT, "The event to void is not an active event of this stay.", { field: "voidsEventId" });
+  const ordered = [...stored.filter((event) => !voided.has(event.id)), ...candidates.filter((c) => c.event.kind !== "correction").map((c) => c.event)].sort((a, b) => a.effectiveAt.getTime() - b.effectiveAt.getTime() || a.seq - b.seq);
+  const after = foldStored(ordered, timeZone);
+  if (options.late && after.status !== before.status) throw new DomainError(Codes.GUARD_FAILED, "A late entry cannot admit or end the stay; use the admission or discharge command.", { reason: "late_entry_status" });
+  let prevHash = last?.hash || stay.lastEventHash || "0".repeat(64);
+  const events = [];
+  for (const { input, event: candidate } of candidates) {
+    const body = { stayId: stay.id, seq: candidate.seq, kind: input.kind, effectiveAt: input.effectiveAt.toISOString(), toBedId: candidate.toBedId, toApartmentId: candidate.toApartmentId, leaveKind: candidate.leaveKind, holdElected: Boolean(candidate.holdElected), holdPaidBy: candidate.holdPaidBy, dischargeDisposition: candidate.dischargeDisposition, initiatedBy: input.initiatedBy ?? null, voidsEventId: input.voidsEventId ?? null };
+    const hash = sha256(`${prevHash}
+${canonicalJson(body)}`);
+    const row = await uow.tx.censusEvent.create({
+      data: {
+        stayId: stay.id,
+        seq: candidate.seq,
+        kind: input.kind,
+        effectiveAt: input.effectiveAt,
+        observedAt: input.observedAt ?? null,
+        recordedAt: uow.now,
+        fromBedId: input.fromBedId ?? null,
+        toBedId: candidate.toBedId,
+        fromApartmentId: input.fromApartmentId ?? null,
+        toApartmentId: candidate.toApartmentId,
+        leaveKind: candidate.leaveKind,
+        holdElected: Boolean(candidate.holdElected),
+        holdPaidBy: candidate.holdPaidBy,
+        dischargeDisposition: candidate.dischargeDisposition,
+        initiatedBy: input.initiatedBy ?? null,
+        coverageId: input.coverageId ?? null,
+        voidsEventId: input.voidsEventId ?? null,
+        correctionReason: input.correctionReason ?? "",
+        approvalId: input.approvalId ?? null,
+        detail: input.detail ?? {},
+        actorId: actorUserId(actor),
+        actorAgentId: actorAgentId(actor),
+        idempotencyKey: sha256(`${principalKey(actor)}:${input.idempotencyKey}:${input.kind}:${candidate.seq}`),
+        prevHash,
+        hash
+      }
+    });
+    prevHash = hash;
+    events.push({ id: row.id, seq: row.seq, kind: row.kind });
+    uow.emit({ topic: `census.${input.kind}`, aggregateType: "Stay", aggregateId: stay.id, payload: { stayId: stay.id, eventId: row.id, communityId: stay.communityId, effectiveAt: input.effectiveAt, late: Boolean(options.late) }, dedupeKey: `census:${row.id}` });
+  }
+  const lastInput = inputs[inputs.length - 1];
+  await reconcilePlaces(uow, actor, stay, before, after, { reservationId: options.reservationId, companionRelationship: options.companionRelationship, eventId: events[events.length - 1].id, effectiveAt: options.late ? uow.now : lastInput.effectiveAt });
+  const year = localDate(timeZone, uow.now).slice(0, 4);
+  const updated = await uow.tx.stay.updateMany({
+    where: { id: stay.id, version: stay.version },
+    data: {
+      status: after.status,
+      presence: after.presence,
+      currentBedId: after.currentBedId,
+      currentApartmentId: after.currentApartmentId,
+      heldBedId: after.heldBedId,
+      admittedAt: after.admittedAt ? new Date(after.admittedAt) : null,
+      dischargedAt: after.endedAt ? new Date(after.endedAt) : null,
+      dischargeDisposition: after.dischargeDisposition,
+      leaveDaysUsedThisYear: after.medicaidHoldDaysByYear[year] ?? 0,
+      projection: after,
+      projectionHash: projectionHash(after),
+      projectionVersion: { increment: 1 },
+      lastEventHash: prevHash,
+      version: { increment: 1 }
+    }
+  });
+  if (updated.count !== 1) throw new DomainError(Codes.STALE_STATE, "The stay changed while this was being recorded. Try again.", { currentVersion: stay.version });
+  uow.audit({
+    eventType: options.late ? "census.late_entry" : `census.${lastInput.kind}`,
+    entityType: "Stay",
+    entityId: stay.id,
+    actorUserId: actorUserId(actor),
+    actorAgentId: actorAgentId(actor),
+    reason: lastInput.correctionReason ?? null,
+    before: { status: before.status, presence: before.presence, bed: before.currentBedId, apartment: before.currentApartmentId },
+    after: { status: after.status, presence: after.presence, bed: after.currentBedId, apartment: after.currentApartmentId, events: events.map((e) => ({ id: e.id, seq: e.seq, kind: e.kind })) },
+    metadata: lastInput.approvalId ? { approvalId: lastInput.approvalId } : void 0
+  });
+  return { event: events[events.length - 1], events, before, after, version: stay.version + 1, timeZone };
+}
+var appendCensusEvent = (uow, actor, stay, input, options = {}) => appendCensusEvents(uow, actor, stay, [input], options);
+async function closedThrough(tx, communityId) {
+  const row = await tx.censusSignoff.findFirst({ where: { communityId, unitId: null }, orderBy: { date: "desc" }, select: { date: true } });
+  return row?.date ? row.date.toISOString().slice(0, 10) : null;
+}
+var REPRESENTATIVE_ROLES2 = /* @__PURE__ */ new Set(["self", "healthcare_poa", "financial_responsible", "guardian", "family", "emergency_contact", "hospice_contact", "personal_representative_hipaa"]);
+async function admitResident(uow, actor, input) {
+  if (!input.bedId === !input.apartmentId) throw new DomainError(Codes.INVALID_INPUT, "Choose one bed or one apartment.", { field: "bedId" });
+  const community = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { id: true, status: true, synthetic: true } });
+  if (!community || community.status === "closed") throw new DomainError(Codes.NOT_FOUND, "Community not found or closed.");
+  const payer = await uow.tx.payer.findUnique({ where: { id: input.payerId } });
+  if (!payer) throw new DomainError(Codes.INVALID_INPUT, "Choose the initial payer.", { field: "payerId" });
+  let setting;
+  let medicaidCertified = false;
+  if (input.bedId) {
+    const bed = await uow.tx.bed.findUnique({ where: { id: input.bedId }, include: { room: { include: { unit: true } } } });
+    if (!bed?.room?.unit || bed.room.unit.communityId !== input.communityId) throw new DomainError(Codes.NOT_FOUND, "That bed is not in this community.");
+    setting = bed.room.unit.setting;
+    const needed = CERTIFICATION_FOR_PAYER[payer.kind];
+    if (needed && !needed.includes(bed.certification)) throw new DomainError(Codes.GUARD_FAILED, `This bed is certified ${label(bed.certification)}; a ${label(payer.kind)} admission needs a ${needed.join(" or ")} bed.`, { reason: "certification" });
+    medicaidCertified = bed.certification === "dual" || bed.certification === "medicaid";
+    if (bed.room.genderPolicy !== "any" && input.resident?.sex && input.resident.sex !== bed.room.genderPolicy) throw new DomainError(Codes.GUARD_FAILED, `Room ${bed.room.number} is ${bed.room.genderPolicy} only.`, { reason: "gender_policy" });
+    if (bed.room.unit.secured && !input.placementReason?.trim()) throw new DomainError(Codes.GUARD_FAILED, "A secured unit placement needs a documented reason.", { field: "placementReason" });
+  } else {
+    const apartment = await uow.tx.apartment.findUnique({ where: { id: input.apartmentId }, include: { unit: true } });
+    if (!apartment?.unit || apartment.unit.communityId !== input.communityId) throw new DomainError(Codes.NOT_FOUND, "That apartment is not in this community.");
+    setting = apartment.unit.setting;
+    if (apartment.unit.secured && !input.placementReason?.trim()) throw new DomainError(Codes.GUARD_FAILED, "A memory-care (secured unit) placement needs a documented reason.", { field: "placementReason" });
+  }
+  const prospectScreen = input.prospectId ? await uow.tx.preAdmissionScreen.findFirst({ where: { prospectId: input.prospectId, kind: "pasrr_level1" }, select: { id: true } }) : null;
+  if (setting === "nursing_facility" && medicaidCertified && !input.pasrrLevel1 && !prospectScreen && !input.residentId) {
+    throw new DomainError(Codes.GUARD_FAILED, "A Level I PASRR screen must be completed before admission to a Medicaid-certified nursing facility bed.", { field: "pasrrLevel1" });
+  }
+  if (!input.selfRepresented && !input.representatives?.length && !input.residentId) throw new DomainError(Codes.GUARD_FAILED, "Add at least one representative, or record that the resident represents themself.", { field: "representatives" });
+  for (const rep of input.representatives ?? []) {
+    if (!rep.firstName?.trim() || !rep.roles?.length || rep.roles.some((role) => !REPRESENTATIVE_ROLES2.has(role))) throw new DomainError(Codes.INVALID_INPUT, "Each representative needs a name and known roles.", { field: "representatives" });
+  }
+  let residentId = input.residentId ?? null;
+  const synthetic = Boolean(input.synthetic ?? community.synthetic);
+  if (residentId) {
+    const resident2 = await lockRow(uow.tx, "Resident", residentId);
+    if (resident2.status === "deceased") throw new DomainError(Codes.GUARD_FAILED, "This resident is recorded as deceased.");
+    const open = await uow.tx.stay.findFirst({ where: { residentId, status: { in: ["pre_admit", "admitted"] } }, select: { id: true } });
+    if (open) throw new DomainError(Codes.GUARD_FAILED, "This resident already has an open stay.", { reason: "open_stay" });
+    const reps = await uow.tx.representative.count({ where: { residentId, status: "active" } });
+    if (!reps && !input.selfRepresented && !input.representatives?.length) throw new DomainError(Codes.GUARD_FAILED, "Add at least one representative.", { field: "representatives" });
+  } else {
+    const data = input.resident;
+    if (!data?.firstName?.trim() || !data.lastName?.trim()) throw new DomainError(Codes.INVALID_INPUT, "The resident needs a first and last name.", { field: "resident" });
+    if (data.dateOfBirth && !/^\d{4}-\d{2}-\d{2}$/.test(data.dateOfBirth)) throw new DomainError(Codes.INVALID_INPUT, "Date of birth must be YYYY-MM-DD.", { field: "dateOfBirth" });
+    const created = await uow.tx.resident.create({
+      data: {
+        reference: await nextReference(uow.tx, "RES", uow.now),
+        communityId: input.communityId,
+        firstName: data.firstName.trim(),
+        lastName: data.lastName.trim(),
+        middleName: data.middleName ?? "",
+        preferredName: data.preferredName ?? "",
+        dateOfBirth: data.dateOfBirth ? /* @__PURE__ */ new Date(`${data.dateOfBirth}T00:00:00Z`) : null,
+        sex: data.sex ?? "unknown",
+        primaryLanguage: data.primaryLanguage ?? "English",
+        status: "prospective",
+        synthetic
+      }
+    });
+    residentId = created.id;
+    auditCreate(uow, actor, "Resident", created.id, "resident.created", { reference: created.reference });
+  }
+  if (input.prospectId) {
+    const prospect = await uow.tx.prospect.findUnique({ where: { id: input.prospectId }, select: { id: true, convertedResidentId: true } });
+    if (!prospect) throw new DomainError(Codes.NOT_FOUND, "Prospect not found.");
+    if (prospect.convertedResidentId && prospect.convertedResidentId !== residentId) throw new DomainError(Codes.GUARD_FAILED, "This prospect was already converted.");
+    await uow.tx.prospect.update({ where: { id: prospect.id }, data: { convertedResidentId: residentId } });
+  }
+  for (const rep of input.representatives ?? []) await addRepresentative(uow, actor, residentId, input.communityId, rep, synthetic);
+  if (input.selfRepresented) {
+    const self = await uow.tx.representative.findFirst({ where: { residentId, self: true, status: "active" } });
+    if (!self) {
+      const row = await uow.tx.representative.create({ data: { reference: await nextReference(uow.tx, "REP", uow.now), residentId, self: true, roles: ["self"], status: "active", contactPriority: 1 } });
+      auditCreate(uow, actor, "Representative", row.id, "representative.added", { self: true });
+    }
+  }
+  if (prospectScreen) await uow.tx.preAdmissionScreen.updateMany({ where: { prospectId: input.prospectId, residentId: null }, data: { residentId } });
+  if (input.pasrrLevel1) {
+    const screen = await uow.tx.preAdmissionScreen.create({ data: { residentId, prospectId: input.prospectId ?? null, kind: "pasrr_level1", result: input.pasrrLevel1.result, completedAt: new Date(input.pasrrLevel1.completedAt) } });
+    auditCreate(uow, actor, "PreAdmissionScreen", screen.id, "pre_admission_screen.recorded", { kind: "pasrr_level1" });
+  }
+  const stay = await uow.tx.stay.create({
+    data: { reference: await nextReference(uow.tx, "STY", uow.now), residentId, communityId: input.communityId, setting, status: "pre_admit", presence: "not_admitted", admissionSource: input.admissionSource, placementReason: input.placementReason ?? "", initialPayerKind: payer.kind, projection: EMPTY_PROJECTION, synthetic }
+  });
+  auditCreate(uow, actor, "Stay", stay.id, "stay.created", { reference: stay.reference, setting });
+  const effectiveDate = localDate(await communityTimeZone(uow.tx, input.communityId), input.effectiveAt);
+  const coverage = await uow.tx.coveragePeriod.create({
+    data: { stayId: stay.id, payerId: payer.id, rank: "primary", startDate: /* @__PURE__ */ new Date(`${effectiveDate}T00:00:00Z`), status: "active", memberReference: input.memberReference ?? "", qualifyingStayFrom: input.qualifyingStayFrom ? /* @__PURE__ */ new Date(`${input.qualifyingStayFrom}T00:00:00Z`) : null, qualifyingStayTo: input.qualifyingStayTo ? /* @__PURE__ */ new Date(`${input.qualifyingStayTo}T00:00:00Z`) : null }
+  });
+  auditCreate(uow, actor, "CoveragePeriod", coverage.id, "coverage.opened", { payerKind: payer.kind, startDate: effectiveDate });
+  const { event, after } = await appendCensusEvent(uow, actor, stay, {
+    kind: input.residentId ? "readmission" : "admission",
+    effectiveAt: input.effectiveAt,
+    observedAt: input.observedAt,
+    toBedId: input.bedId ?? null,
+    toApartmentId: input.apartmentId ?? null,
+    coverageId: coverage.id,
+    idempotencyKey: input.idempotencyKey,
+    detail: { admissionSource: input.admissionSource }
+  }, { reservationId: input.reservationId, companionRelationship: input.companionRelationship });
+  await convertSalesRecords(uow, actor, { stayId: stay.id, residentId, prospectId: input.prospectId ?? null, reservationId: input.reservationId ?? null });
+  const resident = await uow.tx.resident.findUniqueOrThrow({ where: { id: residentId }, select: { version: true, status: true } });
+  await casUpdate(uow, { model: "Resident", id: residentId, version: resident.version, from: [resident.status], to: "current", actor, eventType: "resident.admitted", data: { currentStayId: stay.id, communityId: input.communityId } });
+  await openClocksForFact(uow, actor, { fact: "census.admission", communityId: input.communityId, residentId, subjectType: "Stay", subjectId: stay.id, startedAt: input.effectiveAt, setting, payerKind: payer.kind, evidence: { type: "census_event:admission", id: event.id } });
+  for (const notice of input.notices ?? []) await recordNotice(uow, actor, { ...notice, stayId: stay.id });
+  uow.emit({ topic: "portal.invite_representatives", aggregateType: "Stay", aggregateId: stay.id, payload: { stayId: stay.id }, dedupeKey: `portal.invite:${stay.id}` });
+  return { stayId: stay.id, residentId, eventId: event.id, status: after.status, presence: after.presence };
+}
+async function convertSalesRecords(uow, actor, input) {
+  const reservation = input.reservationId ? await uow.tx.placeReservation.findUnique({ where: { id: input.reservationId }, select: { prospectId: true, referralId: true, waitlistEntryId: true, consumedByStayId: true } }) : null;
+  if (reservation && reservation.consumedByStayId !== input.stayId) return;
+  const prospectId = input.prospectId ?? reservation?.prospectId ?? null;
+  if (prospectId && !input.prospectId) {
+    const prospect = await uow.tx.prospect.findUnique({ where: { id: prospectId }, select: { convertedResidentId: true } });
+    if (prospect && !prospect.convertedResidentId) await uow.tx.prospect.update({ where: { id: prospectId }, data: { convertedResidentId: input.residentId } });
+  }
+  const meta = { stayId: input.stayId, residentId: input.residentId };
+  if (reservation?.waitlistEntryId) {
+    const entry = await lockRow(uow.tx, "WaitlistEntry", reservation.waitlistEntryId);
+    if (["active", "offered", "accepted"].includes(entry.status)) await casUpdate(uow, { model: "WaitlistEntry", id: entry.id, version: entry.version, from: [entry.status], to: "converted", actor, eventType: "waitlist.converted", metadata: meta });
+  }
+  if (reservation?.referralId) {
+    const referral = await lockRow(uow.tx, "Referral", reservation.referralId);
+    if (referral.status === "accepted") await casUpdate(uow, { model: "Referral", id: referral.id, version: referral.version, from: ["accepted"], to: "admitted", actor, eventType: "referral.admitted", metadata: meta });
+  }
+  if (prospectId) {
+    const prospect = await uow.tx.prospect.findUnique({ where: { id: prospectId }, select: { leadId: true } });
+    if (prospect?.leadId) {
+      const lead = await lockRow(uow.tx, "Lead", prospect.leadId);
+      if (lead.status !== "moved_in" && lead.status !== "lost") await casUpdate(uow, { model: "Lead", id: lead.id, version: lead.version, from: [lead.status], to: "moved_in", actor, eventType: "lead.moved_in", metadata: meta });
+    }
+  }
+}
+async function addRepresentative(uow, actor, residentId, communityId, rep, synthetic) {
+  const contact = await uow.tx.contact.create({ data: { reference: await nextReference(uow.tx, "CON", uow.now), communityId, firstName: rep.firstName.trim(), lastName: rep.lastName?.trim() ?? "", email: rep.email?.trim().toLowerCase() ?? "", phone: rep.phone?.trim() ?? "", consentToContact: true, synthetic } });
+  const representative = await uow.tx.representative.create({ data: { reference: await nextReference(uow.tx, "REP", uow.now), residentId, contactId: contact.id, roles: rep.roles, contactPriority: rep.contactPriority ?? 1, status: "active" } });
+  auditCreate(uow, actor, "Representative", representative.id, "representative.added", { roles: rep.roles, contactReference: contact.reference });
+  return representative;
+}
+async function primaryPayerKind(tx, stayId) {
+  const coverage = await tx.coveragePeriod.findFirst({ where: { stayId, rank: "primary", status: { in: ["active", "ending", "retro_approved"] } }, orderBy: { startDate: "desc" }, include: { payer: { select: { kind: true } } } });
+  return coverage?.payer?.kind ?? null;
+}
+async function changeRoom(uow, actor, input) {
+  if (!input.toBedId === !input.toApartmentId) throw new DomainError(Codes.INVALID_INPUT, "Choose one target bed or apartment.", { field: "toBedId" });
+  const stay = await lockStay(uow.tx, input.stayId, input.expectedVersion);
+  if (input.toBedId) {
+    const bed = await uow.tx.bed.findUnique({ where: { id: input.toBedId }, include: { room: { include: { unit: true } } } });
+    if (!bed?.room?.unit || bed.room.unit.communityId !== stay.communityId) throw new DomainError(Codes.NOT_FOUND, "That bed is not in this community.");
+    const payerKind = await primaryPayerKind(uow.tx, stay.id);
+    const needed = payerKind ? CERTIFICATION_FOR_PAYER[payerKind] : void 0;
+    if (needed && !needed.includes(bed.certification)) throw new DomainError(Codes.GUARD_FAILED, `Bed ${bed.label} is certified ${label(bed.certification)}, which the resident's coverage cannot use.`, { reason: "certification" });
+    const resident = stay.residentId ? await uow.tx.resident.findUnique({ where: { id: stay.residentId }, select: { sex: true } }) : null;
+    if (bed.room.genderPolicy !== "any" && resident?.sex && resident.sex !== bed.room.genderPolicy) throw new DomainError(Codes.GUARD_FAILED, `Room ${bed.room.number} is ${bed.room.genderPolicy} only.`, { reason: "gender_policy" });
+    if (bed.room.unit.secured && !input.reason?.trim()) throw new DomainError(Codes.GUARD_FAILED, "A move into a secured unit needs a documented reason.", { field: "reason" });
+  } else {
+    const apartment = await uow.tx.apartment.findUnique({ where: { id: input.toApartmentId }, include: { unit: true } });
+    if (!apartment?.unit || apartment.unit.communityId !== stay.communityId) throw new DomainError(Codes.NOT_FOUND, "That apartment is not in this community.");
+    if (apartment.unit.secured && !input.reason?.trim()) throw new DomainError(Codes.GUARD_FAILED, "A move into memory care needs a documented reason.", { field: "reason" });
+  }
+  const result = await appendCensusEvent(uow, actor, stay, {
+    kind: "room_change",
+    effectiveAt: input.effectiveAt,
+    observedAt: input.observedAt,
+    toBedId: input.toBedId ?? null,
+    toApartmentId: input.toApartmentId ?? null,
+    fromBedId: stay.currentBedId,
+    fromApartmentId: stay.currentApartmentId,
+    idempotencyKey: input.idempotencyKey,
+    detail: { reason: input.reason ?? null }
+  }, { companionRelationship: input.companionRelationship, reservationId: input.reservationId });
+  uow.emit({ topic: "task.room_change_notice", aggregateType: "Stay", aggregateId: stay.id, payload: { stayId: stay.id, eventId: result.event.id }, dedupeKey: `task.room_change_notice:${result.event.id}` });
+  return { stayId: stay.id, eventId: result.event.id, presence: result.after.presence, version: result.version };
+}
+async function startLeave(uow, actor, input) {
+  if (!["hospital", "therapeutic", "other"].includes(input.leaveKind)) throw new DomainError(Codes.INVALID_INPUT, "Unknown leave kind.", { field: "leaveKind" });
+  const stay = await lockStay(uow.tx, input.stayId, input.expectedVersion);
+  const nursing = stay.setting === "nursing_facility";
+  let holdPaidBy = input.holdElected ? input.holdPaidBy ?? "private" : "none";
+  if (nursing && stay.currentBedId) {
+    const policyNotice = await uow.tx.noticeDelivery.findFirst({ where: { residentId: stay.residentId, kind: "bed_hold_policy", deliveredAt: { not: null } }, select: { id: true } });
+    if (!policyNotice) throw new DomainError(Codes.GUARD_FAILED, "Record that the bed-hold policy was given to the resident or representative before the transfer (42 CFR 483.15(d)(1)).", { reason: "bed_hold_policy_missing" });
+    if (input.holdElected && holdPaidBy === "medicaid") {
+      const payerKind2 = await primaryPayerKind(uow.tx, stay.id);
+      if (payerKind2 !== "medicaid_ffs" && payerKind2 !== "medicaid_mco") throw new DomainError(Codes.GUARD_FAILED, "Medicaid pays for a bed hold only when Medicaid is the resident's primary payer.", { field: "holdPaidBy" });
+      const policy = await bedHoldPolicyFor(uow.tx, stay.communityId);
+      const cap = policy?.medicaidHoldDaysPerYear ?? 0;
+      const projection = stay.projection ?? EMPTY_PROJECTION;
+      const year = localDate(await communityTimeZone(uow.tx, stay.communityId), input.effectiveAt).slice(0, 4);
+      const used = projection.medicaidHoldDaysByYear?.[year] ?? 0;
+      if (!policy?.medicaidHoldPaid || used >= cap) throw new DomainError(Codes.GUARD_FAILED, `The resident has used ${used} of ${cap} paid Medicaid bed-hold days this year. Offer a private-pay hold instead.`, { reason: "medicaid_hold_cap" });
+    }
+  } else {
+    holdPaidBy = input.holdElected ? holdPaidBy : "none";
+  }
+  const result = await appendCensusEvent(uow, actor, stay, {
+    kind: "leave_start",
+    effectiveAt: input.effectiveAt,
+    observedAt: input.observedAt,
+    leaveKind: input.leaveKind,
+    holdElected: input.holdElected,
+    holdPaidBy,
+    fromBedId: stay.currentBedId,
+    fromApartmentId: stay.currentApartmentId,
+    initiatedBy: input.facilityInitiated ? "facility" : "resident",
+    idempotencyKey: input.idempotencyKey,
+    detail: { destination: input.destination ?? null }
+  });
+  const payerKind = await primaryPayerKind(uow.tx, stay.id);
+  const subject = { communityId: stay.communityId, residentId: stay.residentId, subjectType: "Stay", subjectId: stay.id, occurrenceKey: result.event.id, startedAt: input.effectiveAt, setting: stay.setting, payerKind };
+  await openClocksForFact(uow, actor, { ...subject, fact: "census.leave_start", evidence: { type: "census_event:leave_start", id: result.event.id } });
+  if (input.facilityInitiated) await openClocksForFact(uow, actor, { ...subject, fact: "census.facility_initiated_transfer" });
+  if (input.noticeAtTransfer) await recordNotice(uow, actor, { ...input.noticeAtTransfer, kind: "bed_hold_at_transfer", stayId: stay.id, censusEventId: result.event.id });
+  if (input.leaveKind === "hospital") uow.emit({ topic: "task.transfer_packet", aggregateType: "Stay", aggregateId: stay.id, payload: { stayId: stay.id, eventId: result.event.id }, dedupeKey: `task.transfer_packet:${result.event.id}` });
+  return { stayId: stay.id, eventId: result.event.id, presence: result.after.presence, version: result.version };
+}
+async function bedHoldPolicyFor(tx, communityId) {
+  const community = await tx.community.findUnique({ where: { id: communityId }, select: { bedHoldPolicyId: true } });
+  return community?.bedHoldPolicyId ? tx.bedHoldPolicy.findUnique({ where: { id: community.bedHoldPolicyId } }) : null;
+}
+async function releaseBedHold(uow, actor, input) {
+  if (!input.reason?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Say why the hold ends (e.g. the resident will not return, or the paid days ran out).", { field: "reason" });
+  const stay = await lockStay(uow.tx, input.stayId, input.expectedVersion);
+  const result = await appendCensusEvent(uow, actor, stay, { kind: "hold_release", effectiveAt: input.effectiveAt, fromBedId: stay.heldBedId, idempotencyKey: input.idempotencyKey, detail: { reason: input.reason.trim() } });
+  return { stayId: stay.id, eventId: result.event.id, presence: result.after.presence, version: result.version };
+}
+async function endLeave(uow, actor, input) {
+  const stay = await lockStay(uow.tx, input.stayId, input.expectedVersion);
+  const projection = stay.projection ?? EMPTY_PROJECTION;
+  const result = await appendCensusEvent(uow, actor, stay, { kind: "leave_end", effectiveAt: input.effectiveAt, observedAt: input.observedAt, toBedId: input.toBedId ?? null, toApartmentId: input.toApartmentId ?? null, idempotencyKey: input.idempotencyKey, detail: { leaveStartedAt: projection.openLeave?.startedAt ?? null } }, { reservationId: input.reservationId });
+  const startedAt = projection.openLeave?.startedAt ? new Date(projection.openLeave.startedAt) : null;
+  const interrupted = Boolean(startedAt && input.effectiveAt.getTime() - startedAt.getTime() <= 3 * 864e5);
+  if (interrupted) uow.audit({ eventType: "census.interrupted_stay_window", entityType: "Stay", entityId: stay.id, actorUserId: actorUserId(actor), after: { eventId: result.event.id, interruptedStay: true } });
+  return { stayId: stay.id, eventId: result.event.id, presence: result.after.presence, interruptedStay: interrupted, version: result.version };
+}
+async function dischargeResident(uow, actor, input) {
+  if (input.disposition === "deceased") throw new DomainError(Codes.INVALID_INPUT, "Record a death with the death command.", { field: "disposition" });
+  const stay = await lockStay(uow.tx, input.stayId, input.expectedVersion);
+  if (input.initiatedBy === "facility" && stay.setting === "nursing_facility") {
+    if (input.noticeException && !NOTICE_EXCEPTIONS.includes(input.noticeException)) throw new DomainError(Codes.INVALID_INPUT, "Unknown notice exception.", { field: "noticeException" });
+    const notice = await uow.tx.noticeDelivery.findFirst({ where: { subjectType: "Stay", subjectId: stay.id, kind: "transfer_discharge", deliveredAt: { not: null } }, orderBy: { deliveredAt: "asc" } });
+    if (!notice) throw new DomainError(Codes.GUARD_FAILED, "A facility-initiated discharge needs a written transfer/discharge notice on file (42 CFR 483.15(c)(3)).", { reason: "notice_missing" });
+    if (!notice.copyToOmbudsmanAt) throw new DomainError(Codes.GUARD_FAILED, "Record the copy of the notice sent to the Long-Term Care Ombudsman.", { reason: "ombudsman_copy_missing" });
+    const days = (input.effectiveAt.getTime() - notice.deliveredAt.getTime()) / 864e5;
+    if (days < 30 && !input.noticeException) throw new DomainError(Codes.GUARD_FAILED, `The notice was given ${Math.floor(days)} days ago; 30 days are required unless an exception in 42 CFR 483.15(c)(4)(ii) applies.`, { reason: "notice_period" });
+  }
+  const result = await appendCensusEvent(uow, actor, stay, {
+    kind: "discharge",
+    effectiveAt: input.effectiveAt,
+    observedAt: input.observedAt,
+    dischargeDisposition: input.disposition,
+    initiatedBy: input.initiatedBy,
+    fromBedId: stay.currentBedId ?? stay.heldBedId,
+    fromApartmentId: stay.currentApartmentId,
+    idempotencyKey: input.idempotencyKey,
+    detail: { noticeException: input.noticeException ?? null }
+  });
+  await endStay(uow, actor, stay, input.effectiveAt, "discharge", "former");
+  if (input.initiatedBy === "facility") {
+    const subject = { communityId: stay.communityId, residentId: stay.residentId, subjectType: "Stay", subjectId: stay.id, occurrenceKey: result.event.id, startedAt: input.effectiveAt, setting: stay.setting, payerKind: await primaryPayerKind(uow.tx, stay.id) };
+    await openClocksForFact(uow, actor, { ...subject, fact: "census.facility_initiated_transfer" });
+    const notice = await uow.tx.noticeDelivery.findFirst({ where: { subjectType: "Stay", subjectId: stay.id, kind: "transfer_discharge", copyToOmbudsmanAt: { not: null } } });
+    if (notice) await satisfyByEvidence(uow, actor, { subjectType: "Stay", subjectId: stay.id, occurrenceKey: result.event.id }, { type: "ombudsman_copy", id: notice.id, at: notice.copyToOmbudsmanAt });
+  }
+  uow.emit({ topic: "portal.stay_ended", aggregateType: "Stay", aggregateId: stay.id, payload: { stayId: stay.id }, dedupeKey: `portal.stay_ended:${stay.id}` });
+  return { stayId: stay.id, eventId: result.event.id, status: result.after.status };
+}
+async function recordDeath(uow, actor, input) {
+  if (!input.pronouncedBy?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Record who pronounced the death.", { field: "pronouncedBy" });
+  const stay = await lockStay(uow.tx, input.stayId, input.expectedVersion);
+  const result = await appendCensusEvent(uow, actor, stay, { kind: "death", effectiveAt: input.effectiveAt, observedAt: input.observedAt, fromBedId: stay.currentBedId ?? stay.heldBedId, fromApartmentId: stay.currentApartmentId, idempotencyKey: input.idempotencyKey, detail: { pronouncedBy: input.pronouncedBy.trim() } });
+  await endStay(uow, actor, stay, input.effectiveAt, "death", "deceased");
+  await openClocksForFact(uow, actor, { fact: "census.death", communityId: stay.communityId, residentId: stay.residentId, subjectType: "Stay", subjectId: stay.id, startedAt: input.effectiveAt, setting: stay.setting, payerKind: await primaryPayerKind(uow.tx, stay.id) });
+  uow.emit({ topic: "task.family_notification", aggregateType: "Stay", aggregateId: stay.id, payload: { stayId: stay.id }, dedupeKey: `task.family_notification:${stay.id}` });
+  return { stayId: stay.id, eventId: result.event.id, status: result.after.status };
+}
+async function endStay(uow, actor, stay, at, reason, residentStatus) {
+  const timeZone = await communityTimeZone(uow.tx, stay.communityId);
+  const endDate = /* @__PURE__ */ new Date(`${localDate(timeZone, at)}T00:00:00Z`);
+  const coverages = await uow.tx.coveragePeriod.findMany({ where: { stayId: stay.id, status: { in: ["pending", "active", "ending", "retro_approved"] } } });
+  for (const coverage of coverages) {
+    await casUpdate(uow, { model: "CoveragePeriod", id: coverage.id, version: coverage.version, from: [coverage.status], to: "ended", actor, eventType: "coverage.ended", data: { endDate, endReason: reason } });
+  }
+  if (stay.residentId) {
+    const resident = await uow.tx.resident.findUniqueOrThrow({ where: { id: stay.residentId }, select: { version: true, status: true } });
+    await casUpdate(uow, { model: "Resident", id: stay.residentId, version: resident.version, from: [resident.status], to: residentStatus, actor, eventType: `resident.${reason}`, data: { currentStayId: null } });
+  }
+}
+async function recordAdmissionAgreement(uow, actor, input) {
+  const stay = await uow.tx.stay.findUnique({ where: { id: input.stayId }, select: { id: true, residentId: true, communityId: true, setting: true, status: true } });
+  if (!stay) throw new DomainError(Codes.NOT_FOUND, "Stay not found.");
+  if (stay.status === "pre_admit") throw new DomainError(Codes.GUARD_FAILED, "Admit the resident first.");
+  const signedAt = new Date(input.signedAt);
+  if (Number.isNaN(signedAt.getTime()) || signedAt.getTime() > uow.now.getTime() + MAX_FUTURE_SKEW_MS) throw new DomainError(Codes.INVALID_INPUT, "The signing time must be a real time, not in the future.", { field: "signedAt" });
+  if (input.signedByRepresentativeId) {
+    const rep = await uow.tx.representative.findUnique({ where: { id: input.signedByRepresentativeId }, select: { residentId: true } });
+    if (rep?.residentId !== stay.residentId) throw new DomainError(Codes.INVALID_INPUT, "That representative does not represent this resident.", { field: "signedByRepresentativeId" });
+  }
+  if (input.sha256 && !/^[a-f0-9]{64}$/.test(input.sha256)) throw new DomainError(Codes.INVALID_INPUT, "The file digest must be a SHA-256 hex string.", { field: "sha256" });
+  const nursing = stay.setting === "nursing_facility";
+  const document = await uow.tx.document.create({
+    data: { title: nursing ? "Admission agreement (signed)" : "Residency agreement (signed)", kind: nursing ? "admission_agreement" : "residency_agreement", communityId: stay.communityId, residentId: stay.residentId, phiTier: "dem", storageKey: input.storageKey ?? "", sha256: input.sha256 ?? "", status: "signed", signedAt }
+  });
+  auditCreate(uow, actor, "Document", document.id, "document.agreement_signed", { stayId: stay.id, kind: document.kind, signedAt, signedByRepresentativeId: input.signedByRepresentativeId ?? null, paperOnFile: !input.storageKey }, { reason: input.note ?? null });
+  const satisfiedClocks = await satisfyByEvidence(uow, actor, { subjectType: "Stay", subjectId: stay.id }, { type: "document:admission_agreement", id: document.id, at: signedAt });
+  return { documentId: document.id, satisfiedClocks };
+}
+async function recordNotice(uow, actor, input) {
+  const stay = await uow.tx.stay.findUnique({ where: { id: input.stayId }, select: { id: true, residentId: true, communityId: true } });
+  if (!stay) throw new DomainError(Codes.NOT_FOUND, "Stay not found.");
+  const deliveredAt = new Date(input.deliveredAt);
+  if (Number.isNaN(deliveredAt.getTime()) || deliveredAt.getTime() > uow.now.getTime() + MAX_FUTURE_SKEW_MS) throw new DomainError(Codes.INVALID_INPUT, "Delivery time must be a real time, not in the future.", { field: "deliveredAt" });
+  if (input.recipientRepresentativeId) {
+    const rep = await uow.tx.representative.findUnique({ where: { id: input.recipientRepresentativeId }, select: { residentId: true } });
+    if (rep?.residentId !== stay.residentId) throw new DomainError(Codes.INVALID_INPUT, "That representative does not represent this resident.", { field: "recipientRepresentativeId" });
+  }
+  if (input.censusEventId) {
+    const event = await uow.tx.censusEvent.findUnique({ where: { id: input.censusEventId }, select: { stayId: true } });
+    if (event?.stayId !== stay.id) throw new DomainError(Codes.INVALID_INPUT, "That census event belongs to another stay.", { field: "censusEventId" });
+  }
+  const copy = input.copyToOmbudsmanAt ? new Date(input.copyToOmbudsmanAt) : null;
+  const notice = await uow.tx.noticeDelivery.create({
+    data: {
+      kind: input.kind,
+      subjectType: "Stay",
+      subjectId: stay.id,
+      residentId: stay.residentId,
+      censusEventId: input.censusEventId ?? null,
+      recipientRepresentativeId: input.recipientRepresentativeId ?? null,
+      method: input.method,
+      deliveredAt,
+      deliveredById: actorUserId(actor),
+      acknowledgement: input.acknowledgement ?? "not_required",
+      copyToOmbudsmanAt: copy,
+      note: input.note ?? ""
+    }
+  });
+  auditCreate(uow, actor, "NoticeDelivery", notice.id, "notice.delivered", { kind: input.kind, method: input.method, deliveredAt, censusEventId: input.censusEventId ?? null, copyToOmbudsmanAt: copy });
+  const subject = { subjectType: "Stay", subjectId: stay.id, ...input.censusEventId ? { occurrenceKey: input.censusEventId } : {} };
+  const satisfied = await satisfyByEvidence(uow, actor, subject, { type: `notice_delivery:${input.kind}`, id: notice.id, at: deliveredAt });
+  if (copy) satisfied.push(...await satisfyByEvidence(uow, actor, subject, { type: "ombudsman_copy", id: notice.id, at: copy }));
+  return { noticeId: notice.id, satisfiedClocks: satisfied };
+}
+async function verifyCensusProjection(tx, stayId) {
+  const stay = await tx.stay.findUnique({ where: { id: stayId }, select: { id: true, communityId: true, projectionHash: true, currentBedId: true, heldBedId: true, currentApartmentId: true, presence: true, status: true } });
+  if (!stay?.communityId) throw new DomainError(Codes.NOT_FOUND, "Stay not found.");
+  const timeZone = await communityTimeZone(tx, stay.communityId);
+  const rebuilt = foldStored(await loadCensusEvents(tx, stayId), timeZone);
+  const hash = projectionHash(rebuilt);
+  const columnsMatch = rebuilt.status === stay.status && rebuilt.presence === stay.presence && rebuilt.currentBedId === stay.currentBedId && rebuilt.heldBedId === stay.heldBedId && rebuilt.currentApartmentId === stay.currentApartmentId;
+  return { stayId, matches: hash === stay.projectionHash && columnsMatch, storedHash: stay.projectionHash, rebuiltHash: hash };
+}
+async function verifyCensusChain(tx, stayId) {
+  const rows = await tx.censusEvent.findMany({ where: { stayId }, orderBy: { seq: "asc" } });
+  let prev = "0".repeat(64);
+  for (const row of rows) {
+    const body = { stayId, seq: row.seq, kind: row.kind, effectiveAt: row.effectiveAt.toISOString(), toBedId: row.toBedId, toApartmentId: row.toApartmentId, leaveKind: row.leaveKind, holdElected: row.holdElected, holdPaidBy: row.holdPaidBy, dischargeDisposition: row.dischargeDisposition, initiatedBy: row.initiatedBy, voidsEventId: row.voidsEventId };
+    if (row.prevHash !== prev || row.hash !== sha256(`${prev}
+${canonicalJson(body)}`)) return { ok: false, brokenAtSeq: row.seq };
+    prev = row.hash;
+  }
+  return { ok: true, count: rows.length };
+}
+
+// features/keystone/lib/censusDay.ts
+var DATE2 = /^\d{4}-\d{2}-\d{2}$/;
+var day2 = (date2) => /* @__PURE__ */ new Date(`${date2}T00:00:00Z`);
+async function timeZoneOf(tx, communityId) {
+  const community = await tx.community.findUnique({ where: { id: communityId }, select: { timeZone: true } });
+  if (!community) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
+  return community.timeZone;
+}
+async function deriveCensusDay(tx, communityId, date2) {
+  if (!DATE2.test(date2)) throw new DomainError(Codes.INVALID_INPUT, "Date must be YYYY-MM-DD.", { field: "date" });
+  const timeZone = await timeZoneOf(tx, communityId);
+  const dayStart = day2(date2);
+  const stays = await tx.stay.findMany({
+    where: { communityId, admittedAt: { not: null }, OR: [{ dischargedAt: null }, { dischargedAt: { gte: new Date(dayStart.getTime() - 864e5) } }] },
+    select: { id: true, setting: true, residentId: true }
+  });
+  const stayIds = stays.map((stay) => stay.id);
+  const [eventRows, voidRows, coverages] = await Promise.all([
+    tx.censusEvent.findMany({ where: { stayId: { in: stayIds }, voidsEventId: null, kind: { not: "correction" } }, orderBy: [{ effectiveAt: "asc" }, { seq: "asc" }] }),
+    tx.censusEvent.findMany({ where: { stayId: { in: stayIds }, voidsEventId: { not: null } }, select: { voidsEventId: true } }),
+    tx.coveragePeriod.findMany({
+      where: { stayId: { in: stayIds }, rank: "primary", startDate: { lte: dayStart }, OR: [{ endDate: null }, { endDate: { gt: dayStart } }], status: { in: ["active", "ending", "ended", "retro_approved"] } },
+      orderBy: { startDate: "desc" },
+      select: { id: true, stayId: true, payer: { select: { kind: true } } }
+    })
+  ]);
+  const voided = new Set(voidRows.map((row) => row.voidsEventId));
+  const eventsByStay = /* @__PURE__ */ new Map();
+  for (const row of eventRows) {
+    if (voided.has(row.id) || !row.stayId) continue;
+    const list10 = eventsByStay.get(row.stayId) ?? [];
+    list10.push({ seq: list10.length + 1, kind: row.kind, effectiveAt: row.effectiveAt, toBedId: row.toBedId, toApartmentId: row.toApartmentId, leaveKind: row.leaveKind, holdElected: row.holdElected, holdPaidBy: row.holdPaidBy, dischargeDisposition: row.dischargeDisposition });
+    eventsByStay.set(row.stayId, list10);
+  }
+  const coverageByStay = /* @__PURE__ */ new Map();
+  for (const row of coverages) if (row.stayId && !coverageByStay.has(row.stayId)) coverageByStay.set(row.stayId, { id: row.id, payerKind: row.payer?.kind ?? "uncovered" });
+  const projected = stays.map((stay) => ({ stay, projection: presenceAt(eventsByStay.get(stay.id) ?? [], timeZone, date2) })).filter(({ projection }) => projection.presence === "in_house" || projection.presence === "on_leave_hold");
+  const bedIds = projected.map(({ projection }) => projection.presence === "in_house" ? projection.currentBedId : projection.heldBedId).filter((id) => Boolean(id));
+  const apartmentIds = projected.map(({ projection }) => projection.currentApartmentId).filter((id) => Boolean(id));
+  const [beds, apartments] = await Promise.all([
+    bedIds.length ? tx.bed.findMany({ where: { id: { in: bedIds } }, select: { id: true, room: { select: { unitId: true } } } }) : Promise.resolve([]),
+    apartmentIds.length ? tx.apartment.findMany({ where: { id: { in: apartmentIds } }, select: { id: true, unitId: true } }) : Promise.resolve([])
+  ]);
+  const unitOfBed = new Map(beds.map((bed) => [bed.id, bed.room?.unitId ?? null]));
+  const unitOfApartment = new Map(apartments.map((apartment) => [apartment.id, apartment.unitId]));
+  const rows = [];
+  for (const { stay, projection } of projected) {
+    const bedId2 = projection.presence === "in_house" ? projection.currentBedId : projection.heldBedId;
+    const apartmentId = projection.currentApartmentId;
+    const unitId = bedId2 ? unitOfBed.get(bedId2) ?? null : apartmentId ? unitOfApartment.get(apartmentId) ?? null : null;
+    const coverage = coverageByStay.get(stay.id);
+    rows.push({ stayId: stay.id, setting: stay.setting, presence: projection.presence, bedId: bedId2, apartmentId, unitId, coverageId: coverage?.id ?? null, payerKind: coverage?.payerKind ?? "uncovered" });
+  }
+  const totals = { present: rows.length, inHouse: 0, onLeaveHold: 0, bySetting: {}, byUnit: {}, byPayer: {} };
+  for (const row of rows) {
+    if (row.presence === "in_house") totals.inHouse += 1;
+    else totals.onLeaveHold += 1;
+    totals.bySetting[row.setting] = (totals.bySetting[row.setting] ?? 0) + 1;
+    if (row.unitId) totals.byUnit[row.unitId] = (totals.byUnit[row.unitId] ?? 0) + 1;
+    totals.byPayer[row.payerKind] = (totals.byPayer[row.payerKind] ?? 0) + 1;
+  }
+  return { timeZone, rows, totals };
+}
+async function snapshotCensusDay(uow, actor, input) {
+  const closed = await closedThrough(uow.tx, input.communityId);
+  if (closed && input.date <= closed) throw new DomainError(Codes.GUARD_FAILED, `The census through ${closed} is signed off.`, { reason: "closed_period" });
+  const timeZone = await timeZoneOf(uow.tx, input.communityId);
+  if (input.date > localDate(timeZone, uow.now)) throw new DomainError(Codes.INVALID_INPUT, "The census day has not happened yet.", { field: "date" });
+  const derived = await deriveCensusDay(uow.tx, input.communityId, input.date);
+  const existing = await uow.tx.censusDay.findMany({ where: { communityId: input.communityId, date: day2(input.date), supersededById: null } });
+  const byStay = new Map(existing.map((row) => [row.stayId, row]));
+  let written = 0;
+  let superseded = 0;
+  const rowData = (row) => ({ communityId: input.communityId, stayId: row.stayId, date: day2(input.date), setting: row.setting, bedId: row.bedId, apartmentId: row.apartmentId, unitId: row.unitId, presence: row.presence, primaryCoverageId: row.coverageId, payerKind: row.payerKind, billableForPayer: row.payerKind !== "uncovered", snapshotRunId: input.runId ?? null });
+  const fresh = derived.rows.filter((row) => !byStay.has(row.stayId));
+  if (fresh.length) {
+    await uow.tx.censusDay.createMany({ data: fresh.map(rowData) });
+    written += fresh.length;
+  }
+  for (const row of derived.rows) {
+    const prior = byStay.get(row.stayId);
+    if (!prior) continue;
+    byStay.delete(row.stayId);
+    const same = prior.presence === row.presence && prior.bedId === row.bedId && prior.apartmentId === row.apartmentId && prior.unitId === row.unitId && prior.primaryCoverageId === row.coverageId;
+    if (same) continue;
+    const created = await uow.tx.censusDay.create({ data: { communityId: input.communityId, stayId: row.stayId, date: day2(input.date), setting: row.setting, bedId: row.bedId, apartmentId: row.apartmentId, unitId: row.unitId, presence: row.presence, primaryCoverageId: row.coverageId, payerKind: row.payerKind, billableForPayer: row.payerKind !== "uncovered", snapshotRunId: input.runId ?? null } });
+    written += 1;
+    if (prior) {
+      await uow.tx.censusDay.update({ where: { id: prior.id }, data: { supersededById: created.id } });
+      superseded += 1;
+    }
+  }
+  for (const stale of byStay.values()) {
+    const tombstone = await uow.tx.censusDay.create({ data: { communityId: input.communityId, stayId: stale.stayId, date: day2(input.date), setting: stale.setting, presence: "absent", payerKind: stale.payerKind, billableForPayer: false, snapshotRunId: input.runId ?? null } });
+    await uow.tx.censusDay.update({ where: { id: stale.id }, data: { supersededById: tombstone.id } });
+    superseded += 1;
+  }
+  uow.audit({ eventType: "census.day_snapshot", entityType: "Community", entityId: input.communityId, actorUserId: actorUserId(actor), after: { date: input.date, present: derived.totals.present, written, superseded } });
+  return { date: input.date, totals: derived.totals, written, superseded };
+}
+async function signOffCensusDay(uow, actor, input) {
+  if (actor.kind !== "user") throw new DomainError(Codes.NOT_AUTHORIZED, "Only a person can sign off the census.");
+  const timeZone = await timeZoneOf(uow.tx, input.communityId);
+  if (input.date >= localDate(timeZone, uow.now)) throw new DomainError(Codes.GUARD_FAILED, "A census day can be signed off once it has ended.", { reason: "day_not_ended" });
+  const closed = await closedThrough(uow.tx, input.communityId);
+  if (closed && input.date <= closed) throw new DomainError(Codes.GUARD_FAILED, `The census through ${closed} is already signed off.`, { reason: "closed_period" });
+  const snapshot = await snapshotCensusDay(uow, actor, { communityId: input.communityId, date: input.date });
+  const signoff = await uow.tx.censusSignoff.create({ data: { communityId: input.communityId, date: day2(input.date), totals: snapshot.totals, signedById: actor.userId, signedAt: uow.now, note: input.note?.trim() ?? "" } });
+  uow.audit({ eventType: "census.signed_off", entityType: "CensusSignoff", entityId: signoff.id, actorUserId: actor.userId, after: { communityId: input.communityId, date: input.date, totals: snapshot.totals } });
+  uow.emit({ topic: "census.signed_off", aggregateType: "Community", aggregateId: input.communityId, payload: { date: input.date }, dedupeKey: `census.signed_off:${input.communityId}:${input.date}` });
+  return { signoffId: signoff.id, date: input.date, totals: snapshot.totals };
+}
+
+// features/keystone/lib/places.ts
+var import_node_crypto5 = require("node:crypto");
+var MAX_RESERVATION_HOURS = 24 * 30;
+async function lockPlace(tx, target) {
+  if (!target.bedId === !target.apartmentId) throw new DomainError(Codes.INVALID_INPUT, "Choose one bed or one apartment.", { field: "bedId" });
+  const model = target.bedId ? "Bed" : "Apartment";
+  const id = target.bedId ?? target.apartmentId;
+  await advisoryLock(tx, `${target.bedId ? "bed" : "apartment"}:${id}`);
+  const row = await lockRow(tx, model, id);
+  return { model, id, row, name: target.bedId ? `Bed ${row.label}` : `Apartment ${row.number}` };
+}
+async function placeCommunity(tx, target) {
+  if (target.bedId) {
+    const bed = await tx.bed.findUnique({ where: { id: target.bedId }, select: { room: { select: { unit: { select: { communityId: true } } } } } });
+    return bed?.room?.unit?.communityId ?? null;
+  }
+  const apartment = await tx.apartment.findUnique({ where: { id: target.apartmentId }, select: { unit: { select: { communityId: true } } } });
+  return apartment?.unit?.communityId ?? null;
+}
+async function reservePlace(uow, actor, input) {
+  if (!Number.isInteger(input.hours) || input.hours < 1 || input.hours > MAX_RESERVATION_HOURS) throw new DomainError(Codes.INVALID_INPUT, `A reservation lasts 1 to ${MAX_RESERVATION_HOURS} hours.`, { field: "hours" });
+  const place = await lockPlace(uow.tx, input);
+  const communityId = await placeCommunity(uow.tx, input);
+  if (!communityId) throw new DomainError(Codes.NOT_FOUND, "Place not found.");
+  const reservable = place.model === "Bed" ? place.row.status === "available" : place.row.status === "available" || place.row.status === "occupied" && (place.row.occupantCount ?? 0) < Number(place.row.capacity ?? 1);
+  if (!reservable) throw new DomainError(Codes.PLACE_UNAVAILABLE, `${place.name} is ${label(place.row.status).toLowerCase()}.`, { currentStatus: place.row.status });
+  const active = await uow.tx.placeReservation.findFirst({ where: { status: "active", ...input.bedId ? { bedId: input.bedId } : { apartmentId: input.apartmentId } }, select: { id: true } });
+  if (active) throw new DomainError(Codes.PLACE_UNAVAILABLE, `${place.name} already has an active reservation.`, { currentStatus: "reserved" });
+  const reservation = await uow.tx.placeReservation.create({
+    data: {
+      reference: await nextReference(uow.tx, "RSV", uow.now),
+      communityId,
+      bedId: input.bedId ?? null,
+      apartmentId: input.apartmentId ?? null,
+      prospectId: input.prospectId ?? null,
+      referralId: input.referralId ?? null,
+      waitlistEntryId: input.waitlistEntryId ?? null,
+      purpose: input.purpose,
+      status: "active",
+      expiresAt: new Date(uow.now.getTime() + input.hours * 36e5),
+      operationKeyHash: (0, import_node_crypto5.createHash)("sha256").update(`${principalKey(actor)}:${input.idempotencyKey}`).digest("hex")
+    }
+  });
+  auditCreate(uow, actor, "PlaceReservation", reservation.id, "reservation.created", { reference: reservation.reference, bedId: input.bedId ?? null, apartmentId: input.apartmentId ?? null, expiresAt: reservation.expiresAt, purpose: input.purpose });
+  if (place.row.status === "available") await casUpdate(uow, { model: place.model, id: place.id, version: place.row.version, from: ["available"], to: "reserved", actor, eventType: `${place.model.toLowerCase()}.reserved`, metadata: { reservationId: reservation.id } });
+  return { reservationId: reservation.id, reference: reservation.reference, expiresAt: reservation.expiresAt };
+}
+async function endReservation(uow, actor, input) {
+  const reservation = await lockRow(uow.tx, "PlaceReservation", input.reservationId);
+  if (input.expectedVersion != null && input.expectedVersion !== reservation.version) throw new DomainError(Codes.STALE_STATE, "The reservation changed since you loaded it.", { currentStatus: reservation.status, currentVersion: reservation.version });
+  if (input.to === "expired" && reservation.expiresAt && reservation.expiresAt.getTime() > uow.now.getTime()) throw new DomainError(Codes.GUARD_FAILED, "The reservation has not expired yet.");
+  const place = await lockPlace(uow.tx, { bedId: reservation.bedId, apartmentId: reservation.apartmentId });
+  await casUpdate(uow, { model: "PlaceReservation", id: reservation.id, version: reservation.version, from: ["active"], to: input.to, actor, eventType: `reservation.${input.to}`, reason: input.reason ?? null });
+  if (place.row.status === "reserved") await casUpdate(uow, { model: place.model, id: place.id, version: place.row.version, from: ["reserved"], to: "available", actor, eventType: `${place.model.toLowerCase()}.reservation_ended`, metadata: { reservationId: reservation.id } });
+  uow.emit({ topic: "availability.changed", aggregateType: place.model, aggregateId: place.id, payload: { [place.model === "Bed" ? "bedId" : "apartmentId"]: place.id }, dedupeKey: `availability:${reservation.id}:${input.to}` });
+  return { reservationId: reservation.id, status: input.to };
+}
+async function markPlaceReady(uow, actor, input) {
+  const place = await lockPlace(uow.tx, input);
+  if (input.expectedVersion != null && input.expectedVersion !== place.row.version) throw new DomainError(Codes.STALE_STATE, `${place.name} changed since you loaded it.`, { currentStatus: place.row.status, currentVersion: place.row.version });
+  const from = place.model === "Bed" ? "cleaning" : "turnover";
+  if (place.model === "Apartment" && (place.row.occupantCount ?? 0) > 0) throw new DomainError(Codes.GUARD_FAILED, `${place.name} still has a resident.`);
+  await casUpdate(uow, { model: place.model, id: place.id, version: place.row.version, from: [from], to: "available", actor, eventType: `${place.model.toLowerCase()}.ready`, reason: input.note ?? null, data: { statusReason: "" } });
+  uow.emit({ topic: "availability.changed", aggregateType: place.model, aggregateId: place.id, payload: { placeId: place.id }, dedupeKey: `availability:${place.id}:ready:${place.row.version}` });
+  return { id: place.id, status: "available", version: place.row.version + 1 };
+}
+async function setPlaceService(uow, actor, input) {
+  if (!input.reason?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Say why.", { field: "reason" });
+  const place = await lockPlace(uow.tx, input);
+  if (input.expectedVersion != null && input.expectedVersion !== place.row.version) throw new DomainError(Codes.STALE_STATE, `${place.name} changed since you loaded it.`, { currentStatus: place.row.status, currentVersion: place.row.version });
+  if (!input.inService) {
+    const from = place.model === "Bed" ? ["available", "cleaning"] : ["available", "turnover"];
+    if (!from.includes(place.row.status)) throw new DomainError(Codes.INVALID_TRANSITION, `${place.name} is ${label(place.row.status).toLowerCase()}; only an empty, unreserved place can go out of service.`, { currentStatus: place.row.status });
+    await casUpdate(uow, { model: place.model, id: place.id, version: place.row.version, from, to: "out_of_service", actor, eventType: `${place.model.toLowerCase()}.out_of_service`, reason: input.reason.trim(), data: { statusReason: input.reason.trim() } });
+    return { id: place.id, status: "out_of_service" };
+  }
+  await casUpdate(uow, { model: place.model, id: place.id, version: place.row.version, from: ["out_of_service"], to: "available", actor, eventType: `${place.model.toLowerCase()}.in_service`, reason: input.reason.trim(), data: { statusReason: "" } });
+  uow.emit({ topic: "availability.changed", aggregateType: place.model, aggregateId: place.id, payload: { placeId: place.id }, dedupeKey: `availability:${place.id}:in_service:${place.row.version}` });
+  return { id: place.id, status: "available" };
+}
+async function recomputeAvailability(uow, communityId) {
+  const types = await uow.tx.apartmentType.findMany({ where: { communityId }, select: { id: true, setting: true } });
+  const results = [];
+  for (const type of types) {
+    const availableCount = await uow.tx.apartment.count({ where: { apartmentTypeId: type.id, status: "available" } });
+    const snapshotKey2 = `${communityId}:type:${type.id}`;
+    await uow.tx.availabilitySnapshot.upsert({ where: { snapshotKey: snapshotKey2 }, create: { snapshotKey: snapshotKey2, communityId, apartmentTypeId: type.id, setting: type.setting, availableCount, computedAt: uow.now }, update: { availableCount, computedAt: uow.now } });
+    results.push({ snapshotKey: snapshotKey2, availableCount });
+  }
+  const beds = await uow.tx.bed.count({ where: { status: "available", licensed: true, room: { unit: { communityId, setting: "nursing_facility" } } } });
+  const snapshotKey = `${communityId}:setting:nursing_facility`;
+  await uow.tx.availabilitySnapshot.upsert({ where: { snapshotKey }, create: { snapshotKey, communityId, setting: "nursing_facility", availableCount: beds, computedAt: uow.now }, update: { availableCount: beds, computedAt: uow.now } });
+  results.push({ snapshotKey, availableCount: beds });
+  uow.audit({ eventType: "availability.recomputed", entityType: "Community", entityId: communityId, actorUserId: null, after: { snapshots: results.length } });
+  return results;
+}
+
+// features/keystone/lib/publicToken.ts
+var import_node_crypto7 = require("node:crypto");
+
+// features/keystone/lib/derivedSessionSecret.ts
+var import_node_crypto6 = require("node:crypto");
+function derivedSessionSecret(purpose) {
+  const session = process.env.SESSION_SECRET?.trim() ?? "";
+  if (!session) return "";
+  return (0, import_node_crypto6.createHmac)("sha256", session).update(`openfront-senior-care:${purpose}`).digest("base64url");
+}
+
+// features/keystone/lib/publicToken.ts
+var ENV = { "tour-manage": "TOUR_MANAGE_SECRET", "waitlist-offer": "WAITLIST_OFFER_SECRET", "portal-invite": "PORTAL_INVITE_SECRET" };
+function publicTokenSecret(purpose) {
+  const secret2 = process.env[ENV[purpose]]?.trim() || derivedSessionSecret(purpose);
+  if (Buffer.byteLength(secret2, "utf8") < 32) throw new Error("Token secret must be at least 32 bytes. Set SESSION_SECRET.");
+  return secret2;
+}
+var sign = (encoded, secret2) => (0, import_node_crypto7.createHmac)("sha256", secret2).update(encoded).digest("base64url");
+function createPublicToken(purpose, subjectId, expiresAtMs, secret2 = publicTokenSecret(purpose)) {
+  if (!subjectId || !Number.isSafeInteger(expiresAtMs)) throw new Error("Invalid token payload.");
+  const payload = { version: 1, purpose, subjectId, expiresAtMs, nonce: (0, import_node_crypto7.randomBytes)(18).toString("base64url") };
+  const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  return `${encoded}.${sign(encoded, secret2)}`;
+}
+function verifyPublicToken(token, purpose, secret2 = publicTokenSecret(purpose), nowMs = Date.now()) {
+  if (!token || token.length > 4096) return null;
+  const [encoded, signature, extra] = token.split(".");
+  if (!encoded || !signature || extra !== void 0) return null;
+  const expected = Buffer.from(sign(encoded, secret2), "base64url");
+  const actual = Buffer.from(signature, "base64url");
+  if (actual.length !== expected.length || !(0, import_node_crypto7.timingSafeEqual)(actual, expected)) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
+    if (payload.version !== 1 || payload.purpose !== purpose || typeof payload.subjectId !== "string" || !payload.subjectId) return null;
+    if (typeof payload.expiresAtMs !== "number" || !Number.isSafeInteger(payload.expiresAtMs) || payload.expiresAtMs <= nowMs) return null;
+    if (typeof payload.nonce !== "string" || !payload.nonce) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+var hashPublicToken = (token) => (0, import_node_crypto7.createHash)("sha256").update(token).digest("hex");
+function publicTokenMatches(token, storedHash) {
+  if (!storedHash || !/^[a-f0-9]{64}$/i.test(storedHash)) return false;
+  const actual = Buffer.from(hashPublicToken(token), "hex");
+  const expected = Buffer.from(storedHash, "hex");
+  return actual.length === expected.length && (0, import_node_crypto7.timingSafeEqual)(actual, expected);
+}
+
+// features/keystone/lib/portal.ts
+var INVITE_DAYS = 7;
+function authorityFor(roles, scope) {
+  const allowed = SCOPE_AUTHORITY[scope];
+  for (const basis of allowed) if (roles.includes(basis)) return basis;
+  return null;
+}
+async function inviteRepresentative(uow, actor, input) {
+  const rep = await uow.tx.representative.findUnique({ where: { id: input.representativeId }, include: { contact: true, resident: { select: { id: true, communityId: true, status: true } }, portalAccount: true } });
+  if (!rep || rep.status !== "active") throw new DomainError(Codes.NOT_FOUND, "Active representative not found.");
+  if (!rep.contact?.email) throw new DomainError(Codes.GUARD_FAILED, "The representative needs an email address for a portal invitation.", { field: "email" });
+  if (rep.resident?.status === "deceased") throw new DomainError(Codes.GUARD_FAILED, "The resident is recorded as deceased.");
+  let account = rep.portalAccount;
+  if (account && (account.status === "active" || account.status === "suspended")) throw new DomainError(Codes.GUARD_FAILED, `This representative already has a ${account.status} portal account.`, { currentStatus: account.status });
+  const expiresAt = new Date(uow.now.getTime() + INVITE_DAYS * 864e5);
+  if (!account) {
+    account = await uow.tx.portalAccount.findFirst({ where: { contactId: rep.contactId, status: { in: ["invited", "active"] } } });
+  }
+  if (!account) {
+    account = await uow.tx.portalAccount.create({ data: { reference: await nextReference(uow.tx, "PRT", uow.now), contactId: rep.contactId, communityId: rep.resident?.communityId ?? null, status: "invited", invitedById: actorUserId(actor), invitationExpiresAt: expiresAt, representatives: { connect: [{ id: rep.id }] } } });
+    auditCreate(uow, actor, "PortalAccount", account.id, "portal.invited", { reference: account.reference, representativeId: rep.id });
+  } else {
+    await uow.tx.portalAccount.update({ where: { id: account.id }, data: { representatives: { connect: [{ id: rep.id }] } } });
+    if (account.status === "revoked") throw new DomainError(Codes.GUARD_FAILED, "This portal account was revoked. Create a new representative contact to invite again.", { currentStatus: account.status });
+  }
+  const token = createPublicToken("portal-invite", account.id, expiresAt.getTime());
+  await uow.tx.portalAccount.update({ where: { id: account.id }, data: { invitationTokenHash: hashPublicToken(token), invitationExpiresAt: expiresAt } });
+  uow.emit({ topic: "mail.portal_invitation", aggregateType: "PortalAccount", aggregateId: account.id, payload: { accountId: account.id, contactId: rep.contactId, token, expiresAt }, dedupeKey: `mail.portal_invitation:${account.id}:${expiresAt.getTime()}` });
+  return { accountId: account.id, reference: account.reference, expiresAt };
+}
+async function acceptPortalInvitation(uow, input) {
+  const payload = verifyPublicToken(input.token, "portal-invite", void 0, uow.now.getTime());
+  if (!payload) throw new DomainError(Codes.GUARD_FAILED, "This invitation link is invalid or has expired.");
+  const account = await lockRow(uow.tx, "PortalAccount", payload.subjectId);
+  if (account.status !== "invited" || !publicTokenMatches(input.token, account.invitationTokenHash)) throw new DomainError(Codes.GUARD_FAILED, "This invitation link was already used or replaced.");
+  const contact = account.contactId ? await uow.tx.contact.findUnique({ where: { id: account.contactId }, select: { firstName: true, lastName: true, email: true } }) : null;
+  if (!contact?.email) throw new DomainError(Codes.GUARD_FAILED, "The invitation has no email address.");
+  const existing = await uow.tx.user.findUnique({ where: { email: contact.email } });
+  if (existing && existing.kind !== "portal") throw new DomainError(Codes.GUARD_FAILED, "This email belongs to a staff account. Ask the community to invite a different address.");
+  const portalRole = await uow.tx.role.findUnique({ where: { id: "seed_role_portal" }, select: { id: true } });
+  const user = existing ?? await uow.tx.user.create({ data: { name: `${contact.firstName} ${contact.lastName}`.trim(), email: contact.email, password: input.passwordHash, kind: "portal", roleId: portalRole?.id ?? null, onboardingStatus: "dismissed" } });
+  await uow.tx.portalAccount.updateMany({ where: { id: account.id, version: account.version, status: "invited" }, data: { status: "active", userId: user.id, acceptedAt: uow.now, invitationTokenHash: "", version: { increment: 1 } } });
+  uow.audit({ eventType: "portal.activated", entityType: "PortalAccount", entityId: account.id, actorUserId: user.id, before: { status: "invited" }, after: { status: "active" } });
+  return { accountId: account.id, status: "active" };
+}
+async function proposePortalScope(uow, actor, input) {
+  if (actor.kind !== "user") throw new DomainError(Codes.NOT_AUTHORIZED, "Portal scopes are granted by people only.");
+  if (!PORTAL_SCOPES.includes(input.scope)) throw new DomainError(Codes.INVALID_INPUT, "Unknown portal scope.", { field: "scope" });
+  const rep = await uow.tx.representative.findUnique({ where: { id: input.representativeId }, select: { id: true, residentId: true, roles: true, self: true, status: true, portalAccountId: true } });
+  if (!rep || rep.status !== "active") throw new DomainError(Codes.NOT_FOUND, "Active representative not found.");
+  if (!rep.portalAccountId) throw new DomainError(Codes.GUARD_FAILED, "Invite the representative to the portal first.");
+  const roles = [...Array.isArray(rep.roles) ? rep.roles : [], ...rep.self ? ["self"] : []];
+  const basis = authorityFor(roles, input.scope);
+  if (!basis) throw new DomainError(Codes.GUARD_FAILED, `This representative's authority (${roles.map((r) => label(r).toLowerCase()).join(", ") || "none"}) does not cover ${label(input.scope).toLowerCase()}.`, { reason: "authority" });
+  const existing = await uow.tx.portalScopeGrant.findFirst({ where: { accountId: rep.portalAccountId, residentId: rep.residentId, scope: input.scope, status: { in: ["proposed", "granted"] } }, select: { id: true, status: true } });
+  if (existing) return { grantId: existing.id, status: existing.status, mfaRequired: MFA_SCOPES.has(input.scope) };
+  const immediate = input.scope === "updates";
+  const grant = await uow.tx.portalScopeGrant.create({ data: { accountId: rep.portalAccountId, residentId: rep.residentId, representativeId: rep.id, scope: input.scope, authorityBasis: basis, consentDocumentId: input.consentDocumentId ?? null, status: immediate ? "granted" : "proposed", proposedById: actor.userId, ...immediate ? { grantedById: actor.userId, grantedAt: uow.now } : {} } });
+  auditCreate(uow, actor, "PortalScopeGrant", grant.id, immediate ? "portal.scope_granted" : "portal.scope_proposed", { scope: input.scope, authorityBasis: basis, representativeId: rep.id });
+  return { grantId: grant.id, status: grant.status, mfaRequired: MFA_SCOPES.has(input.scope) };
+}
+async function grantPortalScope(uow, actor, input) {
+  if (actor.kind !== "user") throw new DomainError(Codes.NOT_AUTHORIZED, "Portal scopes are granted by people only.");
+  const grant = await lockRow(uow.tx, "PortalScopeGrant", input.grantId);
+  if (grant.proposedById === actor.userId) throw new DomainError(Codes.SELF_APPROVAL, "Someone other than the proposer must grant this scope.");
+  if (input.expectedVersion != null && input.expectedVersion !== grant.version) throw new DomainError(Codes.STALE_STATE, "The grant changed since you loaded it.", { currentStatus: grant.status, currentVersion: grant.version });
+  await casUpdate(uow, { model: "PortalScopeGrant", id: grant.id, version: grant.version, from: ["proposed"], to: "granted", actor, eventType: "portal.scope_granted", approverId: actor.userId, data: { grantedById: actor.userId, grantedAt: uow.now } });
+  return { grantId: grant.id, status: "granted" };
+}
+async function revokePortalScope(uow, actor, input) {
+  if (actor.kind !== "user") throw new DomainError(Codes.NOT_AUTHORIZED, "Portal scopes are revoked by people only.");
+  if (!input.reason?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Say why the scope is revoked.", { field: "reason" });
+  const grant = await lockRow(uow.tx, "PortalScopeGrant", input.grantId);
+  if (input.expectedVersion != null && input.expectedVersion !== grant.version) throw new DomainError(Codes.STALE_STATE, "The grant changed since you loaded it.", { currentStatus: grant.status, currentVersion: grant.version });
+  await casUpdate(uow, { model: "PortalScopeGrant", id: grant.id, version: grant.version, from: ["proposed", "granted"], to: "revoked", actor, eventType: "portal.scope_revoked", reason: input.reason.trim(), data: { revokedAt: uow.now, revokeReason: input.reason.trim() } });
+  if (grant.accountId) await uow.tx.portalAccount.update({ where: { id: grant.accountId }, data: { sessionEpoch: { increment: 1 }, version: { increment: 1 } } });
+  return { grantId: grant.id, status: "revoked" };
+}
+async function setPortalAccountStatus(uow, actor, input) {
+  if (actor.kind !== "user") throw new DomainError(Codes.NOT_AUTHORIZED, "Portal accounts are managed by people only.");
+  if (!input.reason?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Say why.", { field: "reason" });
+  const from = input.to === "suspended" ? ["active"] : input.to === "active" ? ["suspended"] : ["invited", "active", "suspended"];
+  const account = await lockRow(uow.tx, "PortalAccount", input.accountId);
+  if (input.expectedVersion != null && input.expectedVersion !== account.version) throw new DomainError(Codes.STALE_STATE, "The account changed since you loaded it.", { currentStatus: account.status, currentVersion: account.version });
+  await casUpdate(uow, { model: "PortalAccount", id: account.id, version: account.version, from, to: input.to, actor, eventType: `portal.${input.to}`, reason: input.reason.trim(), data: { sessionEpoch: { increment: 1 }, ...input.to === "revoked" ? { invitationTokenHash: "" } : {} } });
+  if (input.to === "revoked") {
+    const grants = await uow.tx.portalScopeGrant.findMany({ where: { accountId: account.id, status: { in: ["proposed", "granted"] } }, select: { id: true, version: true, status: true } });
+    for (const grant of grants) await casUpdate(uow, { model: "PortalScopeGrant", id: grant.id, version: grant.version, from: [grant.status], to: "revoked", actor, eventType: "portal.scope_revoked", reason: "account revoked", data: { revokedAt: uow.now, revokeReason: "account revoked" } });
+  }
+  return { accountId: account.id, status: input.to };
+}
+
+// features/keystone/lib/privacy.ts
+var BREAK_GLASS_REASONS = ["emergency_care", "coverage_gap", "other"];
+async function openBreakGlass(uow, actor, input) {
+  if (actor.kind !== "user") throw new DomainError(Codes.NOT_AUTHORIZED, "Only a person can use break-glass.");
+  if (!BREAK_GLASS_REASONS.includes(input.reason)) throw new DomainError(Codes.INVALID_INPUT, "Choose a reason.", { field: "reason" });
+  if (!input.note?.trim() || input.note.trim().length < 10) throw new DomainError(Codes.INVALID_INPUT, "Describe the situation (at least 10 characters).", { field: "note" });
+  const settings = await uow.tx.operatorSettings.findUnique({ where: { id: 1 }, select: { breakGlassMaxHours: true } });
+  const max = settings?.breakGlassMaxHours ?? 4;
+  const hours2 = input.hours ?? max;
+  if (!Number.isInteger(hours2) || hours2 < 1 || hours2 > max) throw new DomainError(Codes.INVALID_INPUT, `Break-glass lasts 1 to ${max} hours.`, { field: "hours" });
+  const resident = await uow.tx.resident.findUnique({ where: { id: input.residentId }, select: { id: true } });
+  if (!resident) throw new DomainError(Codes.NOT_FOUND, "Resident not found.");
+  const open = await uow.tx.breakGlassGrant.findFirst({ where: { userId: actor.userId, residentId: input.residentId, status: "active", expiresAt: { gt: uow.now } }, select: { id: true, expiresAt: true } });
+  if (open) return { grantId: open.id, expiresAt: open.expiresAt, reused: true };
+  const grant = await uow.tx.breakGlassGrant.create({ data: { userId: actor.userId, residentId: input.residentId, reason: input.reason, note: input.note.trim(), requestedAt: uow.now, expiresAt: new Date(uow.now.getTime() + hours2 * 36e5), status: "active" } });
+  auditCreate(uow, actor, "BreakGlassGrant", grant.id, "break_glass.opened", { residentId: input.residentId, reason: input.reason, hours: hours2 });
+  uow.emit({ topic: "privacy.break_glass_opened", aggregateType: "BreakGlassGrant", aggregateId: grant.id, payload: { grantId: grant.id }, dedupeKey: `privacy.break_glass:${grant.id}` });
+  return { grantId: grant.id, expiresAt: grant.expiresAt, reused: false };
+}
+async function endBreakGlass(uow, actor, input) {
+  const grant = await lockRow(uow.tx, "BreakGlassGrant", input.grantId);
+  if (actor.kind === "user" && grant.userId !== actor.userId) throw new DomainError(Codes.NOT_AUTHORIZED, "Only the holder can end this grant.");
+  await casUpdate(uow, { model: "BreakGlassGrant", id: grant.id, version: grant.version, from: ["active"], to: "ended", actor, eventType: "break_glass.ended", data: { endedAt: uow.now } });
+  return { grantId: grant.id, status: "ended" };
+}
+async function reviewBreakGlass(uow, actor, input) {
+  if (actor.kind !== "user") throw new DomainError(Codes.NOT_AUTHORIZED, "Only a person can review break-glass.");
+  if (input.outcome !== "reviewed_ok" && input.outcome !== "reviewed_violation") throw new DomainError(Codes.INVALID_INPUT, "Choose an outcome.", { field: "outcome" });
+  if (!input.note?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Add a review note.", { field: "note" });
+  const grant = await lockRow(uow.tx, "BreakGlassGrant", input.grantId);
+  if (grant.userId === actor.userId) throw new DomainError(Codes.SELF_APPROVAL, "Someone else must review your own break-glass use.");
+  if (input.expectedVersion != null && input.expectedVersion !== grant.version) throw new DomainError(Codes.STALE_STATE, "The grant changed since you loaded it.", { currentStatus: grant.status, currentVersion: grant.version });
+  const from = grant.status === "active" && grant.expiresAt && grant.expiresAt.getTime() <= uow.now.getTime() ? "active" : "ended";
+  await casUpdate(uow, { model: "BreakGlassGrant", id: grant.id, version: grant.version, from: [from], to: input.outcome, actor, eventType: `break_glass.${input.outcome}`, reason: input.note.trim(), data: { reviewedById: actor.userId, reviewNote: input.note.trim(), ...from === "active" ? { endedAt: grant.expiresAt } : {} } });
+  if (input.outcome === "reviewed_violation") uow.emit({ topic: "privacy.break_glass_violation", aggregateType: "BreakGlassGrant", aggregateId: grant.id, payload: { grantId: grant.id }, dedupeKey: `privacy.violation:${grant.id}` });
+  return { grantId: grant.id, status: input.outcome };
+}
+
+// features/keystone/lib/sales.ts
+var SETTING_VALUES = ["nursing_facility", "assisted_living", "memory_care", "independent_living"];
+var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+var clean = (value, max) => typeof value === "string" ? value.trim().slice(0, max) : "";
+async function publishedCommunity(uow, slug2) {
+  const community = await uow.tx.community.findUnique({ where: { slug: slug2 }, select: { id: true, status: true, synthetic: true, storefront: { select: { published: true, tourBookingEnabled: true, waitlistEnabled: true } } } });
+  if (!community || community.status !== "active" || !community.storefront?.published) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
+  return community;
+}
+async function submitInquiry(uow, input) {
+  const community = await publishedCommunity(uow, input.communitySlug);
+  if (clean(input.website, 200)) return { publicCode: publicCode("INQ") };
+  const name = clean(input.contactName, 120);
+  const email = clean(input.contactEmail, 200).toLowerCase();
+  const phone = clean(input.contactPhone, 40);
+  if (!name) throw new DomainError(Codes.INVALID_INPUT, "Tell us your name.", { field: "contactName" });
+  if (!email && !phone) throw new DomainError(Codes.INVALID_INPUT, "Leave an email address or a phone number.", { field: "contactEmail" });
+  if (email && !EMAIL.test(email)) throw new DomainError(Codes.INVALID_INPUT, "That email address does not look right.", { field: "contactEmail" });
+  if (!input.consentToContact) throw new DomainError(Codes.INVALID_INPUT, "Tick the box so the community may contact you.", { field: "consentToContact" });
+  const [firstName, ...rest] = name.split(/\s+/);
+  const contact = await uow.tx.contact.create({ data: { reference: await nextReference(uow.tx, "CON", uow.now), communityId: community.id, firstName, lastName: rest.join(" "), email, phone, consentToContact: true, synthetic: community.synthetic } });
+  const lead = await uow.tx.lead.create({ data: { reference: await nextReference(uow.tx, "LEAD", uow.now), communityId: community.id, primaryContactId: contact.id, status: "new", nextActionAt: new Date(uow.now.getTime() + 4 * 36e5), synthetic: community.synthetic } });
+  const forFirst = clean(input.forWhomFirstName, 80);
+  if (forFirst) {
+    await uow.tx.prospect.create({ data: { reference: await nextReference(uow.tx, "PRO", uow.now), communityId: community.id, leadId: lead.id, firstName: forFirst, lastName: clean(input.forWhomLastName, 80), desiredSetting: SETTING_VALUES.includes(String(input.desiredSetting)) ? input.desiredSetting : null, synthetic: community.synthetic } });
+  }
+  const code = publicCode("INQ");
+  const utm = Object.fromEntries(Object.entries(input.utm ?? {}).slice(0, 10).map(([key, value]) => [clean(key, 40), clean(value, 200)]));
+  const inquiry = await uow.tx.inquiry.create({ data: { publicCode: code, communityId: community.id, source: "website", contactName: name, contactEmail: email, contactPhone: phone, relationship: clean(input.relationship, 80), message: clean(input.message, 4e3), consentToContact: true, utm, leadId: lead.id } });
+  uow.audit({ eventType: "inquiry.received", entityType: "Inquiry", entityId: inquiry.id, actorUserId: null, after: { publicCode: code, leadId: lead.id, communityId: community.id } });
+  uow.emit({ topic: "task.sales_callback", aggregateType: "Lead", aggregateId: lead.id, payload: { leadId: lead.id, communityId: community.id }, dedupeKey: `task.sales_callback:${lead.id}` });
+  return { publicCode: code };
+}
+async function recordInquiry(uow, actor, input) {
+  const community = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { slug: true, synthetic: true } });
+  if (!community) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
+  const sources = ["phone", "walk_in", "referral_agency", "hospital", "resident_referral", "other"];
+  if (!sources.includes(input.source)) throw new DomainError(Codes.INVALID_INPUT, "Choose where the inquiry came from.", { field: "source" });
+  const name = clean(input.contactName, 120);
+  if (!name) throw new DomainError(Codes.INVALID_INPUT, "Enter the caller's name.", { field: "contactName" });
+  const [firstName, ...rest] = name.split(/\s+/);
+  const synthetic = community.synthetic;
+  const contact = await uow.tx.contact.create({ data: { reference: await nextReference(uow.tx, "CON", uow.now), communityId: input.communityId, firstName, lastName: rest.join(" "), email: clean(input.contactEmail, 200).toLowerCase(), phone: clean(input.contactPhone, 40), consentToContact: Boolean(input.consentToContact), synthetic } });
+  if (input.referralSourceId) {
+    const source = await uow.tx.referralSource.findUnique({ where: { id: input.referralSourceId }, select: { communityId: true } });
+    if (!source || source.communityId !== input.communityId) throw new DomainError(Codes.NOT_FOUND, "Referral source not found.", { field: "referralSourceId" });
+  }
+  const lead = await uow.tx.lead.create({ data: { reference: await nextReference(uow.tx, "LEAD", uow.now), communityId: input.communityId, primaryContactId: contact.id, ownerId: actorUserId(actor), status: "contacted", referralSourceId: input.referralSourceId ?? null, nextActionAt: new Date(uow.now.getTime() + 24 * 36e5), synthetic } });
+  const forFirst = clean(input.forWhomFirstName, 80);
+  let prospectId = null;
+  if (forFirst) {
+    const prospect = await uow.tx.prospect.create({ data: { reference: await nextReference(uow.tx, "PRO", uow.now), communityId: input.communityId, leadId: lead.id, firstName: forFirst, lastName: clean(input.forWhomLastName, 80), desiredSetting: SETTING_VALUES.includes(String(input.desiredSetting)) ? input.desiredSetting : null, synthetic } });
+    prospectId = prospect.id;
+  }
+  const code = publicCode("INQ");
+  const inquiry = await uow.tx.inquiry.create({ data: { publicCode: code, communityId: input.communityId, source: input.source, contactName: name, contactEmail: clean(input.contactEmail, 200), contactPhone: clean(input.contactPhone, 40), relationship: clean(input.relationship, 80), message: clean(input.message, 4e3), consentToContact: Boolean(input.consentToContact), leadId: lead.id } });
+  auditCreate(uow, actor, "Inquiry", inquiry.id, "inquiry.recorded", { publicCode: code, leadId: lead.id, source: input.source, prospectId });
+  return { inquiryId: inquiry.id, leadId: lead.id, prospectId, publicCode: code };
+}
+var LEAD_EDGES = {
+  contacted: ["new", "nurture"],
+  tour_scheduled: ["new", "contacted", "toured", "nurture", "waitlisted"],
+  toured: ["tour_scheduled"],
+  assessment_scheduled: ["toured", "contacted"],
+  assessed: ["assessment_scheduled"],
+  deposit_received: ["assessed"],
+  move_in_scheduled: ["deposit_received", "assessed", "waitlisted"],
+  waitlisted: ["new", "contacted", "toured", "assessed", "deposit_received", "nurture"],
+  nurture: ["new", "contacted", "toured", "assessed", "waitlisted"],
+  lost: LEAD_STATUSES.filter((status) => status !== "moved_in" && status !== "lost")
+};
+async function moveLead(uow, actor, input) {
+  const from = LEAD_EDGES[input.to];
+  if (!from) throw new DomainError(Codes.INVALID_INPUT, input.to === "moved_in" ? "A lead moves in when the resident is admitted." : "Unknown lead status.", { field: "to" });
+  const lead = await lockRow(uow.tx, "Lead", input.leadId);
+  const evidence = {
+    contacted: async () => await uow.tx.salesActivity.count({ where: { leadId: lead.id, kind: { in: ["call", "email", "text", "note"] } } }) > 0,
+    tour_scheduled: async () => await uow.tx.tour.count({ where: { leadId: lead.id, status: "confirmed" } }) > 0,
+    toured: async () => await uow.tx.tour.count({ where: { leadId: lead.id, status: "completed" } }) > 0,
+    move_in_scheduled: async () => await uow.tx.placeReservation.count({ where: { status: "active", prospect: { leadId: lead.id } } }) > 0,
+    waitlisted: async () => await uow.tx.waitlistEntry.count({ where: { leadId: lead.id, status: { in: ["active", "offered"] } } }) > 0
+  };
+  if (evidence[input.to] && !await evidence[input.to]()) {
+    const need = { contacted: "Log a call, email, text or note first.", tour_scheduled: "Confirm a tour first.", toured: "Mark the tour completed first.", move_in_scheduled: "Reserve an apartment or bed first.", waitlisted: "Add a waitlist entry first." };
+    throw new DomainError(Codes.GUARD_FAILED, need[input.to], { reason: "evidence" });
+  }
+  if (input.to === "lost" && !input.lostReason) throw new DomainError(Codes.INVALID_INPUT, "Choose why the lead was lost.", { field: "lostReason" });
+  const row = await casUpdate(uow, { model: "Lead", id: lead.id, version: input.expectedVersion, from, to: input.to, actor, eventType: `lead.${input.to}`, reason: input.note ?? null, data: input.to === "lost" ? { lostReason: input.lostReason } : {} });
+  if (input.to === "lost") {
+    const holds = await uow.tx.placeReservation.findMany({ where: { status: "active", prospect: { leadId: lead.id } }, select: { id: true } });
+    for (const hold of holds) await endReservation(uow, actor, { reservationId: hold.id, to: "released", reason: "lead lost" });
+    const entries = await uow.tx.waitlistEntry.findMany({ where: { leadId: lead.id, status: { in: ["active", "offered"] } }, select: { id: true, version: true, status: true } });
+    for (const entry of entries) await casUpdate(uow, { model: "WaitlistEntry", id: entry.id, version: entry.version, from: [entry.status], to: "withdrawn", actor, eventType: "waitlist.withdrawn", reason: "lead lost" });
+  }
+  return { leadId: lead.id, status: input.to, version: row?.version ?? input.expectedVersion + 1 };
+}
+async function logSalesActivity(uow, actor, input) {
+  if (!["call", "email", "text", "tour", "assessment", "note"].includes(input.kind)) throw new DomainError(Codes.INVALID_INPUT, "Unknown activity.", { field: "kind" });
+  if (!clean(input.summary, 4e3)) throw new DomainError(Codes.INVALID_INPUT, "Add a summary.", { field: "summary" });
+  const lead = await uow.tx.lead.findUnique({ where: { id: input.leadId }, select: { id: true } });
+  if (!lead) throw new DomainError(Codes.NOT_FOUND, "Lead not found.");
+  const row = await uow.tx.salesActivity.create({ data: { leadId: lead.id, kind: input.kind, at: input.at ?? uow.now, byId: actorUserId(actor), summary: clean(input.summary, 4e3) } });
+  auditCreate(uow, actor, "SalesActivity", row.id, "sales_activity.logged", { leadId: lead.id, kind: input.kind });
+  return { activityId: row.id };
+}
+var TOUR_HOLD_MINUTES = 30;
+async function slotHasRoom(uow, slotId) {
+  await advisoryLock(uow.tx, `tour_slot:${slotId}`);
+  const slot = await uow.tx.tourSlot.findUnique({ where: { id: slotId }, select: { id: true, communityId: true, startsAt: true, capacity: true, kind: true } });
+  if (!slot) throw new DomainError(Codes.NOT_FOUND, "Tour time not found.");
+  if (slot.startsAt.getTime() <= uow.now.getTime()) throw new DomainError(Codes.GUARD_FAILED, "That tour time has passed.");
+  const taken = await uow.tx.tour.count({ where: { slotId, OR: [{ status: "confirmed" }, { status: "requested", holdExpiresAt: { gt: uow.now } }] } });
+  if (taken >= slot.capacity) throw new DomainError(Codes.PLACE_UNAVAILABLE, "That tour time is full. Choose another.");
+  return slot;
+}
+async function requestTour(uow, input) {
+  const community = await publishedCommunity(uow, input.communitySlug);
+  if (!community.storefront?.tourBookingEnabled) throw new DomainError(Codes.GUARD_FAILED, "Tours are booked by phone at this community.");
+  const slot = await slotHasRoom(uow, input.slotId);
+  if (slot.communityId !== community.id) throw new DomainError(Codes.NOT_FOUND, "Tour time not found.");
+  if (input.kind !== "in_person" && input.kind !== "virtual") throw new DomainError(Codes.INVALID_INPUT, "Choose in person or virtual.", { field: "kind" });
+  if (slot.kind !== "either" && slot.kind !== input.kind) throw new DomainError(Codes.INVALID_INPUT, `This time is for ${label(slot.kind).toLowerCase()} tours.`, { field: "kind" });
+  const { publicCode: inquiryCode } = await submitInquiry(uow, { communitySlug: input.communitySlug, contactName: input.contactName, contactEmail: input.contactEmail, contactPhone: input.contactPhone, message: input.notes, consentToContact: input.consentToContact });
+  const inquiry = await uow.tx.inquiry.findUnique({ where: { publicCode: inquiryCode }, select: { leadId: true } });
+  const code = publicCode("TOUR");
+  const tour = await uow.tx.tour.create({ data: { publicCode: code, communityId: community.id, slotId: slot.id, leadId: inquiry?.leadId ?? null, kind: input.kind, status: "requested", holdExpiresAt: new Date(uow.now.getTime() + TOUR_HOLD_MINUTES * 6e4), notes: clean(input.notes, 2e3) } });
+  const token = createPublicToken("tour-manage", tour.id, slot.startsAt.getTime() + 864e5);
+  await uow.tx.tour.update({ where: { id: tour.id }, data: { guestTokenHash: hashPublicToken(token) } });
+  uow.audit({ eventType: "tour.requested", entityType: "Tour", entityId: tour.id, actorUserId: null, after: { publicCode: code, slotId: slot.id } });
+  uow.emit({ topic: "mail.tour_requested", aggregateType: "Tour", aggregateId: tour.id, payload: { tourId: tour.id }, dedupeKey: `mail.tour_requested:${tour.id}` });
+  return { publicCode: code, manageToken: token, holdExpiresAt: tour.holdExpiresAt };
+}
+async function scheduleTour(uow, actor, input) {
+  const lead = await uow.tx.lead.findUnique({ where: { id: input.leadId }, select: { id: true, communityId: true, status: true, version: true } });
+  if (!lead) throw new DomainError(Codes.NOT_FOUND, "Lead not found.");
+  if (lead.status === "lost" || lead.status === "moved_in") throw new DomainError(Codes.GUARD_FAILED, `This lead is ${label(lead.status).toLowerCase()}.`, { currentStatus: lead.status });
+  if (input.kind !== "in_person" && input.kind !== "virtual") throw new DomainError(Codes.INVALID_INPUT, "Choose in person or virtual.", { field: "kind" });
+  const slot = await slotHasRoom(uow, input.slotId);
+  if (slot.communityId !== lead.communityId) throw new DomainError(Codes.NOT_FOUND, "Tour time not found.");
+  if (slot.kind !== "either" && slot.kind !== input.kind) throw new DomainError(Codes.INVALID_INPUT, `This time is for ${label(slot.kind).toLowerCase()} tours.`, { field: "kind" });
+  const tour = await uow.tx.tour.create({ data: { publicCode: publicCode("TOUR"), communityId: slot.communityId, slotId: slot.id, leadId: lead.id, kind: input.kind, status: "confirmed", notes: clean(input.notes, 2e3) } });
+  auditCreate(uow, actor, "Tour", tour.id, "tour.scheduled", { slotId: slot.id, leadId: lead.id, kind: input.kind });
+  if (LEAD_EDGES.tour_scheduled.includes(lead.status)) await casUpdate(uow, { model: "Lead", id: lead.id, version: lead.version, from: [lead.status], to: "tour_scheduled", actor, eventType: "lead.tour_scheduled", metadata: { tourId: tour.id } });
+  uow.emit({ topic: "mail.tour_confirmed", aggregateType: "Tour", aggregateId: tour.id, payload: { tourId: tour.id }, dedupeKey: `mail.tour_confirmed:${tour.id}` });
+  return { tourId: tour.id, publicCode: tour.publicCode, startsAt: slot.startsAt };
+}
+async function cancelTourWithToken(uow, input) {
+  const payload = verifyPublicToken(input.token, "tour-manage", void 0, uow.now.getTime());
+  if (!payload) throw new DomainError(Codes.GUARD_FAILED, "This link is invalid or has expired.");
+  const tour = await lockRow(uow.tx, "Tour", payload.subjectId);
+  if (!publicTokenMatches(input.token, tour.guestTokenHash)) throw new DomainError(Codes.GUARD_FAILED, "This link is invalid or has expired.");
+  await casUpdate(uow, { model: "Tour", id: tour.id, version: tour.version, from: ["requested", "confirmed"], to: "cancelled", actor: { kind: "system", name: "guest" }, eventType: "tour.cancelled_by_guest", reason: clean(input.reason, 500) || null });
+  return { status: "cancelled" };
+}
+async function moveTour(uow, actor, input) {
+  const edges = { confirmed: ["requested"], completed: ["confirmed"], no_show: ["confirmed"], cancelled: ["requested", "confirmed"] };
+  if (!edges[input.to]) throw new DomainError(Codes.INVALID_INPUT, "Unknown tour status.", { field: "to" });
+  const tour = await lockRow(uow.tx, "Tour", input.tourId);
+  if (input.to === "confirmed" && tour.slotId) {
+    await advisoryLock(uow.tx, `tour_slot:${tour.slotId}`);
+    const slot = await uow.tx.tourSlot.findUnique({ where: { id: tour.slotId }, select: { capacity: true } });
+    const confirmed = await uow.tx.tour.count({ where: { slotId: tour.slotId, status: "confirmed" } });
+    if (slot && confirmed >= slot.capacity) throw new DomainError(Codes.PLACE_UNAVAILABLE, "That tour time is full.");
+  }
+  await casUpdate(uow, { model: "Tour", id: tour.id, version: input.expectedVersion, from: edges[input.to], to: input.to, actor, eventType: `tour.${input.to}`, reason: input.reason ?? null, data: { holdExpiresAt: null } });
+  if (tour.leadId && (input.to === "confirmed" || input.to === "completed")) {
+    const lead = await uow.tx.lead.findUnique({ where: { id: tour.leadId }, select: { status: true, version: true } });
+    const target = input.to === "confirmed" ? "tour_scheduled" : "toured";
+    if (lead && LEAD_EDGES[target].includes(lead.status)) await casUpdate(uow, { model: "Lead", id: tour.leadId, version: lead.version, from: [lead.status], to: target, actor, eventType: `lead.${target}`, metadata: { tourId: tour.id } });
+  }
+  return { tourId: tour.id, status: input.to };
+}
+var REFERRAL_EDGES = { clinical_review: ["received"], payer_check: ["clinical_review"], accepted: ["payer_check"], declined: ["received", "clinical_review", "payer_check"], withdrawn: ["received", "clinical_review", "payer_check", "accepted"] };
+async function moveReferral(uow, actor, input) {
+  const from = REFERRAL_EDGES[input.to];
+  if (!from) throw new DomainError(Codes.INVALID_INPUT, input.to === "admitted" ? "A referral is admitted by the admission command." : "Unknown referral status.", { field: "to" });
+  const referral = await lockRow(uow.tx, "Referral", input.referralId);
+  if (input.to === "declined" && !input.declineReason) throw new DomainError(Codes.INVALID_INPUT, "Choose why the referral is declined.", { field: "declineReason" });
+  let reservation = null;
+  if (input.to === "accepted") {
+    if (!input.bedId) throw new DomainError(Codes.GUARD_FAILED, "Choose the bed to hold for this referral.", { field: "bedId" });
+    if (!referral.pasrrLevel1Id && ["medicaid", "medicaid_pending"].includes(String(referral.expectedPayer))) throw new DomainError(Codes.GUARD_FAILED, "Attach the PASRR Level I screen before accepting a Medicaid referral.", { field: "pasrrLevel1" });
+    reservation = await reservePlace(uow, actor, { bedId: input.bedId, hours: input.reservationHours ?? 48, purpose: "referral", referralId: referral.id, prospectId: referral.prospectId, idempotencyKey: input.idempotencyKey });
+  }
+  if (input.to === "withdrawn" || input.to === "declined") {
+    const holds = await uow.tx.placeReservation.findMany({ where: { referralId: referral.id, status: "active" }, select: { id: true } });
+    for (const hold of holds) await endReservation(uow, actor, { reservationId: hold.id, to: "released", reason: `referral ${input.to}` });
+  }
+  await casUpdate(uow, { model: "Referral", id: referral.id, version: input.expectedVersion, from, to: input.to, actor, eventType: `referral.${input.to}`, data: input.to === "declined" ? { declineReason: input.declineReason } : {} });
+  return { referralId: referral.id, status: input.to, reservationId: reservation?.reservationId ?? null };
+}
+var EXPECTED_PAYERS = ["medicare_a", "medicare_advantage", "medicaid", "medicaid_pending", "private_pay", "commercial", "hospice", "other"];
+async function recordReferral(uow, actor, input) {
+  const community = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { id: true, synthetic: true } });
+  if (!community) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
+  const firstName = clean(input.firstName, 80);
+  const lastName = clean(input.lastName, 80);
+  if (!firstName || !lastName) throw new DomainError(Codes.INVALID_INPUT, "Enter the person's first and last name.", { field: "firstName" });
+  if (!EXPECTED_PAYERS.includes(input.expectedPayer)) throw new DomainError(Codes.INVALID_INPUT, "Choose the expected payer.", { field: "expectedPayer" });
+  if (input.dateOfBirth && !/^\d{4}-\d{2}-\d{2}$/.test(input.dateOfBirth)) throw new DomainError(Codes.INVALID_INPUT, "Date of birth must be YYYY-MM-DD.", { field: "dateOfBirth" });
+  if (input.sourceId) {
+    const source = await uow.tx.referralSource.findUnique({ where: { id: input.sourceId }, select: { communityId: true } });
+    if (!source || source.communityId !== community.id) throw new DomainError(Codes.NOT_FOUND, "Referral source not found.", { field: "sourceId" });
+  }
+  const receivedAt = input.receivedAt ?? uow.now;
+  if (receivedAt.getTime() > uow.now.getTime() + 5 * 6e4) throw new DomainError(Codes.INVALID_INPUT, "The referral cannot be received in the future.", { field: "receivedAt" });
+  const hours2 = Math.min(Math.max(input.responseHours ?? 4, 1), 72);
+  const prospect = await uow.tx.prospect.create({ data: { reference: await nextReference(uow.tx, "PRO", uow.now), communityId: community.id, firstName, lastName, dateOfBirth: input.dateOfBirth ? /* @__PURE__ */ new Date(`${input.dateOfBirth}T00:00:00Z`) : null, desiredSetting: SETTING_VALUES.includes(String(input.desiredSetting)) ? input.desiredSetting : "nursing_facility", synthetic: community.synthetic } });
+  let pasrrLevel1Id = null;
+  if (input.pasrrLevel1) {
+    const completedAt = new Date(input.pasrrLevel1.completedAt);
+    if (Number.isNaN(completedAt.getTime()) || completedAt.getTime() > uow.now.getTime() + 5 * 6e4) throw new DomainError(Codes.INVALID_INPUT, "Enter when the Level I screen was completed.", { field: "pasrrLevel1" });
+    const doc = await uow.tx.document.create({ data: { title: "PASRR Level I screen", kind: "pasrr", communityId: community.id, phiTier: "clin", status: "final" } });
+    await uow.tx.preAdmissionScreen.create({ data: { prospectId: prospect.id, kind: "pasrr_level1", result: clean(input.pasrrLevel1.result, 500), completedAt, documentId: doc.id } });
+    auditCreate(uow, actor, "Document", doc.id, "pre_admission_screen.received", { kind: "pasrr_level1", prospectId: prospect.id });
+    pasrrLevel1Id = doc.id;
+  }
+  const referral = await uow.tx.referral.create({
+    data: { reference: await nextReference(uow.tx, "REF", uow.now), communityId: community.id, sourceId: input.sourceId ?? null, receivedAt, prospectId: prospect.id, expectedPayer: input.expectedPayer, pasrrLevel1Id, clinicalSummary: clean(input.clinicalSummary, 8e3), pasrrLevel2Required: Boolean(input.pasrrLevel2Required), status: "received", responseDueAt: new Date(receivedAt.getTime() + hours2 * 36e5) }
+  });
+  auditCreate(uow, actor, "Referral", referral.id, "referral.received", { reference: referral.reference, sourceId: input.sourceId ?? null, expectedPayer: input.expectedPayer, responseDueAt: referral.responseDueAt });
+  uow.emit({ topic: "task.referral_response", aggregateType: "Referral", aggregateId: referral.id, payload: { referralId: referral.id, communityId: community.id }, dedupeKey: `task.referral_response:${referral.id}` });
+  return { referralId: referral.id, reference: referral.reference, prospectId: prospect.id, responseDueAt: referral.responseDueAt };
+}
+async function addToWaitlist(uow, actor, input) {
+  if (!input.leadId && !input.prospectId) throw new DomainError(Codes.INVALID_INPUT, "Choose the lead or prospect.", { field: "leadId" });
+  const priority = { internal_transfer: 10, continuing_care: 20, date_order: 100, other: 100 }[input.priorityReason ?? "date_order"] ?? 100;
+  const entry = await uow.tx.waitlistEntry.create({ data: { reference: await nextReference(uow.tx, "WL", uow.now), communityId: input.communityId, leadId: input.leadId ?? null, prospectId: input.prospectId ?? null, apartmentTypeId: input.apartmentTypeId ?? null, setting: input.setting, priority, priorityReason: input.priorityReason ?? "date_order", status: "active" } });
+  auditCreate(uow, actor, "WaitlistEntry", entry.id, "waitlist.added", { reference: entry.reference, setting: input.setting, priority });
+  return { waitlistEntryId: entry.id, reference: entry.reference };
+}
+async function offerWaitlistPlace(uow, actor, input) {
+  const entry = await lockRow(uow.tx, "WaitlistEntry", input.waitlistEntryId);
+  const hold = await reservePlace(uow, actor, { apartmentId: input.apartmentId, bedId: input.bedId, hours: input.hours, purpose: "waitlist_offer", waitlistEntryId: entry.id, prospectId: entry.prospectId, idempotencyKey: input.idempotencyKey });
+  await casUpdate(uow, { model: "WaitlistEntry", id: entry.id, version: input.expectedVersion, from: ["active"], to: "offered", actor, eventType: "waitlist.offered", data: { offeredReservationId: hold.reservationId, offerExpiresAt: hold.expiresAt } });
+  return { waitlistEntryId: entry.id, reservationId: hold.reservationId, offerExpiresAt: hold.expiresAt };
+}
+async function resolveWaitlistOffer(uow, actor, input) {
+  if (!["accepted", "declined", "expired"].includes(input.to)) throw new DomainError(Codes.INVALID_INPUT, "Unknown outcome.", { field: "to" });
+  const entry = await lockRow(uow.tx, "WaitlistEntry", input.waitlistEntryId);
+  if (input.to === "expired" && entry.offerExpiresAt && entry.offerExpiresAt.getTime() > uow.now.getTime()) throw new DomainError(Codes.GUARD_FAILED, "The offer has not expired yet.");
+  if (input.to !== "accepted" && entry.offeredReservationId) {
+    const reservation = await uow.tx.placeReservation.findUnique({ where: { id: entry.offeredReservationId }, select: { status: true } });
+    if (reservation?.status === "active") await endReservation(uow, actor, { reservationId: entry.offeredReservationId, to: "released", reason: `offer ${input.to}` });
+  }
+  await casUpdate(uow, { model: "WaitlistEntry", id: entry.id, version: input.expectedVersion, from: ["offered"], to: input.to, actor, eventType: `waitlist.${input.to}` });
+  return { waitlistEntryId: entry.id, status: input.to };
+}
+
+// features/keystone/lib/storefront.ts
+var clean2 = (value, max) => typeof value === "string" ? value.trim().slice(0, max) : "";
+async function publishedSite(tx, slug2) {
+  const community = await tx.community.findUnique({
+    where: { slug: slug2 },
+    select: { id: true, name: true, slug: true, status: true, addressLine1: true, addressLine2: true, city: true, region: true, postalCode: true, phone: true, settingsOffered: true, timeZone: true, storefront: true }
+  });
+  if (!community || community.status !== "active" || !community.storefront?.published) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
+  return community;
+}
+async function storefrontCommunity(tx, slug2, now = /* @__PURE__ */ new Date()) {
+  const community = await publishedSite(tx, clean2(slug2, 120));
+  const site = community.storefront;
+  const [prices, availability, slots, bios, jobs, types] = await Promise.all([
+    tx.publishedPrice.findMany({ where: { communityId: community.id, status: "published" }, orderBy: [{ setting: "asc" }, { fromMinor: "asc" }], select: { id: true, label: true, setting: true, apartmentTypeId: true, fromMinor: true, toMinor: true, period: true, communityFeeMinor: true, disclaimer: true } }),
+    tx.availabilitySnapshot.findMany({ where: { communityId: community.id }, select: { apartmentTypeId: true, setting: true, availableCount: true, waitlistOpen: true, computedAt: true } }),
+    site.tourBookingEnabled ? tx.tourSlot.findMany({ where: { communityId: community.id, startsAt: { gt: now, lt: new Date(now.getTime() + 21 * 864e5) } }, orderBy: { startsAt: "asc" }, take: 60, select: { id: true, startsAt: true, endsAt: true, kind: true, capacity: true, tours: { where: { OR: [{ status: "confirmed" }, { status: "requested", holdExpiresAt: { gt: now } }] }, select: { id: true } } } }) : Promise.resolve([]),
+    tx.staffBio.findMany({ where: { siteId: site.id, consentDocumentId: { not: null } }, orderBy: { sortOrder: "asc" }, select: { name: true, title: true, bio: true } }),
+    tx.jobPosting.findMany({ where: { communityId: community.id, status: "published" }, select: { id: true, title: true, role: true, employmentType: true, payRange: true, body: true } }),
+    tx.apartmentType.findMany({ where: { communityId: community.id }, select: { id: true, name: true, setting: true, squareFeet: true, bedrooms: true, description: true } })
+  ]);
+  return {
+    community: { name: community.name, slug: community.slug, address: [community.addressLine1, community.addressLine2].filter(Boolean).join(", "), city: community.city, region: community.region, postalCode: community.postalCode, phone: community.phone, settingsOffered: community.settingsOffered, timeZone: community.timeZone },
+    site: { heroTitle: site.heroTitle, heroBody: site.heroBody, amenities: site.amenities, diningCopy: site.diningCopy, activitiesCopy: site.activitiesCopy, careLevelsCopy: site.careLevelsCopy, faq: site.faq, acceptedPayers: site.acceptedPayers, seo: site.seo, tourBookingEnabled: site.tourBookingEnabled, waitlistEnabled: site.waitlistEnabled },
+    apartmentTypes: types,
+    prices: prices.map((price) => ({ ...price, fromMinor: price.fromMinor.toString(), toMinor: price.toMinor?.toString() ?? null, communityFeeMinor: price.communityFeeMinor?.toString() ?? null })),
+    availability,
+    tourSlots: slots.map((slot) => ({ id: slot.id, startsAt: slot.startsAt, endsAt: slot.endsAt, kind: slot.kind, open: Math.max(0, slot.capacity - slot.tours.length) })).filter((slot) => slot.open > 0),
+    team: bios,
+    jobs
+  };
+}
+async function joinWaitlist(uow, input) {
+  const community = await publishedSite(uow.tx, clean2(input.communitySlug, 120));
+  if (!community.storefront?.waitlistEnabled) throw new DomainError(Codes.GUARD_FAILED, "Call the community to join the waitlist.");
+  if (!SETTINGS.includes(input.setting)) throw new DomainError(Codes.INVALID_INPUT, "Choose the type of care.", { field: "setting" });
+  if (input.apartmentTypeId) {
+    const type = await uow.tx.apartmentType.findUnique({ where: { id: input.apartmentTypeId }, select: { communityId: true, setting: true } });
+    if (!type || type.communityId !== community.id) throw new DomainError(Codes.NOT_FOUND, "Apartment type not found.", { field: "apartmentTypeId" });
+  }
+  if (input.desiredMoveIn && !/^\d{4}-\d{2}-\d{2}$/.test(input.desiredMoveIn)) throw new DomainError(Codes.INVALID_INPUT, "Move-in date must be YYYY-MM-DD.", { field: "desiredMoveIn" });
+  if (clean2(input.website, 200)) return { publicCode: publicCode("WL") };
+  const { publicCode: inquiryCode } = await submitInquiry(uow, { ...input, desiredSetting: input.setting, forWhomFirstName: input.forWhomFirstName || input.contactName?.split(/\s+/)[0] });
+  const inquiry = await uow.tx.inquiry.findUnique({ where: { publicCode: inquiryCode }, select: { leadId: true } });
+  if (!inquiry?.leadId) return { publicCode: inquiryCode };
+  const prospect = await uow.tx.prospect.findFirst({ where: { leadId: inquiry.leadId }, select: { id: true } });
+  if (prospect && input.desiredMoveIn) await uow.tx.prospect.update({ where: { id: prospect.id }, data: { desiredMoveIn: /* @__PURE__ */ new Date(`${input.desiredMoveIn}T00:00:00Z`) } });
+  const entry = await uow.tx.waitlistEntry.create({ data: { reference: await nextReference(uow.tx, "WL", uow.now), communityId: community.id, leadId: inquiry.leadId, prospectId: prospect?.id ?? null, apartmentTypeId: input.apartmentTypeId ?? null, setting: input.setting, priority: 100, priorityReason: "date_order", status: "active" } });
+  uow.audit({ eventType: "waitlist.joined_online", entityType: "WaitlistEntry", entityId: entry.id, actorUserId: null, after: { reference: entry.reference, setting: input.setting, leadId: inquiry.leadId } });
+  const lead = await uow.tx.lead.findUnique({ where: { id: inquiry.leadId }, select: { version: true, status: true } });
+  if (lead) await casUpdate(uow, { model: "Lead", id: inquiry.leadId, version: lead.version, from: [lead.status], to: "waitlisted", actor: { kind: "system", name: "storefront" }, eventType: "lead.waitlisted", metadata: { waitlistEntryId: entry.id } });
+  return { publicCode: inquiryCode };
+}
+async function setStorefrontPublished(uow, actor, input) {
+  const community = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { storefront: true } });
+  const site = community?.storefront;
+  if (!site) throw new DomainError(Codes.NOT_FOUND, "Create the storefront first.");
+  if (input.published) {
+    if (!site.heroTitle.trim() || !site.heroBody.trim()) throw new DomainError(Codes.GUARD_FAILED, "Add the headline and introduction before publishing.", { field: "heroTitle" });
+    const prices = await uow.tx.publishedPrice.count({ where: { communityId: input.communityId, status: "published" } });
+    if (!prices) throw new DomainError(Codes.GUARD_FAILED, "Publish at least one starting price before the site goes live.", { reason: "no_prices" });
+  }
+  await uow.tx.storefrontSite.update({ where: { id: site.id }, data: { published: input.published } });
+  uow.audit({ eventType: input.published ? "storefront.published" : "storefront.unpublished", entityType: "StorefrontSite", entityId: site.id, actorUserId: actor.kind === "user" ? actor.userId : null, before: { published: site.published }, after: { published: input.published } });
+  return { siteId: site.id, published: input.published };
+}
+async function movePublishedPrice(uow, actor, input) {
+  const price = await lockRow(uow.tx, "PublishedPrice", input.priceId);
+  if (input.to === "published") {
+    if (price.fromMinor <= 0n) throw new DomainError(Codes.GUARD_FAILED, "A published price must be more than zero.", { field: "fromMinor" });
+    if (price.toMinor !== null && price.toMinor < price.fromMinor) throw new DomainError(Codes.GUARD_FAILED, "The upper price is below the starting price.", { field: "toMinor" });
+  }
+  const from = input.to === "published" ? ["draft"] : ["published"];
+  await casUpdate(uow, { model: "PublishedPrice", id: price.id, version: input.expectedVersion, from, to: input.to, actor, eventType: `published_price.${input.to}`, data: input.to === "published" ? { publishedAt: uow.now } : {} });
+  return { priceId: price.id, status: input.to };
+}
+async function openTourSlots(uow, actor, input) {
+  if (!input.slots.length || input.slots.length > 60) throw new DomainError(Codes.INVALID_INPUT, "Open 1 to 60 tour times at once.", { field: "slots" });
+  let created = 0;
+  for (const slot of input.slots) {
+    if (slot.startsAt.getTime() <= uow.now.getTime()) throw new DomainError(Codes.INVALID_INPUT, "Tour times must be in the future.", { field: "startsAt" });
+    if (slot.minutes < 15 || slot.minutes > 180 || slot.capacity < 1 || slot.capacity > 20) throw new DomainError(Codes.INVALID_INPUT, "A tour is 15 to 180 minutes for 1 to 20 parties.", { field: "minutes" });
+    const exists = await uow.tx.tourSlot.findFirst({ where: { communityId: input.communityId, startsAt: slot.startsAt }, select: { id: true } });
+    if (exists) continue;
+    const row = await uow.tx.tourSlot.create({ data: { communityId: input.communityId, startsAt: slot.startsAt, endsAt: new Date(slot.startsAt.getTime() + slot.minutes * 6e4), capacity: slot.capacity, kind: slot.kind, hostId: slot.hostId ?? null } });
+    auditCreate(uow, actor, "TourSlot", row.id, "tour_slot.opened", { startsAt: slot.startsAt, capacity: slot.capacity });
+    created += 1;
+  }
+  return { created };
+}
+
+// features/keystone/seed/censusPlan.ts
+var PRESETS = {
+  full: { ltGenerated: 79, ltHospice: 6, ltPrivate: 12, ltMedicare: 2, birchBefore: 27, birchBeforeDischarged: 18, birchAdmits: 25, birchAdmitsDischarged: 5, alSingles: 39, mcGenerated: 20, ilGenerated: 18, extraHoldLeaves: 4, openLeaves: 3, portalAccounts: 30, signOffDays: 29, fullSales: true },
+  small: { ltGenerated: 9, ltHospice: 2, ltPrivate: 2, ltMedicare: 1, birchBefore: 4, birchBeforeDischarged: 2, birchAdmits: 3, birchAdmitsDischarged: 1, alSingles: 3, mcGenerated: 2, ilGenerated: 2, extraHoldLeaves: 1, openLeaves: 1, portalAccounts: 4, signOffDays: 2, fullSales: false }
+};
+var SEED_VERSION = "seed-census-v1";
+var planPrefix = (preset) => `${SEED_VERSION}-${preset}`;
+var MORE_FAMILY = ["Albrecht", "Brennan", "Coleman", "Dawkins", "Esposito", "Fairbanks", "Greer", "Haddad", "Ingram", "Jessup", "Kaminski", "Langford", "McAllister", "Nakamura", "Ostrander", "Pellegrino", "Quarles", "Rinaldi", "Sandoval", "Thibodeaux", "Ulrich", "Vandermeer", "Wexler", "Zielinski"];
+var MORE_GIVEN = ["Mildred", "Arthur", "Gladys", "Herbert", "Frances", "Russell", "Helen", "Chester", "Agnes", "Milton", "Ethel", "Wendell", "Louise", "Orville", "Pauline", "Melvin", "Thelma", "Roy", "Mabel", "Stanley", "Edna", "Willard", "Lucille", "Harvey"];
+var FAMILY = [...FAMILY_NAMES, ...MORE_FAMILY];
+var GIVEN = [...GIVEN_NAMES, ...MORE_GIVEN];
+var REP_GIVEN = ["Karen", "Michael", "Susan", "David", "Lisa", "Robert", "Julie", "Brian", "Denise", "Mark", "Angela", "Kevin", "Tamara", "Steven", "Rachel", "Gregory", "Monica", "Jeffrey", "Heather", "Scott", "Nicole", "Timothy", "Erin", "Douglas"];
+var FAMILY_MAIL_DOMAINS = ["gmail.com", "yahoo.com", "outlook.com"];
+var slug = (value) => value.toLowerCase().normalize("NFD").replace(/[^a-z]/g, "");
+var familyEmail = (first, last, n) => `${slug(first)}.${slug(last)}${n * 37 % 89 + 11}@${FAMILY_MAIL_DOMAINS[n % 3]}`;
+var familyPhone = (n) => `(614) 555-01${String(n % 100).padStart(2, "0")}`;
+var PAYER_ID = {
+  medicare_a: "seed_payer_medicare_a",
+  medicare_advantage: "seed_payer_buckeye_ma",
+  medicaid_ffs: "seed_payer_ohio_medicaid",
+  medicaid_mco: "seed_payer_ohio_mco",
+  private: "seed_payer_private",
+  ltc: "seed_payer_lakeshore_ltc"
+};
+var MEDICAID = ["medicaid_ffs", "medicaid_mco"];
+var MC_REASONS = [
+  "Moderate dementia with exit-seeking; secured neighbourhood agreed at the care conference with the healthcare POA.",
+  "Alzheimer's disease with nighttime wandering; secured unit recommended by the attending physician and accepted by the family.",
+  "Vascular dementia with two community elopements before admission; secured placement chosen with the representative.",
+  "Frontotemporal dementia; needs a structured, secured setting per the neurologist's recommendation and family consent."
+];
+var bedId = (unit, room, label2) => `seed_room_${unit.toLowerCase()}_${room}_${label2.toLowerCase()}`;
+var aptId = (unit, n) => `seed_apartment_${unit.toLowerCase()}_${n}`;
+var NAMED_BEDS = { eleanor: bedId("BIR", "112", "A"), harold: bedId("CED", "204", "B"), dolores: bedId("CED", "210", "A"), clarence: bedId("WIL", "226", "A"), walter: bedId("ASP", "318", "A") };
+var ISOLATION_BED = bedId("ASP", "305", "A");
+var NAMED_APTS = { ruth: aptId("HAR", 6), marguerite: aptId("MEA", 30) };
+var RESERVED_PLACES = /* @__PURE__ */ new Set([...Object.values(NAMED_BEDS), ISOLATION_BED, ...Object.values(NAMED_APTS)]);
+var Places = class {
+  constructor() {
+    this.beds = /* @__PURE__ */ new Map();
+    this.apts = /* @__PURE__ */ new Map();
+    this.where = /* @__PURE__ */ new Map();
+    this.sex = /* @__PURE__ */ new Map();
+    for (const unit of NF_UNITS) for (const room of nfRooms(unit)) for (const label2 of room.beds) {
+      const id = bedId(unit.code, room.number, label2);
+      this.beds.set(id, { id, unit: unit.code, room: room.number, label: label2, status: "available", occupant: null });
+    }
+    for (const unit of RESIDENTIAL_UNITS) for (const apt of residentialApartments(unit)) {
+      this.apts.set(apt.id, { id: apt.id, unit: unit.code, number: apt.number, typeId: apt.apartmentTypeId, capacity: apt.capacity, status: "available", occupants: [] });
+    }
+  }
+  bed(id) {
+    const bed = this.beds.get(id);
+    if (!bed) throw new Error(`Seed plan: unknown bed ${id}`);
+    return bed;
+  }
+  apt(id) {
+    const apt = this.apts.get(id);
+    if (!apt) throw new Error(`Seed plan: unknown apartment ${id}`);
+    return apt;
+  }
+  /** First free bed in the units (in order), keeping semi-private rooms single-sex. */
+  freeBed(units, sex, options = {}) {
+    if (options.prefer && this.beds.get(options.prefer)?.status === "available") return options.prefer;
+    const free = [...this.beds.values()].filter((bed) => units.includes(bed.unit) && bed.status === "available" && !RESERVED_PLACES.has(bed.id));
+    free.sort((a, b) => units.indexOf(a.unit) - units.indexOf(b.unit));
+    const roommateOk = (bed) => {
+      const mates = [...this.beds.values()].filter((other) => other.unit === bed.unit && other.room === bed.room && other.id !== bed.id && other.occupant);
+      return mates.every((mate) => this.sex.get(mate.occupant) === sex);
+    };
+    const pick = free.find(roommateOk) ?? free[0];
+    if (!pick) throw new Error(`Seed plan: no free bed in ${units.join("/")}`);
+    return pick.id;
+  }
+  freeApt(unit, options = {}) {
+    const pick = [...this.apts.values()].find((apt) => apt.unit === unit && apt.status === "available" && !RESERVED_PLACES.has(apt.id) && (!options.type || apt.typeId === options.type) && (!options.single || apt.capacity === 1) && (!options.companion || apt.capacity === 2));
+    if (!pick) throw new Error(`Seed plan: no free apartment in ${unit}${options.type ? ` (${options.type})` : ""}`);
+    return pick.id;
+  }
+  occupyBed(code, id, reserved = false) {
+    const bed = this.bed(id);
+    if (bed.status !== (reserved ? "reserved" : "available")) throw new Error(`Seed plan: ${id} is ${bed.status}, cannot admit ${code}`);
+    bed.status = "occupied";
+    bed.occupant = code;
+    this.where.set(code, { bed: id, status: "in_house" });
+  }
+  occupyApt(code, id, reserved = false) {
+    const apt = this.apt(id);
+    const ok = reserved ? apt.status === "reserved" : apt.status === "available" || apt.status === "occupied" && apt.occupants.length < apt.capacity;
+    if (!ok) throw new Error(`Seed plan: ${id} is ${apt.status}, cannot admit ${code}`);
+    apt.status = "occupied";
+    apt.occupants.push(code);
+    this.where.set(code, { apt: id, status: "in_house" });
+  }
+  /** Ends a resident's place: beds go to cleaning, emptied apartments to turnover. */
+  release(code) {
+    const at = this.where.get(code);
+    if (!at) throw new Error(`Seed plan: ${code} is not placed`);
+    const bedRef = at.bed ?? at.held;
+    if (bedRef) {
+      const bed = this.bed(bedRef);
+      bed.status = "cleaning";
+      bed.occupant = null;
+    }
+    if (at.apt) {
+      const apt = this.apt(at.apt);
+      apt.occupants = apt.occupants.filter((c) => c !== code);
+      if (!apt.occupants.length) apt.status = "turnover";
+    }
+    this.where.set(code, { status: "ended" });
+    return bedRef ?? at.apt;
+  }
+};
+function buildCensusPlan(options) {
+  const preset = options.preset ?? "full";
+  const P = PRESETS[preset];
+  const tz = options.timeZone ?? COMMUNITY.timeZone;
+  const T = new Date(Math.floor(options.anchor.getTime() / 6e4) * 6e4);
+  const today = localDate(tz, T);
+  const prefix = planPrefix(preset);
+  const at = (dayOffset, hhmm) => {
+    const instant = zonedInstant(tz, addDays(today, dayOffset), hhmm);
+    if (instant.getTime() > T.getTime()) throw new Error(`Seed plan: day ${dayOffset} ${hhmm} is after the anchor`);
+    return instant;
+  };
+  const date2 = (dayOffset) => addDays(today, dayOffset);
+  const plus = (instant, minutes) => new Date(instant.getTime() + minutes * 6e4);
+  const steps = [];
+  const acts = [];
+  let seq = 0;
+  const schedule = (when, run) => acts.push({ at: when, seq: seq++, run });
+  const key = (kind, id) => `${prefix}:${kind}:${id}`;
+  const emit = (kind, id, actor, when, input) => {
+    const k = key(kind, id);
+    steps.push({ key: k, kind, actor, at: when.toISOString(), input });
+    return k;
+  };
+  const ref = (stepKey, field) => ({ $ref: stepKey, field });
+  const places = new Places();
+  const residents = /* @__PURE__ */ new Map();
+  const ending = /* @__PURE__ */ new Set();
+  const used = /* @__PURE__ */ new Set();
+  let personSeq = 0;
+  const PATEL = "seed_user_patel", BROOKS = "seed_user_brooks", RAMOS = "seed_user_ramos", LINDQVIST = "seed_user_lindqvist";
+  const CASTELLANOS = "seed_user_castellanos", FERRIS = "seed_user_ferris", FERREIRA_KAHN = "seed_user_ferreira_kahn";
+  const PUBLIC = "system:storefront", SCHEDULER = "system:scheduler";
+  const nurseFor = (unit) => unit === "BIR" ? RAMOS : LINDQVIST;
+  const usedNames = /* @__PURE__ */ new Set();
+  const newPerson = (payer, extra = {}) => {
+    let i = personSeq++;
+    let first = "", last = "", g = 0;
+    for (let attempt = 0; ; attempt += 1) {
+      g = (i * 17 + attempt) % GIVEN.length;
+      first = GIVEN[g];
+      last = FAMILY[(i * 31 + Math.floor(i / FAMILY.length) + attempt * 7) % FAMILY.length];
+      if (!usedNames.has(`${first} ${last}`)) break;
+    }
+    usedNames.add(`${first} ${last}`);
+    const code = `r${String(i + 1).padStart(3, "0")}`;
+    const sex = g % 2 === 0 ? "female" : "male";
+    return { code, firstName: first, lastName: last, sex, dateOfBirth: `${1929 + i * 7 % 22}-${String(i * 5 % 12 + 1).padStart(2, "0")}-${String(i * 11 % 28 + 1).padStart(2, "0")}`, payer, reps: familyReps(last, i), ...extra };
+  };
+  function familyReps(last, i) {
+    const a = REP_GIVEN[i * 5 % REP_GIVEN.length];
+    const b = REP_GIVEN[(i * 5 + 7) % REP_GIVEN.length];
+    const married = i % 4 === 3 ? FAMILY[(i * 13 + 5) % FAMILY.length] : last;
+    if (i % 3 === 0) {
+      return [
+        { firstName: a, lastName: married, email: familyEmail(a, married, i), phone: familyPhone(i), roles: ["healthcare_poa", "family"], contactPriority: 1 },
+        { firstName: b, lastName: last, email: familyEmail(b, last, i + 41), phone: familyPhone(i + 41), roles: ["financial_responsible", "family"], contactPriority: 2 }
+      ];
+    }
+    return [{ firstName: a, lastName: married, email: familyEmail(a, married, i), phone: familyPhone(i), roles: ["healthcare_poa", "financial_responsible", "family"], contactPriority: 1 }];
+  }
+  const remember = (r) => {
+    residents.set(r.code, r);
+    places.sex.set(r.code, r.sex);
+    return r;
+  };
+  const admittedAt = /* @__PURE__ */ new Map();
+  const admit = (plan) => (admittedAt.set(plan.r.code, plan.when), schedule(plan.when, () => {
+    const { r } = plan;
+    let bed = plan.place.bed;
+    let apt = plan.place.apt;
+    if (!bed && !apt && plan.place.units) bed = places.freeBed(plan.place.units, r.sex);
+    if (!bed && !apt && plan.place.companionOf) apt = places.where.get(plan.place.companionOf)?.apt;
+    if (!bed && !apt && plan.place.aptUnit) apt = places.freeApt(plan.place.aptUnit, { type: plan.place.aptType, single: !plan.place.aptType });
+    if (bed) places.occupyBed(r.code, bed, plan.reserved);
+    else places.occupyApt(r.code, apt, plan.reserved);
+    const nursing = Boolean(bed);
+    const effective = plan.when;
+    const pasrr = nursing && !plan.prospect ? { completedAt: plus(effective, -26 * 60).toISOString(), result: "Level I negative: no serious mental illness or intellectual disability indicated; Level II not required." } : null;
+    const reps = [...r.reps, ...r.hospice ? [{ firstName: "Carmen", lastName: "Ostrowski", phone: familyPhone(77), roles: ["hospice_contact"], contactPriority: 9 }] : []];
+    const memberPrefix = r.payer.startsWith("medicare") ? "SEED-MBI" : MEDICAID.includes(r.payer) ? "SEED-OHMCD" : r.payer === "ltc" ? "SEED-LTC" : "";
+    const notices = [
+      ...nursing ? [{ kind: "bed_hold_policy", method: "in_person", deliveredAt: effective.toISOString(), acknowledgement: "signed", note: "Bed-hold and readmission policy explained at admission." }] : [],
+      { kind: "privacy_practices", method: "in_person", deliveredAt: effective.toISOString(), acknowledgement: "signed", note: "Notice of privacy practices given at admission." }
+    ];
+    emit("admit", r.code, PATEL, effective, {
+      resident: { firstName: r.firstName, lastName: r.lastName, dateOfBirth: r.dateOfBirth, sex: r.sex, primaryLanguage: "English" },
+      representatives: reps.map((rep) => ({ firstName: rep.firstName, lastName: rep.lastName, email: rep.email ?? null, phone: rep.phone, roles: rep.roles, contactPriority: rep.contactPriority })),
+      selfRepresented: Boolean(r.selfRepresented),
+      bedId: bed ?? null,
+      apartmentId: apt ?? null,
+      payerId: PAYER_ID[r.payer],
+      memberReference: memberPrefix ? `${memberPrefix}-${r.code.toUpperCase()}` : null,
+      qualifyingStayFrom: plan.qualifying ? localDate(tz, plus(effective, -5 * 1440)) : null,
+      qualifyingStayTo: plan.qualifying ? localDate(tz, effective) : null,
+      admissionSource: plan.source,
+      effectiveAt: effective.toISOString(),
+      pasrrLevel1: pasrr,
+      placementReason: r.placementReason ?? null,
+      companionRelationship: plan.place.companionOf ? "spouse" : null,
+      notices,
+      prospectId: plan.prospect ?? null,
+      reservationId: plan.reservation ?? null,
+      agreementSignedAt: plan.agreement === "same" ? plus(effective, 1).toISOString() : null
+    });
+    if (plan.agreement === "later") {
+      schedule(plus(effective, 20 * 60), () => emit("agreement", r.code, PATEL, plus(effective, 20 * 60), { stay: ref(key("admit", r.code), "stayId"), resident: ref(key("admit", r.code), "residentId"), signedAt: plus(effective, 20 * 60).toISOString(), note: "Signed by the representative at the care conference." }));
+    }
+  }));
+  const readyLater = (placeId, when, unit, apartment = false) => schedule(when, () => {
+    if (apartment) {
+      const apt = places.apt(placeId);
+      if (apt.status !== "turnover") return;
+      apt.status = "available";
+      emit("place_ready", placeId + "_" + when.getTime(), LINDQVIST, when, { apartmentId: placeId, note: "Apartment turned over: deep clean, paint touch-up and safety check done." });
+    } else {
+      const bed = places.bed(placeId);
+      if (bed.status !== "cleaning") return;
+      bed.status = "available";
+      emit("place_ready", placeId + "_" + when.getTime(), nurseFor(unit), when, { bedId: placeId, note: "Terminal clean done; bed made up." });
+    }
+  });
+  const discharge = (code, when, input) => schedule(when, () => {
+    const place = places.release(code);
+    const unit = places.beds.get(place)?.unit;
+    emit("discharge", code, PATEL, when, { stay: ref(key("admit", code), "stayId"), disposition: input.disposition, initiatedBy: input.facility ? "facility" : "resident", effectiveAt: when.toISOString(), noticeException: input.noticeException ?? null });
+    if (!input.keepDirty) readyLater(place, plus(when, unit ? 180 : 3 * 1440), unit ?? "", !unit);
+  });
+  const death = (code, when, pronouncedBy) => schedule(when, () => {
+    const place = places.release(code);
+    const unit = places.beds.get(place)?.unit ?? "";
+    emit("death", code, RAMOS, when, { stay: ref(key("admit", code), "stayId"), effectiveAt: when.toISOString(), pronouncedBy });
+    readyLater(place, plus(when, 7 * 60), unit);
+  });
+  const roomNotice = (code, when, note) => emit("notice", `room_change_${code}_${when.getTime()}`, BROOKS, when, { stay: ref(key("admit", code), "stayId"), kind: "room_change", method: "in_person", deliveredAt: when.toISOString(), acknowledgement: "signed", note });
+  const movedFrom = /* @__PURE__ */ new Map();
+  const moveRoom = (id, when, pick2, reason) => schedule(plus(when, -18 * 60), () => {
+    const { code, units, prefer } = pick2();
+    used.add(code);
+    roomNotice(code, plus(when, -18 * 60), `Room change discussed with the resident and representative: ${reason.toLowerCase()}`);
+    schedule(when, () => {
+      const from = places.where.get(code);
+      const to = places.freeBed(units, places.sex.get(code) ?? null, { prefer });
+      const fromBed = places.bed(from.bed);
+      fromBed.status = "cleaning";
+      fromBed.occupant = null;
+      places.where.delete(code);
+      places.occupyBed(code, to);
+      emit("room_change", id, nurseFor(fromBed.unit), when, { stay: ref(key("admit", code), "stayId"), toBedId: to, effectiveAt: when.toISOString(), reason });
+      readyLater(fromBed.id, plus(when, 150), fromBed.unit);
+      movedFrom.set(id, fromBed.id);
+    });
+  });
+  const leave = (id, plan) => schedule(plan.start, () => {
+    const where = places.where.get(plan.code);
+    const bed = places.bed(where.bed);
+    if (plan.hold === "none") {
+      bed.status = "cleaning";
+      bed.occupant = null;
+      readyLater(bed.id, plus(plan.start, 180), bed.unit);
+      places.where.set(plan.code, { status: "on_leave", held: null });
+    } else {
+      bed.status = "held";
+      places.where.set(plan.code, { status: "on_leave", held: bed.id });
+    }
+    const startKey = emit("leave_start", id, nurseFor(bed.unit), plan.start, {
+      stay: ref(key("admit", plan.code), "stayId"),
+      leaveKind: "hospital",
+      holdElected: plan.hold !== "none",
+      holdPaidBy: plan.hold === "none" ? "none" : plan.hold,
+      facilityInitiated: true,
+      effectiveAt: plan.start.toISOString(),
+      destination: "Scioto Ridge Medical Center emergency department (fictional)",
+      noticeAtTransfer: { method: "phone_then_mail", deliveredAt: plan.start.toISOString(), acknowledgement: "not_required", note: plan.hold === "none" ? "Bed-hold notice given; the representative declined the hold." : "Bed-hold notice explained by phone; written copy mailed to the representative." }
+    });
+    if (plan.ombudsmanCopy) {
+      const when = plus(plan.start, 2 * 1440 + 120);
+      schedule(when, () => emit("notice", `ombudsman_${id}`, BROOKS, when, { stay: ref(key("admit", plan.code), "stayId"), censusEvent: ref(startKey, "eventId"), kind: "other", method: "email", deliveredAt: when.toISOString(), copyToOmbudsmanAt: when.toISOString(), note: "Transfer notice copy sent to the regional Long-Term Care Ombudsman." }));
+    }
+    if (plan.end) {
+      const end = plan.end;
+      schedule(end, () => {
+        let toBedId = null;
+        if (plan.hold === "none") {
+          toBedId = places.freeBed(plan.returnUnits ?? [bed.unit], places.sex.get(plan.code) ?? null);
+          places.where.delete(plan.code);
+          places.occupyBed(plan.code, toBedId);
+        } else {
+          bed.status = "occupied";
+          places.where.set(plan.code, { bed: bed.id, status: "in_house" });
+        }
+        emit("leave_end", id, nurseFor(bed.unit), end, { stay: ref(key("admit", plan.code), "stayId"), effectiveAt: end.toISOString(), toBedId });
+      });
+    }
+  });
+  const sourcesAt = at(-95, "08:30");
+  schedule(sourcesAt, () => emit("referral_sources", "maple_ridge", PATEL, sourcesAt, {}));
+  schedule(plus(sourcesAt, 30), () => emit("storefront", "maple_ridge", CASTELLANOS, plus(sourcesAt, 30), {}));
+  const harold = remember({ code: "harold", firstName: "Harold", lastName: "Benningfield", sex: "male", dateOfBirth: "1937-03-18", payer: "medicaid_ffs", reps: [{ firstName: "Diane", lastName: "Benningfield", email: familyEmail("Diane", "Benningfield", 3), phone: familyPhone(14), roles: ["healthcare_poa", "financial_responsible", "family"], contactPriority: 1 }] });
+  const walter = remember({ code: "walter", firstName: "Walter", lastName: "Dziedzic", sex: "male", dateOfBirth: "1934-11-02", payer: "medicaid_ffs", hospice: true, reps: [{ firstName: "Teresa", lastName: "Dziedzic", email: familyEmail("Teresa", "Dziedzic", 5), phone: familyPhone(22), roles: ["healthcare_poa", "family"], contactPriority: 1 }, { firstName: "Paul", lastName: "Dziedzic", email: familyEmail("Paul", "Dziedzic", 6), phone: familyPhone(23), roles: ["financial_responsible", "family"], contactPriority: 2 }] });
+  const clarence = remember({ code: "clarence", firstName: "Clarence", lastName: "Teague", sex: "male", dateOfBirth: "1939-07-25", payer: "private", reps: [{ firstName: "Monica", lastName: "Teague-Ellis", email: familyEmail("Monica", "TeagueEllis", 8), phone: familyPhone(31), roles: ["healthcare_poa", "financial_responsible", "family"], contactPriority: 1 }] });
+  admit({ r: harold, when: at(-1240, "14:10"), place: { bed: NAMED_BEDS.harold }, source: "acute_hospital", agreement: "same" });
+  admit({ r: walter, when: at(-410, "13:00"), place: { bed: NAMED_BEDS.walter }, source: "community_home", agreement: "same" });
+  admit({ r: clarence, when: at(-690, "11:20"), place: { bed: NAMED_BEDS.clarence }, source: "assisted_living", agreement: "same" });
+  const lt = [];
+  for (let i = 0; i < P.ltGenerated; i += 1) {
+    const payer = i < P.ltHospice ? "medicaid_ffs" : i < P.ltHospice + P.ltPrivate ? "private" : i < P.ltHospice + P.ltPrivate + P.ltMedicare ? i % 2 ? "medicare_advantage" : "medicare_a" : MEDICAID[i % 5 < 3 ? 0 : 1];
+    const r = remember(newPerson(payer, { hospice: i < P.ltHospice }));
+    lt.push(r);
+  }
+  const ward = lt.find((r) => MEDICAID.includes(r.payer) && !r.hospice);
+  ward.reps = [{ firstName: "Bernadette", lastName: "Kowal", email: familyEmail("Bernadette", "Kowal", 52), phone: familyPhone(52), roles: ["guardian"], contactPriority: 1 }];
+  lt.forEach((r, i) => {
+    const days = r.payer === "medicare_a" || r.payer === "medicare_advantage" ? 34 + i * 3 : 75 + i * 97 % 1150;
+    const units = r.payer === "medicare_a" || r.payer === "medicare_advantage" ? ["WIL", "CED", "ASP"] : i % 3 === 0 ? ["ASP", "CED", "WIL"] : i % 3 === 1 ? ["CED", "WIL", "ASP"] : ["WIL", "ASP", "CED"];
+    admit({ r, when: at(-days, `${10 + i % 7}:${String(i * 13 % 60).padStart(2, "0")}`), place: { units }, source: i % 4 === 0 ? "acute_hospital" : i % 4 === 1 ? "community_home" : i % 4 === 2 ? "assisted_living" : "another_nursing_facility", agreement: "same" });
+  });
+  const birchBefore = [];
+  for (let i = 0; i < P.birchBefore; i += 1) {
+    const r = remember(newPerson(i % 3 === 2 ? "medicare_advantage" : "medicare_a"));
+    birchBefore.push(r);
+    admit({ r, when: at(-(62 + i * 7 % 27), `${15 + i % 4}:${String(i * 11 % 60).padStart(2, "0")}`), place: { units: ["BIR"] }, source: "acute_hospital", agreement: "same", qualifying: r.payer === "medicare_a" });
+  }
+  const marguerite = remember({ code: "marguerite", firstName: "Marguerite", lastName: "Sauv\xE9", sex: "female", dateOfBirth: "1936-05-09", payer: "private", reps: [{ firstName: "Luc", lastName: "Sauv\xE9", email: familyEmail("Luc", "Sauve", 11), phone: familyPhone(44), roles: ["healthcare_poa", "financial_responsible", "family"], contactPriority: 1 }] });
+  admit({ r: marguerite, when: at(-530, "10:00"), place: { apt: NAMED_APTS.marguerite }, source: "community_home", agreement: "same" });
+  const al = [marguerite];
+  for (let c = 0; c < 2; c += 1) {
+    const a = remember(newPerson("private"));
+    const b = remember(newPerson("private"));
+    b.lastName = a.lastName;
+    b.reps = a.reps;
+    if (a.sex === b.sex) b.sex = a.sex === "female" ? "male" : "female";
+    places.sex.set(b.code, b.sex);
+    const when = at(-(300 + c * 140), "11:00");
+    admit({ r: a, when, place: { aptUnit: "MEA", aptType: "seed_apt_companion" }, source: "community_home", agreement: "same" });
+    admit({ r: b, when: plus(when, 5), place: { companionOf: a.code }, source: "community_home", agreement: "same" });
+    al.push(a, b);
+  }
+  for (let i = 0; i < P.alSingles; i += 1) {
+    const r = remember(newPerson(i % 6 === 5 ? "ltc" : "private"));
+    al.push(r);
+    admit({ r, when: at(-(70 + i * 61 % 1300), `${9 + i % 6}:30`), place: { aptUnit: "MEA" }, source: "community_home", agreement: "same" });
+  }
+  const ruth = remember({ code: "ruth", firstName: "Ruth", lastName: "Okonkwo-Hale", sex: "female", dateOfBirth: "1941-01-30", payer: "private", placementReason: MC_REASONS[0], reps: [{ firstName: "Adaeze", lastName: "Okonkwo-Hale", email: familyEmail("Adaeze", "OkonkwoHale", 12), phone: familyPhone(57), roles: ["healthcare_poa", "family"], contactPriority: 1 }, { firstName: "Simon", lastName: "Hale", email: familyEmail("Simon", "Hale", 13), phone: familyPhone(58), roles: ["financial_responsible", "family"], contactPriority: 2 }] });
+  admit({ r: ruth, when: at(-240, "10:30"), place: { apt: NAMED_APTS.ruth }, source: "community_home", agreement: "same" });
+  const mc = [ruth];
+  for (let i = 0; i < P.mcGenerated; i += 1) {
+    const r = remember(newPerson(i % 5 === 4 ? "ltc" : "private", { placementReason: MC_REASONS[(i + 1) % MC_REASONS.length] }));
+    mc.push(r);
+    admit({ r, when: at(-(80 + i * 53 % 900), `${10 + i % 5}:15`), place: { aptUnit: "HAR" }, source: i % 2 ? "assisted_living" : "community_home", agreement: "same" });
+  }
+  for (let i = 0; i < P.ilGenerated; i += 1) {
+    const r = newPerson("private", { selfRepresented: true });
+    r.reps = [{ ...r.reps[0], roles: ["emergency_contact"], contactPriority: 1 }];
+    remember(r);
+    admit({ r, when: at(-(90 + i * 71 % 1400), "10:45"), place: { aptUnit: "GRO" }, source: "community_home", agreement: "same" });
+  }
+  const homeDispositions = ["community_home", "community_home", "assisted_living", "community_home"];
+  for (let k = 0; k < P.birchBeforeDischarged; k += 1) {
+    const day3 = -58 + Math.round(k * 54 / Math.max(1, P.birchBeforeDischarged - 1));
+    const r = birchBefore[k];
+    ending.add(r.code);
+    discharge(r.code, at(day3, `${10 + k % 3}:30`), { disposition: homeDispositions[k % homeDispositions.length] });
+  }
+  const birchNew = [];
+  for (let j = 0; j < P.birchAdmits; j += 1) {
+    const day3 = -57 + Math.round(j * 56 / Math.max(1, P.birchAdmits - 1));
+    const r = remember(newPerson(j % 3 === 1 ? "medicare_advantage" : "medicare_a"));
+    birchNew.push({ r, day: day3 });
+    const last = j === P.birchAdmits - 1;
+    admit({ r, when: at(day3, `${15 + j % 4}:${String(j * 17 % 60).padStart(2, "0")}`), place: { units: ["BIR"] }, source: "acute_hospital", agreement: last ? "none" : "later", qualifying: r.payer === "medicare_a" });
+  }
+  for (let j = 0; j < P.birchAdmitsDischarged; j += 1) {
+    const { r, day: day3 } = birchNew[j];
+    ending.add(r.code);
+    discharge(r.code, at(day3 + 21, "11:15"), { disposition: "community_home" });
+  }
+  const toLongTerm = birchNew.find((entry, j) => j >= P.birchAdmitsDischarged && entry.day <= -29);
+  used.add(toLongTerm.r.code);
+  moveRoom("to_long_term", at(-28, "13:30"), () => ({ code: toLongTerm.r.code, units: ["CED", "WIL"] }), "Skilled stay ending; transition to long-term care in Cedar.");
+  const noHold = birchBefore[P.birchBeforeDischarged];
+  used.add(noHold.code);
+  leave("birch_no_hold", { code: noHold.code, start: at(-30, "21:40"), end: at(-26, "16:20"), hold: "none", ombudsmanCopy: true, returnUnits: ["BIR"] });
+  const medicaidLt = lt.filter((r) => MEDICAID.includes(r.payer) && !r.hospice && r !== ward);
+  let pick = 0;
+  const nextMedicaid = () => {
+    const r = medicaidLt[pick++];
+    if (!r) throw new Error("Seed plan: not enough Medicaid residents for the leave flows");
+    used.add(r.code);
+    return r;
+  };
+  used.add("harold");
+  leave("harold_hospital", { code: "harold", start: at(-40, "06:50"), end: at(-36, "15:10"), hold: "medicaid", ombudsmanCopy: true });
+  for (let i = 0; i < P.extraHoldLeaves; i += 1) {
+    const r = nextMedicaid();
+    const start = -55 + i * 9;
+    leave(`hold_${i + 1}`, { code: r.code, start: at(start, `${i * 5 % 12 + 8}:20`), end: at(start + 2 + i % 4, "14:40"), hold: "medicaid", ombudsmanCopy: true });
+  }
+  for (let i = 0; i < P.openLeaves; i += 1) {
+    const r = nextMedicaid();
+    leave(`open_${i + 1}`, { code: r.code, start: at(i === 0 ? -2 : -1, i === 2 ? "19:05" : "03:35"), hold: "medicaid", ombudsmanCopy: false });
+  }
+  used.add("clarence");
+  leave("clarence_hospital", { code: "clarence", start: at(-15, "02:15"), end: at(-12, "13:50"), hold: "private", ombudsmanCopy: true });
+  const hospiceDeath = lt.find((r) => r.hospice);
+  ending.add(hospiceDeath.code);
+  death(hospiceDeath.code, at(-18, "04:10"), "Hospice registered nurse, with Dr. Ilse Brandvold notified");
+  const medicaidDeath = nextMedicaid();
+  ending.add(medicaidDeath.code);
+  death(medicaidDeath.code, at(-33, "05:45"), "Dr. Ilse Brandvold");
+  const improved = lt.find((r) => r.payer === "private");
+  ending.add(improved.code);
+  const noticeAt = at(-45, "15:00");
+  schedule(noticeAt, () => emit("notice", `discharge_${improved.code}`, BROOKS, noticeAt, { stay: ref(key("admit", improved.code), "stayId"), kind: "transfer_discharge", method: "in_person", deliveredAt: noticeAt.toISOString(), acknowledgement: "signed", copyToOmbudsmanAt: plus(noticeAt, 60).toISOString(), note: "Health improved; nursing-facility care no longer needed. Discharge to assisted living discussed with the resident; appeal rights explained." }));
+  discharge(improved.code, at(-14, "11:00"), { disposition: "assisted_living", facility: true });
+  moveRoom("roommate", at(-17, "14:00"), () => {
+    const code = [...places.where.entries()].find(([c, w]) => w.status === "in_house" && w.bed && places.bed(w.bed).unit === "WIL" && !used.has(c) && !ending.has(c) && residents.get(c).payer !== "private")?.[0];
+    if (!code) throw new Error("Seed plan: no Willow resident for the roommate change");
+    return { code, units: ["WIL", "CED"] };
+  }, "Roommate compatibility; requested by the resident and representative.");
+  let isolationCode = "";
+  moveRoom("isolation", at(-11, "10:20"), () => {
+    const code = [...places.where.entries()].find(([c, w]) => w.status === "in_house" && w.bed && places.bed(w.bed).unit === "ASP" && !used.has(c) && !ending.has(c) && !residents.get(c).hospice)?.[0];
+    if (!code) throw new Error("Seed plan: no Aspen resident for the isolation move");
+    isolationCode = code;
+    return { code, units: ["ASP"], prefer: ISOLATION_BED };
+  }, "Contact precautions for C. difficile; private isolation room per the infection preventionist.");
+  moveRoom("isolation_return", at(-4, "11:00"), () => {
+    const original = movedFrom.get("isolation") ?? null;
+    return { code: isolationCode, units: ["ASP", "CED", "WIL"], prefer: original };
+  }, "Precautions discontinued after the infection preventionist's review; returning to the original room.");
+  const oosAt = at(-20, "09:40");
+  schedule(oosAt, () => {
+    const id = places.freeBed(["ASP", "WIL", "CED"], null);
+    places.bed(id).status = "out_of_service";
+    emit("place_service", "oos_1", FERRIS, oosAt, { bedId: id, inService: false, reason: "Bathroom renovation after a water leak; maintenance work order open." });
+  });
+  const dolores = remember({ code: "dolores", firstName: "Dolores", lastName: "Feinberg-Ruiz", sex: "female", dateOfBirth: "1940-08-14", payer: "private", reps: [{ firstName: "Gabriel", lastName: "Ruiz", email: familyEmail("Gabriel", "Ruiz", 9), phone: familyPhone(36), roles: ["healthcare_poa", "financial_responsible", "family"], contactPriority: 1 }] });
+  admit({ r: dolores, when: at(-21, "13:15"), place: { bed: NAMED_BEDS.dolores }, source: "community_home", agreement: "later" });
+  const ltLate = remember(newPerson("medicaid_ffs"));
+  admit({ r: ltLate, when: at(-12, "14:30"), place: { units: ["CED", "WIL", "ASP"] }, source: "another_nursing_facility", agreement: "none" });
+  const ltRecent = remember(newPerson("medicaid_mco"));
+  admit({ r: ltRecent, when: at(-6, "15:45"), place: { units: ["WIL", "CED", "ASP"] }, source: "acute_hospital", agreement: "later" });
+  const alMoveOut = al[5];
+  ending.add(alMoveOut.code);
+  discharge(alMoveOut.code, at(-12, "10:00"), { disposition: "community_home" });
+  const alDirect = remember(newPerson("private"));
+  al.push(alDirect);
+  admit({ r: alDirect, when: at(-20, "11:30"), place: { aptUnit: "MEA", aptType: "seed_apt_studio" }, source: "community_home", agreement: "later" });
+  const alMoveOut2 = al[al.length - 2];
+  ending.add(alMoveOut2.code);
+  discharge(alMoveOut2.code, at(-2, "13:00"), { disposition: "another_nursing_facility", keepDirty: true });
+  const mcNew = remember(newPerson("private", { placementReason: MC_REASONS[2] }));
+  mc.push(mcNew);
+  admit({ r: mcNew, when: at(-15, "10:40"), place: { aptUnit: "HAR" }, source: "assisted_living", agreement: "later" });
+  const slot = (id, startsAt, openedAt) => schedule(openedAt, () => emit("tour_slots", id, PATEL, openedAt, { slots: [{ startsAt: startsAt.toISOString(), minutes: 45, capacity: 2, kind: "either" }] }));
+  const phoneLead = (id, when, input) => {
+    const [first, ...rest] = input.contactName.split(" ");
+    schedule(when, () => emit("inquiry_phone", id, PATEL, when, { contactName: input.contactName, contactEmail: familyEmail(first, rest.join(""), input.n), contactPhone: familyPhone(input.n), relationship: input.relationship, message: input.message, forWhomFirstName: input.forWhom[0], forWhomLastName: input.forWhom[1], desiredSetting: input.setting, consentToContact: true, source: input.source ?? "phone", referralSourceId: input.referralSourceId ?? null }));
+    return key("inquiry_phone", id);
+  };
+  const activity = (id, lead, when, kind, summary) => schedule(when, () => emit("activity", id, PATEL, when, { lead: ref(lead, "leadId"), kind, summary, at: when.toISOString() }));
+  const tour = (id, lead, startsAt, bookedAt, outcome) => {
+    slot(`slot_${id}`, startsAt, plus(bookedAt, -30));
+    schedule(bookedAt, () => emit("tour_schedule", id, PATEL, bookedAt, { lead: ref(lead, "leadId"), slotStartsAt: startsAt.toISOString(), kind: "in_person", notes: "Booked by phone." }));
+    if (outcome) {
+      const when = outcome === "cancelled" ? plus(startsAt, -1440) : plus(startsAt, 75);
+      schedule(when, () => emit("tour_move", id, PATEL, when, { tour: ref(key("tour_schedule", id), "tourId"), to: outcome, reason: outcome === "cancelled" ? "Family rescheduling after a hospital stay." : null }));
+    }
+  };
+  const leadMove = (id, lead, when, to, lostReason = null, note = null) => schedule(when, () => emit("lead_move", id, PATEL, when, { lead: ref(lead, "leadId"), to, lostReason, note }));
+  const agnesLead = phoneLead("agnes", at(-40, "10:15"), { contactName: "Janet Whitfield", relationship: "Daughter", forWhom: ["Agnes", "Whitfield"], setting: "assisted_living", message: "Mother is 86 and no longer safe living alone after a fall; wants a one-bedroom.", n: 61 });
+  activity("agnes_call", agnesLead, at(-40, "10:40"), "call", "Discussed care needs, pricing and the one-bedroom waitlist. Tour booked.");
+  tour("agnes", agnesLead, at(-35, "14:00"), at(-38, "09:00"), "completed");
+  const agnesWaitlist = key("waitlist_add", "agnes");
+  const wlAt = at(-34, "10:00");
+  schedule(wlAt, () => emit("waitlist_add", "agnes", PATEL, wlAt, { lead: ref(agnesLead, "leadId"), prospect: ref(agnesLead, "prospectId"), setting: "assisted_living", apartmentTypeId: "seed_apt_one_bed", priorityReason: "date_order" }));
+  leadMove("agnes_waitlisted", agnesLead, plus(wlAt, 5), "waitlisted", null, "Deposit waived until a one-bedroom opens.");
+  const offerAt = at(-6, "09:30");
+  let agnesApt = "";
+  schedule(offerAt, () => {
+    agnesApt = places.freeApt("MEA", { type: "seed_apt_one_bed" });
+    places.apt(agnesApt).status = "reserved";
+    emit("waitlist_offer", "agnes", PATEL, offerAt, { entry: ref(agnesWaitlist, "waitlistEntryId"), apartmentId: agnesApt, hours: 120 });
+  });
+  const acceptAt = at(-5, "16:00");
+  schedule(acceptAt, () => emit("waitlist_resolve", "agnes", PATEL, acceptAt, { entry: ref(agnesWaitlist, "waitlistEntryId"), to: "accepted" }));
+  leadMove("agnes_move_in", agnesLead, plus(acceptAt, 10), "move_in_scheduled", null, "Move-in set for Thursday morning.");
+  const agnes = remember({ code: "agnes", firstName: "Agnes", lastName: "Whitfield", sex: "female", dateOfBirth: "1940-02-11", payer: "private", reps: [{ firstName: "Janet", lastName: "Whitfield", email: familyEmail("Janet", "Whitfield", 61), phone: familyPhone(61), roles: ["healthcare_poa", "financial_responsible", "family"], contactPriority: 1 }] });
+  al.push(agnes);
+  const agnesAdmit = at(-3, "10:30");
+  schedule(plus(agnesAdmit, -1), () => admit({ r: agnes, when: agnesAdmit, place: { apt: agnesApt }, reserved: true, source: "community_home", agreement: "same", prospect: ref(agnesLead, "prospectId"), reservation: ref(key("waitlist_offer", "agnes"), "reservationId") }));
+  const eleanorRef = key("referral", "eleanor");
+  const refAt = at(-10, "13:20");
+  schedule(refAt, () => emit("referral", "eleanor", PATEL, refAt, { sourceId: "seed_referral_source_scioto_ridge", firstName: "Eleanor", lastName: "Whitcombe", dateOfBirth: "1938-09-21", desiredSetting: "nursing_facility", expectedPayer: "medicare_a", clinicalSummary: "Right hip fracture after a fall at home; ORIF on hospital day 1. Weight bearing as tolerated. Needs PT/OT five days a week, pain management and wound checks.", pasrrLevel1: { completedAt: at(-11, "16:00").toISOString(), result: "Level I negative: Level II not required." }, responseHours: 4, receivedAt: refAt.toISOString() }));
+  const referralMove = (id, refKey, when, to, extra = {}) => schedule(when, () => emit("referral_move", id, PATEL, when, { referral: ref(refKey, "referralId"), to, ...extra }));
+  referralMove("eleanor_review", eleanorRef, at(-10, "13:50"), "clinical_review");
+  referralMove("eleanor_payer", eleanorRef, at(-10, "14:30"), "payer_check");
+  const eleanorAccept = at(-10, "15:10");
+  schedule(eleanorAccept, () => {
+    places.bed(NAMED_BEDS.eleanor).status = "reserved";
+    emit("referral_move", "eleanor_accept", PATEL, eleanorAccept, { referral: ref(eleanorRef, "referralId"), to: "accepted", bedId: NAMED_BEDS.eleanor, reservationHours: 48 });
+  });
+  const eleanor = remember({ code: "eleanor", firstName: "Eleanor", lastName: "Whitcombe", sex: "female", dateOfBirth: "1938-09-21", payer: "medicare_a", reps: [{ firstName: "Catherine", lastName: "Whitcombe-Shaw", email: familyEmail("Catherine", "WhitcombeShaw", 2), phone: familyPhone(9), roles: ["healthcare_poa", "family"], contactPriority: 1 }, { firstName: "Robert", lastName: "Whitcombe", email: familyEmail("Robert", "Whitcombe", 4), phone: familyPhone(10), roles: ["financial_responsible", "family"], contactPriority: 2 }] });
+  admit({ r: eleanor, when: at(-9, "15:30"), place: { bed: NAMED_BEDS.eleanor }, reserved: true, source: "acute_hospital", agreement: "later", qualifying: true, prospect: ref(eleanorRef, "prospectId"), reservation: ref(key("referral_move", "eleanor_accept"), "reservationId") });
+  const theoRef = key("referral", "theodore");
+  const theoAt = at(-1, "11:05");
+  schedule(theoAt, () => emit("referral", "theodore", PATEL, theoAt, { sourceId: "seed_referral_source_alum_creek", firstName: "Theodore", lastName: "Brannigan", dateOfBirth: "1944-04-03", desiredSetting: "nursing_facility", expectedPayer: "medicare_advantage", clinicalSummary: "Community-acquired pneumonia with deconditioning; on oxygen 2 L, weaning. Needs therapy and IV antibiotic completion.", pasrrLevel1: { completedAt: at(-2, "17:30").toISOString(), result: "Level I negative: Level II not required." }, responseHours: 4, receivedAt: theoAt.toISOString() }));
+  referralMove("theodore_review", theoRef, at(-1, "12:00"), "clinical_review");
+  referralMove("theodore_payer", theoRef, at(-1, "13:30"), "payer_check");
+  schedule(T, () => {
+    const id = places.freeBed(["BIR"], "male");
+    places.bed(id).status = "reserved";
+    emit("referral_move", "theodore_accept", PATEL, T, { referral: ref(theoRef, "referralId"), to: "accepted", bedId: id, reservationHours: 72 });
+  });
+  const fischerLead = phoneLead("nf_waitlist", at(-25, "11:30"), { contactName: "Brian Lindgren", relationship: "Son", forWhom: ["Gerald", "Lindgren"], setting: "nursing_facility", message: "Father has Parkinson's disease; home care is no longer enough. Medicaid application filed.", n: 63 });
+  const nfWlAt = at(-21, "10:00");
+  schedule(nfWlAt, () => emit("waitlist_add", "nf_waitlist", PATEL, nfWlAt, { lead: ref(fischerLead, "leadId"), prospect: ref(fischerLead, "prospectId"), setting: "nursing_facility", apartmentTypeId: null, priorityReason: "date_order" }));
+  leadMove("nf_waitlisted", fischerLead, plus(nfWlAt, 5), "waitlisted");
+  schedule(T, () => {
+    const id = places.freeBed(["CED", "WIL", "ASP"], "male");
+    places.bed(id).status = "reserved";
+    emit("waitlist_offer", "nf_waitlist", PATEL, T, { entry: ref(key("waitlist_add", "nf_waitlist"), "waitlistEntryId"), bedId: id, hours: 72 });
+  });
+  if (P.fullSales) {
+    const mcWlAt = at(-14, "20:12");
+    schedule(mcWlAt, () => emit("waitlist_web", "mc_web", PUBLIC, mcWlAt, { communitySlug: COMMUNITY.slug, contactName: "Rachel Sandoval", contactEmail: familyEmail("Rachel", "Sandoval", 64), contactPhone: familyPhone(64), relationship: "Daughter", message: "Dad was diagnosed with Alzheimer's last year and has started wandering at night.", forWhomFirstName: "Ernesto", forWhomLastName: "Sandoval", setting: "memory_care", apartmentTypeId: "seed_apt_mc_suite", desiredMoveIn: date2(10), consentToContact: true, website: "" }));
+    schedule(T, () => {
+      const id = places.freeApt("HAR");
+      places.apt(id).status = "reserved";
+      emit("waitlist_offer", "mc_web", PATEL, T, { entry: { $ref: key("waitlist_web", "mc_web"), field: "waitlistEntryId" }, apartmentId: id, hours: 96 });
+    });
+    const recvAt = at(-1, "16:40");
+    schedule(recvAt, () => emit("referral", "open_agency", PATEL, recvAt, { sourceId: "seed_referral_source_buckeye_placement", firstName: "Lorraine", lastName: "Esposito", dateOfBirth: "1942-12-12", desiredSetting: "nursing_facility", expectedPayer: "medicaid", clinicalSummary: "Long-term placement: advanced COPD, needs two-person transfers. Medicaid active.", pasrrLevel1: { completedAt: at(-3, "12:00").toISOString(), result: "Level I negative: Level II not required." }, responseHours: 24, receivedAt: recvAt.toISOString() }));
+    const recv2 = at(-1, "18:10");
+    schedule(recv2, () => emit("referral", "open_hospital", PATEL, recv2, { sourceId: "seed_referral_source_scioto_ridge", firstName: "Vernon", lastName: "Quarles", dateOfBirth: "1946-06-28", desiredSetting: "nursing_facility", expectedPayer: "medicare_a", clinicalSummary: "Left total knee replacement, uncomplicated. Discharge expected tomorrow; needs short-term rehab.", pasrrLevel1: { completedAt: at(-1, "15:00").toISOString(), result: "Level I negative: Level II not required." }, responseHours: 4, receivedAt: recv2.toISOString() }));
+    const reviewRef = at(-2, "09:25");
+    schedule(reviewRef, () => emit("referral", "in_review", PATEL, reviewRef, { sourceId: "seed_referral_source_okafor_im", firstName: "Irene", lastName: "Albrecht", dateOfBirth: "1936-10-05", desiredSetting: "nursing_facility", expectedPayer: "private_pay", clinicalSummary: "Progressive weakness and weight loss at home; family requests long-term care.", pasrrLevel1: null, responseHours: 48, receivedAt: reviewRef.toISOString() }));
+    referralMove("in_review_move", key("referral", "in_review"), at(-2, "11:00"), "clinical_review");
+    const declAt = at(-20, "10:05");
+    schedule(declAt, () => emit("referral", "declined", PATEL, declAt, { sourceId: "seed_referral_source_alum_creek", firstName: "Floyd", lastName: "Greer", dateOfBirth: "1945-01-17", desiredSetting: "nursing_facility", expectedPayer: "medicare_a", clinicalSummary: "Respiratory failure; tracheostomy with ventilator dependence.", pasrrLevel1: null, responseHours: 4, receivedAt: declAt.toISOString() }));
+    referralMove("declined_review", key("referral", "declined"), at(-20, "10:30"), "clinical_review");
+    referralMove("declined_move", key("referral", "declined"), at(-20, "11:10"), "declined", { declineReason: "clinical_needs" });
+    const web = [
+      { id: "web_1", day: -3, time: "21:14", name: "Heather Ulrich", forWhom: ["Mildred", "Ulrich"], setting: "assisted_living", message: "Looking for assisted living for my mother, who needs help with medications and bathing." },
+      { id: "web_2", day: -2, time: "07:42", name: "Scott Brennan", forWhom: ["Arthur", "Brennan"], setting: "nursing_facility", message: "My father needs a short rehab stay after knee surgery next month. Do you take Medicare Advantage?" },
+      { id: "web_3", day: -2, time: "19:30", name: "Nicole Haddad", forWhom: ["Helen", "Haddad"], setting: "independent_living", message: "Interested in an independent one-bedroom. Are pets allowed?" },
+      { id: "web_4", day: -1, time: "12:05", name: "Douglas Pellegrino", forWhom: ["Ethel", "Pellegrino"], setting: "memory_care", message: "Mom has dementia and is getting lost. What does memory care cost?" }
+    ];
+    web.forEach((w, i) => {
+      const when = at(w.day, w.time);
+      const [first, ...rest] = w.name.split(" ");
+      schedule(when, () => emit("inquiry_web", w.id, PUBLIC, when, { communitySlug: COMMUNITY.slug, contactName: w.name, contactEmail: familyEmail(first, rest.join(""), 70 + i), contactPhone: familyPhone(70 + i), relationship: "Family", message: w.message, forWhomFirstName: w.forWhom[0], forWhomLastName: w.forWhom[1], desiredSetting: w.setting, consentToContact: true, website: "" }));
+    });
+    const contacted = [
+      ["call_1", -12, "Karen Zielinski", ["Doris", "Zielinski"], "assisted_living", "Asked about respite stays while the family travels."],
+      ["call_2", -9, "Michael Rinaldi", ["Leonard", "Rinaldi"], "nursing_facility", "Father on hospice at home; asked about hospice in a nursing home."],
+      ["call_3", -7, "Angela Coleman", ["Bernice", "Coleman"], "memory_care", "Mother with Lewy body dementia; asked about staff training."],
+      ["call_4", -5, "Kevin Dawkins", ["Earl", "Dawkins"], "independent_living", "Couple selling their house in spring; wants a waitlist position."],
+      ["call_5", -4, "Denise Fairbanks", ["Virginia", "Fairbanks"], "assisted_living", "Price comparison with two other communities."]
+    ];
+    contacted.forEach(([id, day3, name, forWhom, setting, message], i) => {
+      const lead = phoneLead(id, at(day3, "11:20"), { contactName: name, relationship: "Son or daughter", forWhom: [forWhom[0], forWhom[1]], setting, message, n: 80 + i });
+      activity(`${id}_email`, lead, at(day3, "15:05"), "email", "Sent the brochure, pricing sheet and the dining menu.");
+    });
+    const futureSlots = [];
+    for (let d = 1; d <= 14; d += 1) {
+      const day3 = date2(d);
+      const weekday2 = (/* @__PURE__ */ new Date(`${day3}T12:00:00Z`)).getUTCDay();
+      if (weekday2 === 0) continue;
+      for (const time2 of weekday2 === 6 ? ["11:00"] : ["10:00", "14:00"]) futureSlots.push({ startsAt: zonedInstant(tz, day3, time2).toISOString(), minutes: 45, capacity: 2, kind: "either" });
+    }
+    schedule(T, () => emit("tour_slots", "next_two_weeks", PATEL, T, { slots: futureSlots.slice(0, 60) }));
+    const upcoming = [
+      ["tour_1", -6, "Steven Ingram", ["Howard", "Ingram"], "assisted_living", 0],
+      ["tour_2", -4, "Julie Thibodeaux", ["Lorraine", "Thibodeaux"], "memory_care", 3],
+      ["tour_3", -3, "Gregory Jessup", ["Raymond", "Jessup"], "independent_living", 6]
+    ];
+    upcoming.forEach(([id, day3, name, forWhom, setting, slotIndex], i) => {
+      const lead = phoneLead(id, at(day3, "10:05"), { contactName: name, relationship: "Family", forWhom: [forWhom[0], forWhom[1]], setting, message: "Wants to see the apartments and have lunch in the dining room.", n: 90 + i });
+      const s = futureSlots[slotIndex];
+      schedule(T, () => emit("tour_schedule", id, PATEL, T, { lead: ref(lead, "leadId"), slotStartsAt: s.startsAt, kind: "in_person", notes: "Lunch in the bistro after the tour." }));
+    });
+    const webTourSlot = futureSlots[4];
+    schedule(T, () => emit("tour_request_web", "web_tour", PUBLIC, T, { communitySlug: COMMUNITY.slug, slotStartsAt: webTourSlot.startsAt, kind: "in_person", contactName: "Tamara Wexler", contactEmail: familyEmail("Tamara", "Wexler", 95), contactPhone: familyPhone(95), notes: "Coming with my brother.", consentToContact: true }));
+    schedule(T, () => emit("tour_move", "web_tour_confirm", PATEL, T, { tour: ref(key("tour_request_web", "web_tour"), "tourId"), to: "confirmed", reason: null }));
+    const toured = phoneLead("toured_1", at(-19, "09:40"), { contactName: "Lisa Nakamura", relationship: "Daughter", forWhom: ["Margaret", "Nakamura"], setting: "assisted_living", message: "Mother is moving from Dayton to be closer to family.", n: 101 });
+    tour("toured_1", toured, at(-16, "10:00"), at(-18, "14:00"), "completed");
+    activity("toured_1_note", toured, at(-16, "11:30"), "note", "Loved the courtyard studio; wants to compare with one more community before deciding.");
+    const toured2 = phoneLead("toured_2", at(-12, "13:00"), { contactName: "Robert Langford", relationship: "Husband", forWhom: ["Shirley", "Langford"], setting: "memory_care", message: "Wife's dementia is progressing; I can no longer manage at night.", n: 102 });
+    tour("toured_2", toured2, at(-9, "14:00"), at(-11, "09:10"), "completed");
+    const noShow = phoneLead("no_show", at(-14, "15:20"), { contactName: "Erin McAllister", relationship: "Niece", forWhom: ["Irene", "McAllister"], setting: "assisted_living", message: "Aunt lives alone in Westerville.", n: 103 });
+    tour("no_show", noShow, at(-11, "10:00"), at(-13, "10:30"), "no_show");
+    leadMove("no_show_lost", noShow, at(-8, "09:00"), "lost", "no_response", "Three calls and an email without a reply.");
+    const cancelled = phoneLead("cancelled", at(-10, "10:00"), { contactName: "Timothy Vandermeer", relationship: "Son", forWhom: ["Lloyd", "Vandermeer"], setting: "nursing_facility", message: "Father in hospital; planning ahead for long-term care.", n: 104 });
+    tour("cancelled", cancelled, at(-5, "14:00"), at(-9, "11:00"), "cancelled");
+    const lostCompetitor = phoneLead("lost_competitor", at(-48, "10:30"), { contactName: "Monica Ostrander", relationship: "Daughter", forWhom: ["Evelyn", "Ostrander"], setting: "assisted_living", message: "Comparing three communities.", n: 105 });
+    tour("lost_competitor", lostCompetitor, at(-44, "10:00"), at(-46, "15:00"), "completed");
+    leadMove("lost_competitor_lost", lostCompetitor, at(-38, "16:00"), "lost", "chose_competitor", "Chose a community closer to her son in Dublin.");
+    const lostCost = phoneLead("lost_cost", at(-31, "14:45"), { contactName: "Jeffrey Yoder", relationship: "Son", forWhom: ["Eugene", "Yoder"], setting: "independent_living", message: "Budget question.", n: 106 });
+    leadMove("lost_cost_lost", lostCost, at(-29, "10:00"), "lost", "cost", "Over budget; staying in their condo with home care for now.");
+    const nurture = phoneLead("nurture", at(-27, "09:15"), { contactName: "Susan Kaminski", relationship: "Daughter", forWhom: ["Gladys", "Kaminski"], setting: "assisted_living", message: "Not ready yet; maybe next year.", n: 107 });
+    leadMove("nurture_move", nurture, at(-27, "09:40"), "nurture", null, "Follow up in the spring.");
+  }
+  const invitedEmails = /* @__PURE__ */ new Set();
+  const portalCandidates = [...residents.values()].filter((r) => {
+    const email = r.reps[0]?.email;
+    const admitted = admittedAt.get(r.code);
+    if (ending.has(r.code) || r.selfRepresented || !email || !admitted || admitted.getTime() > at(-4, "00:00").getTime() || invitedEmails.has(email)) return false;
+    invitedEmails.add(email);
+    return true;
+  });
+  const stride = Math.max(1, Math.floor(portalCandidates.length / P.portalAccounts));
+  const portal = portalCandidates.filter((_, i) => i % stride === 0).slice(0, P.portalAccounts);
+  portal.forEach((r, i) => {
+    const admittedDay = Math.ceil((admittedAt.get(r.code).getTime() - T.getTime()) / 864e5) - 1;
+    let day3 = Math.max(-50 + Math.floor(i * 44 / Math.max(1, portal.length)), admittedDay + 2);
+    const pending = i >= portal.length - Math.max(1, Math.round(P.portalAccounts / 8));
+    if (pending || day3 > -2) day3 = -2;
+    const inviteAt = at(day3, "10:00");
+    const rep = r.reps[0];
+    schedule(inviteAt, () => emit("invite", r.code, BROOKS, inviteAt, { resident: ref(key("admit", r.code), "residentId"), priority: rep.contactPriority }));
+    if (pending) return;
+    const acceptAt2 = at(day3, "20:30");
+    schedule(acceptAt2, () => emit("accept", r.code, PUBLIC, acceptAt2, { account: ref(key("invite", r.code), "accountId") }));
+    const roles = rep.roles;
+    const scopes = roles.includes("guardian") ? ["updates", "calendar", "care_summary", "documents", "statements", "trust_balance"] : roles.includes("healthcare_poa") && roles.includes("financial_responsible") ? ["updates", "calendar", "documents", "care_summary", "statements"] : roles.includes("healthcare_poa") ? ["updates", "calendar", "documents", "care_summary"] : ["updates", "calendar", "statements", "payments"];
+    const proposeAt = at(day3 + 1, "09:15");
+    schedule(proposeAt, () => emit("scope_propose", r.code, PATEL, proposeAt, { resident: ref(key("admit", r.code), "residentId"), priority: rep.contactPriority, scopes }));
+    const awaiting = i >= portal.length - Math.max(1, Math.round(P.portalAccounts / 10)) - Math.max(1, Math.round(P.portalAccounts / 8));
+    if (!awaiting && day3 + 1 <= -1) {
+      const grantAt = at(day3 + 1, "13:40");
+      schedule(grantAt, () => emit("scope_grant", r.code, BROOKS, grantAt, { proposals: ref(key("scope_propose", r.code), "grantIds") }));
+    }
+  });
+  const bgAt = at(-6, "22:40");
+  schedule(bgAt, () => {
+    const code = [...places.where.entries()].find(([c, w]) => w.status === "in_house" && w.bed && places.bed(w.bed).unit === "WIL" && !ending.has(c))?.[0];
+    if (!code) throw new Error("Seed plan: no Willow resident for break-glass");
+    emit("break_glass_open", "night_cover", RAMOS, bgAt, { resident: ref(key("admit", code), "residentId"), reason: "coverage_gap", note: "Covering Willow overnight after a call-off; needed the medication history for a resident with chest pain.", hours: 2 });
+    const endAt = plus(bgAt, 50);
+    schedule(endAt, () => emit("break_glass_end", "night_cover", RAMOS, endAt, { grant: ref(key("break_glass_open", "night_cover"), "grantId") }));
+    const reviewAt = at(-5, "10:15");
+    schedule(reviewAt, () => emit("break_glass_review", "night_cover", FERREIRA_KAHN, reviewAt, { grant: ref(key("break_glass_open", "night_cover"), "grantId"), outcome: "reviewed_ok", note: "Matches the staffing log: Willow call-off that night. Access limited to the medication record. Appropriate." }));
+  });
+  const bg2 = at(-2, "05:20");
+  schedule(bg2, () => {
+    const code = [...places.where.entries()].find(([c, w]) => w.status === "in_house" && w.bed && places.bed(w.bed).unit === "CED" && !ending.has(c))?.[0];
+    if (!code) throw new Error("Seed plan: no Cedar resident for break-glass");
+    emit("break_glass_open", "rapid_response", LINDQVIST, bg2, { resident: ref(key("admit", code), "residentId"), reason: "emergency_care", note: "Rapid response on Cedar; reviewed the advance directives and code status while the charge nurse called 911.", hours: 1 });
+    const endAt = plus(bg2, 35);
+    schedule(endAt, () => emit("break_glass_end", "rapid_response", LINDQVIST, endAt, { grant: ref(key("break_glass_open", "rapid_response"), "grantId") }));
+  });
+  for (let d = -(P.signOffDays + 1); d <= -2; d += 1) {
+    const when = at(d + 1, "09:30");
+    schedule(when, () => emit("sign_off", date2(d), LINDQVIST, when, { date: date2(d), note: d === -9 ? "Reconciled with the Birch hospital transfer log." : null }));
+  }
+  schedule(T, () => emit("snapshot", date2(-1), SCHEDULER, T, { date: date2(-1) }));
+  schedule(T, () => emit("clock_sweep", "anchor", SCHEDULER, T, {}));
+  schedule(T, () => emit("finish", "anchor", PATEL, T, {}));
+  for (; ; ) {
+    if (!acts.length) break;
+    let next = 0;
+    for (let i = 1; i < acts.length; i += 1) if (acts[i].at.getTime() < acts[next].at.getTime() || acts[i].at.getTime() === acts[next].at.getTime() && acts[i].seq < acts[next].seq) next = i;
+    const [act] = acts.splice(next, 1);
+    act.run();
+  }
+  const keys = /* @__PURE__ */ new Set();
+  for (const step of steps) {
+    if (keys.has(step.key)) throw new Error(`Seed plan: duplicate step ${step.key}`);
+    keys.add(step.key);
+  }
+  const present = [...places.where.entries()].filter(([, w]) => w.status !== "ended");
+  const beds = [...places.beds.values()];
+  const count = (status) => beds.filter((bed) => bed.status === status).length;
+  const residential = {};
+  for (const unit of RESIDENTIAL_UNITS) {
+    const apts = [...places.apts.values()].filter((apt) => apt.unit === unit.code);
+    residential[unit.code] = { residents: apts.reduce((n, apt) => n + apt.occupants.length, 0), occupied: apts.filter((a) => a.status === "occupied").length, reserved: apts.filter((a) => a.status === "reserved").length, turnover: apts.filter((a) => a.status === "turnover").length, available: apts.filter((a) => a.status === "available").length };
+  }
+  const payers = {};
+  let hospice = 0;
+  for (const [code, w] of present) {
+    if (!w.bed && !w.held) continue;
+    const r = residents.get(code);
+    payers[r.payer] = (payers[r.payer] ?? 0) + 1;
+    if (r.hospice) hospice += 1;
+  }
+  return {
+    steps,
+    summary: {
+      residentsPresent: present.length,
+      nursing: { occupied: count("occupied"), held: count("held"), reserved: count("reserved"), cleaning: count("cleaning"), outOfService: count("out_of_service"), available: count("available") },
+      residential,
+      payers,
+      hospice,
+      portalAccounts: portal.length,
+      steps: steps.length
+    }
+  };
+}
+
+// features/keystone/seed/census.ts
+var PERMISSIONS = {
+  referral_sources: ["canManageSales"],
+  storefront: ["canManageStorefront"],
+  tour_slots: ["canManageSales"],
+  inquiry_phone: ["canManageSales"],
+  inquiry_web: [],
+  waitlist_web: [],
+  tour_request_web: [],
+  activity: ["canManageSales"],
+  tour_schedule: ["canManageSales"],
+  tour_move: ["canManageSales"],
+  lead_move: ["canManageSales"],
+  referral: ["canAdmitDischarge"],
+  referral_move: ["canAdmitDischarge"],
+  waitlist_add: ["canManageSales"],
+  waitlist_offer: ["canManageSales"],
+  waitlist_resolve: ["canManageSales"],
+  admit: ["canAdmitDischarge"],
+  agreement: ["canAdmitDischarge", "canManageRepresentatives"],
+  notice: ["canAdmitDischarge", "canRecordCensus", "canManageRepresentatives"],
+  room_change: ["canRecordCensus", "canAdmitDischarge"],
+  leave_start: ["canRecordCensus", "canAdmitDischarge"],
+  leave_end: ["canRecordCensus", "canAdmitDischarge"],
+  discharge: ["canAdmitDischarge"],
+  death: ["canAdmitDischarge", "canChartNursing"],
+  place_ready: ["canManagePlaces", "canRecordCensus"],
+  place_service: ["canManagePlaces"],
+  invite: ["canManageRepresentatives"],
+  accept: [],
+  scope_propose: ["canManageRepresentatives"],
+  scope_grant: ["canApprovePortalScopes"],
+  break_glass_open: ["canBreakGlass"],
+  break_glass_end: ["canBreakGlass"],
+  break_glass_review: ["canReviewBreakGlass"],
+  snapshot: ["canRecordCensus"],
+  sign_off: ["canRecordCensus"],
+  clock_sweep: [],
+  finish: ["canManageStorefront", "canManagePlaces"]
+};
+var SERIALIZABLE = /* @__PURE__ */ new Set(["admit", "room_change", "leave_start", "leave_end", "discharge", "death", "referral_move", "waitlist_offer", "sign_off", "snapshot"]);
+function seedActor(id) {
+  if (id.startsWith("system:")) return systemActor(id.slice("system:".length));
+  const person = STAFF.find((staff) => staff.id === id);
+  const role = person && ROLES.find((r) => r.id === person.roleId);
+  if (!person || !role) throw new Error(`Seed: unknown staff member ${id}`);
+  return { kind: "user", userId: person.id, name: person.name, permissions: new Set(role.permissions) };
+}
+var isRef = (value) => typeof value === "object" && value !== null && "$ref" in value && "field" in value;
+function resolve(value, results) {
+  if (isRef(value)) {
+    const found = results.get(value.$ref)?.[value.field];
+    if (found === void 0 || found === null) throw new Error(`Seed: ${value.$ref} has no ${value.field}`);
+    return found;
+  }
+  if (Array.isArray(value)) return value.map((item) => resolve(item, results));
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, resolve(v, results)]));
+  return value;
+}
+var str = (v) => v;
+var opt3 = (v) => v == null ? null : v;
+var time = (v) => new Date(v);
+async function version(uow, model, id) {
+  const row = await uow.tx[model].findUniqueOrThrow({ where: { id }, select: { version: true } });
+  return row.version;
+}
+async function representativeOf(uow, residentId, priority) {
+  const rep = await uow.tx.representative.findFirst({ where: { residentId, self: false, status: "active", contactPriority: priority }, select: { id: true } });
+  if (!rep) throw new Error(`Seed: resident ${residentId} has no representative at priority ${priority}`);
+  return rep.id;
+}
+var REFERRAL_SOURCES = [
+  { id: "seed_referral_source_scioto_ridge", name: "Scioto Ridge Medical Center (fictional) \xB7 case management", kind: "hospital", contact: { name: "Allison Mercer, RN, discharge planner", phone: "(614) 555-0171" } },
+  { id: "seed_referral_source_alum_creek", name: "Alum Creek Regional Hospital (fictional) \xB7 transitions of care", kind: "hospital", contact: { name: "Derek Fontaine, MSW", phone: "(614) 555-0172" } },
+  { id: "seed_referral_source_buckeye_placement", name: "Buckeye Senior Placement (fictional)", kind: "placement_agency", contact: { name: "Corinne Abernathy", phone: "(614) 555-0173" } },
+  { id: "seed_referral_source_okafor_im", name: "Okafor Internal Medicine (fictional)", kind: "physician", contact: { name: "Dr. Chinedu Okafor", phone: "(614) 555-0174" } }
+];
+var STOREFRONT_ID = "seed_storefront_maple_ridge";
+var PRICES = [
+  { id: "seed_price_studio", apartmentTypeId: "seed_apt_studio", setting: "assisted_living", label: "Assisted living studio", fromMinor: 498000n, toMinor: 612000n, period: "month", communityFeeMinor: 250000n },
+  { id: "seed_price_one_bed", apartmentTypeId: "seed_apt_one_bed", setting: "assisted_living", label: "Assisted living one bedroom", fromMinor: 596000n, toMinor: 734000n, period: "month", communityFeeMinor: 250000n },
+  { id: "seed_price_companion", apartmentTypeId: "seed_apt_companion", setting: "assisted_living", label: "Companion suite (second person)", fromMinor: 185000n, toMinor: null, period: "month", communityFeeMinor: null },
+  { id: "seed_price_mc_suite", apartmentTypeId: "seed_apt_mc_suite", setting: "memory_care", label: "Memory care suite", fromMinor: 742000n, toMinor: 896000n, period: "month", communityFeeMinor: 300000n },
+  { id: "seed_price_il_one", apartmentTypeId: "seed_apt_il_one", setting: "independent_living", label: "Independent one bedroom", fromMinor: 368000n, toMinor: 412000n, period: "month", communityFeeMinor: 200000n },
+  { id: "seed_price_nf_semi", apartmentTypeId: null, setting: "nursing_facility", label: "Nursing care, semi-private room", fromMinor: 36500n, toMinor: null, period: "day", communityFeeMinor: null },
+  { id: "seed_price_nf_private", apartmentTypeId: null, setting: "nursing_facility", label: "Nursing care, private room", fromMinor: 41500n, toMinor: null, period: "day", communityFeeMinor: null }
+];
+async function loadStorefront(uow, actor) {
+  const community = await uow.tx.community.findUniqueOrThrow({ where: { id: COMMUNITY.id }, select: { storefrontId: true } });
+  let created = 0;
+  if (!community.storefrontId) {
+    await uow.tx.storefrontSite.create({
+      data: {
+        id: STOREFRONT_ID,
+        heroTitle: "Care that feels like home, on Columbus's east side",
+        heroBody: "Maple Ridge Senior Living offers independent living, assisted living, a secured memory care neighbourhood and a Medicare- and Medicaid-certified nursing and rehabilitation center on one campus, so residents can stay as their needs change.",
+        amenities: ["Restaurant-style dining with three meals a day", "Therapy gym with physical, occupational and speech therapy", "Courtyard gardens and walking paths", "Chapel and weekly services", "Salon and barber", "Scheduled transportation to appointments", "Housekeeping and linen service", "Library and computer lounge"],
+        diningCopy: "Our chef plans seasonal menus with the residents' food committee. Therapeutic and texture-modified diets are prepared in the same kitchen, and families are welcome at Sunday brunch.",
+        activitiesCopy: "Seven days of programs: exercise classes, music and art, outings, faith services and intergenerational visits with the elementary school next door.",
+        careLevelsCopy: "Independent living with services on request; assisted living with help for bathing, dressing and medications; memory care in the secured Harbor neighbourhood; and 24-hour skilled nursing with short-term rehabilitation in Birch.",
+        faq: [
+          { q: "Do you accept Medicare and Medicaid?", a: "Our nursing center accepts Medicare Part A, Medicare Advantage plans we contract with, and Ohio Medicaid. Assisted living, memory care and independent living are private pay or long-term care insurance." },
+          { q: "Can couples live together?", a: "Yes. Companion suites in assisted living are designed for two, and spouses in different levels of care are on the same campus." },
+          { q: "How quickly can someone move in after a hospital stay?", a: "Our admissions team answers hospital referrals within four hours, seven days a week, and can often admit the same day." }
+        ],
+        acceptedPayers: ["Medicare Part A", "Medicare Advantage (selected plans)", "Ohio Medicaid", "Long-term care insurance", "Private pay"],
+        seo: { title: "Maple Ridge Senior Living \xB7 Columbus, OH", description: "Independent living, assisted living, memory care and skilled nursing in Columbus, Ohio." },
+        tourBookingEnabled: true,
+        waitlistEnabled: true
+      }
+    });
+    await uow.tx.community.update({ where: { id: COMMUNITY.id }, data: { storefrontId: STOREFRONT_ID } });
+    auditCreate(uow, actor, "StorefrontSite", STOREFRONT_ID, "storefront.created", { communityId: COMMUNITY.id }, seedMeta);
+    created += 1;
+  }
+  const existing = new Set((await uow.tx.publishedPrice.findMany({ where: { id: { in: PRICES.map((p) => p.id) } }, select: { id: true } })).map((p) => p.id));
+  const fresh = PRICES.filter((price) => !existing.has(price.id));
+  if (fresh.length) {
+    await uow.tx.publishedPrice.createMany({ data: fresh.map((price) => ({ ...price, communityId: COMMUNITY.id, disclaimer: "Starting prices; the monthly fee depends on the apartment and the care assessment. Medicare and Medicaid residents pay what their coverage sets.", status: "draft" })) });
+    for (const price of fresh) {
+      auditCreate(uow, actor, "PublishedPrice", price.id, "published_price.created", { label: price.label }, seedMeta);
+      await movePublishedPrice(uow, actor, { priceId: price.id, to: "published", expectedVersion: 0 });
+    }
+    for (const price of fresh) if (price.apartmentTypeId) await uow.tx.apartmentType.update({ where: { id: price.apartmentTypeId }, data: { publishedFromPriceMinor: price.fromMinor } });
+  }
+  await setStorefrontPublished(uow, actor, { communityId: COMMUNITY.id, published: true });
+  return { storefront: created, prices: fresh.length };
+}
+async function execute(uow, actor, step, results) {
+  const i = resolve(step.input, results);
+  const communityId = COMMUNITY.id;
+  switch (step.kind) {
+    case "referral_sources": {
+      const existing = new Set((await uow.tx.referralSource.findMany({ where: { id: { in: REFERRAL_SOURCES.map((s) => s.id) } }, select: { id: true } })).map((s) => s.id));
+      const fresh = REFERRAL_SOURCES.filter((s) => !existing.has(s.id));
+      if (fresh.length) await uow.tx.referralSource.createMany({ data: fresh.map((s) => ({ ...s, communityId, contact: s.contact, feeTerms: {} })) });
+      for (const s of fresh) auditCreate(uow, actor, "ReferralSource", s.id, "referral_source.created", { name: s.name, kind: s.kind }, seedMeta);
+      return { created: fresh.length };
+    }
+    case "storefront":
+      return loadStorefront(uow, actor);
+    case "tour_slots":
+      return openTourSlots(uow, actor, { communityId, slots: i.slots.map((slot) => ({ ...slot, startsAt: time(slot.startsAt) })) });
+    case "inquiry_phone":
+      return recordInquiry(uow, actor, { communityId, ...i });
+    case "inquiry_web":
+      return submitInquiry(uow, i);
+    case "waitlist_web": {
+      const { publicCode: publicCode2 } = await joinWaitlist(uow, i);
+      const inquiry = await uow.tx.inquiry.findUniqueOrThrow({ where: { publicCode: publicCode2 }, select: { leadId: true } });
+      const entry = await uow.tx.waitlistEntry.findFirstOrThrow({ where: { leadId: inquiry.leadId }, select: { id: true } });
+      return { publicCode: publicCode2, leadId: inquiry.leadId, waitlistEntryId: entry.id };
+    }
+    case "activity":
+      return logSalesActivity(uow, actor, { leadId: str(i.lead), kind: i.kind, summary: i.summary, at: time(i.at) });
+    case "tour_schedule": {
+      const slot = await uow.tx.tourSlot.findFirstOrThrow({ where: { communityId, startsAt: time(i.slotStartsAt) }, select: { id: true } });
+      return scheduleTour(uow, actor, { leadId: str(i.lead), slotId: slot.id, kind: i.kind, notes: i.notes });
+    }
+    case "tour_request_web": {
+      const slot = await uow.tx.tourSlot.findFirstOrThrow({ where: { communityId, startsAt: time(i.slotStartsAt) }, select: { id: true } });
+      const { slotStartsAt: _, ...rest } = i;
+      const { publicCode: publicCode2 } = await requestTour(uow, { ...rest, slotId: slot.id });
+      const tour = await uow.tx.tour.findUniqueOrThrow({ where: { publicCode: publicCode2 }, select: { id: true } });
+      return { tourId: tour.id, publicCode: publicCode2 };
+    }
+    case "tour_move":
+      return moveTour(uow, actor, { tourId: str(i.tour), to: i.to, reason: i.reason, expectedVersion: await version(uow, "tour", str(i.tour)) });
+    case "lead_move":
+      return moveLead(uow, actor, { leadId: str(i.lead), to: i.to, lostReason: i.lostReason, note: i.note, expectedVersion: await version(uow, "lead", str(i.lead)) });
+    case "referral":
+      return recordReferral(uow, actor, { communityId, ...i, receivedAt: time(i.receivedAt) });
+    case "referral_move":
+      return moveReferral(uow, actor, { referralId: str(i.referral), to: i.to, declineReason: opt3(i.declineReason), bedId: opt3(i.bedId), reservationHours: i.reservationHours ?? null, expectedVersion: await version(uow, "referral", str(i.referral)), idempotencyKey: step.key });
+    case "waitlist_add":
+      return addToWaitlist(uow, actor, { communityId, leadId: str(i.lead), prospectId: opt3(i.prospect), apartmentTypeId: opt3(i.apartmentTypeId), setting: i.setting, priorityReason: i.priorityReason });
+    case "waitlist_offer":
+      return offerWaitlistPlace(uow, actor, { waitlistEntryId: str(i.entry), apartmentId: opt3(i.apartmentId), bedId: opt3(i.bedId), hours: i.hours, expectedVersion: await version(uow, "waitlistEntry", str(i.entry)), idempotencyKey: step.key });
+    case "waitlist_resolve":
+      return resolveWaitlistOffer(uow, actor, { waitlistEntryId: str(i.entry), to: i.to, expectedVersion: await version(uow, "waitlistEntry", str(i.entry)) });
+    case "admit": {
+      const { agreementSignedAt, ...input } = i;
+      const admitted = await admitResident(uow, actor, { ...input, communityId, effectiveAt: time(input.effectiveAt), idempotencyKey: step.key, synthetic: true });
+      if (agreementSignedAt) await recordAdmissionAgreement(uow, actor, { stayId: admitted.stayId, signedAt: agreementSignedAt, signedByRepresentativeId: await firstRepresentative(uow, admitted.residentId), note: "Signed at admission." });
+      return admitted;
+    }
+    case "agreement":
+      return recordAdmissionAgreement(uow, actor, { stayId: str(i.stay), signedAt: i.signedAt, signedByRepresentativeId: await firstRepresentative(uow, str(i.resident)), note: i.note });
+    case "notice": {
+      const { stay, censusEvent, ...rest } = i;
+      return recordNotice(uow, actor, { ...rest, stayId: str(stay), censusEventId: opt3(censusEvent) });
+    }
+    case "room_change":
+      return changeRoom(uow, actor, { stayId: str(i.stay), toBedId: opt3(i.toBedId), effectiveAt: time(i.effectiveAt), reason: i.reason, idempotencyKey: step.key });
+    case "leave_start":
+      return startLeave(uow, actor, { stayId: str(i.stay), leaveKind: i.leaveKind, holdElected: i.holdElected, holdPaidBy: i.holdPaidBy, facilityInitiated: i.facilityInitiated, effectiveAt: time(i.effectiveAt), destination: i.destination, noticeAtTransfer: i.noticeAtTransfer, idempotencyKey: step.key });
+    case "leave_end":
+      return endLeave(uow, actor, { stayId: str(i.stay), effectiveAt: time(i.effectiveAt), toBedId: opt3(i.toBedId), idempotencyKey: step.key });
+    case "discharge":
+      return dischargeResident(uow, actor, { stayId: str(i.stay), disposition: i.disposition, initiatedBy: i.initiatedBy, effectiveAt: time(i.effectiveAt), noticeException: i.noticeException ?? null, idempotencyKey: step.key });
+    case "death":
+      return recordDeath(uow, actor, { stayId: str(i.stay), effectiveAt: time(i.effectiveAt), pronouncedBy: i.pronouncedBy, idempotencyKey: step.key });
+    case "place_ready":
+      return markPlaceReady(uow, actor, { bedId: opt3(i.bedId), apartmentId: opt3(i.apartmentId), note: i.note });
+    case "place_service":
+      return setPlaceService(uow, actor, { bedId: opt3(i.bedId), apartmentId: opt3(i.apartmentId), inService: i.inService, reason: i.reason });
+    case "invite": {
+      const representativeId = await representativeOf(uow, str(i.resident), i.priority);
+      const invited = await inviteRepresentative(uow, actor, { representativeId });
+      return { accountId: invited.accountId, reference: invited.reference, representativeId };
+    }
+    case "accept": {
+      const rep = await uow.tx.representative.findFirstOrThrow({ where: { portalAccountId: str(i.account) }, select: { id: true } });
+      await inviteRepresentative(uow, seedActor("seed_user_brooks"), { representativeId: rep.id });
+      const message = uow.outbox.find((m) => m.topic === "mail.portal_invitation" && m.aggregateId === i.account);
+      const token = message?.payload?.token;
+      if (!token) throw new Error("Seed: the invitation message carried no token");
+      return acceptPortalInvitation(uow, { token, passwordHash: UNUSABLE_PASSWORD_HASH });
+    }
+    case "scope_propose": {
+      const representativeId = await representativeOf(uow, str(i.resident), i.priority);
+      const grantIds = [];
+      for (const scope of i.scopes) {
+        const proposed = await proposePortalScope(uow, actor, { representativeId, scope });
+        if (proposed.status === "proposed") grantIds.push(proposed.grantId);
+      }
+      return { grantIds };
+    }
+    case "scope_grant": {
+      for (const grantId of i.proposals) await grantPortalScope(uow, actor, { grantId });
+      return { granted: i.proposals.length };
+    }
+    case "break_glass_open":
+      return openBreakGlass(uow, actor, { residentId: str(i.resident), reason: i.reason, note: i.note, hours: i.hours });
+    case "break_glass_end":
+      return endBreakGlass(uow, actor, { grantId: str(i.grant) });
+    case "break_glass_review":
+      return reviewBreakGlass(uow, actor, { grantId: str(i.grant), outcome: i.outcome, note: i.note });
+    case "snapshot":
+      return snapshotCensusDay(uow, actor, { communityId, date: i.date });
+    case "sign_off":
+      return signOffCensusDay(uow, actor, { communityId, date: i.date, note: i.note });
+    case "clock_sweep":
+      return sweepClocks(uow, actor);
+    case "finish":
+      return { snapshots: (await recomputeAvailability(uow, communityId)).length };
+  }
+}
+async function firstRepresentative(uow, residentId) {
+  const rep = await uow.tx.representative.findFirst({ where: { residentId, self: false, status: "active" }, orderBy: { contactPriority: "asc" }, select: { id: true } });
+  return rep?.id ?? null;
+}
+var COUNTED = {
+  admit: "residents",
+  room_change: "roomChanges",
+  leave_start: "leaves",
+  discharge: "discharges",
+  death: "deaths",
+  notice: "notices",
+  agreement: "agreements",
+  inquiry_phone: "leads",
+  inquiry_web: "leads",
+  waitlist_web: "leads",
+  tour_schedule: "tours",
+  tour_request_web: "tours",
+  referral: "referrals",
+  waitlist_add: "waitlistEntries",
+  invite: "portalInvitations",
+  scope_grant: "portalGrants",
+  sign_off: "censusSignoffs",
+  break_glass_open: "breakGlassUses"
+};
+async function runCensusSeed(db, options = {}) {
+  const preset = options.preset ?? "full";
+  const prefix = planPrefix(preset);
+  const started = Date.now();
+  const community = await db.community.findUnique({ where: { id: COMMUNITY.id }, select: { id: true, timeZone: true } });
+  if (!community) throw new DomainError(Codes.GUARD_FAILED, "Load the operator, community and places first.");
+  const anchorRun = await command(db, { name: "seed.census_anchor", actor: systemActor("seed"), idempotencyKey: `${prefix}:anchor`, params: {}, now: options.anchor }, async (uow) => ({ anchor: uow.now.toISOString() }));
+  const anchor = new Date(anchorRun.value.anchor);
+  const { steps } = buildCensusPlan({ anchor, preset, timeZone: community.timeZone });
+  const receipts = await db.commandReceipt.findMany({ where: { idempotencyKey: { startsWith: `${prefix}:` } }, select: { idempotencyKey: true, responseBody: true } });
+  const results = new Map(receipts.map((r) => [r.idempotencyKey, r.responseBody ?? {}]));
+  const created = {};
+  let done = steps.filter((step) => results.has(step.key)).length;
+  let ran = 0;
+  for (const step of steps) {
+    if (results.has(step.key)) continue;
+    if (ran > 0 && options.budgetMs !== void 0 && Date.now() - started > options.budgetMs) break;
+    ran += 1;
+    const actor = seedActor(step.actor);
+    if (PERMISSIONS[step.kind].length) requirePermission(actor, ...PERMISSIONS[step.kind]);
+    const t0 = Date.now();
+    const run = await command(db, { name: `seed.${step.kind}`, actor, idempotencyKey: step.key, params: { step: step.key }, now: new Date(step.at), serializable: SERIALIZABLE.has(step.kind), requestId: options.requestId ?? null }, async (uow) => {
+      const value = await execute(uow, actor, step, results);
+      for (let k = uow.outbox.length - 1; k >= 0; k -= 1) if (uow.outbox[k].topic.startsWith("mail.")) uow.outbox.splice(k, 1);
+      return value;
+    });
+    results.set(step.key, run.value ?? {});
+    done += 1;
+    const counted = COUNTED[step.kind];
+    if (counted && !run.replay) created[counted] = (created[counted] ?? 0) + 1;
+    options.onStep?.(step, Date.now() - t0);
+  }
+  return { preset, anchor: anchor.toISOString(), total: steps.length, done, finished: done === steps.length, created };
+}
+
 // features/keystone/mutations/setup.ts
 async function loadOperatorSetup(_root, args, context) {
   const actor = actorFromSession(context.session);
   requirePermission(actor, "canManageOnboarding");
   const result = await command(context.prisma, { name: "setup.load_operator", actor, idempotencyKey: args.idempotencyKey, params: {} }, (uow) => seedOperatorPlatform(uow, actor));
   return { replay: result.replay, ...result.value };
+}
+async function loadCensusSetup(_root, _args, context) {
+  const actor = actorFromSession(context.session);
+  requirePermission(actor, "canManageOnboarding");
+  const progress = await runCensusSeed(context.prisma, { budgetMs: 9e3 });
+  return { ...progress, created: progress.created };
 }
 
 // features/keystone/mutations/audit.ts
@@ -3555,876 +6198,6 @@ async function requestOperatorControls(_root, args, context) {
   return { replay: result.replay, ...result.value };
 }
 
-// features/keystone/lib/sequence.ts
-var import_node_crypto4 = require("node:crypto");
-async function nextReference(tx, prefix, now = /* @__PURE__ */ new Date(), width = 6) {
-  if (!/^[A-Z]{2,5}$/.test(prefix)) throw new Error("Reference prefix must be 2-5 capital letters");
-  const key = `${prefix}-${now.getUTCFullYear()}`;
-  await advisoryLock(tx, `sequence:${key}`);
-  const row = await tx.sequence.upsert({ where: { key }, create: { key, nextValue: 2 }, update: { nextValue: { increment: 1 } } });
-  const value = row.nextValue - 1;
-  return `${key}-${String(value).padStart(width, "0")}`;
-}
-var CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-function publicCode(prefix, groups = 2) {
-  const bytes = (0, import_node_crypto4.randomBytes)(groups * 4);
-  const chars = Array.from(bytes, (byte) => CROCKFORD[byte % 32]);
-  const parts = Array.from({ length: groups }, (_, i) => chars.slice(i * 4, i * 4 + 4).join(""));
-  return `${prefix}-${parts.join("-")}`;
-}
-
-// features/keystone/lib/clocks.ts
-var END_OF_DAY = "23:59";
-async function communityClockContext(tx, communityId) {
-  const community = await tx.community.findUnique({ where: { id: communityId }, select: { id: true, timeZone: true, jurisdictionPackId: true, holidayCalendarId: true } });
-  if (!community) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
-  const fed = await tx.jurisdictionPack.findUnique({ where: { code: "US-FED" }, select: { id: true } });
-  const packIds = [fed?.id, community.jurisdictionPackId].filter((id) => Boolean(id));
-  let calendar = null;
-  if (community.holidayCalendarId) {
-    const row = await tx.holidayCalendar.findUnique({ where: { id: community.holidayCalendarId }, include: { dates: { select: { date: true } } } });
-    if (row?.coverageThrough) {
-      calendar = {
-        code: row.code,
-        timeZone: row.timeZone,
-        weekendDays: Array.isArray(row.weekendDays) ? row.weekendDays : [0, 6],
-        holidays: new Set(row.dates.map((d) => d.date.toISOString().slice(0, 10))),
-        coverageThrough: row.coverageThrough.toISOString().slice(0, 10)
-      };
-    }
-  }
-  return { id: community.id, timeZone: community.timeZone, calendar, packIds };
-}
-async function computeDueAt(tx, rule3, startedAt, ctx) {
-  const startDate = localDate(ctx.timeZone, startedAt);
-  switch (rule3.kind) {
-    case "duration":
-      return new Date(startedAt.getTime() + rule3.hours * 36e5);
-    case "at_start":
-      return startedAt;
-    case "calendar_days":
-      return zonedInstant(ctx.timeZone, addDays(startDate, rule3.days), END_OF_DAY);
-    case "working_days": {
-      if (!ctx.calendar) throw new DomainError(Codes.GUARD_FAILED, "This community has no holiday calendar, so working-day deadlines cannot be computed.");
-      return zonedInstant(ctx.timeZone, addWorkingDays(ctx.calendar, startDate, rule3.days), END_OF_DAY);
-    }
-    case "operator_setting_hours": {
-      const settings = await tx.operatorSettings.findUnique({ where: { id: 1 }, select: { bedHoldNoticeGraceHours: true } });
-      return new Date(startedAt.getTime() + (settings?.bedHoldNoticeGraceHours ?? 24) * 36e5);
-    }
-    case "published_dates": {
-      const next = [...rule3.dates].sort().find((date2) => date2 >= startDate);
-      if (!next) throw new DomainError(Codes.GUARD_FAILED, "The pack has no published deadline after this date. Load the next pack version.");
-      return zonedInstant(ctx.timeZone, next, END_OF_DAY);
-    }
-  }
-}
-async function openClock(uow, actor, input) {
-  const ctx = await communityClockContext(uow.tx, input.communityId);
-  const obligation = await uow.tx.regulatoryObligation.findFirst({ where: { code: input.obligationCode, active: true, packId: { in: ctx.packIds } } });
-  if (!obligation) return null;
-  const applies = obligation.appliesTo ?? {};
-  if (applies.settings?.length && input.setting && !applies.settings.includes(input.setting)) return null;
-  if (applies.payerKinds?.length && (!input.payerKind || !applies.payerKinds.includes(input.payerKind))) return null;
-  const occurrenceKey = input.occurrenceKey ?? "default";
-  const existing = await uow.tx.complianceClock.findFirst({ where: { obligationCode: input.obligationCode, subjectType: input.subjectType, subjectId: input.subjectId, occurrenceKey, current: true } });
-  if (existing) return existing;
-  const dueAt = await computeDueAt(uow.tx, obligation.dueRule, input.startedAt, ctx);
-  const clock = await uow.tx.complianceClock.create({
-    data: {
-      obligationId: obligation.id,
-      obligationCode: obligation.code,
-      communityId: input.communityId,
-      residentId: input.residentId ?? null,
-      subjectType: input.subjectType,
-      subjectId: input.subjectId,
-      occurrenceKey,
-      startedAt: input.startedAt,
-      dueAt,
-      status: "open",
-      ownerRole: obligation.ownerRole,
-      ruleRef: obligation.ruleRef,
-      verifyNote: obligation.verifyNote,
-      current: true
-    }
-  });
-  uow.audit({ eventType: "clock.opened", entityType: "ComplianceClock", entityId: clock.id, actorUserId: actorUserId(actor), actorAgentId: actorAgentId(actor), after: { obligationCode: clock.obligationCode, subjectType: clock.subjectType, subjectId: clock.subjectId, dueAt: clock.dueAt } });
-  uow.emit({ topic: "clock.opened", aggregateType: "ComplianceClock", aggregateId: clock.id, payload: { obligationCode: clock.obligationCode, dueAt: clock.dueAt }, dedupeKey: `clock.opened:${clock.id}` });
-  return clock;
-}
-async function openClocksForFact(uow, actor, input) {
-  const ctx = await communityClockContext(uow.tx, input.communityId);
-  const obligations = await uow.tx.regulatoryObligation.findMany({ where: { startFact: input.fact, active: true, packId: { in: ctx.packIds } }, select: { code: true, evidenceTypes: true } });
-  const opened = [];
-  for (const obligation of obligations) {
-    const clock = await openClock(uow, actor, { ...input, obligationCode: obligation.code });
-    if (!clock) continue;
-    opened.push(clock.id);
-    const evidenceTypes = Array.isArray(obligation.evidenceTypes) ? obligation.evidenceTypes : [];
-    if (input.evidence && evidenceTypes.includes(input.evidence.type)) {
-      await satisfyClocks(uow, actor, { obligationCodes: [obligation.code], subjectType: input.subjectType, subjectId: input.subjectId, occurrenceKey: input.occurrenceKey ?? "default" }, { ...input.evidence, at: input.startedAt });
-    }
-  }
-  return opened;
-}
-async function satisfyByEvidence(uow, actor, subject, evidence) {
-  const open = await uow.tx.complianceClock.findMany({
-    where: { subjectType: subject.subjectType, subjectId: subject.subjectId, ...subject.occurrenceKey ? { occurrenceKey: subject.occurrenceKey } : {}, current: true, status: { in: ["open", "overdue"] } },
-    select: { obligationCode: true, obligation: { select: { evidenceTypes: true } } }
-  });
-  const codes = open.filter((clock) => Array.isArray(clock.obligation?.evidenceTypes) && clock.obligation.evidenceTypes.includes(evidence.type)).map((clock) => clock.obligationCode);
-  if (!codes.length) return [];
-  return satisfyClocks(uow, actor, { obligationCodes: [...new Set(codes)], ...subject }, evidence);
-}
-async function satisfyClocks(uow, actor, where, evidence) {
-  const clocks = await uow.tx.complianceClock.findMany({
-    where: { obligationCode: { in: where.obligationCodes }, subjectType: where.subjectType, subjectId: where.subjectId, ...where.occurrenceKey ? { occurrenceKey: where.occurrenceKey } : {}, current: true, status: { in: ["open", "overdue"] } }
-  });
-  const satisfied = [];
-  for (const clock of clocks) {
-    const late = clock.dueAt ? evidence.at.getTime() > clock.dueAt.getTime() : false;
-    const to = late ? "satisfied_late" : "satisfied";
-    const result = await uow.tx.complianceClock.updateMany({
-      where: { id: clock.id, version: clock.version, status: { in: ["open", "overdue"] } },
-      data: { status: to, satisfiedAt: evidence.at, satisfiedBy: [{ type: evidence.type, id: evidence.id }], version: { increment: 1 } }
-    });
-    if (result.count !== 1) throw new DomainError(Codes.STALE_STATE, "A compliance clock changed while it was being satisfied. Try again.", { currentVersion: clock.version });
-    uow.audit({ eventType: `clock.${to}`, entityType: "ComplianceClock", entityId: clock.id, actorUserId: actorUserId(actor), actorAgentId: actorAgentId(actor), before: { status: clock.status }, after: { status: to, evidence } });
-    satisfied.push(clock.id);
-  }
-  return satisfied;
-}
-
-// features/keystone/lib/censusProjection.ts
-var EMPTY_PROJECTION = {
-  status: "pre_admit",
-  presence: "not_admitted",
-  currentBedId: null,
-  currentApartmentId: null,
-  heldBedId: null,
-  admittedAt: null,
-  endedAt: null,
-  dischargeDisposition: null,
-  openLeave: null,
-  medicaidHoldDaysByYear: {},
-  leaveCount: 0,
-  lastSeq: 0,
-  lastEffectiveAt: null
-};
-var fail = (message, details = {}) => {
-  throw new DomainError(Codes.INVALID_TRANSITION, message, details);
-};
-function leaveDaysByYear(timeZone, from, to) {
-  const out = {};
-  if (to.getTime() <= from.getTime()) return out;
-  let day3 = localDate(timeZone, from);
-  const last = localDate(timeZone, to);
-  for (let i = 0; i < 800 && day3 <= last; i += 1) {
-    const midnight = zonedInstant(timeZone, day3, "23:59").getTime();
-    if (midnight >= from.getTime() && midnight < to.getTime()) out[day3.slice(0, 4)] = (out[day3.slice(0, 4)] ?? 0) + 1;
-    day3 = addDays(day3, 1);
-  }
-  return out;
-}
-function addDaysByYear(into, add) {
-  const out = { ...into };
-  for (const [year, days] of Object.entries(add)) out[year] = (out[year] ?? 0) + days;
-  return out;
-}
-function openLeaveMedicaidDays(timeZone, leave, asOf) {
-  if (!leave || !leave.holdElected || leave.holdPaidBy !== "medicaid") return {};
-  const end = leave.holdEndedAt ? new Date(leave.holdEndedAt) : asOf;
-  return leaveDaysByYear(timeZone, new Date(leave.startedAt), end);
-}
-function applyCensusEvent(state, event, timeZone) {
-  if (event.seq !== state.lastSeq + 1) fail("Census events must be applied in order.", { reason: "sequence" });
-  const at = event.effectiveAt.toISOString();
-  if (state.lastEffectiveAt && event.effectiveAt.getTime() < new Date(state.lastEffectiveAt).getTime()) {
-    fail("This event is dated before the stay's latest census event. Record it as a correction.", { reason: "out_of_order" });
-  }
-  const next = { ...state, lastSeq: event.seq, lastEffectiveAt: at };
-  const terminal = state.status === "discharged" || state.status === "deceased";
-  switch (event.kind) {
-    case "admission":
-    case "readmission": {
-      if (state.status !== "pre_admit") fail("The stay is already admitted.", { currentStatus: state.status });
-      if (!event.toBedId === !event.toApartmentId) fail("An admission needs exactly one bed or apartment.");
-      return { ...next, status: "admitted", presence: "in_house", currentBedId: event.toBedId ?? null, currentApartmentId: event.toApartmentId ?? null, admittedAt: at };
-    }
-    case "room_change": {
-      if (state.status !== "admitted" || state.presence !== "in_house") fail("A room change needs the resident in house.", { currentStatus: state.presence });
-      if (!event.toBedId === !event.toApartmentId) fail("A room change needs exactly one target bed or apartment.");
-      if (event.toBedId && event.toBedId === state.currentBedId || event.toApartmentId && event.toApartmentId === state.currentApartmentId) fail("The resident is already there.");
-      return { ...next, currentBedId: event.toBedId ?? null, currentApartmentId: event.toApartmentId ?? null };
-    }
-    case "leave_start": {
-      if (state.status !== "admitted" || state.presence !== "in_house") fail("A leave can start only while the resident is in house.", { currentStatus: state.presence });
-      const holdElected = Boolean(event.holdElected);
-      const apartment = Boolean(state.currentApartmentId);
-      const keepsPlace = holdElected || apartment;
-      const leave = { startedAt: at, kind: event.leaveKind ?? "other", holdElected: keepsPlace, holdPaidBy: keepsPlace ? event.holdPaidBy ?? (apartment ? "private" : "none") : "none", holdEndedAt: null, bedId: state.currentBedId, apartmentId: state.currentApartmentId };
-      return {
-        ...next,
-        presence: keepsPlace ? "on_leave_hold" : "on_leave_no_hold",
-        heldBedId: holdElected && state.currentBedId ? state.currentBedId : null,
-        currentBedId: keepsPlace ? state.currentBedId : null,
-        currentApartmentId: state.currentApartmentId,
-        openLeave: leave,
-        leaveCount: state.leaveCount + 1
-      };
-    }
-    case "hold_release": {
-      if (state.presence !== "on_leave_hold" || !state.openLeave || !state.heldBedId) fail("There is no bed hold to release.", { currentStatus: state.presence });
-      const used = openLeaveMedicaidDays(timeZone, state.openLeave, event.effectiveAt);
-      return {
-        ...next,
-        presence: "on_leave_no_hold",
-        heldBedId: null,
-        currentBedId: null,
-        medicaidHoldDaysByYear: addDaysByYear(state.medicaidHoldDaysByYear, used),
-        openLeave: { ...state.openLeave, holdElected: false, holdPaidBy: "none", holdEndedAt: at }
-      };
-    }
-    case "leave_end": {
-      if (state.status !== "admitted" || !state.openLeave) fail("There is no open leave to end.", { currentStatus: state.presence });
-      const leave = state.openLeave;
-      const used = leave.holdEndedAt ? {} : openLeaveMedicaidDays(timeZone, leave, event.effectiveAt);
-      let bedId = state.currentBedId;
-      let apartmentId = state.currentApartmentId;
-      if (state.presence === "on_leave_no_hold") {
-        if (!event.toBedId === !event.toApartmentId) fail("The resident returns without a held bed: choose an available bed or apartment.");
-        bedId = event.toBedId ?? null;
-        apartmentId = event.toApartmentId ?? null;
-      } else if (event.toBedId || event.toApartmentId) {
-        fail("The resident returns to the held place; use a room change afterwards to move them.");
-      }
-      return { ...next, presence: "in_house", heldBedId: null, currentBedId: bedId, currentApartmentId: apartmentId, openLeave: null, medicaidHoldDaysByYear: addDaysByYear(state.medicaidHoldDaysByYear, used) };
-    }
-    case "coverage_change": {
-      if (state.status !== "admitted") fail("Coverage changes need an admitted stay.", { currentStatus: state.status });
-      return next;
-    }
-    case "discharge":
-    case "death": {
-      if (terminal || state.status !== "admitted") fail("Only an admitted stay can end.", { currentStatus: state.status });
-      const used = state.openLeave && !state.openLeave.holdEndedAt ? openLeaveMedicaidDays(timeZone, state.openLeave, event.effectiveAt) : {};
-      return {
-        ...next,
-        status: event.kind === "death" ? "deceased" : "discharged",
-        presence: "gone",
-        currentBedId: null,
-        currentApartmentId: null,
-        heldBedId: null,
-        openLeave: null,
-        endedAt: at,
-        dischargeDisposition: event.kind === "death" ? "deceased" : event.dischargeDisposition ?? "other",
-        medicaidHoldDaysByYear: addDaysByYear(state.medicaidHoldDaysByYear, used)
-      };
-    }
-    case "correction":
-      return fail("Corrections are recorded through the census correction flow.");
-  }
-}
-function foldCensus(events, timeZone) {
-  return [...events].sort((a, b) => a.seq - b.seq).reduce((state, event) => applyCensusEvent(state, event, timeZone), EMPTY_PROJECTION);
-}
-var projectionHash = (projection) => sha256(canonicalJson(projection));
-function presenceAt(events, timeZone, date2) {
-  const cutoff = zonedInstant(timeZone, date2, "23:59").getTime();
-  const upto = [...events].sort((a, b) => a.seq - b.seq).filter((event) => event.effectiveAt.getTime() <= cutoff);
-  return foldCensus(upto, timeZone);
-}
-
-// features/keystone/lib/census.ts
-var MAX_FUTURE_SKEW_MS = 5 * 6e4;
-var CERTIFICATION_FOR_PAYER = {
-  medicare_a: ["dual", "medicare"],
-  medicare_advantage: ["dual", "medicare"],
-  medicaid_ffs: ["dual", "medicaid"],
-  medicaid_mco: ["dual", "medicaid"]
-};
-var NOTICE_EXCEPTIONS = ["safety_of_individuals", "health_of_individuals", "health_improved", "urgent_medical_needs", "resided_less_than_30_days"];
-function assertEffectiveAt(uow, effectiveAt, projection) {
-  if (Number.isNaN(effectiveAt.getTime())) throw new DomainError(Codes.INVALID_INPUT, "The event time is not a valid time.", { field: "effectiveAt" });
-  if (effectiveAt.getTime() > uow.now.getTime() + MAX_FUTURE_SKEW_MS) throw new DomainError(Codes.INVALID_INPUT, "Census events cannot be dated in the future.", { field: "effectiveAt" });
-  if (projection.lastEffectiveAt && effectiveAt.getTime() < new Date(projection.lastEffectiveAt).getTime()) {
-    throw new DomainError(Codes.GUARD_FAILED, "This is dated before the stay's latest census event. Record it as a late entry.", { reason: "late_entry" });
-  }
-}
-async function lockStay(tx, stayId, expectedVersion) {
-  const stay = await lockRow(tx, "Stay", stayId);
-  if (expectedVersion !== void 0 && expectedVersion !== null && expectedVersion !== stay.version) {
-    throw new DomainError(Codes.STALE_STATE, "The stay changed since you loaded it. Reload and try again.", { currentStatus: stay.status, currentVersion: stay.version });
-  }
-  return stay;
-}
-async function communityTimeZone(tx, communityId) {
-  const community = await tx.community.findUnique({ where: { id: communityId }, select: { timeZone: true } });
-  if (!community) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
-  return community.timeZone;
-}
-async function loadCensusEvents(tx, stayId) {
-  const rows = await tx.censusEvent.findMany({ where: { stayId, voidsEventId: null, kind: { not: "correction" } }, orderBy: [{ effectiveAt: "asc" }, { seq: "asc" }] });
-  const voided = new Set((await tx.censusEvent.findMany({ where: { stayId, voidsEventId: { not: null } }, select: { voidsEventId: true } })).map((row) => row.voidsEventId));
-  return rows.filter((row) => !voided.has(row.id)).map((row) => ({
-    id: row.id,
-    hash: row.hash,
-    seq: row.seq,
-    kind: row.kind,
-    effectiveAt: row.effectiveAt,
-    toBedId: row.toBedId,
-    toApartmentId: row.toApartmentId,
-    leaveKind: row.leaveKind,
-    holdElected: row.holdElected,
-    holdPaidBy: row.holdPaidBy,
-    dischargeDisposition: row.dischargeDisposition
-  }));
-}
-function foldStored(events, timeZone) {
-  return foldCensus(events.map((event, index) => ({ ...event, seq: index + 1 })), timeZone);
-}
-function placeClaims(projection) {
-  const claims = /* @__PURE__ */ new Map();
-  if (projection.presence === "in_house" && projection.currentBedId) claims.set(`bed:${projection.currentBedId}`, "occupied");
-  if (projection.presence === "on_leave_hold" && projection.heldBedId) claims.set(`bed:${projection.heldBedId}`, "held");
-  if (projection.currentApartmentId && (projection.presence === "in_house" || projection.presence === "on_leave_hold")) claims.set(`apartment:${projection.currentApartmentId}`, "resident");
-  return claims;
-}
-async function reconcilePlaces(uow, actor, stay, before, after, options) {
-  const was = placeClaims(before);
-  const now = placeClaims(after);
-  const keys = [.../* @__PURE__ */ new Set([...was.keys(), ...now.keys()])].sort();
-  for (const key of keys) await advisoryLock(uow.tx, key);
-  for (const key of keys) {
-    const from = was.get(key) ?? null;
-    const to = now.get(key) ?? null;
-    if (from === to) continue;
-    const [kind, id] = key.split(":");
-    if (kind === "bed") await reconcileBed(uow, actor, stay, id, from, to, options);
-    else await reconcileApartment(uow, actor, stay, id, from !== null, to !== null, options);
-  }
-}
-async function reconcileBed(uow, actor, stay, bedId, from, to, options) {
-  const bed = await lockRow(uow.tx, "Bed", bedId);
-  const metadata = { stayId: stay.id, censusEventId: options.eventId };
-  if (!from && to) {
-    if (bed.status === "reserved") {
-      const reservation = await uow.tx.placeReservation.findFirst({ where: { bedId, status: "active" } });
-      if (!reservation || reservation.id !== options.reservationId) throw new DomainError(Codes.PLACE_UNAVAILABLE, `Bed ${bed.label} is reserved for someone else.`, { currentStatus: bed.status });
-      await consumeReservation(uow, actor, reservation.id, reservation.version, stay.id);
-    } else if (bed.status !== "available") {
-      throw new DomainError(Codes.PLACE_UNAVAILABLE, `Bed ${bed.label} is ${bed.status.replaceAll("_", " ")}.`, { currentStatus: bed.status });
-    }
-    await casUpdate(uow, { model: "Bed", id: bedId, version: bed.version, from: [bed.status], to: to === "held" ? "held" : "occupied", actor, eventType: "bed.claimed", data: { currentStayId: stay.id, statusReason: "" }, audit: { currentStayId: stay.id }, metadata });
-    const occupancy = await uow.tx.bedOccupancy.create({ data: { bedId, stayId: stay.id, startAt: options.effectiveAt, openedByEventId: options.eventId } });
-    auditCreate(uow, actor, "BedOccupancy", occupancy.id, "bed_occupancy.opened", { bedId, stayId: stay.id, startAt: options.effectiveAt });
-    return;
-  }
-  if (bed.currentStayId !== stay.id) throw new DomainError(Codes.PROJECTION_MISMATCH, `Bed ${bed.label} is not held by this stay.`, { currentStatus: bed.status });
-  if (from && to) {
-    await casUpdate(uow, { model: "Bed", id: bedId, version: bed.version, from: [from === "held" ? "held" : "occupied"], to: to === "held" ? "held" : "occupied", actor, eventType: to === "held" ? "bed.held" : "bed.reoccupied", metadata });
-    return;
-  }
-  await casUpdate(uow, { model: "Bed", id: bedId, version: bed.version, from: [from === "held" ? "held" : "occupied"], to: "cleaning", actor, eventType: "bed.released", data: { currentStayId: null }, audit: { currentStayId: null }, metadata });
-  const open = await uow.tx.bedOccupancy.findFirst({ where: { bedId, stayId: stay.id, endAt: null } });
-  if (open) {
-    const endAt = options.effectiveAt.getTime() < open.startAt.getTime() ? open.startAt : options.effectiveAt;
-    await uow.tx.bedOccupancy.update({ where: { id: open.id }, data: { endAt, closedByEventId: options.eventId } });
-    uow.audit({ eventType: "bed_occupancy.closed", entityType: "BedOccupancy", entityId: open.id, actorUserId: actorUserId(actor), actorAgentId: actorAgentId(actor), after: { endAt } });
-  }
-  uow.emit({ topic: "housekeeping.turnover", aggregateType: "Bed", aggregateId: bedId, payload: { bedId, reason: "census_release" }, dedupeKey: `housekeeping.turnover:${bedId}:${options.eventId}` });
-}
-async function reconcileApartment(uow, actor, stay, apartmentId, had, has, options) {
-  const apartment = await lockRow(uow.tx, "Apartment", apartmentId);
-  const metadata = { stayId: stay.id, censusEventId: options.eventId };
-  if (!had && has) {
-    if (apartment.status === "out_of_service" || apartment.status === "turnover") throw new DomainError(Codes.PLACE_UNAVAILABLE, `Apartment ${apartment.number} is ${apartment.status.replaceAll("_", " ")}.`, { currentStatus: apartment.status });
-    if (apartment.occupantCount >= apartment.capacity) throw new DomainError(Codes.PLACE_UNAVAILABLE, `Apartment ${apartment.number} is full.`, { currentStatus: apartment.status });
-    if (apartment.occupantCount > 0 && !apartment.allowsUnrelatedCompanion && !options.companionRelationship?.trim()) {
-      throw new DomainError(Codes.GUARD_FAILED, "A second resident in this apartment needs a recorded relationship to the first (spouse, partner, sibling).", { field: "companionRelationship" });
-    }
-    if (apartment.status === "reserved") {
-      const reservation = await uow.tx.placeReservation.findFirst({ where: { apartmentId, status: "active" } });
-      if (!reservation || reservation.id !== options.reservationId) throw new DomainError(Codes.PLACE_UNAVAILABLE, `Apartment ${apartment.number} is reserved for someone else.`, { currentStatus: apartment.status });
-      await consumeReservation(uow, actor, reservation.id, reservation.version, stay.id);
-    }
-    await casUpdate(uow, { model: "Apartment", id: apartmentId, version: apartment.version, from: [apartment.status], to: "occupied", actor, eventType: "apartment.occupant_added", data: { occupantCount: apartment.occupantCount + 1 }, metadata: { ...metadata, companionRelationship: options.companionRelationship ?? null } });
-    return;
-  }
-  const remaining = Math.max(0, apartment.occupantCount - 1);
-  await casUpdate(uow, { model: "Apartment", id: apartmentId, version: apartment.version, from: ["occupied"], to: remaining === 0 ? "turnover" : "occupied", actor, eventType: "apartment.occupant_removed", data: { occupantCount: remaining }, metadata });
-  if (remaining === 0) uow.emit({ topic: "housekeeping.turnover", aggregateType: "Apartment", aggregateId: apartmentId, payload: { apartmentId, reason: "census_release" }, dedupeKey: `housekeeping.turnover:${apartmentId}:${options.eventId}` });
-}
-async function consumeReservation(uow, actor, reservationId, version, stayId) {
-  await casUpdate(uow, { model: "PlaceReservation", id: reservationId, version, from: ["active"], to: "consumed", actor, eventType: "reservation.consumed", data: { consumedByStayId: stayId } });
-}
-async function appendCensusEvents(uow, actor, stay, inputs, options = {}) {
-  if (!inputs.length) throw new DomainError(Codes.INVALID_INPUT, "Nothing to record.");
-  const timeZone = await communityTimeZone(uow.tx, stay.communityId);
-  const stored = await loadCensusEvents(uow.tx, stay.id);
-  const before = foldStored(stored, timeZone);
-  const closed = await closedThrough(uow.tx, stay.communityId);
-  for (const input of inputs) {
-    if (Number.isNaN(input.effectiveAt.getTime())) throw new DomainError(Codes.INVALID_INPUT, "The event time is not a valid time.", { field: "effectiveAt" });
-    if (input.effectiveAt.getTime() > uow.now.getTime() + MAX_FUTURE_SKEW_MS) throw new DomainError(Codes.INVALID_INPUT, "Census events cannot be dated in the future.", { field: "effectiveAt" });
-    if (!options.late) assertEffectiveAt(uow, input.effectiveAt, before);
-    if (closed && localDate(timeZone, input.effectiveAt) <= closed && !input.approvalId) {
-      throw new DomainError(Codes.APPROVAL_REQUIRED, `The census through ${closed} is signed off. Ask for a closed-period correction; a second person approves it.`, { reason: "closed_period" });
-    }
-  }
-  const last = await uow.tx.censusEvent.findFirst({ where: { stayId: stay.id }, orderBy: { seq: "desc" }, select: { seq: true, hash: true } });
-  let seq = last?.seq ?? 0;
-  const candidates = inputs.map((input) => ({ input, event: { seq: ++seq, kind: input.kind, effectiveAt: input.effectiveAt, toBedId: input.toBedId ?? null, toApartmentId: input.toApartmentId ?? null, leaveKind: input.leaveKind ?? null, holdElected: Boolean(input.holdElected), holdPaidBy: input.holdPaidBy ?? null, dischargeDisposition: input.dischargeDisposition ?? null } }));
-  const voided = new Set(inputs.map((input) => input.voidsEventId).filter(Boolean));
-  for (const id of voided) if (!stored.some((event) => event.id === id)) throw new DomainError(Codes.INVALID_INPUT, "The event to void is not an active event of this stay.", { field: "voidsEventId" });
-  const ordered = [...stored.filter((event) => !voided.has(event.id)), ...candidates.filter((c) => c.event.kind !== "correction").map((c) => c.event)].sort((a, b) => a.effectiveAt.getTime() - b.effectiveAt.getTime() || a.seq - b.seq);
-  const after = foldStored(ordered, timeZone);
-  if (options.late && after.status !== before.status) throw new DomainError(Codes.GUARD_FAILED, "A late entry cannot admit or end the stay; use the admission or discharge command.", { reason: "late_entry_status" });
-  let prevHash = last?.hash || stay.lastEventHash || "0".repeat(64);
-  const events = [];
-  for (const { input, event: candidate } of candidates) {
-    const body = { stayId: stay.id, seq: candidate.seq, kind: input.kind, effectiveAt: input.effectiveAt.toISOString(), toBedId: candidate.toBedId, toApartmentId: candidate.toApartmentId, leaveKind: candidate.leaveKind, holdElected: Boolean(candidate.holdElected), holdPaidBy: candidate.holdPaidBy, dischargeDisposition: candidate.dischargeDisposition, initiatedBy: input.initiatedBy ?? null, voidsEventId: input.voidsEventId ?? null };
-    const hash = sha256(`${prevHash}
-${canonicalJson(body)}`);
-    const row = await uow.tx.censusEvent.create({
-      data: {
-        stayId: stay.id,
-        seq: candidate.seq,
-        kind: input.kind,
-        effectiveAt: input.effectiveAt,
-        observedAt: input.observedAt ?? null,
-        recordedAt: uow.now,
-        fromBedId: input.fromBedId ?? null,
-        toBedId: candidate.toBedId,
-        fromApartmentId: input.fromApartmentId ?? null,
-        toApartmentId: candidate.toApartmentId,
-        leaveKind: candidate.leaveKind,
-        holdElected: Boolean(candidate.holdElected),
-        holdPaidBy: candidate.holdPaidBy,
-        dischargeDisposition: candidate.dischargeDisposition,
-        initiatedBy: input.initiatedBy ?? null,
-        coverageId: input.coverageId ?? null,
-        voidsEventId: input.voidsEventId ?? null,
-        correctionReason: input.correctionReason ?? "",
-        approvalId: input.approvalId ?? null,
-        detail: input.detail ?? {},
-        actorId: actorUserId(actor),
-        actorAgentId: actorAgentId(actor),
-        idempotencyKey: sha256(`${principalKey(actor)}:${input.idempotencyKey}:${input.kind}:${candidate.seq}`),
-        prevHash,
-        hash
-      }
-    });
-    prevHash = hash;
-    events.push({ id: row.id, seq: row.seq, kind: row.kind });
-    uow.emit({ topic: `census.${input.kind}`, aggregateType: "Stay", aggregateId: stay.id, payload: { stayId: stay.id, eventId: row.id, communityId: stay.communityId, effectiveAt: input.effectiveAt, late: Boolean(options.late) }, dedupeKey: `census:${row.id}` });
-  }
-  const lastInput = inputs[inputs.length - 1];
-  await reconcilePlaces(uow, actor, stay, before, after, { reservationId: options.reservationId, companionRelationship: options.companionRelationship, eventId: events[events.length - 1].id, effectiveAt: options.late ? uow.now : lastInput.effectiveAt });
-  const year = localDate(timeZone, uow.now).slice(0, 4);
-  const updated = await uow.tx.stay.updateMany({
-    where: { id: stay.id, version: stay.version },
-    data: {
-      status: after.status,
-      presence: after.presence,
-      currentBedId: after.currentBedId,
-      currentApartmentId: after.currentApartmentId,
-      heldBedId: after.heldBedId,
-      admittedAt: after.admittedAt ? new Date(after.admittedAt) : null,
-      dischargedAt: after.endedAt ? new Date(after.endedAt) : null,
-      dischargeDisposition: after.dischargeDisposition,
-      leaveDaysUsedThisYear: after.medicaidHoldDaysByYear[year] ?? 0,
-      projection: after,
-      projectionHash: projectionHash(after),
-      projectionVersion: { increment: 1 },
-      lastEventHash: prevHash,
-      version: { increment: 1 }
-    }
-  });
-  if (updated.count !== 1) throw new DomainError(Codes.STALE_STATE, "The stay changed while this was being recorded. Try again.", { currentVersion: stay.version });
-  uow.audit({
-    eventType: options.late ? "census.late_entry" : `census.${lastInput.kind}`,
-    entityType: "Stay",
-    entityId: stay.id,
-    actorUserId: actorUserId(actor),
-    actorAgentId: actorAgentId(actor),
-    reason: lastInput.correctionReason ?? null,
-    before: { status: before.status, presence: before.presence, bed: before.currentBedId, apartment: before.currentApartmentId },
-    after: { status: after.status, presence: after.presence, bed: after.currentBedId, apartment: after.currentApartmentId, events: events.map((e) => ({ id: e.id, seq: e.seq, kind: e.kind })) },
-    metadata: lastInput.approvalId ? { approvalId: lastInput.approvalId } : void 0
-  });
-  return { event: events[events.length - 1], events, before, after, version: stay.version + 1, timeZone };
-}
-var appendCensusEvent = (uow, actor, stay, input, options = {}) => appendCensusEvents(uow, actor, stay, [input], options);
-async function closedThrough(tx, communityId) {
-  const row = await tx.censusSignoff.findFirst({ where: { communityId, unitId: null }, orderBy: { date: "desc" }, select: { date: true } });
-  return row?.date ? row.date.toISOString().slice(0, 10) : null;
-}
-var REPRESENTATIVE_ROLES2 = /* @__PURE__ */ new Set(["self", "healthcare_poa", "financial_responsible", "guardian", "family", "emergency_contact", "hospice_contact", "personal_representative_hipaa"]);
-async function admitResident(uow, actor, input) {
-  if (!input.bedId === !input.apartmentId) throw new DomainError(Codes.INVALID_INPUT, "Choose one bed or one apartment.", { field: "bedId" });
-  const community = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { id: true, status: true, synthetic: true } });
-  if (!community || community.status === "closed") throw new DomainError(Codes.NOT_FOUND, "Community not found or closed.");
-  const payer = await uow.tx.payer.findUnique({ where: { id: input.payerId } });
-  if (!payer) throw new DomainError(Codes.INVALID_INPUT, "Choose the initial payer.", { field: "payerId" });
-  let setting;
-  let medicaidCertified = false;
-  if (input.bedId) {
-    const bed = await uow.tx.bed.findUnique({ where: { id: input.bedId }, include: { room: { include: { unit: true } } } });
-    if (!bed?.room?.unit || bed.room.unit.communityId !== input.communityId) throw new DomainError(Codes.NOT_FOUND, "That bed is not in this community.");
-    setting = bed.room.unit.setting;
-    const needed = CERTIFICATION_FOR_PAYER[payer.kind];
-    if (needed && !needed.includes(bed.certification)) throw new DomainError(Codes.GUARD_FAILED, `This bed is certified ${bed.certification.replaceAll("_", " ")}; a ${payer.kind.replaceAll("_", " ")} admission needs a ${needed.join(" or ")} bed.`, { reason: "certification" });
-    medicaidCertified = bed.certification === "dual" || bed.certification === "medicaid";
-    if (bed.room.genderPolicy !== "any" && input.resident?.sex && input.resident.sex !== bed.room.genderPolicy) throw new DomainError(Codes.GUARD_FAILED, `Room ${bed.room.number} is ${bed.room.genderPolicy} only.`, { reason: "gender_policy" });
-    if (bed.room.unit.secured && !input.placementReason?.trim()) throw new DomainError(Codes.GUARD_FAILED, "A secured unit placement needs a documented reason.", { field: "placementReason" });
-  } else {
-    const apartment = await uow.tx.apartment.findUnique({ where: { id: input.apartmentId }, include: { unit: true } });
-    if (!apartment?.unit || apartment.unit.communityId !== input.communityId) throw new DomainError(Codes.NOT_FOUND, "That apartment is not in this community.");
-    setting = apartment.unit.setting;
-    if (apartment.unit.secured && !input.placementReason?.trim()) throw new DomainError(Codes.GUARD_FAILED, "A memory-care (secured unit) placement needs a documented reason.", { field: "placementReason" });
-  }
-  const prospectScreen = input.prospectId ? await uow.tx.preAdmissionScreen.findFirst({ where: { prospectId: input.prospectId, kind: "pasrr_level1" }, select: { id: true } }) : null;
-  if (setting === "nursing_facility" && medicaidCertified && !input.pasrrLevel1 && !prospectScreen && !input.residentId) {
-    throw new DomainError(Codes.GUARD_FAILED, "A Level I PASRR screen must be completed before admission to a Medicaid-certified nursing facility bed.", { field: "pasrrLevel1" });
-  }
-  if (!input.selfRepresented && !input.representatives?.length && !input.residentId) throw new DomainError(Codes.GUARD_FAILED, "Add at least one representative, or record that the resident represents themself.", { field: "representatives" });
-  for (const rep of input.representatives ?? []) {
-    if (!rep.firstName?.trim() || !rep.roles?.length || rep.roles.some((role) => !REPRESENTATIVE_ROLES2.has(role))) throw new DomainError(Codes.INVALID_INPUT, "Each representative needs a name and known roles.", { field: "representatives" });
-  }
-  let residentId = input.residentId ?? null;
-  const synthetic = Boolean(input.synthetic ?? community.synthetic);
-  if (residentId) {
-    const resident2 = await lockRow(uow.tx, "Resident", residentId);
-    if (resident2.status === "deceased") throw new DomainError(Codes.GUARD_FAILED, "This resident is recorded as deceased.");
-    const open = await uow.tx.stay.findFirst({ where: { residentId, status: { in: ["pre_admit", "admitted"] } }, select: { id: true } });
-    if (open) throw new DomainError(Codes.GUARD_FAILED, "This resident already has an open stay.", { reason: "open_stay" });
-    const reps = await uow.tx.representative.count({ where: { residentId, status: "active" } });
-    if (!reps && !input.selfRepresented && !input.representatives?.length) throw new DomainError(Codes.GUARD_FAILED, "Add at least one representative.", { field: "representatives" });
-  } else {
-    const data = input.resident;
-    if (!data?.firstName?.trim() || !data.lastName?.trim()) throw new DomainError(Codes.INVALID_INPUT, "The resident needs a first and last name.", { field: "resident" });
-    if (data.dateOfBirth && !/^\d{4}-\d{2}-\d{2}$/.test(data.dateOfBirth)) throw new DomainError(Codes.INVALID_INPUT, "Date of birth must be YYYY-MM-DD.", { field: "dateOfBirth" });
-    const created = await uow.tx.resident.create({
-      data: {
-        reference: await nextReference(uow.tx, "RES", uow.now),
-        communityId: input.communityId,
-        firstName: data.firstName.trim(),
-        lastName: data.lastName.trim(),
-        middleName: data.middleName ?? "",
-        preferredName: data.preferredName ?? "",
-        dateOfBirth: data.dateOfBirth ? /* @__PURE__ */ new Date(`${data.dateOfBirth}T00:00:00Z`) : null,
-        sex: data.sex ?? "unknown",
-        primaryLanguage: data.primaryLanguage ?? "English",
-        status: "prospective",
-        synthetic
-      }
-    });
-    residentId = created.id;
-    auditCreate(uow, actor, "Resident", created.id, "resident.created", { reference: created.reference });
-  }
-  if (input.prospectId) {
-    const prospect = await uow.tx.prospect.findUnique({ where: { id: input.prospectId }, select: { id: true, convertedResidentId: true } });
-    if (!prospect) throw new DomainError(Codes.NOT_FOUND, "Prospect not found.");
-    if (prospect.convertedResidentId && prospect.convertedResidentId !== residentId) throw new DomainError(Codes.GUARD_FAILED, "This prospect was already converted.");
-    await uow.tx.prospect.update({ where: { id: prospect.id }, data: { convertedResidentId: residentId } });
-  }
-  for (const rep of input.representatives ?? []) await addRepresentative(uow, actor, residentId, input.communityId, rep, synthetic);
-  if (input.selfRepresented) {
-    const self = await uow.tx.representative.findFirst({ where: { residentId, self: true, status: "active" } });
-    if (!self) {
-      const row = await uow.tx.representative.create({ data: { reference: await nextReference(uow.tx, "REP", uow.now), residentId, self: true, roles: ["self"], status: "active", contactPriority: 1 } });
-      auditCreate(uow, actor, "Representative", row.id, "representative.added", { self: true });
-    }
-  }
-  if (prospectScreen) await uow.tx.preAdmissionScreen.updateMany({ where: { prospectId: input.prospectId, residentId: null }, data: { residentId } });
-  if (input.pasrrLevel1) {
-    const screen = await uow.tx.preAdmissionScreen.create({ data: { residentId, prospectId: input.prospectId ?? null, kind: "pasrr_level1", result: input.pasrrLevel1.result, completedAt: new Date(input.pasrrLevel1.completedAt) } });
-    auditCreate(uow, actor, "PreAdmissionScreen", screen.id, "pre_admission_screen.recorded", { kind: "pasrr_level1" });
-  }
-  const stay = await uow.tx.stay.create({
-    data: { reference: await nextReference(uow.tx, "STY", uow.now), residentId, communityId: input.communityId, setting, status: "pre_admit", presence: "not_admitted", admissionSource: input.admissionSource, placementReason: input.placementReason ?? "", initialPayerKind: payer.kind, projection: EMPTY_PROJECTION, synthetic }
-  });
-  auditCreate(uow, actor, "Stay", stay.id, "stay.created", { reference: stay.reference, setting });
-  const effectiveDate = localDate(await communityTimeZone(uow.tx, input.communityId), input.effectiveAt);
-  const coverage = await uow.tx.coveragePeriod.create({
-    data: { stayId: stay.id, payerId: payer.id, rank: "primary", startDate: /* @__PURE__ */ new Date(`${effectiveDate}T00:00:00Z`), status: "active", memberReference: input.memberReference ?? "", qualifyingStayFrom: input.qualifyingStayFrom ? /* @__PURE__ */ new Date(`${input.qualifyingStayFrom}T00:00:00Z`) : null, qualifyingStayTo: input.qualifyingStayTo ? /* @__PURE__ */ new Date(`${input.qualifyingStayTo}T00:00:00Z`) : null }
-  });
-  auditCreate(uow, actor, "CoveragePeriod", coverage.id, "coverage.opened", { payerKind: payer.kind, startDate: effectiveDate });
-  const { event, after } = await appendCensusEvent(uow, actor, stay, {
-    kind: input.residentId ? "readmission" : "admission",
-    effectiveAt: input.effectiveAt,
-    observedAt: input.observedAt,
-    toBedId: input.bedId ?? null,
-    toApartmentId: input.apartmentId ?? null,
-    coverageId: coverage.id,
-    idempotencyKey: input.idempotencyKey,
-    detail: { admissionSource: input.admissionSource }
-  }, { reservationId: input.reservationId, companionRelationship: input.companionRelationship });
-  await convertSalesRecords(uow, actor, { stayId: stay.id, residentId, prospectId: input.prospectId ?? null, reservationId: input.reservationId ?? null });
-  const resident = await uow.tx.resident.findUniqueOrThrow({ where: { id: residentId }, select: { version: true, status: true } });
-  await casUpdate(uow, { model: "Resident", id: residentId, version: resident.version, from: [resident.status], to: "current", actor, eventType: "resident.admitted", data: { currentStayId: stay.id, communityId: input.communityId } });
-  await openClocksForFact(uow, actor, { fact: "census.admission", communityId: input.communityId, residentId, subjectType: "Stay", subjectId: stay.id, startedAt: input.effectiveAt, setting, payerKind: payer.kind, evidence: { type: "census_event:admission", id: event.id } });
-  for (const notice of input.notices ?? []) await recordNotice(uow, actor, { ...notice, stayId: stay.id });
-  uow.emit({ topic: "portal.invite_representatives", aggregateType: "Stay", aggregateId: stay.id, payload: { stayId: stay.id }, dedupeKey: `portal.invite:${stay.id}` });
-  return { stayId: stay.id, residentId, eventId: event.id, status: after.status, presence: after.presence };
-}
-async function convertSalesRecords(uow, actor, input) {
-  const reservation = input.reservationId ? await uow.tx.placeReservation.findUnique({ where: { id: input.reservationId }, select: { prospectId: true, referralId: true, waitlistEntryId: true, consumedByStayId: true } }) : null;
-  if (reservation && reservation.consumedByStayId !== input.stayId) return;
-  const prospectId = input.prospectId ?? reservation?.prospectId ?? null;
-  if (prospectId && !input.prospectId) {
-    const prospect = await uow.tx.prospect.findUnique({ where: { id: prospectId }, select: { convertedResidentId: true } });
-    if (prospect && !prospect.convertedResidentId) await uow.tx.prospect.update({ where: { id: prospectId }, data: { convertedResidentId: input.residentId } });
-  }
-  const meta = { stayId: input.stayId, residentId: input.residentId };
-  if (reservation?.waitlistEntryId) {
-    const entry = await lockRow(uow.tx, "WaitlistEntry", reservation.waitlistEntryId);
-    if (["active", "offered", "accepted"].includes(entry.status)) await casUpdate(uow, { model: "WaitlistEntry", id: entry.id, version: entry.version, from: [entry.status], to: "converted", actor, eventType: "waitlist.converted", metadata: meta });
-  }
-  if (reservation?.referralId) {
-    const referral = await lockRow(uow.tx, "Referral", reservation.referralId);
-    if (referral.status === "accepted") await casUpdate(uow, { model: "Referral", id: referral.id, version: referral.version, from: ["accepted"], to: "admitted", actor, eventType: "referral.admitted", metadata: meta });
-  }
-  if (prospectId) {
-    const prospect = await uow.tx.prospect.findUnique({ where: { id: prospectId }, select: { leadId: true } });
-    if (prospect?.leadId) {
-      const lead = await lockRow(uow.tx, "Lead", prospect.leadId);
-      if (lead.status !== "moved_in" && lead.status !== "lost") await casUpdate(uow, { model: "Lead", id: lead.id, version: lead.version, from: [lead.status], to: "moved_in", actor, eventType: "lead.moved_in", metadata: meta });
-    }
-  }
-}
-async function addRepresentative(uow, actor, residentId, communityId, rep, synthetic) {
-  const contact = await uow.tx.contact.create({ data: { reference: await nextReference(uow.tx, "CON", uow.now), communityId, firstName: rep.firstName.trim(), lastName: rep.lastName?.trim() ?? "", email: rep.email?.trim().toLowerCase() ?? "", phone: rep.phone?.trim() ?? "", consentToContact: true, synthetic } });
-  const representative = await uow.tx.representative.create({ data: { reference: await nextReference(uow.tx, "REP", uow.now), residentId, contactId: contact.id, roles: rep.roles, contactPriority: rep.contactPriority ?? 1, status: "active" } });
-  auditCreate(uow, actor, "Representative", representative.id, "representative.added", { roles: rep.roles, contactReference: contact.reference });
-  return representative;
-}
-async function primaryPayerKind(tx, stayId) {
-  const coverage = await tx.coveragePeriod.findFirst({ where: { stayId, rank: "primary", status: { in: ["active", "ending", "retro_approved"] } }, orderBy: { startDate: "desc" }, include: { payer: { select: { kind: true } } } });
-  return coverage?.payer?.kind ?? null;
-}
-async function changeRoom(uow, actor, input) {
-  if (!input.toBedId === !input.toApartmentId) throw new DomainError(Codes.INVALID_INPUT, "Choose one target bed or apartment.", { field: "toBedId" });
-  const stay = await lockStay(uow.tx, input.stayId, input.expectedVersion);
-  if (input.toBedId) {
-    const bed = await uow.tx.bed.findUnique({ where: { id: input.toBedId }, include: { room: { include: { unit: true } } } });
-    if (!bed?.room?.unit || bed.room.unit.communityId !== stay.communityId) throw new DomainError(Codes.NOT_FOUND, "That bed is not in this community.");
-    const payerKind = await primaryPayerKind(uow.tx, stay.id);
-    const needed = payerKind ? CERTIFICATION_FOR_PAYER[payerKind] : void 0;
-    if (needed && !needed.includes(bed.certification)) throw new DomainError(Codes.GUARD_FAILED, `Bed ${bed.label} is certified ${bed.certification.replaceAll("_", " ")}, which the resident's coverage cannot use.`, { reason: "certification" });
-    const resident = stay.residentId ? await uow.tx.resident.findUnique({ where: { id: stay.residentId }, select: { sex: true } }) : null;
-    if (bed.room.genderPolicy !== "any" && resident?.sex && resident.sex !== bed.room.genderPolicy) throw new DomainError(Codes.GUARD_FAILED, `Room ${bed.room.number} is ${bed.room.genderPolicy} only.`, { reason: "gender_policy" });
-    if (bed.room.unit.secured && !input.reason?.trim()) throw new DomainError(Codes.GUARD_FAILED, "A move into a secured unit needs a documented reason.", { field: "reason" });
-  } else {
-    const apartment = await uow.tx.apartment.findUnique({ where: { id: input.toApartmentId }, include: { unit: true } });
-    if (!apartment?.unit || apartment.unit.communityId !== stay.communityId) throw new DomainError(Codes.NOT_FOUND, "That apartment is not in this community.");
-    if (apartment.unit.secured && !input.reason?.trim()) throw new DomainError(Codes.GUARD_FAILED, "A move into memory care needs a documented reason.", { field: "reason" });
-  }
-  const result = await appendCensusEvent(uow, actor, stay, {
-    kind: "room_change",
-    effectiveAt: input.effectiveAt,
-    observedAt: input.observedAt,
-    toBedId: input.toBedId ?? null,
-    toApartmentId: input.toApartmentId ?? null,
-    fromBedId: stay.currentBedId,
-    fromApartmentId: stay.currentApartmentId,
-    idempotencyKey: input.idempotencyKey,
-    detail: { reason: input.reason ?? null }
-  }, { companionRelationship: input.companionRelationship, reservationId: input.reservationId });
-  uow.emit({ topic: "task.room_change_notice", aggregateType: "Stay", aggregateId: stay.id, payload: { stayId: stay.id, eventId: result.event.id }, dedupeKey: `task.room_change_notice:${result.event.id}` });
-  return { stayId: stay.id, eventId: result.event.id, presence: result.after.presence, version: result.version };
-}
-async function startLeave(uow, actor, input) {
-  if (!["hospital", "therapeutic", "other"].includes(input.leaveKind)) throw new DomainError(Codes.INVALID_INPUT, "Unknown leave kind.", { field: "leaveKind" });
-  const stay = await lockStay(uow.tx, input.stayId, input.expectedVersion);
-  const nursing = stay.setting === "nursing_facility";
-  let holdPaidBy = input.holdElected ? input.holdPaidBy ?? "private" : "none";
-  if (nursing && stay.currentBedId) {
-    const policyNotice = await uow.tx.noticeDelivery.findFirst({ where: { residentId: stay.residentId, kind: "bed_hold_policy", deliveredAt: { not: null } }, select: { id: true } });
-    if (!policyNotice) throw new DomainError(Codes.GUARD_FAILED, "Record that the bed-hold policy was given to the resident or representative before the transfer (42 CFR 483.15(d)(1)).", { reason: "bed_hold_policy_missing" });
-    if (input.holdElected && holdPaidBy === "medicaid") {
-      const payerKind2 = await primaryPayerKind(uow.tx, stay.id);
-      if (payerKind2 !== "medicaid_ffs" && payerKind2 !== "medicaid_mco") throw new DomainError(Codes.GUARD_FAILED, "Medicaid pays for a bed hold only when Medicaid is the resident's primary payer.", { field: "holdPaidBy" });
-      const policy = await bedHoldPolicyFor(uow.tx, stay.communityId);
-      const cap = policy?.medicaidHoldDaysPerYear ?? 0;
-      const projection = stay.projection ?? EMPTY_PROJECTION;
-      const year = localDate(await communityTimeZone(uow.tx, stay.communityId), input.effectiveAt).slice(0, 4);
-      const used = projection.medicaidHoldDaysByYear?.[year] ?? 0;
-      if (!policy?.medicaidHoldPaid || used >= cap) throw new DomainError(Codes.GUARD_FAILED, `The resident has used ${used} of ${cap} paid Medicaid bed-hold days this year. Offer a private-pay hold instead.`, { reason: "medicaid_hold_cap" });
-    }
-  } else {
-    holdPaidBy = input.holdElected ? holdPaidBy : "none";
-  }
-  const result = await appendCensusEvent(uow, actor, stay, {
-    kind: "leave_start",
-    effectiveAt: input.effectiveAt,
-    observedAt: input.observedAt,
-    leaveKind: input.leaveKind,
-    holdElected: input.holdElected,
-    holdPaidBy,
-    fromBedId: stay.currentBedId,
-    fromApartmentId: stay.currentApartmentId,
-    initiatedBy: input.facilityInitiated ? "facility" : "resident",
-    idempotencyKey: input.idempotencyKey,
-    detail: { destination: input.destination ?? null }
-  });
-  const payerKind = await primaryPayerKind(uow.tx, stay.id);
-  const subject = { communityId: stay.communityId, residentId: stay.residentId, subjectType: "Stay", subjectId: stay.id, occurrenceKey: result.event.id, startedAt: input.effectiveAt, setting: stay.setting, payerKind };
-  await openClocksForFact(uow, actor, { ...subject, fact: "census.leave_start", evidence: { type: "census_event:leave_start", id: result.event.id } });
-  if (input.facilityInitiated) await openClocksForFact(uow, actor, { ...subject, fact: "census.facility_initiated_transfer" });
-  if (input.noticeAtTransfer) await recordNotice(uow, actor, { ...input.noticeAtTransfer, kind: "bed_hold_at_transfer", stayId: stay.id, censusEventId: result.event.id });
-  if (input.leaveKind === "hospital") uow.emit({ topic: "task.transfer_packet", aggregateType: "Stay", aggregateId: stay.id, payload: { stayId: stay.id, eventId: result.event.id }, dedupeKey: `task.transfer_packet:${result.event.id}` });
-  return { stayId: stay.id, eventId: result.event.id, presence: result.after.presence, version: result.version };
-}
-async function bedHoldPolicyFor(tx, communityId) {
-  const community = await tx.community.findUnique({ where: { id: communityId }, select: { bedHoldPolicyId: true } });
-  return community?.bedHoldPolicyId ? tx.bedHoldPolicy.findUnique({ where: { id: community.bedHoldPolicyId } }) : null;
-}
-async function releaseBedHold(uow, actor, input) {
-  if (!input.reason?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Say why the hold ends (e.g. the resident will not return, or the paid days ran out).", { field: "reason" });
-  const stay = await lockStay(uow.tx, input.stayId, input.expectedVersion);
-  const result = await appendCensusEvent(uow, actor, stay, { kind: "hold_release", effectiveAt: input.effectiveAt, fromBedId: stay.heldBedId, idempotencyKey: input.idempotencyKey, detail: { reason: input.reason.trim() } });
-  return { stayId: stay.id, eventId: result.event.id, presence: result.after.presence, version: result.version };
-}
-async function endLeave(uow, actor, input) {
-  const stay = await lockStay(uow.tx, input.stayId, input.expectedVersion);
-  const projection = stay.projection ?? EMPTY_PROJECTION;
-  const result = await appendCensusEvent(uow, actor, stay, { kind: "leave_end", effectiveAt: input.effectiveAt, observedAt: input.observedAt, toBedId: input.toBedId ?? null, toApartmentId: input.toApartmentId ?? null, idempotencyKey: input.idempotencyKey, detail: { leaveStartedAt: projection.openLeave?.startedAt ?? null } }, { reservationId: input.reservationId });
-  const startedAt = projection.openLeave?.startedAt ? new Date(projection.openLeave.startedAt) : null;
-  const interrupted = Boolean(startedAt && input.effectiveAt.getTime() - startedAt.getTime() <= 3 * 864e5);
-  if (interrupted) uow.audit({ eventType: "census.interrupted_stay_window", entityType: "Stay", entityId: stay.id, actorUserId: actorUserId(actor), after: { eventId: result.event.id, interruptedStay: true } });
-  return { stayId: stay.id, eventId: result.event.id, presence: result.after.presence, interruptedStay: interrupted, version: result.version };
-}
-async function dischargeResident(uow, actor, input) {
-  if (input.disposition === "deceased") throw new DomainError(Codes.INVALID_INPUT, "Record a death with the death command.", { field: "disposition" });
-  const stay = await lockStay(uow.tx, input.stayId, input.expectedVersion);
-  if (input.initiatedBy === "facility" && stay.setting === "nursing_facility") {
-    if (input.noticeException && !NOTICE_EXCEPTIONS.includes(input.noticeException)) throw new DomainError(Codes.INVALID_INPUT, "Unknown notice exception.", { field: "noticeException" });
-    const notice = await uow.tx.noticeDelivery.findFirst({ where: { subjectType: "Stay", subjectId: stay.id, kind: "transfer_discharge", deliveredAt: { not: null } }, orderBy: { deliveredAt: "asc" } });
-    if (!notice) throw new DomainError(Codes.GUARD_FAILED, "A facility-initiated discharge needs a written transfer/discharge notice on file (42 CFR 483.15(c)(3)).", { reason: "notice_missing" });
-    if (!notice.copyToOmbudsmanAt) throw new DomainError(Codes.GUARD_FAILED, "Record the copy of the notice sent to the Long-Term Care Ombudsman.", { reason: "ombudsman_copy_missing" });
-    const days = (input.effectiveAt.getTime() - notice.deliveredAt.getTime()) / 864e5;
-    if (days < 30 && !input.noticeException) throw new DomainError(Codes.GUARD_FAILED, `The notice was given ${Math.floor(days)} days ago; 30 days are required unless an exception in 42 CFR 483.15(c)(4)(ii) applies.`, { reason: "notice_period" });
-  }
-  const result = await appendCensusEvent(uow, actor, stay, {
-    kind: "discharge",
-    effectiveAt: input.effectiveAt,
-    observedAt: input.observedAt,
-    dischargeDisposition: input.disposition,
-    initiatedBy: input.initiatedBy,
-    fromBedId: stay.currentBedId ?? stay.heldBedId,
-    fromApartmentId: stay.currentApartmentId,
-    idempotencyKey: input.idempotencyKey,
-    detail: { noticeException: input.noticeException ?? null }
-  });
-  await endStay(uow, actor, stay, input.effectiveAt, "discharge", "former");
-  if (input.initiatedBy === "facility") {
-    const subject = { communityId: stay.communityId, residentId: stay.residentId, subjectType: "Stay", subjectId: stay.id, occurrenceKey: result.event.id, startedAt: input.effectiveAt, setting: stay.setting, payerKind: await primaryPayerKind(uow.tx, stay.id) };
-    await openClocksForFact(uow, actor, { ...subject, fact: "census.facility_initiated_transfer" });
-    const notice = await uow.tx.noticeDelivery.findFirst({ where: { subjectType: "Stay", subjectId: stay.id, kind: "transfer_discharge", copyToOmbudsmanAt: { not: null } } });
-    if (notice) await satisfyByEvidence(uow, actor, { subjectType: "Stay", subjectId: stay.id, occurrenceKey: result.event.id }, { type: "ombudsman_copy", id: notice.id, at: notice.copyToOmbudsmanAt });
-  }
-  uow.emit({ topic: "portal.stay_ended", aggregateType: "Stay", aggregateId: stay.id, payload: { stayId: stay.id }, dedupeKey: `portal.stay_ended:${stay.id}` });
-  return { stayId: stay.id, eventId: result.event.id, status: result.after.status };
-}
-async function recordDeath(uow, actor, input) {
-  if (!input.pronouncedBy?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Record who pronounced the death.", { field: "pronouncedBy" });
-  const stay = await lockStay(uow.tx, input.stayId, input.expectedVersion);
-  const result = await appendCensusEvent(uow, actor, stay, { kind: "death", effectiveAt: input.effectiveAt, observedAt: input.observedAt, fromBedId: stay.currentBedId ?? stay.heldBedId, fromApartmentId: stay.currentApartmentId, idempotencyKey: input.idempotencyKey, detail: { pronouncedBy: input.pronouncedBy.trim() } });
-  await endStay(uow, actor, stay, input.effectiveAt, "death", "deceased");
-  await openClocksForFact(uow, actor, { fact: "census.death", communityId: stay.communityId, residentId: stay.residentId, subjectType: "Stay", subjectId: stay.id, startedAt: input.effectiveAt, setting: stay.setting, payerKind: await primaryPayerKind(uow.tx, stay.id) });
-  uow.emit({ topic: "task.family_notification", aggregateType: "Stay", aggregateId: stay.id, payload: { stayId: stay.id }, dedupeKey: `task.family_notification:${stay.id}` });
-  return { stayId: stay.id, eventId: result.event.id, status: result.after.status };
-}
-async function endStay(uow, actor, stay, at, reason, residentStatus) {
-  const timeZone = await communityTimeZone(uow.tx, stay.communityId);
-  const endDate = /* @__PURE__ */ new Date(`${localDate(timeZone, at)}T00:00:00Z`);
-  const coverages = await uow.tx.coveragePeriod.findMany({ where: { stayId: stay.id, status: { in: ["pending", "active", "ending", "retro_approved"] } } });
-  for (const coverage of coverages) {
-    await casUpdate(uow, { model: "CoveragePeriod", id: coverage.id, version: coverage.version, from: [coverage.status], to: "ended", actor, eventType: "coverage.ended", data: { endDate, endReason: reason } });
-  }
-  if (stay.residentId) {
-    const resident = await uow.tx.resident.findUniqueOrThrow({ where: { id: stay.residentId }, select: { version: true, status: true } });
-    await casUpdate(uow, { model: "Resident", id: stay.residentId, version: resident.version, from: [resident.status], to: residentStatus, actor, eventType: `resident.${reason}`, data: { currentStayId: null } });
-  }
-}
-async function recordAdmissionAgreement(uow, actor, input) {
-  const stay = await uow.tx.stay.findUnique({ where: { id: input.stayId }, select: { id: true, residentId: true, communityId: true, setting: true, status: true } });
-  if (!stay) throw new DomainError(Codes.NOT_FOUND, "Stay not found.");
-  if (stay.status === "pre_admit") throw new DomainError(Codes.GUARD_FAILED, "Admit the resident first.");
-  const signedAt = new Date(input.signedAt);
-  if (Number.isNaN(signedAt.getTime()) || signedAt.getTime() > uow.now.getTime() + MAX_FUTURE_SKEW_MS) throw new DomainError(Codes.INVALID_INPUT, "The signing time must be a real time, not in the future.", { field: "signedAt" });
-  if (input.signedByRepresentativeId) {
-    const rep = await uow.tx.representative.findUnique({ where: { id: input.signedByRepresentativeId }, select: { residentId: true } });
-    if (rep?.residentId !== stay.residentId) throw new DomainError(Codes.INVALID_INPUT, "That representative does not represent this resident.", { field: "signedByRepresentativeId" });
-  }
-  if (input.sha256 && !/^[a-f0-9]{64}$/.test(input.sha256)) throw new DomainError(Codes.INVALID_INPUT, "The file digest must be a SHA-256 hex string.", { field: "sha256" });
-  const nursing = stay.setting === "nursing_facility";
-  const document = await uow.tx.document.create({
-    data: { title: nursing ? "Admission agreement (signed)" : "Residency agreement (signed)", kind: nursing ? "admission_agreement" : "residency_agreement", communityId: stay.communityId, residentId: stay.residentId, phiTier: "dem", storageKey: input.storageKey ?? "", sha256: input.sha256 ?? "", status: "signed", signedAt }
-  });
-  auditCreate(uow, actor, "Document", document.id, "document.agreement_signed", { stayId: stay.id, kind: document.kind, signedAt, signedByRepresentativeId: input.signedByRepresentativeId ?? null, paperOnFile: !input.storageKey }, { reason: input.note ?? null });
-  const satisfiedClocks = await satisfyByEvidence(uow, actor, { subjectType: "Stay", subjectId: stay.id }, { type: "document:admission_agreement", id: document.id, at: signedAt });
-  return { documentId: document.id, satisfiedClocks };
-}
-async function recordNotice(uow, actor, input) {
-  const stay = await uow.tx.stay.findUnique({ where: { id: input.stayId }, select: { id: true, residentId: true, communityId: true } });
-  if (!stay) throw new DomainError(Codes.NOT_FOUND, "Stay not found.");
-  const deliveredAt = new Date(input.deliveredAt);
-  if (Number.isNaN(deliveredAt.getTime()) || deliveredAt.getTime() > uow.now.getTime() + MAX_FUTURE_SKEW_MS) throw new DomainError(Codes.INVALID_INPUT, "Delivery time must be a real time, not in the future.", { field: "deliveredAt" });
-  if (input.recipientRepresentativeId) {
-    const rep = await uow.tx.representative.findUnique({ where: { id: input.recipientRepresentativeId }, select: { residentId: true } });
-    if (rep?.residentId !== stay.residentId) throw new DomainError(Codes.INVALID_INPUT, "That representative does not represent this resident.", { field: "recipientRepresentativeId" });
-  }
-  if (input.censusEventId) {
-    const event = await uow.tx.censusEvent.findUnique({ where: { id: input.censusEventId }, select: { stayId: true } });
-    if (event?.stayId !== stay.id) throw new DomainError(Codes.INVALID_INPUT, "That census event belongs to another stay.", { field: "censusEventId" });
-  }
-  const copy = input.copyToOmbudsmanAt ? new Date(input.copyToOmbudsmanAt) : null;
-  const notice = await uow.tx.noticeDelivery.create({
-    data: {
-      kind: input.kind,
-      subjectType: "Stay",
-      subjectId: stay.id,
-      residentId: stay.residentId,
-      censusEventId: input.censusEventId ?? null,
-      recipientRepresentativeId: input.recipientRepresentativeId ?? null,
-      method: input.method,
-      deliveredAt,
-      deliveredById: actorUserId(actor),
-      acknowledgement: input.acknowledgement ?? "not_required",
-      copyToOmbudsmanAt: copy,
-      note: input.note ?? ""
-    }
-  });
-  auditCreate(uow, actor, "NoticeDelivery", notice.id, "notice.delivered", { kind: input.kind, method: input.method, deliveredAt, censusEventId: input.censusEventId ?? null, copyToOmbudsmanAt: copy });
-  const subject = { subjectType: "Stay", subjectId: stay.id, ...input.censusEventId ? { occurrenceKey: input.censusEventId } : {} };
-  const satisfied = await satisfyByEvidence(uow, actor, subject, { type: `notice_delivery:${input.kind}`, id: notice.id, at: deliveredAt });
-  if (copy) satisfied.push(...await satisfyByEvidence(uow, actor, subject, { type: "ombudsman_copy", id: notice.id, at: copy }));
-  return { noticeId: notice.id, satisfiedClocks: satisfied };
-}
-async function verifyCensusProjection(tx, stayId) {
-  const stay = await tx.stay.findUnique({ where: { id: stayId }, select: { id: true, communityId: true, projectionHash: true, currentBedId: true, heldBedId: true, currentApartmentId: true, presence: true, status: true } });
-  if (!stay?.communityId) throw new DomainError(Codes.NOT_FOUND, "Stay not found.");
-  const timeZone = await communityTimeZone(tx, stay.communityId);
-  const rebuilt = foldStored(await loadCensusEvents(tx, stayId), timeZone);
-  const hash = projectionHash(rebuilt);
-  const columnsMatch = rebuilt.status === stay.status && rebuilt.presence === stay.presence && rebuilt.currentBedId === stay.currentBedId && rebuilt.heldBedId === stay.heldBedId && rebuilt.currentApartmentId === stay.currentApartmentId;
-  return { stayId, matches: hash === stay.projectionHash && columnsMatch, storedHash: stay.projectionHash, rebuiltHash: hash };
-}
-async function verifyCensusChain(tx, stayId) {
-  const rows = await tx.censusEvent.findMany({ where: { stayId }, orderBy: { seq: "asc" } });
-  let prev = "0".repeat(64);
-  for (const row of rows) {
-    const body = { stayId, seq: row.seq, kind: row.kind, effectiveAt: row.effectiveAt.toISOString(), toBedId: row.toBedId, toApartmentId: row.toApartmentId, leaveKind: row.leaveKind, holdElected: row.holdElected, holdPaidBy: row.holdPaidBy, dischargeDisposition: row.dischargeDisposition, initiatedBy: row.initiatedBy, voidsEventId: row.voidsEventId };
-    if (row.prevHash !== prev || row.hash !== sha256(`${prev}
-${canonicalJson(body)}`)) return { ok: false, brokenAtSeq: row.seq };
-    prev = row.hash;
-  }
-  return { ok: true, count: rows.length };
-}
-
 // features/keystone/lib/censusCorrection.ts
 var LATE_KINDS = ["room_change", "leave_start", "hold_release", "leave_end", "coverage_change"];
 function validateCorrection(payload) {
@@ -4435,7 +6208,7 @@ function validateCorrection(payload) {
     if (event.kind === "correction") {
       if (!event.voidsEventId) throw new DomainError(Codes.INVALID_INPUT, "A void names the event it voids.", { field: "voidsEventId" });
     } else if (!LATE_KINDS.includes(event.kind)) {
-      throw new DomainError(Codes.INVALID_INPUT, `A correction cannot record ${event.kind.replaceAll("_", " ")}; use the admission, discharge or death command.`, { field: "kind" });
+      throw new DomainError(Codes.INVALID_INPUT, `A correction cannot record ${label(event.kind).toLowerCase()}; use the admission, discharge or death command.`, { field: "kind" });
     }
     if (Number.isNaN(new Date(event.effectiveAt).getTime())) throw new DomainError(Codes.INVALID_INPUT, "Each event needs a valid time.", { field: "effectiveAt" });
   }
@@ -4471,123 +6244,10 @@ async function requestClosedPeriodCorrection(uow, actor, payload) {
     communityId: stay.communityId,
     payload: { ...payload, reason: payload.reason.trim() },
     requiredPermission: "canApproveCensusCorrections",
-    summary: `Correct the signed-off census for stay ${stay.reference}: ${payload.events.map((e) => e.kind.replaceAll("_", " ")).join(", ")}`
+    summary: `Correct the signed-off census for stay ${stay.reference}: ${payload.events.map((e) => label(e.kind).toLowerCase()).join(", ")}`
   });
 }
 registerApplier("census.correct_closed_period", (uow, actor, request) => applyCorrection(uow, actor, request.payload, request.id), { applyOnApprove: true });
-
-// features/keystone/lib/censusDay.ts
-var DATE2 = /^\d{4}-\d{2}-\d{2}$/;
-var day2 = (date2) => /* @__PURE__ */ new Date(`${date2}T00:00:00Z`);
-async function timeZoneOf(tx, communityId) {
-  const community = await tx.community.findUnique({ where: { id: communityId }, select: { timeZone: true } });
-  if (!community) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
-  return community.timeZone;
-}
-async function deriveCensusDay(tx, communityId, date2) {
-  if (!DATE2.test(date2)) throw new DomainError(Codes.INVALID_INPUT, "Date must be YYYY-MM-DD.", { field: "date" });
-  const timeZone = await timeZoneOf(tx, communityId);
-  const dayStart = day2(date2);
-  const stays = await tx.stay.findMany({
-    where: { communityId, admittedAt: { not: null }, OR: [{ dischargedAt: null }, { dischargedAt: { gte: new Date(dayStart.getTime() - 864e5) } }] },
-    select: { id: true, setting: true, residentId: true }
-  });
-  const stayIds = stays.map((stay) => stay.id);
-  const [eventRows, voidRows, coverages] = await Promise.all([
-    tx.censusEvent.findMany({ where: { stayId: { in: stayIds }, voidsEventId: null, kind: { not: "correction" } }, orderBy: [{ effectiveAt: "asc" }, { seq: "asc" }] }),
-    tx.censusEvent.findMany({ where: { stayId: { in: stayIds }, voidsEventId: { not: null } }, select: { voidsEventId: true } }),
-    tx.coveragePeriod.findMany({
-      where: { stayId: { in: stayIds }, rank: "primary", startDate: { lte: dayStart }, OR: [{ endDate: null }, { endDate: { gt: dayStart } }], status: { in: ["active", "ending", "ended", "retro_approved"] } },
-      orderBy: { startDate: "desc" },
-      select: { id: true, stayId: true, payer: { select: { kind: true } } }
-    })
-  ]);
-  const voided = new Set(voidRows.map((row) => row.voidsEventId));
-  const eventsByStay = /* @__PURE__ */ new Map();
-  for (const row of eventRows) {
-    if (voided.has(row.id) || !row.stayId) continue;
-    const list10 = eventsByStay.get(row.stayId) ?? [];
-    list10.push({ seq: list10.length + 1, kind: row.kind, effectiveAt: row.effectiveAt, toBedId: row.toBedId, toApartmentId: row.toApartmentId, leaveKind: row.leaveKind, holdElected: row.holdElected, holdPaidBy: row.holdPaidBy, dischargeDisposition: row.dischargeDisposition });
-    eventsByStay.set(row.stayId, list10);
-  }
-  const coverageByStay = /* @__PURE__ */ new Map();
-  for (const row of coverages) if (row.stayId && !coverageByStay.has(row.stayId)) coverageByStay.set(row.stayId, { id: row.id, payerKind: row.payer?.kind ?? "uncovered" });
-  const projected = stays.map((stay) => ({ stay, projection: presenceAt(eventsByStay.get(stay.id) ?? [], timeZone, date2) })).filter(({ projection }) => projection.presence === "in_house" || projection.presence === "on_leave_hold");
-  const bedIds = projected.map(({ projection }) => projection.presence === "in_house" ? projection.currentBedId : projection.heldBedId).filter((id) => Boolean(id));
-  const apartmentIds = projected.map(({ projection }) => projection.currentApartmentId).filter((id) => Boolean(id));
-  const [beds, apartments] = await Promise.all([
-    bedIds.length ? tx.bed.findMany({ where: { id: { in: bedIds } }, select: { id: true, room: { select: { unitId: true } } } }) : Promise.resolve([]),
-    apartmentIds.length ? tx.apartment.findMany({ where: { id: { in: apartmentIds } }, select: { id: true, unitId: true } }) : Promise.resolve([])
-  ]);
-  const unitOfBed = new Map(beds.map((bed) => [bed.id, bed.room?.unitId ?? null]));
-  const unitOfApartment = new Map(apartments.map((apartment) => [apartment.id, apartment.unitId]));
-  const rows = [];
-  for (const { stay, projection } of projected) {
-    const bedId = projection.presence === "in_house" ? projection.currentBedId : projection.heldBedId;
-    const apartmentId = projection.currentApartmentId;
-    const unitId = bedId ? unitOfBed.get(bedId) ?? null : apartmentId ? unitOfApartment.get(apartmentId) ?? null : null;
-    const coverage = coverageByStay.get(stay.id);
-    rows.push({ stayId: stay.id, setting: stay.setting, presence: projection.presence, bedId, apartmentId, unitId, coverageId: coverage?.id ?? null, payerKind: coverage?.payerKind ?? "uncovered" });
-  }
-  const totals = { present: rows.length, inHouse: 0, onLeaveHold: 0, bySetting: {}, byUnit: {}, byPayer: {} };
-  for (const row of rows) {
-    if (row.presence === "in_house") totals.inHouse += 1;
-    else totals.onLeaveHold += 1;
-    totals.bySetting[row.setting] = (totals.bySetting[row.setting] ?? 0) + 1;
-    if (row.unitId) totals.byUnit[row.unitId] = (totals.byUnit[row.unitId] ?? 0) + 1;
-    totals.byPayer[row.payerKind] = (totals.byPayer[row.payerKind] ?? 0) + 1;
-  }
-  return { timeZone, rows, totals };
-}
-async function snapshotCensusDay(uow, actor, input) {
-  const closed = await closedThrough(uow.tx, input.communityId);
-  if (closed && input.date <= closed) throw new DomainError(Codes.GUARD_FAILED, `The census through ${closed} is signed off.`, { reason: "closed_period" });
-  const timeZone = await timeZoneOf(uow.tx, input.communityId);
-  if (input.date > localDate(timeZone, uow.now)) throw new DomainError(Codes.INVALID_INPUT, "The census day has not happened yet.", { field: "date" });
-  const derived = await deriveCensusDay(uow.tx, input.communityId, input.date);
-  const existing = await uow.tx.censusDay.findMany({ where: { communityId: input.communityId, date: day2(input.date), supersededById: null } });
-  const byStay = new Map(existing.map((row) => [row.stayId, row]));
-  let written = 0;
-  let superseded = 0;
-  const rowData = (row) => ({ communityId: input.communityId, stayId: row.stayId, date: day2(input.date), setting: row.setting, bedId: row.bedId, apartmentId: row.apartmentId, unitId: row.unitId, presence: row.presence, primaryCoverageId: row.coverageId, payerKind: row.payerKind, billableForPayer: row.payerKind !== "uncovered", snapshotRunId: input.runId ?? null });
-  const fresh = derived.rows.filter((row) => !byStay.has(row.stayId));
-  if (fresh.length) {
-    await uow.tx.censusDay.createMany({ data: fresh.map(rowData) });
-    written += fresh.length;
-  }
-  for (const row of derived.rows) {
-    const prior = byStay.get(row.stayId);
-    if (!prior) continue;
-    byStay.delete(row.stayId);
-    const same = prior.presence === row.presence && prior.bedId === row.bedId && prior.apartmentId === row.apartmentId && prior.unitId === row.unitId && prior.primaryCoverageId === row.coverageId;
-    if (same) continue;
-    const created = await uow.tx.censusDay.create({ data: { communityId: input.communityId, stayId: row.stayId, date: day2(input.date), setting: row.setting, bedId: row.bedId, apartmentId: row.apartmentId, unitId: row.unitId, presence: row.presence, primaryCoverageId: row.coverageId, payerKind: row.payerKind, billableForPayer: row.payerKind !== "uncovered", snapshotRunId: input.runId ?? null } });
-    written += 1;
-    if (prior) {
-      await uow.tx.censusDay.update({ where: { id: prior.id }, data: { supersededById: created.id } });
-      superseded += 1;
-    }
-  }
-  for (const stale of byStay.values()) {
-    const tombstone = await uow.tx.censusDay.create({ data: { communityId: input.communityId, stayId: stale.stayId, date: day2(input.date), setting: stale.setting, presence: "absent", payerKind: stale.payerKind, billableForPayer: false, snapshotRunId: input.runId ?? null } });
-    await uow.tx.censusDay.update({ where: { id: stale.id }, data: { supersededById: tombstone.id } });
-    superseded += 1;
-  }
-  uow.audit({ eventType: "census.day_snapshot", entityType: "Community", entityId: input.communityId, actorUserId: actorUserId(actor), after: { date: input.date, present: derived.totals.present, written, superseded } });
-  return { date: input.date, totals: derived.totals, written, superseded };
-}
-async function signOffCensusDay(uow, actor, input) {
-  if (actor.kind !== "user") throw new DomainError(Codes.NOT_AUTHORIZED, "Only a person can sign off the census.");
-  const timeZone = await timeZoneOf(uow.tx, input.communityId);
-  if (input.date >= localDate(timeZone, uow.now)) throw new DomainError(Codes.GUARD_FAILED, "A census day can be signed off once it has ended.", { reason: "day_not_ended" });
-  const closed = await closedThrough(uow.tx, input.communityId);
-  if (closed && input.date <= closed) throw new DomainError(Codes.GUARD_FAILED, `The census through ${closed} is already signed off.`, { reason: "closed_period" });
-  const snapshot = await snapshotCensusDay(uow, actor, { communityId: input.communityId, date: input.date });
-  const signoff = await uow.tx.censusSignoff.create({ data: { communityId: input.communityId, date: day2(input.date), totals: snapshot.totals, signedById: actor.userId, signedAt: uow.now, note: input.note?.trim() ?? "" } });
-  uow.audit({ eventType: "census.signed_off", entityType: "CensusSignoff", entityId: signoff.id, actorUserId: actor.userId, after: { communityId: input.communityId, date: input.date, totals: snapshot.totals } });
-  uow.emit({ topic: "census.signed_off", aggregateType: "Community", aggregateId: input.communityId, payload: { date: input.date }, dedupeKey: `census.signed_off:${input.communityId}:${input.date}` });
-  return { signoffId: signoff.id, date: input.date, totals: snapshot.totals };
-}
 
 // features/keystone/mutations/actorFor.ts
 async function actorFor(context) {
@@ -4707,493 +6367,6 @@ async function verifyStay(_root, args, context) {
   });
 }
 
-// features/keystone/lib/places.ts
-var import_node_crypto5 = require("node:crypto");
-var MAX_RESERVATION_HOURS = 24 * 30;
-async function lockPlace(tx, target) {
-  if (!target.bedId === !target.apartmentId) throw new DomainError(Codes.INVALID_INPUT, "Choose one bed or one apartment.", { field: "bedId" });
-  const model = target.bedId ? "Bed" : "Apartment";
-  const id = target.bedId ?? target.apartmentId;
-  await advisoryLock(tx, `${target.bedId ? "bed" : "apartment"}:${id}`);
-  const row = await lockRow(tx, model, id);
-  return { model, id, row, name: target.bedId ? `Bed ${row.label}` : `Apartment ${row.number}` };
-}
-async function placeCommunity(tx, target) {
-  if (target.bedId) {
-    const bed = await tx.bed.findUnique({ where: { id: target.bedId }, select: { room: { select: { unit: { select: { communityId: true } } } } } });
-    return bed?.room?.unit?.communityId ?? null;
-  }
-  const apartment = await tx.apartment.findUnique({ where: { id: target.apartmentId }, select: { unit: { select: { communityId: true } } } });
-  return apartment?.unit?.communityId ?? null;
-}
-async function reservePlace(uow, actor, input) {
-  if (!Number.isInteger(input.hours) || input.hours < 1 || input.hours > MAX_RESERVATION_HOURS) throw new DomainError(Codes.INVALID_INPUT, `A reservation lasts 1 to ${MAX_RESERVATION_HOURS} hours.`, { field: "hours" });
-  const place = await lockPlace(uow.tx, input);
-  const communityId = await placeCommunity(uow.tx, input);
-  if (!communityId) throw new DomainError(Codes.NOT_FOUND, "Place not found.");
-  const reservable = place.model === "Bed" ? place.row.status === "available" : place.row.status === "available" || place.row.status === "occupied" && (place.row.occupantCount ?? 0) < Number(place.row.capacity ?? 1);
-  if (!reservable) throw new DomainError(Codes.PLACE_UNAVAILABLE, `${place.name} is ${place.row.status.replaceAll("_", " ")}.`, { currentStatus: place.row.status });
-  const active = await uow.tx.placeReservation.findFirst({ where: { status: "active", ...input.bedId ? { bedId: input.bedId } : { apartmentId: input.apartmentId } }, select: { id: true } });
-  if (active) throw new DomainError(Codes.PLACE_UNAVAILABLE, `${place.name} already has an active reservation.`, { currentStatus: "reserved" });
-  const reservation = await uow.tx.placeReservation.create({
-    data: {
-      reference: await nextReference(uow.tx, "RSV", uow.now),
-      communityId,
-      bedId: input.bedId ?? null,
-      apartmentId: input.apartmentId ?? null,
-      prospectId: input.prospectId ?? null,
-      referralId: input.referralId ?? null,
-      waitlistEntryId: input.waitlistEntryId ?? null,
-      purpose: input.purpose,
-      status: "active",
-      expiresAt: new Date(uow.now.getTime() + input.hours * 36e5),
-      operationKeyHash: (0, import_node_crypto5.createHash)("sha256").update(`${principalKey(actor)}:${input.idempotencyKey}`).digest("hex")
-    }
-  });
-  auditCreate(uow, actor, "PlaceReservation", reservation.id, "reservation.created", { reference: reservation.reference, bedId: input.bedId ?? null, apartmentId: input.apartmentId ?? null, expiresAt: reservation.expiresAt, purpose: input.purpose });
-  if (place.row.status === "available") await casUpdate(uow, { model: place.model, id: place.id, version: place.row.version, from: ["available"], to: "reserved", actor, eventType: `${place.model.toLowerCase()}.reserved`, metadata: { reservationId: reservation.id } });
-  return { reservationId: reservation.id, reference: reservation.reference, expiresAt: reservation.expiresAt };
-}
-async function endReservation(uow, actor, input) {
-  const reservation = await lockRow(uow.tx, "PlaceReservation", input.reservationId);
-  if (input.expectedVersion != null && input.expectedVersion !== reservation.version) throw new DomainError(Codes.STALE_STATE, "The reservation changed since you loaded it.", { currentStatus: reservation.status, currentVersion: reservation.version });
-  if (input.to === "expired" && reservation.expiresAt && reservation.expiresAt.getTime() > uow.now.getTime()) throw new DomainError(Codes.GUARD_FAILED, "The reservation has not expired yet.");
-  const place = await lockPlace(uow.tx, { bedId: reservation.bedId, apartmentId: reservation.apartmentId });
-  await casUpdate(uow, { model: "PlaceReservation", id: reservation.id, version: reservation.version, from: ["active"], to: input.to, actor, eventType: `reservation.${input.to}`, reason: input.reason ?? null });
-  if (place.row.status === "reserved") await casUpdate(uow, { model: place.model, id: place.id, version: place.row.version, from: ["reserved"], to: "available", actor, eventType: `${place.model.toLowerCase()}.reservation_ended`, metadata: { reservationId: reservation.id } });
-  uow.emit({ topic: "availability.changed", aggregateType: place.model, aggregateId: place.id, payload: { [place.model === "Bed" ? "bedId" : "apartmentId"]: place.id }, dedupeKey: `availability:${reservation.id}:${input.to}` });
-  return { reservationId: reservation.id, status: input.to };
-}
-async function markPlaceReady(uow, actor, input) {
-  const place = await lockPlace(uow.tx, input);
-  if (input.expectedVersion != null && input.expectedVersion !== place.row.version) throw new DomainError(Codes.STALE_STATE, `${place.name} changed since you loaded it.`, { currentStatus: place.row.status, currentVersion: place.row.version });
-  const from = place.model === "Bed" ? "cleaning" : "turnover";
-  if (place.model === "Apartment" && (place.row.occupantCount ?? 0) > 0) throw new DomainError(Codes.GUARD_FAILED, `${place.name} still has a resident.`);
-  await casUpdate(uow, { model: place.model, id: place.id, version: place.row.version, from: [from], to: "available", actor, eventType: `${place.model.toLowerCase()}.ready`, reason: input.note ?? null, data: { statusReason: "" } });
-  uow.emit({ topic: "availability.changed", aggregateType: place.model, aggregateId: place.id, payload: { placeId: place.id }, dedupeKey: `availability:${place.id}:ready:${place.row.version}` });
-  return { id: place.id, status: "available", version: place.row.version + 1 };
-}
-async function setPlaceService(uow, actor, input) {
-  if (!input.reason?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Say why.", { field: "reason" });
-  const place = await lockPlace(uow.tx, input);
-  if (input.expectedVersion != null && input.expectedVersion !== place.row.version) throw new DomainError(Codes.STALE_STATE, `${place.name} changed since you loaded it.`, { currentStatus: place.row.status, currentVersion: place.row.version });
-  if (!input.inService) {
-    const from = place.model === "Bed" ? ["available", "cleaning"] : ["available", "turnover"];
-    if (!from.includes(place.row.status)) throw new DomainError(Codes.INVALID_TRANSITION, `${place.name} is ${place.row.status.replaceAll("_", " ")}; only an empty, unreserved place can go out of service.`, { currentStatus: place.row.status });
-    await casUpdate(uow, { model: place.model, id: place.id, version: place.row.version, from, to: "out_of_service", actor, eventType: `${place.model.toLowerCase()}.out_of_service`, reason: input.reason.trim(), data: { statusReason: input.reason.trim() } });
-    return { id: place.id, status: "out_of_service" };
-  }
-  await casUpdate(uow, { model: place.model, id: place.id, version: place.row.version, from: ["out_of_service"], to: "available", actor, eventType: `${place.model.toLowerCase()}.in_service`, reason: input.reason.trim(), data: { statusReason: "" } });
-  uow.emit({ topic: "availability.changed", aggregateType: place.model, aggregateId: place.id, payload: { placeId: place.id }, dedupeKey: `availability:${place.id}:in_service:${place.row.version}` });
-  return { id: place.id, status: "available" };
-}
-async function recomputeAvailability(uow, communityId) {
-  const types = await uow.tx.apartmentType.findMany({ where: { communityId }, select: { id: true, setting: true } });
-  const results = [];
-  for (const type of types) {
-    const availableCount = await uow.tx.apartment.count({ where: { apartmentTypeId: type.id, status: "available" } });
-    const snapshotKey2 = `${communityId}:type:${type.id}`;
-    await uow.tx.availabilitySnapshot.upsert({ where: { snapshotKey: snapshotKey2 }, create: { snapshotKey: snapshotKey2, communityId, apartmentTypeId: type.id, setting: type.setting, availableCount, computedAt: uow.now }, update: { availableCount, computedAt: uow.now } });
-    results.push({ snapshotKey: snapshotKey2, availableCount });
-  }
-  const beds = await uow.tx.bed.count({ where: { status: "available", licensed: true, room: { unit: { communityId, setting: "nursing_facility" } } } });
-  const snapshotKey = `${communityId}:setting:nursing_facility`;
-  await uow.tx.availabilitySnapshot.upsert({ where: { snapshotKey }, create: { snapshotKey, communityId, setting: "nursing_facility", availableCount: beds, computedAt: uow.now }, update: { availableCount: beds, computedAt: uow.now } });
-  results.push({ snapshotKey, availableCount: beds });
-  uow.audit({ eventType: "availability.recomputed", entityType: "Community", entityId: communityId, actorUserId: null, after: { snapshots: results.length } });
-  return results;
-}
-
-// features/keystone/lib/publicToken.ts
-var import_node_crypto7 = require("node:crypto");
-
-// features/keystone/lib/derivedSessionSecret.ts
-var import_node_crypto6 = require("node:crypto");
-function derivedSessionSecret(purpose) {
-  const session = process.env.SESSION_SECRET?.trim() ?? "";
-  if (!session) return "";
-  return (0, import_node_crypto6.createHmac)("sha256", session).update(`openfront-senior-care:${purpose}`).digest("base64url");
-}
-
-// features/keystone/lib/publicToken.ts
-var ENV = { "tour-manage": "TOUR_MANAGE_SECRET", "waitlist-offer": "WAITLIST_OFFER_SECRET", "portal-invite": "PORTAL_INVITE_SECRET" };
-function publicTokenSecret(purpose) {
-  const secret2 = process.env[ENV[purpose]]?.trim() || derivedSessionSecret(purpose);
-  if (Buffer.byteLength(secret2, "utf8") < 32) throw new Error("Token secret must be at least 32 bytes. Set SESSION_SECRET.");
-  return secret2;
-}
-var sign = (encoded, secret2) => (0, import_node_crypto7.createHmac)("sha256", secret2).update(encoded).digest("base64url");
-function createPublicToken(purpose, subjectId, expiresAtMs, secret2 = publicTokenSecret(purpose)) {
-  if (!subjectId || !Number.isSafeInteger(expiresAtMs)) throw new Error("Invalid token payload.");
-  const payload = { version: 1, purpose, subjectId, expiresAtMs, nonce: (0, import_node_crypto7.randomBytes)(18).toString("base64url") };
-  const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  return `${encoded}.${sign(encoded, secret2)}`;
-}
-function verifyPublicToken(token, purpose, secret2 = publicTokenSecret(purpose), nowMs = Date.now()) {
-  if (!token || token.length > 4096) return null;
-  const [encoded, signature, extra] = token.split(".");
-  if (!encoded || !signature || extra !== void 0) return null;
-  const expected = Buffer.from(sign(encoded, secret2), "base64url");
-  const actual = Buffer.from(signature, "base64url");
-  if (actual.length !== expected.length || !(0, import_node_crypto7.timingSafeEqual)(actual, expected)) return null;
-  try {
-    const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
-    if (payload.version !== 1 || payload.purpose !== purpose || typeof payload.subjectId !== "string" || !payload.subjectId) return null;
-    if (typeof payload.expiresAtMs !== "number" || !Number.isSafeInteger(payload.expiresAtMs) || payload.expiresAtMs <= nowMs) return null;
-    if (typeof payload.nonce !== "string" || !payload.nonce) return null;
-    return payload;
-  } catch {
-    return null;
-  }
-}
-var hashPublicToken = (token) => (0, import_node_crypto7.createHash)("sha256").update(token).digest("hex");
-function publicTokenMatches(token, storedHash) {
-  if (!storedHash || !/^[a-f0-9]{64}$/i.test(storedHash)) return false;
-  const actual = Buffer.from(hashPublicToken(token), "hex");
-  const expected = Buffer.from(storedHash, "hex");
-  return actual.length === expected.length && (0, import_node_crypto7.timingSafeEqual)(actual, expected);
-}
-
-// features/keystone/lib/sales.ts
-var SETTING_VALUES = ["nursing_facility", "assisted_living", "memory_care", "independent_living"];
-var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-var clean = (value, max) => typeof value === "string" ? value.trim().slice(0, max) : "";
-async function publishedCommunity(uow, slug) {
-  const community = await uow.tx.community.findUnique({ where: { slug }, select: { id: true, status: true, synthetic: true, storefront: { select: { published: true, tourBookingEnabled: true, waitlistEnabled: true } } } });
-  if (!community || community.status !== "active" || !community.storefront?.published) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
-  return community;
-}
-async function submitInquiry(uow, input) {
-  const community = await publishedCommunity(uow, input.communitySlug);
-  if (clean(input.website, 200)) return { publicCode: publicCode("INQ") };
-  const name = clean(input.contactName, 120);
-  const email = clean(input.contactEmail, 200).toLowerCase();
-  const phone = clean(input.contactPhone, 40);
-  if (!name) throw new DomainError(Codes.INVALID_INPUT, "Tell us your name.", { field: "contactName" });
-  if (!email && !phone) throw new DomainError(Codes.INVALID_INPUT, "Leave an email address or a phone number.", { field: "contactEmail" });
-  if (email && !EMAIL.test(email)) throw new DomainError(Codes.INVALID_INPUT, "That email address does not look right.", { field: "contactEmail" });
-  if (!input.consentToContact) throw new DomainError(Codes.INVALID_INPUT, "Tick the box so the community may contact you.", { field: "consentToContact" });
-  const [firstName, ...rest] = name.split(/\s+/);
-  const contact = await uow.tx.contact.create({ data: { reference: await nextReference(uow.tx, "CON", uow.now), communityId: community.id, firstName, lastName: rest.join(" "), email, phone, consentToContact: true, synthetic: community.synthetic } });
-  const lead = await uow.tx.lead.create({ data: { reference: await nextReference(uow.tx, "LEAD", uow.now), communityId: community.id, primaryContactId: contact.id, status: "new", nextActionAt: new Date(uow.now.getTime() + 4 * 36e5), synthetic: community.synthetic } });
-  const forFirst = clean(input.forWhomFirstName, 80);
-  if (forFirst) {
-    await uow.tx.prospect.create({ data: { reference: await nextReference(uow.tx, "PRO", uow.now), communityId: community.id, leadId: lead.id, firstName: forFirst, lastName: clean(input.forWhomLastName, 80), desiredSetting: SETTING_VALUES.includes(String(input.desiredSetting)) ? input.desiredSetting : null, synthetic: community.synthetic } });
-  }
-  const code = publicCode("INQ");
-  const utm = Object.fromEntries(Object.entries(input.utm ?? {}).slice(0, 10).map(([key, value]) => [clean(key, 40), clean(value, 200)]));
-  const inquiry = await uow.tx.inquiry.create({ data: { publicCode: code, communityId: community.id, source: "website", contactName: name, contactEmail: email, contactPhone: phone, relationship: clean(input.relationship, 80), message: clean(input.message, 4e3), consentToContact: true, utm, leadId: lead.id } });
-  uow.audit({ eventType: "inquiry.received", entityType: "Inquiry", entityId: inquiry.id, actorUserId: null, after: { publicCode: code, leadId: lead.id, communityId: community.id } });
-  uow.emit({ topic: "task.sales_callback", aggregateType: "Lead", aggregateId: lead.id, payload: { leadId: lead.id, communityId: community.id }, dedupeKey: `task.sales_callback:${lead.id}` });
-  return { publicCode: code };
-}
-async function recordInquiry(uow, actor, input) {
-  const community = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { slug: true, synthetic: true } });
-  if (!community) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
-  const sources = ["phone", "walk_in", "referral_agency", "hospital", "resident_referral", "other"];
-  if (!sources.includes(input.source)) throw new DomainError(Codes.INVALID_INPUT, "Choose where the inquiry came from.", { field: "source" });
-  const name = clean(input.contactName, 120);
-  if (!name) throw new DomainError(Codes.INVALID_INPUT, "Enter the caller's name.", { field: "contactName" });
-  const [firstName, ...rest] = name.split(/\s+/);
-  const synthetic = community.synthetic;
-  const contact = await uow.tx.contact.create({ data: { reference: await nextReference(uow.tx, "CON", uow.now), communityId: input.communityId, firstName, lastName: rest.join(" "), email: clean(input.contactEmail, 200).toLowerCase(), phone: clean(input.contactPhone, 40), consentToContact: Boolean(input.consentToContact), synthetic } });
-  if (input.referralSourceId) {
-    const source = await uow.tx.referralSource.findUnique({ where: { id: input.referralSourceId }, select: { communityId: true } });
-    if (!source || source.communityId !== input.communityId) throw new DomainError(Codes.NOT_FOUND, "Referral source not found.", { field: "referralSourceId" });
-  }
-  const lead = await uow.tx.lead.create({ data: { reference: await nextReference(uow.tx, "LEAD", uow.now), communityId: input.communityId, primaryContactId: contact.id, ownerId: actorUserId(actor), status: "contacted", referralSourceId: input.referralSourceId ?? null, nextActionAt: new Date(uow.now.getTime() + 24 * 36e5), synthetic } });
-  const forFirst = clean(input.forWhomFirstName, 80);
-  let prospectId = null;
-  if (forFirst) {
-    const prospect = await uow.tx.prospect.create({ data: { reference: await nextReference(uow.tx, "PRO", uow.now), communityId: input.communityId, leadId: lead.id, firstName: forFirst, lastName: clean(input.forWhomLastName, 80), desiredSetting: SETTING_VALUES.includes(String(input.desiredSetting)) ? input.desiredSetting : null, synthetic } });
-    prospectId = prospect.id;
-  }
-  const code = publicCode("INQ");
-  const inquiry = await uow.tx.inquiry.create({ data: { publicCode: code, communityId: input.communityId, source: input.source, contactName: name, contactEmail: clean(input.contactEmail, 200), contactPhone: clean(input.contactPhone, 40), relationship: clean(input.relationship, 80), message: clean(input.message, 4e3), consentToContact: Boolean(input.consentToContact), leadId: lead.id } });
-  auditCreate(uow, actor, "Inquiry", inquiry.id, "inquiry.recorded", { publicCode: code, leadId: lead.id, source: input.source, prospectId });
-  return { inquiryId: inquiry.id, leadId: lead.id, prospectId, publicCode: code };
-}
-var LEAD_EDGES = {
-  contacted: ["new", "nurture"],
-  tour_scheduled: ["new", "contacted", "toured", "nurture", "waitlisted"],
-  toured: ["tour_scheduled"],
-  assessment_scheduled: ["toured", "contacted"],
-  assessed: ["assessment_scheduled"],
-  deposit_received: ["assessed"],
-  move_in_scheduled: ["deposit_received", "assessed", "waitlisted"],
-  waitlisted: ["new", "contacted", "toured", "assessed", "deposit_received", "nurture"],
-  nurture: ["new", "contacted", "toured", "assessed", "waitlisted"],
-  lost: LEAD_STATUSES.filter((status) => status !== "moved_in" && status !== "lost")
-};
-async function moveLead(uow, actor, input) {
-  const from = LEAD_EDGES[input.to];
-  if (!from) throw new DomainError(Codes.INVALID_INPUT, input.to === "moved_in" ? "A lead moves in when the resident is admitted." : "Unknown lead status.", { field: "to" });
-  const lead = await lockRow(uow.tx, "Lead", input.leadId);
-  const evidence = {
-    contacted: async () => await uow.tx.salesActivity.count({ where: { leadId: lead.id, kind: { in: ["call", "email", "text", "note"] } } }) > 0,
-    tour_scheduled: async () => await uow.tx.tour.count({ where: { leadId: lead.id, status: "confirmed" } }) > 0,
-    toured: async () => await uow.tx.tour.count({ where: { leadId: lead.id, status: "completed" } }) > 0,
-    move_in_scheduled: async () => await uow.tx.placeReservation.count({ where: { status: "active", prospect: { leadId: lead.id } } }) > 0,
-    waitlisted: async () => await uow.tx.waitlistEntry.count({ where: { leadId: lead.id, status: { in: ["active", "offered"] } } }) > 0
-  };
-  if (evidence[input.to] && !await evidence[input.to]()) {
-    const need = { contacted: "Log a call, email, text or note first.", tour_scheduled: "Confirm a tour first.", toured: "Mark the tour completed first.", move_in_scheduled: "Reserve an apartment or bed first.", waitlisted: "Add a waitlist entry first." };
-    throw new DomainError(Codes.GUARD_FAILED, need[input.to], { reason: "evidence" });
-  }
-  if (input.to === "lost" && !input.lostReason) throw new DomainError(Codes.INVALID_INPUT, "Choose why the lead was lost.", { field: "lostReason" });
-  const row = await casUpdate(uow, { model: "Lead", id: lead.id, version: input.expectedVersion, from, to: input.to, actor, eventType: `lead.${input.to}`, reason: input.note ?? null, data: input.to === "lost" ? { lostReason: input.lostReason } : {} });
-  if (input.to === "lost") {
-    const holds = await uow.tx.placeReservation.findMany({ where: { status: "active", prospect: { leadId: lead.id } }, select: { id: true } });
-    for (const hold of holds) await endReservation(uow, actor, { reservationId: hold.id, to: "released", reason: "lead lost" });
-    const entries = await uow.tx.waitlistEntry.findMany({ where: { leadId: lead.id, status: { in: ["active", "offered"] } }, select: { id: true, version: true, status: true } });
-    for (const entry of entries) await casUpdate(uow, { model: "WaitlistEntry", id: entry.id, version: entry.version, from: [entry.status], to: "withdrawn", actor, eventType: "waitlist.withdrawn", reason: "lead lost" });
-  }
-  return { leadId: lead.id, status: input.to, version: row?.version ?? input.expectedVersion + 1 };
-}
-async function logSalesActivity(uow, actor, input) {
-  if (!["call", "email", "text", "tour", "assessment", "note"].includes(input.kind)) throw new DomainError(Codes.INVALID_INPUT, "Unknown activity.", { field: "kind" });
-  if (!clean(input.summary, 4e3)) throw new DomainError(Codes.INVALID_INPUT, "Add a summary.", { field: "summary" });
-  const lead = await uow.tx.lead.findUnique({ where: { id: input.leadId }, select: { id: true } });
-  if (!lead) throw new DomainError(Codes.NOT_FOUND, "Lead not found.");
-  const row = await uow.tx.salesActivity.create({ data: { leadId: lead.id, kind: input.kind, at: input.at ?? uow.now, byId: actorUserId(actor), summary: clean(input.summary, 4e3) } });
-  auditCreate(uow, actor, "SalesActivity", row.id, "sales_activity.logged", { leadId: lead.id, kind: input.kind });
-  return { activityId: row.id };
-}
-var TOUR_HOLD_MINUTES = 30;
-async function slotHasRoom(uow, slotId) {
-  await advisoryLock(uow.tx, `tour_slot:${slotId}`);
-  const slot = await uow.tx.tourSlot.findUnique({ where: { id: slotId }, select: { id: true, communityId: true, startsAt: true, capacity: true, kind: true } });
-  if (!slot) throw new DomainError(Codes.NOT_FOUND, "Tour time not found.");
-  if (slot.startsAt.getTime() <= uow.now.getTime()) throw new DomainError(Codes.GUARD_FAILED, "That tour time has passed.");
-  const taken = await uow.tx.tour.count({ where: { slotId, OR: [{ status: "confirmed" }, { status: "requested", holdExpiresAt: { gt: uow.now } }] } });
-  if (taken >= slot.capacity) throw new DomainError(Codes.PLACE_UNAVAILABLE, "That tour time is full. Choose another.");
-  return slot;
-}
-async function requestTour(uow, input) {
-  const community = await publishedCommunity(uow, input.communitySlug);
-  if (!community.storefront?.tourBookingEnabled) throw new DomainError(Codes.GUARD_FAILED, "Tours are booked by phone at this community.");
-  const slot = await slotHasRoom(uow, input.slotId);
-  if (slot.communityId !== community.id) throw new DomainError(Codes.NOT_FOUND, "Tour time not found.");
-  if (input.kind !== "in_person" && input.kind !== "virtual") throw new DomainError(Codes.INVALID_INPUT, "Choose in person or virtual.", { field: "kind" });
-  if (slot.kind !== "either" && slot.kind !== input.kind) throw new DomainError(Codes.INVALID_INPUT, `This time is for ${slot.kind.replace("_", " ")} tours.`, { field: "kind" });
-  const { publicCode: inquiryCode } = await submitInquiry(uow, { communitySlug: input.communitySlug, contactName: input.contactName, contactEmail: input.contactEmail, contactPhone: input.contactPhone, message: input.notes, consentToContact: input.consentToContact });
-  const inquiry = await uow.tx.inquiry.findUnique({ where: { publicCode: inquiryCode }, select: { leadId: true } });
-  const code = publicCode("TOUR");
-  const tour = await uow.tx.tour.create({ data: { publicCode: code, communityId: community.id, slotId: slot.id, leadId: inquiry?.leadId ?? null, kind: input.kind, status: "requested", holdExpiresAt: new Date(uow.now.getTime() + TOUR_HOLD_MINUTES * 6e4), notes: clean(input.notes, 2e3) } });
-  const token = createPublicToken("tour-manage", tour.id, slot.startsAt.getTime() + 864e5);
-  await uow.tx.tour.update({ where: { id: tour.id }, data: { guestTokenHash: hashPublicToken(token) } });
-  uow.audit({ eventType: "tour.requested", entityType: "Tour", entityId: tour.id, actorUserId: null, after: { publicCode: code, slotId: slot.id } });
-  uow.emit({ topic: "mail.tour_requested", aggregateType: "Tour", aggregateId: tour.id, payload: { tourId: tour.id }, dedupeKey: `mail.tour_requested:${tour.id}` });
-  return { publicCode: code, manageToken: token, holdExpiresAt: tour.holdExpiresAt };
-}
-async function scheduleTour(uow, actor, input) {
-  const lead = await uow.tx.lead.findUnique({ where: { id: input.leadId }, select: { id: true, communityId: true, status: true, version: true } });
-  if (!lead) throw new DomainError(Codes.NOT_FOUND, "Lead not found.");
-  if (lead.status === "lost" || lead.status === "moved_in") throw new DomainError(Codes.GUARD_FAILED, `This lead is ${lead.status.replace("_", " ")}.`, { currentStatus: lead.status });
-  if (input.kind !== "in_person" && input.kind !== "virtual") throw new DomainError(Codes.INVALID_INPUT, "Choose in person or virtual.", { field: "kind" });
-  const slot = await slotHasRoom(uow, input.slotId);
-  if (slot.communityId !== lead.communityId) throw new DomainError(Codes.NOT_FOUND, "Tour time not found.");
-  if (slot.kind !== "either" && slot.kind !== input.kind) throw new DomainError(Codes.INVALID_INPUT, `This time is for ${slot.kind.replace("_", " ")} tours.`, { field: "kind" });
-  const tour = await uow.tx.tour.create({ data: { publicCode: publicCode("TOUR"), communityId: slot.communityId, slotId: slot.id, leadId: lead.id, kind: input.kind, status: "confirmed", notes: clean(input.notes, 2e3) } });
-  auditCreate(uow, actor, "Tour", tour.id, "tour.scheduled", { slotId: slot.id, leadId: lead.id, kind: input.kind });
-  if (LEAD_EDGES.tour_scheduled.includes(lead.status)) await casUpdate(uow, { model: "Lead", id: lead.id, version: lead.version, from: [lead.status], to: "tour_scheduled", actor, eventType: "lead.tour_scheduled", metadata: { tourId: tour.id } });
-  uow.emit({ topic: "mail.tour_confirmed", aggregateType: "Tour", aggregateId: tour.id, payload: { tourId: tour.id }, dedupeKey: `mail.tour_confirmed:${tour.id}` });
-  return { tourId: tour.id, publicCode: tour.publicCode, startsAt: slot.startsAt };
-}
-async function cancelTourWithToken(uow, input) {
-  const payload = verifyPublicToken(input.token, "tour-manage");
-  if (!payload) throw new DomainError(Codes.GUARD_FAILED, "This link is invalid or has expired.");
-  const tour = await lockRow(uow.tx, "Tour", payload.subjectId);
-  if (!publicTokenMatches(input.token, tour.guestTokenHash)) throw new DomainError(Codes.GUARD_FAILED, "This link is invalid or has expired.");
-  await casUpdate(uow, { model: "Tour", id: tour.id, version: tour.version, from: ["requested", "confirmed"], to: "cancelled", actor: { kind: "system", name: "guest" }, eventType: "tour.cancelled_by_guest", reason: clean(input.reason, 500) || null });
-  return { status: "cancelled" };
-}
-async function moveTour(uow, actor, input) {
-  const edges = { confirmed: ["requested"], completed: ["confirmed"], no_show: ["confirmed"], cancelled: ["requested", "confirmed"] };
-  if (!edges[input.to]) throw new DomainError(Codes.INVALID_INPUT, "Unknown tour status.", { field: "to" });
-  const tour = await lockRow(uow.tx, "Tour", input.tourId);
-  if (input.to === "confirmed" && tour.slotId) {
-    await advisoryLock(uow.tx, `tour_slot:${tour.slotId}`);
-    const slot = await uow.tx.tourSlot.findUnique({ where: { id: tour.slotId }, select: { capacity: true } });
-    const confirmed = await uow.tx.tour.count({ where: { slotId: tour.slotId, status: "confirmed" } });
-    if (slot && confirmed >= slot.capacity) throw new DomainError(Codes.PLACE_UNAVAILABLE, "That tour time is full.");
-  }
-  await casUpdate(uow, { model: "Tour", id: tour.id, version: input.expectedVersion, from: edges[input.to], to: input.to, actor, eventType: `tour.${input.to}`, reason: input.reason ?? null, data: { holdExpiresAt: null } });
-  if (tour.leadId && (input.to === "confirmed" || input.to === "completed")) {
-    const lead = await uow.tx.lead.findUnique({ where: { id: tour.leadId }, select: { status: true, version: true } });
-    const target = input.to === "confirmed" ? "tour_scheduled" : "toured";
-    if (lead && LEAD_EDGES[target].includes(lead.status)) await casUpdate(uow, { model: "Lead", id: tour.leadId, version: lead.version, from: [lead.status], to: target, actor, eventType: `lead.${target}`, metadata: { tourId: tour.id } });
-  }
-  return { tourId: tour.id, status: input.to };
-}
-var REFERRAL_EDGES = { clinical_review: ["received"], payer_check: ["clinical_review"], accepted: ["payer_check"], declined: ["received", "clinical_review", "payer_check"], withdrawn: ["received", "clinical_review", "payer_check", "accepted"] };
-async function moveReferral(uow, actor, input) {
-  const from = REFERRAL_EDGES[input.to];
-  if (!from) throw new DomainError(Codes.INVALID_INPUT, input.to === "admitted" ? "A referral is admitted by the admission command." : "Unknown referral status.", { field: "to" });
-  const referral = await lockRow(uow.tx, "Referral", input.referralId);
-  if (input.to === "declined" && !input.declineReason) throw new DomainError(Codes.INVALID_INPUT, "Choose why the referral is declined.", { field: "declineReason" });
-  let reservation = null;
-  if (input.to === "accepted") {
-    if (!input.bedId) throw new DomainError(Codes.GUARD_FAILED, "Choose the bed to hold for this referral.", { field: "bedId" });
-    if (!referral.pasrrLevel1Id && ["medicaid", "medicaid_pending"].includes(String(referral.expectedPayer))) throw new DomainError(Codes.GUARD_FAILED, "Attach the PASRR Level I screen before accepting a Medicaid referral.", { field: "pasrrLevel1" });
-    reservation = await reservePlace(uow, actor, { bedId: input.bedId, hours: input.reservationHours ?? 48, purpose: "referral", referralId: referral.id, prospectId: referral.prospectId, idempotencyKey: input.idempotencyKey });
-  }
-  if (input.to === "withdrawn" || input.to === "declined") {
-    const holds = await uow.tx.placeReservation.findMany({ where: { referralId: referral.id, status: "active" }, select: { id: true } });
-    for (const hold of holds) await endReservation(uow, actor, { reservationId: hold.id, to: "released", reason: `referral ${input.to}` });
-  }
-  await casUpdate(uow, { model: "Referral", id: referral.id, version: input.expectedVersion, from, to: input.to, actor, eventType: `referral.${input.to}`, data: input.to === "declined" ? { declineReason: input.declineReason } : {} });
-  return { referralId: referral.id, status: input.to, reservationId: reservation?.reservationId ?? null };
-}
-var EXPECTED_PAYERS = ["medicare_a", "medicare_advantage", "medicaid", "medicaid_pending", "private_pay", "commercial", "hospice", "other"];
-async function recordReferral(uow, actor, input) {
-  const community = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { id: true, synthetic: true } });
-  if (!community) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
-  const firstName = clean(input.firstName, 80);
-  const lastName = clean(input.lastName, 80);
-  if (!firstName || !lastName) throw new DomainError(Codes.INVALID_INPUT, "Enter the person's first and last name.", { field: "firstName" });
-  if (!EXPECTED_PAYERS.includes(input.expectedPayer)) throw new DomainError(Codes.INVALID_INPUT, "Choose the expected payer.", { field: "expectedPayer" });
-  if (input.dateOfBirth && !/^\d{4}-\d{2}-\d{2}$/.test(input.dateOfBirth)) throw new DomainError(Codes.INVALID_INPUT, "Date of birth must be YYYY-MM-DD.", { field: "dateOfBirth" });
-  if (input.sourceId) {
-    const source = await uow.tx.referralSource.findUnique({ where: { id: input.sourceId }, select: { communityId: true } });
-    if (!source || source.communityId !== community.id) throw new DomainError(Codes.NOT_FOUND, "Referral source not found.", { field: "sourceId" });
-  }
-  const receivedAt = input.receivedAt ?? uow.now;
-  if (receivedAt.getTime() > uow.now.getTime() + 5 * 6e4) throw new DomainError(Codes.INVALID_INPUT, "The referral cannot be received in the future.", { field: "receivedAt" });
-  const hours2 = Math.min(Math.max(input.responseHours ?? 4, 1), 72);
-  const prospect = await uow.tx.prospect.create({ data: { reference: await nextReference(uow.tx, "PRO", uow.now), communityId: community.id, firstName, lastName, dateOfBirth: input.dateOfBirth ? /* @__PURE__ */ new Date(`${input.dateOfBirth}T00:00:00Z`) : null, desiredSetting: SETTING_VALUES.includes(String(input.desiredSetting)) ? input.desiredSetting : "nursing_facility", synthetic: community.synthetic } });
-  let pasrrLevel1Id = null;
-  if (input.pasrrLevel1) {
-    const completedAt = new Date(input.pasrrLevel1.completedAt);
-    if (Number.isNaN(completedAt.getTime()) || completedAt.getTime() > uow.now.getTime() + 5 * 6e4) throw new DomainError(Codes.INVALID_INPUT, "Enter when the Level I screen was completed.", { field: "pasrrLevel1" });
-    const doc = await uow.tx.document.create({ data: { title: "PASRR Level I screen", kind: "pasrr", communityId: community.id, phiTier: "clin", status: "final" } });
-    await uow.tx.preAdmissionScreen.create({ data: { prospectId: prospect.id, kind: "pasrr_level1", result: clean(input.pasrrLevel1.result, 500), completedAt, documentId: doc.id } });
-    auditCreate(uow, actor, "Document", doc.id, "pre_admission_screen.received", { kind: "pasrr_level1", prospectId: prospect.id });
-    pasrrLevel1Id = doc.id;
-  }
-  const referral = await uow.tx.referral.create({
-    data: { reference: await nextReference(uow.tx, "REF", uow.now), communityId: community.id, sourceId: input.sourceId ?? null, receivedAt, prospectId: prospect.id, expectedPayer: input.expectedPayer, pasrrLevel1Id, clinicalSummary: clean(input.clinicalSummary, 8e3), pasrrLevel2Required: Boolean(input.pasrrLevel2Required), status: "received", responseDueAt: new Date(receivedAt.getTime() + hours2 * 36e5) }
-  });
-  auditCreate(uow, actor, "Referral", referral.id, "referral.received", { reference: referral.reference, sourceId: input.sourceId ?? null, expectedPayer: input.expectedPayer, responseDueAt: referral.responseDueAt });
-  uow.emit({ topic: "task.referral_response", aggregateType: "Referral", aggregateId: referral.id, payload: { referralId: referral.id, communityId: community.id }, dedupeKey: `task.referral_response:${referral.id}` });
-  return { referralId: referral.id, reference: referral.reference, prospectId: prospect.id, responseDueAt: referral.responseDueAt };
-}
-async function addToWaitlist(uow, actor, input) {
-  if (!input.leadId && !input.prospectId) throw new DomainError(Codes.INVALID_INPUT, "Choose the lead or prospect.", { field: "leadId" });
-  const priority = { internal_transfer: 10, continuing_care: 20, date_order: 100, other: 100 }[input.priorityReason ?? "date_order"] ?? 100;
-  const entry = await uow.tx.waitlistEntry.create({ data: { reference: await nextReference(uow.tx, "WL", uow.now), communityId: input.communityId, leadId: input.leadId ?? null, prospectId: input.prospectId ?? null, apartmentTypeId: input.apartmentTypeId ?? null, setting: input.setting, priority, priorityReason: input.priorityReason ?? "date_order", status: "active" } });
-  auditCreate(uow, actor, "WaitlistEntry", entry.id, "waitlist.added", { reference: entry.reference, setting: input.setting, priority });
-  return { waitlistEntryId: entry.id, reference: entry.reference };
-}
-async function offerWaitlistPlace(uow, actor, input) {
-  const entry = await lockRow(uow.tx, "WaitlistEntry", input.waitlistEntryId);
-  const hold = await reservePlace(uow, actor, { apartmentId: input.apartmentId, bedId: input.bedId, hours: input.hours, purpose: "waitlist_offer", waitlistEntryId: entry.id, prospectId: entry.prospectId, idempotencyKey: input.idempotencyKey });
-  await casUpdate(uow, { model: "WaitlistEntry", id: entry.id, version: input.expectedVersion, from: ["active"], to: "offered", actor, eventType: "waitlist.offered", data: { offeredReservationId: hold.reservationId, offerExpiresAt: hold.expiresAt } });
-  return { waitlistEntryId: entry.id, reservationId: hold.reservationId, offerExpiresAt: hold.expiresAt };
-}
-async function resolveWaitlistOffer(uow, actor, input) {
-  if (!["accepted", "declined", "expired"].includes(input.to)) throw new DomainError(Codes.INVALID_INPUT, "Unknown outcome.", { field: "to" });
-  const entry = await lockRow(uow.tx, "WaitlistEntry", input.waitlistEntryId);
-  if (input.to === "expired" && entry.offerExpiresAt && entry.offerExpiresAt.getTime() > uow.now.getTime()) throw new DomainError(Codes.GUARD_FAILED, "The offer has not expired yet.");
-  if (input.to !== "accepted" && entry.offeredReservationId) {
-    const reservation = await uow.tx.placeReservation.findUnique({ where: { id: entry.offeredReservationId }, select: { status: true } });
-    if (reservation?.status === "active") await endReservation(uow, actor, { reservationId: entry.offeredReservationId, to: "released", reason: `offer ${input.to}` });
-  }
-  await casUpdate(uow, { model: "WaitlistEntry", id: entry.id, version: input.expectedVersion, from: ["offered"], to: input.to, actor, eventType: `waitlist.${input.to}` });
-  return { waitlistEntryId: entry.id, status: input.to };
-}
-
-// features/keystone/lib/storefront.ts
-var clean2 = (value, max) => typeof value === "string" ? value.trim().slice(0, max) : "";
-async function publishedSite(tx, slug) {
-  const community = await tx.community.findUnique({
-    where: { slug },
-    select: { id: true, name: true, slug: true, status: true, addressLine1: true, addressLine2: true, city: true, region: true, postalCode: true, phone: true, settingsOffered: true, timeZone: true, storefront: true }
-  });
-  if (!community || community.status !== "active" || !community.storefront?.published) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
-  return community;
-}
-async function storefrontCommunity(tx, slug, now = /* @__PURE__ */ new Date()) {
-  const community = await publishedSite(tx, clean2(slug, 120));
-  const site = community.storefront;
-  const [prices, availability, slots, bios, jobs, types] = await Promise.all([
-    tx.publishedPrice.findMany({ where: { communityId: community.id, status: "published" }, orderBy: [{ setting: "asc" }, { fromMinor: "asc" }], select: { id: true, label: true, setting: true, apartmentTypeId: true, fromMinor: true, toMinor: true, period: true, communityFeeMinor: true, disclaimer: true } }),
-    tx.availabilitySnapshot.findMany({ where: { communityId: community.id }, select: { apartmentTypeId: true, setting: true, availableCount: true, waitlistOpen: true, computedAt: true } }),
-    site.tourBookingEnabled ? tx.tourSlot.findMany({ where: { communityId: community.id, startsAt: { gt: now, lt: new Date(now.getTime() + 21 * 864e5) } }, orderBy: { startsAt: "asc" }, take: 60, select: { id: true, startsAt: true, endsAt: true, kind: true, capacity: true, tours: { where: { OR: [{ status: "confirmed" }, { status: "requested", holdExpiresAt: { gt: now } }] }, select: { id: true } } } }) : Promise.resolve([]),
-    tx.staffBio.findMany({ where: { siteId: site.id, consentDocumentId: { not: null } }, orderBy: { sortOrder: "asc" }, select: { name: true, title: true, bio: true } }),
-    tx.jobPosting.findMany({ where: { communityId: community.id, status: "published" }, select: { id: true, title: true, role: true, employmentType: true, payRange: true, body: true } }),
-    tx.apartmentType.findMany({ where: { communityId: community.id }, select: { id: true, name: true, setting: true, squareFeet: true, bedrooms: true, description: true } })
-  ]);
-  return {
-    community: { name: community.name, slug: community.slug, address: [community.addressLine1, community.addressLine2].filter(Boolean).join(", "), city: community.city, region: community.region, postalCode: community.postalCode, phone: community.phone, settingsOffered: community.settingsOffered, timeZone: community.timeZone },
-    site: { heroTitle: site.heroTitle, heroBody: site.heroBody, amenities: site.amenities, diningCopy: site.diningCopy, activitiesCopy: site.activitiesCopy, careLevelsCopy: site.careLevelsCopy, faq: site.faq, acceptedPayers: site.acceptedPayers, seo: site.seo, tourBookingEnabled: site.tourBookingEnabled, waitlistEnabled: site.waitlistEnabled },
-    apartmentTypes: types,
-    prices: prices.map((price) => ({ ...price, fromMinor: price.fromMinor.toString(), toMinor: price.toMinor?.toString() ?? null, communityFeeMinor: price.communityFeeMinor?.toString() ?? null })),
-    availability,
-    tourSlots: slots.map((slot) => ({ id: slot.id, startsAt: slot.startsAt, endsAt: slot.endsAt, kind: slot.kind, open: Math.max(0, slot.capacity - slot.tours.length) })).filter((slot) => slot.open > 0),
-    team: bios,
-    jobs
-  };
-}
-async function joinWaitlist(uow, input) {
-  const community = await publishedSite(uow.tx, clean2(input.communitySlug, 120));
-  if (!community.storefront?.waitlistEnabled) throw new DomainError(Codes.GUARD_FAILED, "Call the community to join the waitlist.");
-  if (!SETTINGS.includes(input.setting)) throw new DomainError(Codes.INVALID_INPUT, "Choose the type of care.", { field: "setting" });
-  if (input.apartmentTypeId) {
-    const type = await uow.tx.apartmentType.findUnique({ where: { id: input.apartmentTypeId }, select: { communityId: true, setting: true } });
-    if (!type || type.communityId !== community.id) throw new DomainError(Codes.NOT_FOUND, "Apartment type not found.", { field: "apartmentTypeId" });
-  }
-  if (input.desiredMoveIn && !/^\d{4}-\d{2}-\d{2}$/.test(input.desiredMoveIn)) throw new DomainError(Codes.INVALID_INPUT, "Move-in date must be YYYY-MM-DD.", { field: "desiredMoveIn" });
-  if (clean2(input.website, 200)) return { publicCode: publicCode("WL") };
-  const { publicCode: inquiryCode } = await submitInquiry(uow, { ...input, desiredSetting: input.setting, forWhomFirstName: input.forWhomFirstName || input.contactName?.split(/\s+/)[0] });
-  const inquiry = await uow.tx.inquiry.findUnique({ where: { publicCode: inquiryCode }, select: { leadId: true } });
-  if (!inquiry?.leadId) return { publicCode: inquiryCode };
-  const prospect = await uow.tx.prospect.findFirst({ where: { leadId: inquiry.leadId }, select: { id: true } });
-  if (prospect && input.desiredMoveIn) await uow.tx.prospect.update({ where: { id: prospect.id }, data: { desiredMoveIn: /* @__PURE__ */ new Date(`${input.desiredMoveIn}T00:00:00Z`) } });
-  const entry = await uow.tx.waitlistEntry.create({ data: { reference: await nextReference(uow.tx, "WL", uow.now), communityId: community.id, leadId: inquiry.leadId, prospectId: prospect?.id ?? null, apartmentTypeId: input.apartmentTypeId ?? null, setting: input.setting, priority: 100, priorityReason: "date_order", status: "active" } });
-  uow.audit({ eventType: "waitlist.joined_online", entityType: "WaitlistEntry", entityId: entry.id, actorUserId: null, after: { reference: entry.reference, setting: input.setting, leadId: inquiry.leadId } });
-  const lead = await uow.tx.lead.findUnique({ where: { id: inquiry.leadId }, select: { version: true, status: true } });
-  if (lead) await casUpdate(uow, { model: "Lead", id: inquiry.leadId, version: lead.version, from: [lead.status], to: "waitlisted", actor: { kind: "system", name: "storefront" }, eventType: "lead.waitlisted", metadata: { waitlistEntryId: entry.id } });
-  return { publicCode: inquiryCode };
-}
-async function setStorefrontPublished(uow, actor, input) {
-  const community = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { storefront: true } });
-  const site = community?.storefront;
-  if (!site) throw new DomainError(Codes.NOT_FOUND, "Create the storefront first.");
-  if (input.published) {
-    if (!site.heroTitle.trim() || !site.heroBody.trim()) throw new DomainError(Codes.GUARD_FAILED, "Add the headline and introduction before publishing.", { field: "heroTitle" });
-    const prices = await uow.tx.publishedPrice.count({ where: { communityId: input.communityId, status: "published" } });
-    if (!prices) throw new DomainError(Codes.GUARD_FAILED, "Publish at least one starting price before the site goes live.", { reason: "no_prices" });
-  }
-  await uow.tx.storefrontSite.update({ where: { id: site.id }, data: { published: input.published } });
-  uow.audit({ eventType: input.published ? "storefront.published" : "storefront.unpublished", entityType: "StorefrontSite", entityId: site.id, actorUserId: actor.kind === "user" ? actor.userId : null, before: { published: site.published }, after: { published: input.published } });
-  return { siteId: site.id, published: input.published };
-}
-async function movePublishedPrice(uow, actor, input) {
-  const price = await lockRow(uow.tx, "PublishedPrice", input.priceId);
-  if (input.to === "published") {
-    if (price.fromMinor <= 0n) throw new DomainError(Codes.GUARD_FAILED, "A published price must be more than zero.", { field: "fromMinor" });
-    if (price.toMinor !== null && price.toMinor < price.fromMinor) throw new DomainError(Codes.GUARD_FAILED, "The upper price is below the starting price.", { field: "toMinor" });
-  }
-  const from = input.to === "published" ? ["draft"] : ["published"];
-  await casUpdate(uow, { model: "PublishedPrice", id: price.id, version: input.expectedVersion, from, to: input.to, actor, eventType: `published_price.${input.to}`, data: input.to === "published" ? { publishedAt: uow.now } : {} });
-  return { priceId: price.id, status: input.to };
-}
-async function openTourSlots(uow, actor, input) {
-  if (!input.slots.length || input.slots.length > 60) throw new DomainError(Codes.INVALID_INPUT, "Open 1 to 60 tour times at once.", { field: "slots" });
-  let created = 0;
-  for (const slot of input.slots) {
-    if (slot.startsAt.getTime() <= uow.now.getTime()) throw new DomainError(Codes.INVALID_INPUT, "Tour times must be in the future.", { field: "startsAt" });
-    if (slot.minutes < 15 || slot.minutes > 180 || slot.capacity < 1 || slot.capacity > 20) throw new DomainError(Codes.INVALID_INPUT, "A tour is 15 to 180 minutes for 1 to 20 parties.", { field: "minutes" });
-    const exists = await uow.tx.tourSlot.findFirst({ where: { communityId: input.communityId, startsAt: slot.startsAt }, select: { id: true } });
-    if (exists) continue;
-    const row = await uow.tx.tourSlot.create({ data: { communityId: input.communityId, startsAt: slot.startsAt, endsAt: new Date(slot.startsAt.getTime() + slot.minutes * 6e4), capacity: slot.capacity, kind: slot.kind, hostId: slot.hostId ?? null } });
-    auditCreate(uow, actor, "TourSlot", row.id, "tour_slot.opened", { startsAt: slot.startsAt, capacity: slot.capacity });
-    created += 1;
-  }
-  return { created };
-}
-
 // features/keystone/lib/portalReads.ts
 var import_node_crypto9 = require("node:crypto");
 
@@ -5229,6 +6402,7 @@ async function portalResidents(tx, principal) {
     row.scopes.push(grant.scope);
     byResident.set(grant.residentId, row);
   }
+  for (const residentId of byResident.keys()) await auditPortalRead(tx, principal, "portalMe", residentId, ["Resident.firstName", "Resident.community"], 1);
   return { mfaEnrolled: account.mfaEnrolled, residents: [...byResident.values()] };
 }
 async function requireScope2(tx, principal, residentId, scope) {
@@ -5294,136 +6468,6 @@ async function portalDocuments(tx, principal, residentId) {
   const notices = await tx.noticeDelivery.findMany({ where: { residentId }, orderBy: { deliveredAt: "desc" }, take: 100, select: { id: true, kind: true, method: true, deliveredAt: true, acknowledgement: true } });
   await auditPortalRead(tx, principal, "portalDocuments", residentId, ["Document.title", "NoticeDelivery.kind"], docs.length + notices.length);
   return { documents: docs, notices };
-}
-
-// features/keystone/lib/portal.ts
-var INVITE_DAYS = 7;
-function authorityFor(roles, scope) {
-  const allowed = SCOPE_AUTHORITY[scope];
-  for (const basis of allowed) if (roles.includes(basis)) return basis;
-  return null;
-}
-async function inviteRepresentative(uow, actor, input) {
-  const rep = await uow.tx.representative.findUnique({ where: { id: input.representativeId }, include: { contact: true, resident: { select: { id: true, communityId: true, status: true } }, portalAccount: true } });
-  if (!rep || rep.status !== "active") throw new DomainError(Codes.NOT_FOUND, "Active representative not found.");
-  if (!rep.contact?.email) throw new DomainError(Codes.GUARD_FAILED, "The representative needs an email address for a portal invitation.", { field: "email" });
-  if (rep.resident?.status === "deceased") throw new DomainError(Codes.GUARD_FAILED, "The resident is recorded as deceased.");
-  let account = rep.portalAccount;
-  if (account && (account.status === "active" || account.status === "suspended")) throw new DomainError(Codes.GUARD_FAILED, `This representative already has a ${account.status} portal account.`, { currentStatus: account.status });
-  const expiresAt = new Date(uow.now.getTime() + INVITE_DAYS * 864e5);
-  if (!account) {
-    account = await uow.tx.portalAccount.findFirst({ where: { contactId: rep.contactId, status: { in: ["invited", "active"] } } });
-  }
-  if (!account) {
-    account = await uow.tx.portalAccount.create({ data: { reference: await nextReference(uow.tx, "PRT", uow.now), contactId: rep.contactId, communityId: rep.resident?.communityId ?? null, status: "invited", invitedById: actorUserId(actor), invitationExpiresAt: expiresAt, representatives: { connect: [{ id: rep.id }] } } });
-    auditCreate(uow, actor, "PortalAccount", account.id, "portal.invited", { reference: account.reference, representativeId: rep.id });
-  } else {
-    await uow.tx.portalAccount.update({ where: { id: account.id }, data: { representatives: { connect: [{ id: rep.id }] } } });
-    if (account.status === "revoked") throw new DomainError(Codes.GUARD_FAILED, "This portal account was revoked. Create a new representative contact to invite again.", { currentStatus: account.status });
-  }
-  const token = createPublicToken("portal-invite", account.id, expiresAt.getTime());
-  await uow.tx.portalAccount.update({ where: { id: account.id }, data: { invitationTokenHash: hashPublicToken(token), invitationExpiresAt: expiresAt } });
-  uow.emit({ topic: "mail.portal_invitation", aggregateType: "PortalAccount", aggregateId: account.id, payload: { accountId: account.id, contactId: rep.contactId, token, expiresAt }, dedupeKey: `mail.portal_invitation:${account.id}:${expiresAt.getTime()}` });
-  return { accountId: account.id, reference: account.reference, expiresAt };
-}
-async function acceptPortalInvitation(uow, input) {
-  const payload = verifyPublicToken(input.token, "portal-invite");
-  if (!payload) throw new DomainError(Codes.GUARD_FAILED, "This invitation link is invalid or has expired.");
-  const account = await lockRow(uow.tx, "PortalAccount", payload.subjectId);
-  if (account.status !== "invited" || !publicTokenMatches(input.token, account.invitationTokenHash)) throw new DomainError(Codes.GUARD_FAILED, "This invitation link was already used or replaced.");
-  const contact = account.contactId ? await uow.tx.contact.findUnique({ where: { id: account.contactId }, select: { firstName: true, lastName: true, email: true } }) : null;
-  if (!contact?.email) throw new DomainError(Codes.GUARD_FAILED, "The invitation has no email address.");
-  const existing = await uow.tx.user.findUnique({ where: { email: contact.email } });
-  if (existing && existing.kind !== "portal") throw new DomainError(Codes.GUARD_FAILED, "This email belongs to a staff account. Ask the community to invite a different address.");
-  const portalRole = await uow.tx.role.findUnique({ where: { id: "seed_role_portal" }, select: { id: true } });
-  const user = existing ?? await uow.tx.user.create({ data: { name: `${contact.firstName} ${contact.lastName}`.trim(), email: contact.email, password: input.passwordHash, kind: "portal", roleId: portalRole?.id ?? null, onboardingStatus: "dismissed" } });
-  await uow.tx.portalAccount.updateMany({ where: { id: account.id, version: account.version, status: "invited" }, data: { status: "active", userId: user.id, acceptedAt: uow.now, invitationTokenHash: "", version: { increment: 1 } } });
-  uow.audit({ eventType: "portal.activated", entityType: "PortalAccount", entityId: account.id, actorUserId: user.id, before: { status: "invited" }, after: { status: "active" } });
-  return { accountId: account.id, status: "active" };
-}
-async function proposePortalScope(uow, actor, input) {
-  if (actor.kind !== "user") throw new DomainError(Codes.NOT_AUTHORIZED, "Portal scopes are granted by people only.");
-  if (!PORTAL_SCOPES.includes(input.scope)) throw new DomainError(Codes.INVALID_INPUT, "Unknown portal scope.", { field: "scope" });
-  const rep = await uow.tx.representative.findUnique({ where: { id: input.representativeId }, select: { id: true, residentId: true, roles: true, self: true, status: true, portalAccountId: true } });
-  if (!rep || rep.status !== "active") throw new DomainError(Codes.NOT_FOUND, "Active representative not found.");
-  if (!rep.portalAccountId) throw new DomainError(Codes.GUARD_FAILED, "Invite the representative to the portal first.");
-  const roles = [...Array.isArray(rep.roles) ? rep.roles : [], ...rep.self ? ["self"] : []];
-  const basis = authorityFor(roles, input.scope);
-  if (!basis) throw new DomainError(Codes.GUARD_FAILED, `This representative's authority (${roles.join(", ") || "none"}) does not cover ${input.scope.replaceAll("_", " ")}.`, { reason: "authority" });
-  const existing = await uow.tx.portalScopeGrant.findFirst({ where: { accountId: rep.portalAccountId, residentId: rep.residentId, scope: input.scope, status: { in: ["proposed", "granted"] } }, select: { id: true, status: true } });
-  if (existing) return { grantId: existing.id, status: existing.status, mfaRequired: MFA_SCOPES.has(input.scope) };
-  const immediate = input.scope === "updates";
-  const grant = await uow.tx.portalScopeGrant.create({ data: { accountId: rep.portalAccountId, residentId: rep.residentId, representativeId: rep.id, scope: input.scope, authorityBasis: basis, consentDocumentId: input.consentDocumentId ?? null, status: immediate ? "granted" : "proposed", proposedById: actor.userId, ...immediate ? { grantedById: actor.userId, grantedAt: uow.now } : {} } });
-  auditCreate(uow, actor, "PortalScopeGrant", grant.id, immediate ? "portal.scope_granted" : "portal.scope_proposed", { scope: input.scope, authorityBasis: basis, representativeId: rep.id });
-  return { grantId: grant.id, status: grant.status, mfaRequired: MFA_SCOPES.has(input.scope) };
-}
-async function grantPortalScope(uow, actor, input) {
-  if (actor.kind !== "user") throw new DomainError(Codes.NOT_AUTHORIZED, "Portal scopes are granted by people only.");
-  const grant = await lockRow(uow.tx, "PortalScopeGrant", input.grantId);
-  if (grant.proposedById === actor.userId) throw new DomainError(Codes.SELF_APPROVAL, "Someone other than the proposer must grant this scope.");
-  if (input.expectedVersion != null && input.expectedVersion !== grant.version) throw new DomainError(Codes.STALE_STATE, "The grant changed since you loaded it.", { currentStatus: grant.status, currentVersion: grant.version });
-  await casUpdate(uow, { model: "PortalScopeGrant", id: grant.id, version: grant.version, from: ["proposed"], to: "granted", actor, eventType: "portal.scope_granted", approverId: actor.userId, data: { grantedById: actor.userId, grantedAt: uow.now } });
-  return { grantId: grant.id, status: "granted" };
-}
-async function revokePortalScope(uow, actor, input) {
-  if (actor.kind !== "user") throw new DomainError(Codes.NOT_AUTHORIZED, "Portal scopes are revoked by people only.");
-  if (!input.reason?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Say why the scope is revoked.", { field: "reason" });
-  const grant = await lockRow(uow.tx, "PortalScopeGrant", input.grantId);
-  if (input.expectedVersion != null && input.expectedVersion !== grant.version) throw new DomainError(Codes.STALE_STATE, "The grant changed since you loaded it.", { currentStatus: grant.status, currentVersion: grant.version });
-  await casUpdate(uow, { model: "PortalScopeGrant", id: grant.id, version: grant.version, from: ["proposed", "granted"], to: "revoked", actor, eventType: "portal.scope_revoked", reason: input.reason.trim(), data: { revokedAt: uow.now, revokeReason: input.reason.trim() } });
-  if (grant.accountId) await uow.tx.portalAccount.update({ where: { id: grant.accountId }, data: { sessionEpoch: { increment: 1 }, version: { increment: 1 } } });
-  return { grantId: grant.id, status: "revoked" };
-}
-async function setPortalAccountStatus(uow, actor, input) {
-  if (actor.kind !== "user") throw new DomainError(Codes.NOT_AUTHORIZED, "Portal accounts are managed by people only.");
-  if (!input.reason?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Say why.", { field: "reason" });
-  const from = input.to === "suspended" ? ["active"] : input.to === "active" ? ["suspended"] : ["invited", "active", "suspended"];
-  const account = await lockRow(uow.tx, "PortalAccount", input.accountId);
-  if (input.expectedVersion != null && input.expectedVersion !== account.version) throw new DomainError(Codes.STALE_STATE, "The account changed since you loaded it.", { currentStatus: account.status, currentVersion: account.version });
-  await casUpdate(uow, { model: "PortalAccount", id: account.id, version: account.version, from, to: input.to, actor, eventType: `portal.${input.to}`, reason: input.reason.trim(), data: { sessionEpoch: { increment: 1 }, ...input.to === "revoked" ? { invitationTokenHash: "" } : {} } });
-  if (input.to === "revoked") {
-    const grants = await uow.tx.portalScopeGrant.findMany({ where: { accountId: account.id, status: { in: ["proposed", "granted"] } }, select: { id: true, version: true, status: true } });
-    for (const grant of grants) await casUpdate(uow, { model: "PortalScopeGrant", id: grant.id, version: grant.version, from: [grant.status], to: "revoked", actor, eventType: "portal.scope_revoked", reason: "account revoked", data: { revokedAt: uow.now, revokeReason: "account revoked" } });
-  }
-  return { accountId: account.id, status: input.to };
-}
-
-// features/keystone/lib/privacy.ts
-var BREAK_GLASS_REASONS = ["emergency_care", "coverage_gap", "other"];
-async function openBreakGlass(uow, actor, input) {
-  if (actor.kind !== "user") throw new DomainError(Codes.NOT_AUTHORIZED, "Only a person can use break-glass.");
-  if (!BREAK_GLASS_REASONS.includes(input.reason)) throw new DomainError(Codes.INVALID_INPUT, "Choose a reason.", { field: "reason" });
-  if (!input.note?.trim() || input.note.trim().length < 10) throw new DomainError(Codes.INVALID_INPUT, "Describe the situation (at least 10 characters).", { field: "note" });
-  const settings = await uow.tx.operatorSettings.findUnique({ where: { id: 1 }, select: { breakGlassMaxHours: true } });
-  const max = settings?.breakGlassMaxHours ?? 4;
-  const hours2 = input.hours ?? max;
-  if (!Number.isInteger(hours2) || hours2 < 1 || hours2 > max) throw new DomainError(Codes.INVALID_INPUT, `Break-glass lasts 1 to ${max} hours.`, { field: "hours" });
-  const resident = await uow.tx.resident.findUnique({ where: { id: input.residentId }, select: { id: true } });
-  if (!resident) throw new DomainError(Codes.NOT_FOUND, "Resident not found.");
-  const open = await uow.tx.breakGlassGrant.findFirst({ where: { userId: actor.userId, residentId: input.residentId, status: "active", expiresAt: { gt: uow.now } }, select: { id: true, expiresAt: true } });
-  if (open) return { grantId: open.id, expiresAt: open.expiresAt, reused: true };
-  const grant = await uow.tx.breakGlassGrant.create({ data: { userId: actor.userId, residentId: input.residentId, reason: input.reason, note: input.note.trim(), requestedAt: uow.now, expiresAt: new Date(uow.now.getTime() + hours2 * 36e5), status: "active" } });
-  auditCreate(uow, actor, "BreakGlassGrant", grant.id, "break_glass.opened", { residentId: input.residentId, reason: input.reason, hours: hours2 });
-  uow.emit({ topic: "privacy.break_glass_opened", aggregateType: "BreakGlassGrant", aggregateId: grant.id, payload: { grantId: grant.id }, dedupeKey: `privacy.break_glass:${grant.id}` });
-  return { grantId: grant.id, expiresAt: grant.expiresAt, reused: false };
-}
-async function endBreakGlass(uow, actor, input) {
-  const grant = await lockRow(uow.tx, "BreakGlassGrant", input.grantId);
-  if (actor.kind === "user" && grant.userId !== actor.userId) throw new DomainError(Codes.NOT_AUTHORIZED, "Only the holder can end this grant.");
-  await casUpdate(uow, { model: "BreakGlassGrant", id: grant.id, version: grant.version, from: ["active"], to: "ended", actor, eventType: "break_glass.ended", data: { endedAt: uow.now } });
-  return { grantId: grant.id, status: "ended" };
-}
-async function reviewBreakGlass(uow, actor, input) {
-  if (actor.kind !== "user") throw new DomainError(Codes.NOT_AUTHORIZED, "Only a person can review break-glass.");
-  if (input.outcome !== "reviewed_ok" && input.outcome !== "reviewed_violation") throw new DomainError(Codes.INVALID_INPUT, "Choose an outcome.", { field: "outcome" });
-  if (!input.note?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Add a review note.", { field: "note" });
-  const grant = await lockRow(uow.tx, "BreakGlassGrant", input.grantId);
-  if (grant.userId === actor.userId) throw new DomainError(Codes.SELF_APPROVAL, "Someone else must review your own break-glass use.");
-  if (input.expectedVersion != null && input.expectedVersion !== grant.version) throw new DomainError(Codes.STALE_STATE, "The grant changed since you loaded it.", { currentStatus: grant.status, currentVersion: grant.version });
-  const from = grant.status === "active" && grant.expiresAt && grant.expiresAt.getTime() <= uow.now.getTime() ? "active" : "ended";
-  await casUpdate(uow, { model: "BreakGlassGrant", id: grant.id, version: grant.version, from: [from], to: input.outcome, actor, eventType: `break_glass.${input.outcome}`, reason: input.note.trim(), data: { reviewedById: actor.userId, reviewNote: input.note.trim(), ...from === "active" ? { endedAt: grant.expiresAt } : {} } });
-  if (input.outcome === "reviewed_violation") uow.emit({ topic: "privacy.break_glass_violation", aggregateType: "BreakGlassGrant", aggregateId: grant.id, payload: { grantId: grant.id }, dedupeKey: `privacy.violation:${grant.id}` });
-  return { grantId: grant.id, status: input.outcome };
 }
 
 // features/keystone/lib/publicRateLimit.ts
@@ -5707,6 +6751,7 @@ function extendGraphqlSchema(baseSchema) {
       type Mutation {
         updateActiveUser(data: UserUpdateProfileInput!): User
         loadOperatorSetup(idempotencyKey: String!): JSON
+        loadCensusSetup(idempotencyKey: String!): JSON
         decideApprovalRequest(requestId: ID!, decision: String!, reason: String, expectedVersion: Int!, idempotencyKey: String!): JSON
         cancelApprovalRequest(requestId: ID!, expectedVersion: Int!, reason: String, idempotencyKey: String!): JSON
         requestOperatorControls(changes: JSON!, reason: String!, idempotencyKey: String!): JSON
@@ -5777,6 +6822,7 @@ function extendGraphqlSchema(baseSchema) {
       Mutation: {
         updateActiveUser: updateActiveUser_default,
         loadOperatorSetup: op(loadOperatorSetup),
+        loadCensusSetup: op(loadCensusSetup),
         decideApprovalRequest: op(decideApprovalRequest),
         cancelApprovalRequest: op(cancelApprovalRequest),
         requestOperatorControls: op(requestOperatorControls),

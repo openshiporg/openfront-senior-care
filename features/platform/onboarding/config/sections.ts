@@ -26,4 +26,20 @@ export const SETUP_SECTIONS = [
       `${APPROVAL_POLICIES.length} maker-checker approval policies`,
     ],
   },
+  {
+    id: 'census',
+    title: 'Residents, census history, sales and family portal',
+    mutation: 'mutation LoadCensus($idempotencyKey: String!) { loadCensusSetup(idempotencyKey: $idempotencyKey) }',
+    field: 'loadCensusSetup',
+    items: [
+      'About 200 residents across nursing, assisted living, memory care and independent living',
+      '60 days of census: admissions, room changes, hospital leaves with bed holds, discharges',
+      'Representatives with healthcare and financial authority, and one court-appointed guardian',
+      'Family portal accounts with scopes granted by a second staff member',
+      'Signed-off midnight census for the last four weeks',
+      'Storefront copy, published starting prices and tour times',
+      'Hospital referrals, a waitlist with offers, tours and leads at every stage',
+      'Break-glass uses with the privacy officer\'s review',
+    ],
+  },
 ] as const

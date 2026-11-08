@@ -7,6 +7,7 @@ import { createPublicToken, hashPublicToken, publicTokenMatches, verifyPublicTok
 import { endReservation, reservePlace } from './places'
 import { LEAD_STATUSES } from '../models/sales'
 import type { UnitOfWork } from './unitOfWork'
+import { label } from '../../../lib/labels'
 
 /**
  * Sales and front of house (STATE-MACHINES §1). Public calls (inquiry, tour request, tour
@@ -165,7 +166,7 @@ export async function requestTour(uow: UnitOfWork, input: { communitySlug: strin
   const slot = await slotHasRoom(uow, input.slotId)
   if (slot.communityId !== community.id) throw new DomainError(Codes.NOT_FOUND, 'Tour time not found.')
   if (input.kind !== 'in_person' && input.kind !== 'virtual') throw new DomainError(Codes.INVALID_INPUT, 'Choose in person or virtual.', { field: 'kind' })
-  if (slot.kind !== 'either' && slot.kind !== input.kind) throw new DomainError(Codes.INVALID_INPUT, `This time is for ${slot.kind.replace('_', ' ')} tours.`, { field: 'kind' })
+  if (slot.kind !== 'either' && slot.kind !== input.kind) throw new DomainError(Codes.INVALID_INPUT, `This time is for ${label(slot.kind).toLowerCase()} tours.`, { field: 'kind' })
   const { publicCode: inquiryCode } = await submitInquiry(uow, { communitySlug: input.communitySlug, contactName: input.contactName, contactEmail: input.contactEmail, contactPhone: input.contactPhone, message: input.notes, consentToContact: input.consentToContact })
   const inquiry = await uow.tx.inquiry.findUnique({ where: { publicCode: inquiryCode }, select: { leadId: true } })
   const code = publicCode('TOUR')
@@ -181,11 +182,11 @@ export async function requestTour(uow: UnitOfWork, input: { communitySlug: strin
 export async function scheduleTour(uow: UnitOfWork, actor: Actor, input: { leadId: string; slotId: string; kind: 'in_person' | 'virtual'; notes?: string | null }) {
   const lead = await uow.tx.lead.findUnique({ where: { id: input.leadId }, select: { id: true, communityId: true, status: true, version: true } })
   if (!lead) throw new DomainError(Codes.NOT_FOUND, 'Lead not found.')
-  if (lead.status === 'lost' || lead.status === 'moved_in') throw new DomainError(Codes.GUARD_FAILED, `This lead is ${lead.status.replace('_', ' ')}.`, { currentStatus: lead.status })
+  if (lead.status === 'lost' || lead.status === 'moved_in') throw new DomainError(Codes.GUARD_FAILED, `This lead is ${label(lead.status).toLowerCase()}.`, { currentStatus: lead.status })
   if (input.kind !== 'in_person' && input.kind !== 'virtual') throw new DomainError(Codes.INVALID_INPUT, 'Choose in person or virtual.', { field: 'kind' })
   const slot = await slotHasRoom(uow, input.slotId)
   if (slot.communityId !== lead.communityId) throw new DomainError(Codes.NOT_FOUND, 'Tour time not found.')
-  if (slot.kind !== 'either' && slot.kind !== input.kind) throw new DomainError(Codes.INVALID_INPUT, `This time is for ${slot.kind.replace('_', ' ')} tours.`, { field: 'kind' })
+  if (slot.kind !== 'either' && slot.kind !== input.kind) throw new DomainError(Codes.INVALID_INPUT, `This time is for ${label(slot.kind).toLowerCase()} tours.`, { field: 'kind' })
   const tour = await uow.tx.tour.create({ data: { publicCode: publicCode('TOUR'), communityId: slot.communityId, slotId: slot.id, leadId: lead.id, kind: input.kind, status: 'confirmed', notes: clean(input.notes, 2000) } })
   auditCreate(uow, actor, 'Tour', tour.id, 'tour.scheduled', { slotId: slot.id, leadId: lead.id, kind: input.kind })
   if (LEAD_EDGES.tour_scheduled.includes(lead.status)) await casUpdate(uow, { model: 'Lead', id: lead.id, version: lead.version, from: [lead.status], to: 'tour_scheduled', actor, eventType: 'lead.tour_scheduled', metadata: { tourId: tour.id } })
@@ -195,7 +196,7 @@ export async function scheduleTour(uow: UnitOfWork, actor: Actor, input: { leadI
 
 /** Public: cancel with the manage token. */
 export async function cancelTourWithToken(uow: UnitOfWork, input: { token: string; reason?: string | null }) {
-  const payload = verifyPublicToken(input.token, 'tour-manage')
+  const payload = verifyPublicToken(input.token, 'tour-manage', undefined, uow.now.getTime())
   if (!payload) throw new DomainError(Codes.GUARD_FAILED, 'This link is invalid or has expired.')
   const tour = await lockRow<{ id: string; status: string; version: number; guestTokenHash: string | null }>(uow.tx, 'Tour', payload.subjectId)
   if (!publicTokenMatches(input.token, tour.guestTokenHash)) throw new DomainError(Codes.GUARD_FAILED, 'This link is invalid or has expired.')

@@ -4,6 +4,7 @@ import { checkbox, password, relationship, select, text, timestamp } from '@keys
 import { trackingFields } from './trackingFields'
 
 import { isSignedIn, permissions, rules } from '../access'
+import { label } from '../../../lib/labels'
 
 export const User = list({
   access: {
@@ -93,7 +94,7 @@ export const User = list({
       ui: { description: 'Time-boxed access for surveyors, auditors and temporary administrator users.' },
     }),
     onboardingStatus: select({
-      options: ['not_started', 'in_progress', 'completed', 'dismissed'].map(value => ({ label: value.replaceAll('_', ' '), value })),
+      options: ['not_started', 'in_progress', 'completed', 'dismissed'].map(value => ({ label: label(value), value })),
       defaultValue: 'not_started',
     }),
     ...trackingFields,

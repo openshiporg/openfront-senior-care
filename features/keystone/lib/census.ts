@@ -8,6 +8,7 @@ import { localDate } from './calendar'
 import { openClocksForFact, satisfyByEvidence } from './clocks'
 import { applyCensusEvent, EMPTY_PROJECTION, foldCensus, projectionHash, type CensusEventInput, type CensusEventKind, type StayProjection } from './censusProjection'
 import type { UnitOfWork } from './unitOfWork'
+import { label } from '../../../lib/labels'
 
 /**
  * Census commands (STATE-MACHINES §4). Each command appends one CensusEvent to the stay's stream,
@@ -117,7 +118,7 @@ async function reconcileBed(uow: UnitOfWork, actor: Actor, stay: StayRow, bedId:
       if (!reservation || reservation.id !== options.reservationId) throw new DomainError(Codes.PLACE_UNAVAILABLE, `Bed ${bed.label} is reserved for someone else.`, { currentStatus: bed.status })
       await consumeReservation(uow, actor, reservation.id, reservation.version, stay.id)
     } else if (bed.status !== 'available') {
-      throw new DomainError(Codes.PLACE_UNAVAILABLE, `Bed ${bed.label} is ${bed.status.replaceAll('_', ' ')}.`, { currentStatus: bed.status })
+      throw new DomainError(Codes.PLACE_UNAVAILABLE, `Bed ${bed.label} is ${label(bed.status).toLowerCase()}.`, { currentStatus: bed.status })
     }
     await casUpdate(uow, { model: 'Bed', id: bedId, version: bed.version, from: [bed.status], to: to === 'held' ? 'held' : 'occupied', actor, eventType: 'bed.claimed', data: { currentStayId: stay.id, statusReason: '' }, audit: { currentStayId: stay.id }, metadata })
     const occupancy = await uow.tx.bedOccupancy.create({ data: { bedId, stayId: stay.id, startAt: options.effectiveAt, openedByEventId: options.eventId } })
@@ -144,7 +145,7 @@ async function reconcileApartment(uow: UnitOfWork, actor: Actor, stay: StayRow, 
   const apartment = await lockRow<{ id: string; number: string; status: string; version: number; capacity: number; occupantCount: number; allowsUnrelatedCompanion: boolean }>(uow.tx, 'Apartment', apartmentId)
   const metadata = { stayId: stay.id, censusEventId: options.eventId }
   if (!had && has) {
-    if (apartment.status === 'out_of_service' || apartment.status === 'turnover') throw new DomainError(Codes.PLACE_UNAVAILABLE, `Apartment ${apartment.number} is ${apartment.status.replaceAll('_', ' ')}.`, { currentStatus: apartment.status })
+    if (apartment.status === 'out_of_service' || apartment.status === 'turnover') throw new DomainError(Codes.PLACE_UNAVAILABLE, `Apartment ${apartment.number} is ${label(apartment.status).toLowerCase()}.`, { currentStatus: apartment.status })
     if (apartment.occupantCount >= apartment.capacity) throw new DomainError(Codes.PLACE_UNAVAILABLE, `Apartment ${apartment.number} is full.`, { currentStatus: apartment.status })
     if (apartment.occupantCount > 0 && !apartment.allowsUnrelatedCompanion && !options.companionRelationship?.trim()) {
       throw new DomainError(Codes.GUARD_FAILED, 'A second resident in this apartment needs a recorded relationship to the first (spouse, partner, sibling).', { field: 'companionRelationship' })
@@ -302,7 +303,7 @@ export async function admitResident(uow: UnitOfWork, actor: Actor, input: AdmitI
     if (!bed?.room?.unit || bed.room.unit.communityId !== input.communityId) throw new DomainError(Codes.NOT_FOUND, 'That bed is not in this community.')
     setting = bed.room.unit.setting
     const needed = CERTIFICATION_FOR_PAYER[payer.kind]
-    if (needed && !needed.includes(bed.certification)) throw new DomainError(Codes.GUARD_FAILED, `This bed is certified ${bed.certification.replaceAll('_', ' ')}; a ${payer.kind.replaceAll('_', ' ')} admission needs a ${needed.join(' or ')} bed.`, { reason: 'certification' })
+    if (needed && !needed.includes(bed.certification)) throw new DomainError(Codes.GUARD_FAILED, `This bed is certified ${label(bed.certification)}; a ${label(payer.kind)} admission needs a ${needed.join(' or ')} bed.`, { reason: 'certification' })
     medicaidCertified = bed.certification === 'dual' || bed.certification === 'medicaid'
     if (bed.room.genderPolicy !== 'any' && input.resident?.sex && input.resident.sex !== bed.room.genderPolicy) throw new DomainError(Codes.GUARD_FAILED, `Room ${bed.room.number} is ${bed.room.genderPolicy} only.`, { reason: 'gender_policy' })
     if (bed.room.unit.secured && !input.placementReason?.trim()) throw new DomainError(Codes.GUARD_FAILED, 'A secured unit placement needs a documented reason.', { field: 'placementReason' })
@@ -444,7 +445,7 @@ export async function changeRoom(uow: UnitOfWork, actor: Actor, input: { stayId:
     if (!bed?.room?.unit || bed.room.unit.communityId !== stay.communityId) throw new DomainError(Codes.NOT_FOUND, 'That bed is not in this community.')
     const payerKind = await primaryPayerKind(uow.tx, stay.id)
     const needed = payerKind ? CERTIFICATION_FOR_PAYER[payerKind] : undefined
-    if (needed && !needed.includes(bed.certification)) throw new DomainError(Codes.GUARD_FAILED, `Bed ${bed.label} is certified ${bed.certification.replaceAll('_', ' ')}, which the resident's coverage cannot use.`, { reason: 'certification' })
+    if (needed && !needed.includes(bed.certification)) throw new DomainError(Codes.GUARD_FAILED, `Bed ${bed.label} is certified ${label(bed.certification)}, which the resident's coverage cannot use.`, { reason: 'certification' })
     const resident = stay.residentId ? await uow.tx.resident.findUnique({ where: { id: stay.residentId }, select: { sex: true } }) : null
     if (bed.room.genderPolicy !== 'any' && resident?.sex && resident.sex !== bed.room.genderPolicy) throw new DomainError(Codes.GUARD_FAILED, `Room ${bed.room.number} is ${bed.room.genderPolicy} only.`, { reason: 'gender_policy' })
     if (bed.room.unit.secured && !input.reason?.trim()) throw new DomainError(Codes.GUARD_FAILED, 'A move into a secured unit needs a documented reason.', { field: 'reason' })

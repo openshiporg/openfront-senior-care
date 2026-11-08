@@ -17,6 +17,7 @@ const OnboardingDialog: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
   const [step, setStep] = useState<Step>('review')
   const [error, setError] = useState<string | null>(null)
   const [created, setCreated] = useState<Record<string, number> | null>(null)
+  const [progress, setProgress] = useState<{ title: string; done: number; total: number } | null>(null)
   // One key per dialog: a retry after a dropped connection replays instead of running twice.
   const key = useRef(`setup-${crypto.randomUUID()}`)
   const running = useRef(false)
@@ -33,10 +34,26 @@ const OnboardingDialog: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
       if (!started.success) throw new Error(started.error || 'Could not record setup progress')
       const client = new GraphQLClient(`${window.location.origin}/api/graphql`, { headers: { 'Content-Type': 'application/json' } })
       for (const section of SETUP_SECTIONS) {
-        const result: any = await client.request(section.mutation, { idempotencyKey: `${key.current}:${section.id}` })
-        const payload = result?.[section.field]
-        if (!payload?.created) throw new Error(`${section.title} did not return a result`)
-        setCreated(prev => ({ ...(prev ?? {}), ...payload.created }))
+        // A resumable section returns `finished: false` until its last piece is loaded.
+        for (let piece = 0; ; piece += 1) {
+          // A piece that times out may still have committed; asking again replays it, so retry a few times.
+          let result: any
+          for (let attempt = 0; ; attempt += 1) {
+            try { result = await client.request(section.mutation, { idempotencyKey: `${key.current}:${section.id}:${piece}` }); break }
+            catch (err) { if (attempt >= 2) throw err; await new Promise(r => setTimeout(r, 1500)) }
+          }
+          const payload = result?.[section.field]
+          if (!payload?.created) throw new Error(`${section.title} did not return a result`)
+          setCreated(prev => {
+            const next = { ...(prev ?? {}) }
+            for (const [name, n] of Object.entries(payload.created as Record<string, number>)) next[name] = (next[name] ?? 0) + n
+            return next
+          })
+          if (payload.total) setProgress({ title: section.title, done: payload.done, total: payload.total })
+          if (payload.finished !== false) break
+          if (piece > 400) throw new Error(`${section.title} did not finish`)
+        }
+        setProgress(null)
       }
       const completed = await completeOnboarding()
       if (!completed.success) throw new Error(completed.error || 'Could not complete setup')
@@ -70,6 +87,12 @@ const OnboardingDialog: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
               </ul>
             </div>
           ))}
+          {step === 'running' && progress ? (
+            <div className="space-y-1.5">
+              <p className="text-sm text-muted-foreground">{progress.title}: {progress.done} of {progress.total} steps</p>
+              <div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-teal-700 transition-all" style={{ width: `${Math.round((progress.done / Math.max(1, progress.total)) * 100)}%` }} /></div>
+            </div>
+          ) : null}
           {step === 'done' && created ? (
             <p className="text-sm text-muted-foreground">
               Created {Object.entries(created).filter(([, n]) => n > 0).map(([k, n]) => `${n} ${k.replace(/([A-Z])/g, ' $1').toLowerCase()}`).join(', ') || 'nothing new (already loaded)'}.

@@ -164,6 +164,9 @@ export async function getAuthenticatedUser() {
         }
       }
       usersCount
+      communities(orderBy: [{ name: asc }], take: 1, where: { status: { not: { equals: "closed" } } }) { name }
+      communitiesCount(where: { status: { not: { equals: "closed" } } })
+      operatorSettings { displayName }
     }
   `;
 

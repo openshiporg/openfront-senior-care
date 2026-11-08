@@ -49,8 +49,8 @@ export default async function ApprovalsPage({ searchParams }: { searchParams?: P
                   Asked by {r.requestedBy?.name ?? (r.requestedByAgent ? `agent ${r.requestedByAgent.name}` : 'the system')} · {when(r.createdAt, tz)}
                   {r.expiresAt ? ` · ${expired ? 'expired' : 'expires'} ${when(r.expiresAt, tz)}` : ''} · needs {label(r.requiredPermission.replace(/^can/, '')).toLowerCase()} permission
                 </Meta>
-                {r.decisions.map((d, i) => <Meta key={i}><br />{d.decision === 'approve' ? 'Approved' : 'Rejected'} by {d.decidedBy?.name ?? 'someone'} · {when(d.at, tz)}{d.reason ? ` · ${d.reason}` : ''}</Meta>)}
-                {r.consumedAt ? <Meta><br />Carried out {when(r.consumedAt, tz)}</Meta> : null}
+                {r.decisions.map((d, i) => <Meta key={i}>{d.decision === 'approve' ? 'Approved' : 'Rejected'} by {d.decidedBy?.name ?? 'someone'} · {when(d.at, tz)}{d.reason ? ` · ${d.reason}` : ''}</Meta>)}
+                {r.consumedAt ? <Meta>Carried out {when(r.consumedAt, tz)}</Meta> : null}
                 <p className="break-all text-xs text-muted-foreground">{label(r.targetList)} <span className="font-mono">{r.targetId}</span> · payload <span className="font-mono">{r.payloadHash.slice(0, 12)}</span></p>
               </div>
               <div className="flex flex-wrap items-center gap-2">

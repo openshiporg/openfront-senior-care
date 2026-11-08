@@ -6,12 +6,13 @@ import { PHI_LISTS, phiFields } from './phi'
 import { SETTINGS } from './platform'
 import { assignedFilter, scopedGoverned, scopedManaged } from './scope'
 import { trackingFields } from './trackingFields'
+import { label } from '../../../lib/labels'
 
 /* Sales & front of house (SCHEMA §3). Public writes go through the rate-limited storefront mutations. */
 
 const ro = readOnly
 const sys = () => false
-const opt = (values: readonly string[]) => ({ type: 'string' as const, options: values.map(value => ({ label: value.replaceAll('_', ' '), value })) })
+const opt = (values: readonly string[]) => ({ type: 'string' as const, options: values.map(value => ({ label: label(value), value })) })
 const salesRead = ['canReadSales', 'canManageSales'] as const
 
 export const LEAD_STATUSES = ['new', 'contacted', 'tour_scheduled', 'toured', 'assessment_scheduled', 'assessed', 'deposit_received', 'move_in_scheduled', 'moved_in', 'waitlisted', 'nurture', 'lost'] as const

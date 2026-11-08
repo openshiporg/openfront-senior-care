@@ -3,7 +3,7 @@ import { US_FED, US_FED_HOLIDAYS, US_FED_SOURCE } from '../lib/calendar'
 import { auditCreate } from '../lib/cas'
 import type { Actor } from '../lib/actor'
 import type { UnitOfWork } from '../lib/unitOfWork'
-import { APARTMENT_TYPES, APPROVAL_POLICIES, apartmentTypeFor, COMMUNITY, NF_UNITS, OPERATOR, PAYERS, RESIDENTIAL_UNITS, ROLES, STAFF } from './operator'
+import { APARTMENT_TYPES, APPROVAL_POLICIES, COMMUNITY, nfRooms, residentialApartments, NF_UNITS, OPERATOR, PAYERS, RESIDENTIAL_UNITS, ROLES, STAFF } from './operator'
 import { PACKS, US_OH_PACK } from './packs'
 
 /**
@@ -25,23 +25,6 @@ const day = (date: string) => new Date(`${date}T00:00:00Z`)
 export const seedMeta = { metadata: { seed: true } }
 
 /** The rooms of a nursing unit: isolation rooms are private (one bed); the rest semi-private (A/B). */
-export function nfRooms(unit: (typeof NF_UNITS)[number]) {
-  const rooms: { number: string; kind: string; isolation: boolean; beds: string[] }[] = []
-  let remaining: number = unit.beds
-  for (let i = 0; remaining > 0; i += 1) {
-    const isolation = i < unit.isolationRooms
-    const number = String(unit.firstRoom + i)
-    const beds = isolation || remaining === 1 ? ['A'] : ['A', 'B']
-    rooms.push({ number, kind: beds.length === 1 ? 'private' : 'semi_private', isolation, beds })
-    remaining -= beds.length
-  }
-  return rooms
-}
-
-/** Bed ids of a nursing unit in room order, with their labels (e.g. 112A). */
-export const nfBeds = (unit: (typeof NF_UNITS)[number]) =>
-  nfRooms(unit).flatMap(room => room.beds.map(label => ({ id: `seed_room_${unit.code.toLowerCase()}_${room.number}_${label.toLowerCase()}`, label: `${room.number}${label}` })))
-
 export async function seedOperatorPlatform(uow: UnitOfWork, actor: Actor) {
   const { tx } = uow
   const created: Record<string, number> = { operator: 0, roles: 0, staff: 0, assignments: 0, approvalPolicies: 0, calendars: 0, holidays: 0, packs: 0, obligations: 0, communities: 0, units: 0, rooms: 0, beds: 0, apartments: 0, payers: 0 }
@@ -142,12 +125,7 @@ export async function seedOperatorPlatform(uow: UnitOfWork, actor: Actor) {
     if (await tx.unit.findUnique({ where: { id: unit.id } })) continue
     await tx.unit.create({ data: { id: unit.id, communityId: community.id, buildingId: 'seed_building_residences', name: unit.name, code: unit.code, setting: unit.setting, secured: unit.secured, specialty: 'none', status: 'active' } })
     created.units += 1
-    const rows = Array.from({ length: unit.count }, (_, index) => {
-      const floor = unit.code === 'MEA' ? 1 + Math.floor(index / 16) : 1
-      const number = unit.code === 'MEA' ? `${unit.prefix}${floor}-${String((index % 16) + 1).padStart(2, '0')}` : `${unit.prefix}${index + 1}`
-      const typeId = apartmentTypeFor(unit.code, index)
-      return { id: `seed_apartment_${unit.code.toLowerCase()}_${index + 1}`, unitId: unit.id, number, apartmentTypeId: typeId, capacity: typeId === 'seed_apt_companion' ? 2 : 1, allowsUnrelatedCompanion: false, status: 'available', occupantCount: 0 }
-    })
+    const rows = residentialApartments(unit).map(row => ({ ...row, unitId: unit.id, allowsUnrelatedCompanion: false, status: 'available', occupantCount: 0 }))
     await tx.apartment.createMany({ data: rows })
     created.apartments += rows.length
   }

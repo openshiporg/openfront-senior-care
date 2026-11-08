@@ -6,12 +6,13 @@ import { breakGlassResidents, PHI_LISTS, phiFields } from './phi'
 import { SETTINGS } from './platform'
 import { assignedCommunities, communityWhere } from './scope'
 import { trackingFields } from './trackingFields'
+import { label } from '../../../lib/labels'
 
 /* Residents & census (SCHEMA §4). Rows are created and changed by census commands only. */
 
 const sys = () => false
 const ro = readOnly
-const opt = (values: readonly string[]) => ({ type: 'string' as const, options: values.map(value => ({ label: value.replaceAll('_', ' '), value })) })
+const opt = (values: readonly string[]) => ({ type: 'string' as const, options: values.map(value => ({ label: label(value), value })) })
 
 /** Rows of residents in the caller's assigned communities, plus residents under an active break-glass grant. */
 const residentScope = (path: readonly string[], residentPath: readonly string[]) => async ({ session, context }: { session?: Session; context: any }) => {

@@ -10,7 +10,7 @@ Built on Next.js and KeystoneJS 6 with PostgreSQL.
 
 ## Status
 
-The foundation is being built. The data model and build plan are in progress.
+Phase 1 is in place: places, census, residents and representatives, sales from inquiry to admission, compliance clocks, break-glass and the audit log, with dashboard screens. The public storefront and family portal are available as APIs; their screens come next. See [docs/phase-1.md](./docs/phase-1.md).
 
 ## License
 

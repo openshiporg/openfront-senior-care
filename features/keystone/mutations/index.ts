@@ -39,6 +39,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
       type Mutation {
         updateActiveUser(data: UserUpdateProfileInput!): User
         loadOperatorSetup(idempotencyKey: String!): JSON
+        loadCensusSetup(idempotencyKey: String!): JSON
         decideApprovalRequest(requestId: ID!, decision: String!, reason: String, expectedVersion: Int!, idempotencyKey: String!): JSON
         cancelApprovalRequest(requestId: ID!, expectedVersion: Int!, reason: String, idempotencyKey: String!): JSON
         requestOperatorControls(changes: JSON!, reason: String!, idempotencyKey: String!): JSON
@@ -109,6 +110,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
       Mutation: {
         updateActiveUser,
         loadOperatorSetup: op(setup.loadOperatorSetup),
+        loadCensusSetup: op(setup.loadCensusSetup),
         decideApprovalRequest: op(approvals.decideApprovalRequest),
         cancelApprovalRequest: op(approvals.cancelApprovalRequest),
         requestOperatorControls: op(approvals.requestOperatorControls),

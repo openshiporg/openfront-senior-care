@@ -30,7 +30,7 @@ export const platformNavItems: PlatformNavItem[] = [
 
   { title: 'Pipeline', href: '/platform/sales', color: 'amber', description: 'Leads, inquiries, tours and referrals with response clocks.', icon: ClipboardList, group: 'sales' },
   { title: 'Waitlist', href: '/platform/sales/waitlist', color: 'amber', description: 'Waitlist by apartment type and setting; offers and holds.', icon: Hourglass, group: 'sales' },
-  { title: 'Storefront', href: '/platform/sales/storefront', color: 'cyan', description: 'Storefront content, published prices, availability and job postings.', icon: Store, group: 'sales' },
+  { title: 'Storefront', href: '/platform/sales/storefront', color: 'cyan', description: 'Storefront copy, starting prices, availability and tour times.', icon: Store, group: 'sales' },
 
   { title: 'Approvals', href: '/platform/approvals', color: 'amber', description: 'Maker-checker requests waiting for a second person.', icon: ClipboardCheck, group: 'standalone' },
   { title: 'Compliance clocks', href: '/platform/compliance', color: 'rose', description: 'Regulatory clocks: due, overdue and satisfied.', icon: CalendarClock, group: 'standalone' },

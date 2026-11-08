@@ -5,6 +5,7 @@ import { nextReference } from './sequence'
 import { createPublicToken, hashPublicToken, publicTokenMatches, verifyPublicToken } from './publicToken'
 import { AUTHORITY_BASES, MFA_SCOPES, PORTAL_SCOPES, SCOPE_AUTHORITY } from '../models/sales'
 import type { UnitOfWork } from './unitOfWork'
+import { label } from '../../../lib/labels'
 
 /**
  * Family portal backend (STATE-MACHINES §14). APIs only; the portal UI waits for the owner's design
@@ -53,7 +54,7 @@ export async function inviteRepresentative(uow: UnitOfWork, actor: Actor, input:
 
 /** The invitee sets a password with the token. Creates a portal-kind user with no dashboard role. */
 export async function acceptPortalInvitation(uow: UnitOfWork, input: { token: string; passwordHash: string }) {
-  const payload = verifyPublicToken(input.token, 'portal-invite')
+  const payload = verifyPublicToken(input.token, 'portal-invite', undefined, uow.now.getTime())
   if (!payload) throw new DomainError(Codes.GUARD_FAILED, 'This invitation link is invalid or has expired.')
   const account = await lockRow<{ id: string; status: string; version: number; invitationTokenHash: string | null; contactId: string | null; userId: string | null }>(uow.tx, 'PortalAccount', payload.subjectId)
   if (account.status !== 'invited' || !publicTokenMatches(input.token, account.invitationTokenHash)) throw new DomainError(Codes.GUARD_FAILED, 'This invitation link was already used or replaced.')
@@ -80,7 +81,7 @@ export async function proposePortalScope(uow: UnitOfWork, actor: Actor, input: {
   if (!rep.portalAccountId) throw new DomainError(Codes.GUARD_FAILED, 'Invite the representative to the portal first.')
   const roles = [...(Array.isArray(rep.roles) ? (rep.roles as string[]) : []), ...(rep.self ? ['self'] : [])]
   const basis = authorityFor(roles, input.scope)
-  if (!basis) throw new DomainError(Codes.GUARD_FAILED, `This representative's authority (${roles.join(', ') || 'none'}) does not cover ${input.scope.replaceAll('_', ' ')}.`, { reason: 'authority' })
+  if (!basis) throw new DomainError(Codes.GUARD_FAILED, `This representative's authority (${roles.map(r => label(r).toLowerCase()).join(', ') || 'none'}) does not cover ${label(input.scope).toLowerCase()}.`, { reason: 'authority' })
   const existing = await uow.tx.portalScopeGrant.findFirst({ where: { accountId: rep.portalAccountId, residentId: rep.residentId, scope: input.scope, status: { in: ['proposed', 'granted'] } }, select: { id: true, status: true } })
   if (existing) return { grantId: existing.id, status: existing.status, mfaRequired: MFA_SCOPES.has(input.scope) }
   const immediate = input.scope === 'updates'

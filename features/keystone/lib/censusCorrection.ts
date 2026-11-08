@@ -6,6 +6,7 @@ import { DomainError, Codes } from './errors'
 import type { Actor } from './actor'
 import type { CensusEventKind } from './censusProjection'
 import type { UnitOfWork } from './unitOfWork'
+import { label } from '../../../lib/labels'
 
 /**
  * Census corrections (STATE-MACHINES §4.3). A late entry inserts events earlier in the stream; a
@@ -38,7 +39,7 @@ export function validateCorrection(payload: CorrectionPayload) {
     if (event.kind === 'correction') {
       if (!event.voidsEventId) throw new DomainError(Codes.INVALID_INPUT, 'A void names the event it voids.', { field: 'voidsEventId' })
     } else if (!LATE_KINDS.includes(event.kind)) {
-      throw new DomainError(Codes.INVALID_INPUT, `A correction cannot record ${event.kind.replaceAll('_', ' ')}; use the admission, discharge or death command.`, { field: 'kind' })
+      throw new DomainError(Codes.INVALID_INPUT, `A correction cannot record ${label(event.kind).toLowerCase()}; use the admission, discharge or death command.`, { field: 'kind' })
     }
     if (Number.isNaN(new Date(event.effectiveAt).getTime())) throw new DomainError(Codes.INVALID_INPUT, 'Each event needs a valid time.', { field: 'effectiveAt' })
   }
@@ -66,7 +67,7 @@ export async function requestClosedPeriodCorrection(uow: UnitOfWork, actor: Acto
   return requestApproval(uow, actor, {
     action: 'census.correct_closed_period', targetList: 'Stay', targetId: stay.id, communityId: stay.communityId,
     payload: { ...payload, reason: payload.reason.trim() }, requiredPermission: 'canApproveCensusCorrections',
-    summary: `Correct the signed-off census for stay ${stay.reference}: ${payload.events.map(e => e.kind.replaceAll('_', ' ')).join(', ')}`,
+    summary: `Correct the signed-off census for stay ${stay.reference}: ${payload.events.map(e => label(e.kind).toLowerCase()).join(', ')}`,
   })
 }
 

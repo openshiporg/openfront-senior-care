@@ -40,7 +40,7 @@ export default async function AuditPage({ searchParams }: { searchParams?: Promi
               <div className="flex flex-wrap items-baseline gap-x-2"><span className="font-mono text-xs text-muted-foreground">#{e.seq}</span><span className="font-medium">{label(e.eventType)}</span></div>
               <Meta>
                 <Link className="underline underline-offset-2" href={`/dashboard/platform/audit?entity=${encodeURIComponent(e.entityId)}`}>{label(e.entityType)} <span className="font-mono">{e.entityId}</span></Link>
-                {' · '}{e.actorUser?.name ?? (e.actorAgent ? `agent ${e.actorAgent.name}` : 'system')}{e.approver ? ` · approved by ${e.approver.name}` : ''}{e.reason ? ` · ${e.reason}` : ''}
+                {' · '}{e.actorUser?.name ?? (e.actorAgent ? `Agent ${e.actorAgent.name}` : 'System')}{e.approver ? ` · approved by ${e.approver.name}` : ''}{e.reason ? ` · ${e.reason}` : ''}
               </Meta>
             </div>
             <div className="text-right">

@@ -30,24 +30,14 @@ export class UnitOfWork {
 }
 
 export async function flushOutbox(tx: Tx, messages: OutboxInput[], now: Date) {
-  for (const message of messages) {
+  if (!messages.length) return
+  const rows = messages.map(message => {
     const payload = toJsonValue(message.payload)
     const dedupeKey = message.dedupeKey ?? `${message.topic}:${message.aggregateType}:${message.aggregateId}:${sha256(canonicalJson(payload))}`
-    // A retried command produces the same dedupe key; the unique index keeps one message.
-    await tx.outboxEvent.upsert({
-      where: { dedupeKey },
-      create: {
-        topic: message.topic,
-        aggregateType: message.aggregateType,
-        aggregateId: message.aggregateId,
-        dedupeKey,
-        payload: payload as never,
-        status: 'pending',
-        nextAttemptAt: message.availableAt ?? now,
-      },
-      update: {},
-    })
-  }
+    return { topic: message.topic, aggregateType: message.aggregateType, aggregateId: message.aggregateId, dedupeKey, payload: payload as never, status: 'pending', nextAttemptAt: message.availableAt ?? now }
+  })
+  // One statement. A retried command produces the same dedupe keys; ON CONFLICT DO NOTHING keeps one message.
+  await tx.outboxEvent.createMany({ data: rows, skipDuplicates: true })
 }
 
 export async function runInTransaction<T>(db: Db, work: (uow: UnitOfWork) => Promise<T>, options: { requestId?: string | null; now?: Date; serializable?: boolean } = {}): Promise<T> {

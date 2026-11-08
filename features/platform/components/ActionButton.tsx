@@ -17,10 +17,12 @@ const newKey = (op: string) => `${op}:${crypto.randomUUID()}`;
  * Runs one named command. The idempotency key is made once per intent and kept until the command
  * succeeds, so retrying after a timeout replays the first result instead of acting twice.
  */
-export function ActionButton({ op, vars, children, paths, confirm, ask, onDone, className }: {
+export function ActionButton({ op, vars, children, paths, confirm, ask, askField = 'reason', onDone, className }: {
   op: string; vars: Record<string, unknown>; children: React.ReactNode; paths?: string[]; confirm?: string;
-  /** Prompt for a reason; the answer goes in vars.reason. */
+  /** Prompt for a reason; the answer goes in vars[askField]. */
   ask?: string;
+  /** Which variable the answer to `ask` goes in (default `reason`). */
+  askField?: string;
   onDone?: (data: unknown) => void; className?: string;
 }) {
   const router = useRouter();
@@ -42,7 +44,7 @@ export function ActionButton({ op, vars, children, paths, confirm, ask, onDone, 
             reason = answer.trim();
           }
           setError('');
-          const variables = reason !== undefined ? { ...vars, reason } : vars;
+          const variables = reason !== undefined ? { ...vars, [askField]: reason } : vars;
           const body = JSON.stringify(variables);
           // Same intent, same key; a changed reason or target is a new intent.
           if (key.current?.body !== body) key.current = { key: newKey(op), body };

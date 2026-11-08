@@ -8353,6 +8353,7 @@ type Mutation {
   redeemUserPasswordResetToken(email: String!, token: String!, password: String!): RedeemUserPasswordResetTokenResult
   updateActiveUser(data: UserUpdateProfileInput!): User
   loadOperatorSetup(idempotencyKey: String!): JSON
+  loadCensusSetup(idempotencyKey: String!): JSON
   decideApprovalRequest(requestId: ID!, decision: String!, reason: String, expectedVersion: Int!, idempotencyKey: String!): JSON
   cancelApprovalRequest(requestId: ID!, expectedVersion: Int!, reason: String, idempotencyKey: String!): JSON
   requestOperatorControls(changes: JSON!, reason: String!, idempotencyKey: String!): JSON

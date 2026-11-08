@@ -12,7 +12,12 @@ export default async function ListLayout({ children }: { children: React.ReactNo
   
   const adminMeta = adminMetaResponse.success ? adminMetaResponse.data : null;
   const user = userResponse.success && userResponse.data?.authenticatedItem
-    ? { ...userResponse.data.authenticatedItem, menuItemsCount: userResponse.data.usersCount > 1 ? userResponse.data.usersCount : 0 }
+    ? {
+        ...userResponse.data.authenticatedItem,
+        menuItemsCount: userResponse.data.usersCount > 1 ? userResponse.data.usersCount : 0,
+        // The sidebar names the community (or the operator, for several); it wraps, never truncates.
+        workspaceName: userResponse.data.communitiesCount > 1 ? userResponse.data.operatorSettings?.displayName || null : userResponse.data.communities?.[0]?.name || userResponse.data.operatorSettings?.displayName || null,
+      }
     : null;
 
   return (

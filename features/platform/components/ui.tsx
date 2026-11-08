@@ -4,9 +4,9 @@ import { PageContainer } from '@/features/dashboard/components/PageContainer';
 import { label } from '../lib/format';
 
 // Senior-care status colours. Green: in good standing; amber: needs someone; blue: neutral or historical; red: stopped or failed.
-const GREEN = ['active', 'approved', 'available', 'occupied', 'completed', 'confirmed', 'delivered', 'signed', 'final', 'granted', 'accepted', 'admitted', 'converted', 'moved_in', 'published', 'satisfied', 'ok', 'applied', 'acknowledged', 'reviewed_ok', 'succeeded', 'ready']
-const AMBER = ['pending', 'requested', 'draft', 'running', 'proposed', 'invited', 'offered', 'reserved', 'held', 'on_leave', 'cleaning', 'turnover', 'clinical_review', 'payer_check', 'received', 'tour_scheduled', 'toured', 'waitlisted', 'inquiry', 'contacted', 'open', 'due', 'leased', 'medicaid_pending', 'started']
-const BLUE = ['expired', 'superseded', 'ended', 'consumed', 'released', 'discharged', 'withdrawn', 'closed', 'converted_out', 'unknown', 'not_required']
+const GREEN = ['active', 'approved', 'available', 'occupied', 'completed', 'confirmed', 'delivered', 'signed', 'final', 'granted', 'accepted', 'admitted', 'converted', 'moved_in', 'published', 'satisfied', 'ok', 'applied', 'acknowledged', 'reviewed_ok', 'succeeded', 'ready', 'in_house', 'admitted', 'satisfied']
+const AMBER = ['pending', 'requested', 'draft', 'running', 'proposed', 'invited', 'offered', 'reserved', 'held', 'on_leave', 'cleaning', 'turnover', 'clinical_review', 'payer_check', 'received', 'tour_scheduled', 'toured', 'waitlisted', 'inquiry', 'contacted', 'open', 'due', 'leased', 'medicaid_pending', 'started', 'on_leave_hold', 'pre_admit', 'assessment_scheduled', 'assessed', 'deposit_received', 'nurture']
+const BLUE = ['expired', 'superseded', 'ended', 'consumed', 'released', 'discharged', 'withdrawn', 'closed', 'converted_out', 'unknown', 'not_required', 'on_leave_no_hold', 'not_admitted', 'gone', 'satisfied_late', 'waived']
 const RED = ['rejected', 'cancelled', 'failed', 'dead', 'revoked', 'suspended', 'declined', 'lost', 'no_show', 'out_of_service', 'overdue', 'breached', 'broken', 'reviewed_violation', 'deceased', 'retired']
 const DOT: Record<string, string> = Object.fromEntries([
   ...GREEN.map(v => [v, 'bg-emerald-500']), ...AMBER.map(v => [v, 'bg-amber-500']), ...BLUE.map(v => [v, 'bg-sky-500']), ...RED.map(v => [v, 'bg-red-500']),
@@ -92,4 +92,21 @@ export function Stat({ name, value }: { name: string; value: React.ReactNode }) 
   );
 }
 
-export const Meta = ({ children }: { children: React.ReactNode }) => <span className="min-w-0 break-words text-xs text-muted-foreground">{children}</span>;
+export const Meta = ({ children }: { children: React.ReactNode }) => <p className="min-w-0 break-words text-xs text-muted-foreground">{children}</p>;
+
+/** Community switcher for operators with more than one community; hidden when there is one. */
+export function CommunityTabs({ communities, active, path }: { communities: { slug: string; name: string }[]; active?: string; path: string }) {
+  if (communities.length < 2) return null;
+  return <Tabs active={active ?? ''} items={communities.map(c => ({ key: c.slug, label: c.name, href: `${path}?community=${c.slug}` }))} />;
+}
+
+/** "3 of 32": a count with a small coloured dot for a status, for summary strips. */
+export function Count({ status, n, text }: { status: string; n: number; text?: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-sm">
+      <span aria-hidden className={cn('size-2 rounded-full', dotClass(status))} />
+      <span className="font-medium tabular-nums">{n}</span>
+      <span className="text-muted-foreground">{text ?? label(status).toLowerCase()}</span>
+    </span>
+  );
+}

@@ -26,3 +26,10 @@ export async function myCommunities(): Promise<{ id: string; name: string; slug:
     return []
   }
 }
+
+/** The community a screen shows: `?community=<slug>` when the user can see it, else their first. */
+export async function currentCommunity(slug?: string | null) {
+  const communities = await myCommunities()
+  const community = communities.find(c => c.slug === slug) ?? communities[0] ?? null
+  return { community, communities }
+}
