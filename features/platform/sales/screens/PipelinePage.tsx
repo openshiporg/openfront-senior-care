@@ -58,7 +58,7 @@ export default async function PipelinePage({ searchParams }: { searchParams?: Pr
           const next = r.status === 'received' ? 'clinical_review' : r.status === 'clinical_review' ? 'payer_check' : null;
           return (
             <Row key={r.id}>
-              <div className="min-w-0 flex-1 space-y-0.5">
+              <div className="min-w-0 flex-1 basis-60 space-y-0.5">
                 <Title status={overdue ? 'overdue' : r.status} statusText={overdue ? 'Response overdue' : undefined}>{r.prospect ? `${r.prospect.firstName} ${r.prospect.lastName}` : r.reference}</Title>
                 <Meta>{r.source?.name ?? 'Direct'} · received {when(r.receivedAt, tz)}{r.expectedPayer ? ` · ${label(r.expectedPayer)}` : ''}{r.responseDueAt && r.status !== 'accepted' ? ` · answer by ${when(r.responseDueAt, tz)}` : ''}</Meta>
               </div>
@@ -73,7 +73,7 @@ export default async function PipelinePage({ searchParams }: { searchParams?: Pr
       <Section title={`Upcoming tours · ${tours.length}`}>
         {tours.length ? tours.map(t => (
           <Row key={t.id}>
-            <div className="min-w-0 flex-1 space-y-0.5">
+            <div className="min-w-0 flex-1 basis-60 space-y-0.5">
               <Title status={t.status}>{t.lead?.primaryContact ? `${t.lead.primaryContact.firstName} ${t.lead.primaryContact.lastName}` : t.lead?.reference ?? 'Guest'}</Title>
               <Meta>{when(t.slot?.startsAt, tz)} · {label(t.kind).toLowerCase()} tour</Meta>
             </div>
@@ -92,7 +92,7 @@ export default async function PipelinePage({ searchParams }: { searchParams?: Pr
           const tour = l.tours[0];
           return (
             <Row key={l.id}>
-              <div className="min-w-0 flex-1 space-y-0.5">
+              <div className="min-w-0 flex-1 basis-60 space-y-0.5">
                 <Title status={l.status}>{contact}</Title>
                 <Meta>
                   {prospect && `${prospect.firstName} ${prospect.lastName}` !== contact ? `For ${prospect.firstName} ${prospect.lastName} · ` : ''}
@@ -100,13 +100,12 @@ export default async function PipelinePage({ searchParams }: { searchParams?: Pr
                   {l.referralSource ? `${l.referralSource.name} · ` : ''}
                   {l.status === 'lost' && l.lostReason ? `${label(l.lostReason)} · ` : ''}
                   {tour?.slot ? `tour ${when(tour.slot.startsAt, tz, 'day')} (${label(tour.status).toLowerCase()}) · ` : ''}
-                  updated {when(l.updatedAt, tz, 'day')}
+                  updated {when(l.updatedAt, tz, 'day')} · <span className="font-mono">{l.reference}</span>
                 </Meta>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {tour?.status === 'confirmed' && tour.slot && tour.slot.startsAt < now ? <ActionButton op="moveTour" vars={{ tourId: tour.id, to: 'completed', expectedVersion: tour.version }} paths={paths}>Toured</ActionButton> : null}
                 {l.status !== 'moved_in' && l.status !== 'lost' ? <ActionButton op="moveLead" vars={{ leadId: l.id, to: 'lost', lostReason: 'no_response', expectedVersion: l.version }} confirm="Mark this lead lost (no response)?" paths={paths}>Lost</ActionButton> : null}
-                <span className="font-mono text-xs text-muted-foreground">{l.reference}</span>
               </div>
             </Row>
           );

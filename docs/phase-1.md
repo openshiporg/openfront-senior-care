@@ -42,7 +42,7 @@ This phase builds the platform spine and the system of record for who lives wher
 
 ## Loading a community
 
-The onboarding dialog loads the operator, then the Maple Ridge community (fictional, `synthetic = true`) and its census history. The history replays real commands in time order: admissions, room changes, hospital leaves with bed holds, discharges, deaths, sales, the waitlist, portal invitations and sign-offs. That way every projection, clock and audit row is the same as in live use. The load is resumable: each request runs as many steps as fit in nine seconds, and a repeat request picks up where the last one stopped. No email is sent to the fictional families.
+The onboarding dialog loads the operator, then the Maple Ridge community (`synthetic = true`) and its census history. The history replays real commands in time order: admissions, room changes, hospital leaves with bed holds, discharges, deaths, sales, the waitlist, portal invitations and sign-offs. That way every projection, clock and audit row is the same as in live use. The load is resumable: each request runs as many steps as fit in nine seconds, and a repeat request picks up where the last one stopped. No email is sent to the seeded families.
 
 ## Tests
 

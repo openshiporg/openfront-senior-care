@@ -37,7 +37,7 @@ export default async function MidnightPage({ searchParams }: { searchParams?: Pr
           const t = date === yesterday ? data.y.totals : null;
           return (
             <Row key={date}>
-              <div className="min-w-0 flex-1 space-y-0.5">
+              <div className="min-w-0 flex-1 basis-60 space-y-0.5">
                 <Title status="pending" statusText="Not signed off">{when(date, tz, 'date')}</Title>
                 <Meta>{t ? `${t.present} residents at midnight · ${t.onLeaveHold} on leave with a bed held · ${breakdown(t.bySetting)}` : 'Signing off includes every earlier open day.'}</Meta>
               </div>
@@ -49,7 +49,7 @@ export default async function MidnightPage({ searchParams }: { searchParams?: Pr
       <Section title="Signed off">
         {data.censusSignoffs.length ? data.censusSignoffs.map(s => (
           <Row key={s.id}>
-            <div className="min-w-0 flex-1 space-y-0.5">
+            <div className="min-w-0 flex-1 basis-60 space-y-0.5">
               <Title status="signed" statusText="Closed">{when(s.date, tz, 'date')}</Title>
               <Meta>{s.totals.present} residents · {breakdown(s.totals.byPayer ?? {})}</Meta>
               <Meta>Signed by {s.signedBy?.name ?? 'someone'} · {when(s.signedAt, tz)}{s.note ? ` · ${s.note}` : ''}</Meta>

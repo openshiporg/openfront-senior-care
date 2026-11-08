@@ -45,7 +45,7 @@ export default async function BreakGlassPage({ searchParams }: { searchParams?: 
           const mine = g.user?.id === me;
           return (
             <Row key={g.id}>
-              <div className="min-w-0 flex-1 space-y-0.5">
+              <div className="min-w-0 flex-1 basis-60 space-y-0.5">
                 <Title status={live ? 'active' : g.status === 'active' ? 'expired' : g.status} statusText={live ? `Open until ${when(g.expiresAt, tz, 'time')}` : undefined}>
                   {g.user?.name ?? 'Someone'} · {label(g.reason)}
                 </Title>

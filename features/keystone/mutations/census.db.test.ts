@@ -20,7 +20,7 @@ import '../lib/operatorControls'
  * Phase 1 exit gate (BUILD-PLAN §1): admit → room change → hospital leave with bed hold → return →
  * discharge on a migrated database, with places, clocks, audit and the projection rebuild checked
  * at each step; then the midnight census, sign-off and a closed-period correction through a second
- * person. Every resident is fictional.
+ * person. Every resident is invented.
  */
 
 const roleOf = (id: string) => ROLES.find(role => role.id === id)!.permissions as Permission[]
@@ -112,7 +112,7 @@ describe.skipIf(!hasTestDatabase)('census lifecycle (database)', () => {
     // Hospital transfer with a Medicaid-paid bed hold and the notice given at transfer.
     version = (await stayRow(stayA)).version
     const leave = await startLeaveMutation(null, {
-      stayId: stayA, leaveKind: 'hospital', holdElected: true, holdPaidBy: 'medicaid', facilityInitiated: true, effectiveAt: at(-3 * DAY), destination: 'Riverside General (fictional)',
+      stayId: stayA, leaveKind: 'hospital', holdElected: true, holdPaidBy: 'medicaid', facilityInitiated: true, effectiveAt: at(-3 * DAY), destination: 'Riverside General',
       noticeAtTransfer: { method: 'in_person', deliveredAt: at(-3 * DAY), acknowledgement: 'signed', copyToOmbudsmanAt: at(-3 * DAY + HOUR) }, expectedVersion: version, idempotencyKey: uniqueKey('ls'),
     } as never, nurse)
     expect(leave).toMatchObject({ presence: 'on_leave_hold' })

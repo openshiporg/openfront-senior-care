@@ -7,6 +7,7 @@ import { runInTransaction, type UnitOfWork } from './unitOfWork'
 import { sweepClocks } from './clocks'
 import { expireReservations } from './places'
 import { expireBreakGlass } from './privacy'
+import { expireTourHolds, expireWaitlistOffers } from './sales'
 import { snapshotCensusDay } from './censusDay'
 
 /**
@@ -37,16 +38,28 @@ export async function runLeasedJob<T>(db: Db, kind: string, scopeKey: string, wo
   }
 }
 
+/** One job's failure is recorded on its JobRun and reported; it never stops the jobs after it. */
+async function guarded<T>(run: () => Promise<T>) {
+  try {
+    return await run()
+  } catch (error) {
+    return { skipped: false as const, error: error instanceof Error ? error.message.slice(0, 300) : 'failed' }
+  }
+}
+
 /**
- * The periodic sweep: overdue clocks, expired reservations and break-glass grants, and the
- * midnight census for each active community whose previous local day has no snapshot yet.
+ * The periodic sweep: overdue clocks; expired reservations, waitlist offers, tour holds and
+ * break-glass grants; and the midnight census for each active community whose previous local day
+ * has no snapshot yet. Returns `errors` > 0 when any job failed, so the worker can surface it.
  */
 export async function runDueJobs(db: Db, now = new Date()) {
   const actor = systemActor('scheduler')
   const results: Record<string, unknown> = {}
-  results.clocks = await runLeasedJob(db, 'clock_sweep', 'all', uow => sweepClocks(uow, actor), now)
-  results.reservations = await runLeasedJob(db, 'reservation_expiry', 'all', uow => expireReservations(uow, actor), now)
-  results.breakGlass = await runLeasedJob(db, 'break_glass_expiry', 'all', uow => expireBreakGlass(uow, actor), now)
+  results.clocks = await guarded(() => runLeasedJob(db, 'clock_sweep', 'all', uow => sweepClocks(uow, actor), now))
+  results.reservations = await guarded(() => runLeasedJob(db, 'reservation_expiry', 'all', uow => expireReservations(uow, actor), now))
+  results.waitlistOffers = await guarded(() => runLeasedJob(db, 'waitlist_offer_expiry', 'all', uow => expireWaitlistOffers(uow, actor), now))
+  results.tourHolds = await guarded(() => runLeasedJob(db, 'tour_hold_expiry', 'all', uow => expireTourHolds(uow, actor), now))
+  results.breakGlass = await guarded(() => runLeasedJob(db, 'break_glass_expiry', 'all', uow => expireBreakGlass(uow, actor), now))
   const communities = await db.community.findMany({ where: { status: 'active' }, select: { id: true, timeZone: true } })
   const census: Record<string, unknown> = {}
   for (const community of communities) {
@@ -55,8 +68,10 @@ export async function runDueJobs(db: Db, now = new Date()) {
     if (done) continue
     const signed = await db.censusSignoff.count({ where: { communityId: community.id, unitId: null, date: { gte: new Date(`${yesterday}T00:00:00Z`) } } })
     if (signed) continue
-    census[community.id] = await runLeasedJob(db, 'midnight_census', `${community.id}:${yesterday}`, (uow, runId) => snapshotCensusDay(uow, actor, { communityId: community.id, date: yesterday, runId }), now)
+    census[community.id] = await guarded(() => runLeasedJob(db, 'midnight_census', `${community.id}:${yesterday}`, (uow, runId) => snapshotCensusDay(uow, actor, { communityId: community.id, date: yesterday, runId }), now))
   }
   results.census = census
+  const all = [...Object.values(results).filter(value => value !== census), ...Object.values(census)]
+  results.errors = all.filter(value => value && typeof value === 'object' && 'error' in value).length
   return results
 }

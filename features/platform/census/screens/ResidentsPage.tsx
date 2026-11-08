@@ -39,7 +39,7 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: P
           <Section key={setting} title={`${label(setting)} · ${rows.length}`}>
             {rows.map(r => (
               <Row key={r.stayId} href={`/dashboard/platform/census/residents/${r.residentId}?community=${community.slug}`}>
-                <div className="min-w-0 flex-1 space-y-0.5">
+                <div className="min-w-0 flex-1 basis-60 space-y-0.5">
                   <Title status={view === 'admitted' ? r.presence : r.status}>{r.name}</Title>
                   <Meta>
                     {r.place ? `${r.place} · ` : ''}{r.payer ? `${r.payer.name} · ` : ''}

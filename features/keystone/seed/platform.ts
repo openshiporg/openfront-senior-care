@@ -12,7 +12,7 @@ import { PACKS, US_OH_PACK } from './packs'
  * the US-FED and US-OH packs, the community, its units, rooms, beds and apartments, payers and the
  * bed-hold policy. Rows are keyed by deterministic `seed_` ids or natural keys and created only when
  * missing, so loading again changes nothing and never overwrites edits made since.
- * Every row is fictional and marked synthetic where the list has the flag.
+ * Every row is invented and marked synthetic where the list has the flag.
  */
 
 /**
@@ -88,7 +88,7 @@ export async function seedOperatorPlatform(uow: UnitOfWork, actor: Actor) {
     const rule = (US_OH_PACK.rules.medicaidBedHold ?? {}) as { daysPerCalendarYear: number; rateRule: unknown; ruleRef: string; verifyNote: string }
     const policy = await tx.bedHoldPolicy.upsert({
       where: { id: 'seed_bed_hold_policy_maple_ridge' },
-      create: { id: 'seed_bed_hold_policy_maple_ridge', name: 'Maple Ridge bed-hold policy', communityId: community.id, jurisdictionPackId: 'seed_pack_us_oh', medicaidHoldDaysPerYear: rule.daysPerCalendarYear, medicaidHoldPaid: true, medicaidHoldRateRule: rule.rateRule as never, therapeuticLeaveDaysPerYear: rule.daysPerCalendarYear, privateHoldDailyRateMinor: 31_500n, ruleRef: rule.ruleRef, verifyNote: `${rule.verifyNote} Private hold charge is the operator's contract rate (fictional).`, effectiveFrom: day('2026-01-01') },
+      create: { id: 'seed_bed_hold_policy_maple_ridge', name: 'Maple Ridge bed-hold policy', communityId: community.id, jurisdictionPackId: 'seed_pack_us_oh', medicaidHoldDaysPerYear: rule.daysPerCalendarYear, medicaidHoldPaid: true, medicaidHoldRateRule: rule.rateRule as never, therapeuticLeaveDaysPerYear: rule.daysPerCalendarYear, privateHoldDailyRateMinor: 31_500n, ruleRef: rule.ruleRef, verifyNote: `${rule.verifyNote} Private hold charge is the operator's contract rate.`, effectiveFrom: day('2026-01-01') },
       update: {},
     })
     await tx.community.update({ where: { id: community.id }, data: { bedHoldPolicyId: policy.id } })

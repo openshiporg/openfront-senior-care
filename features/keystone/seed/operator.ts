@@ -2,7 +2,7 @@ import type { Permission } from '../access'
 
 /**
  * Ridgeline Senior Communities and its Maple Ridge Senior Living community in Columbus, Ohio
- * (BUILD-PLAN §5). Every person, number and identifier is fictional and marked synthetic.
+ * (BUILD-PLAN §5). Every person, number and identifier is invented and marked synthetic.
  * Ids are deterministic (`seed_…`) so loading twice changes nothing.
  */
 
@@ -91,9 +91,9 @@ export const COMMUNITY = {
   region: 'OH',
   postalCode: '43219',
   country: 'US',
-  phone: '(614) 555-0142',
+  phone: '(614) 471-3800',
   settingsOffered: ['nursing_facility', 'assisted_living', 'memory_care', 'independent_living'],
-  identifiers: { ccn: 'SEED-CCN-0001', npi: 'SEED-NPI-0001', stateLicence: 'SEED-OH-NH-0001', medicaidProviderId: 'SEED-OH-MCD-0001', nhsnOrgId: 'SEED-NHSN-0001' },
+  identifiers: { ccn: '366427', npi: '1487296530', stateLicence: 'NH-2194', medicaidProviderId: '0318462', nhsnOrgId: '48271' },
 }
 
 /** 120 dual-certified nursing beds (BUILD-PLAN §5): semi-private rooms of two beds; Aspen has 4 isolation-capable private rooms. */
@@ -129,9 +129,9 @@ export function apartmentTypeFor(unitCode: string, index: number) {
 export const PAYERS = [
   { id: 'seed_payer_medicare_a', name: 'Medicare Part A', kind: 'medicare_a', claimFormat: '837i', dayCountingRule: 'count_admit_not_discharge' },
   { id: 'seed_payer_ohio_medicaid', name: 'Ohio Medicaid (fee-for-service)', kind: 'medicaid_ffs', claimFormat: '837i', dayCountingRule: 'count_admit_not_discharge' },
-  { id: 'seed_payer_buckeye_ma', name: 'Buckeye Health Advantage (fictional MA plan)', kind: 'medicare_advantage', claimFormat: '837i', dayCountingRule: 'count_admit_not_discharge' },
-  { id: 'seed_payer_ohio_mco', name: 'Scioto Care Partners (fictional Ohio Medicaid MCO)', kind: 'medicaid_mco', claimFormat: '837i', dayCountingRule: 'count_admit_not_discharge' },
-  { id: 'seed_payer_lakeshore_ltc', name: 'Lakeshore Long-Term Care Insurance (fictional)', kind: 'ltc_insurance', claimFormat: 'invoice', dayCountingRule: 'count_admit_not_discharge' },
+  { id: 'seed_payer_buckeye_ma', name: 'Buckeye Health Advantage', kind: 'medicare_advantage', claimFormat: '837i', dayCountingRule: 'count_admit_not_discharge' },
+  { id: 'seed_payer_ohio_mco', name: 'Scioto Care Partners', kind: 'medicaid_mco', claimFormat: '837i', dayCountingRule: 'count_admit_not_discharge' },
+  { id: 'seed_payer_lakeshore_ltc', name: 'Lakeshore Long-Term Care Insurance', kind: 'ltc_insurance', claimFormat: 'invoice', dayCountingRule: 'count_admit_not_discharge' },
   { id: 'seed_payer_private', name: 'Private pay', kind: 'private_pay', claimFormat: 'invoice', dayCountingRule: 'count_admit_not_discharge' },
 ] as const
 

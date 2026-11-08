@@ -3,6 +3,8 @@ import { q, currentCommunity } from '../../lib/server';
 import { label, when } from '../../lib/format';
 import { Page, Section, Row, Empty, Meta, Title, Stat } from '../../components/ui';
 
+const ordinal = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
+
 type Rep = { id: string; reference: string; self: boolean; roles: string[]; contactPriority: number; status: string; contact: { firstName: string; lastName: string; email: string; phone: string } | null; portalAccount: { reference: string; status: string } | null };
 type Event = { id: string; seq: number; kind: string; effectiveAt: string; leaveKind: string | null; holdElected: boolean; holdPaidBy: string | null; dischargeDisposition: string | null; initiatedBy: string | null; correctionReason: string; fromBed: { label: string } | null; toBed: { label: string } | null; fromApartment: { number: string } | null; toApartment: { number: string } | null; actor: { name: string } | null };
 type Stay = {
@@ -83,7 +85,7 @@ export default async function ResidentPage({ params, searchParams }: { params: P
         <Section title={`Open deadlines · ${openClocks.length}`}>
           {openClocks.map(c => (
             <Row key={c.id}>
-              <div className="min-w-0 flex-1 space-y-0.5">
+              <div className="min-w-0 flex-1 basis-60 space-y-0.5">
                 <Title status={c.status}>{label(c.obligationCode.toLowerCase())}</Title>
                 <Meta>Due {when(c.dueAt, tz)} · {c.ruleRef}</Meta>
               </div>
@@ -94,9 +96,9 @@ export default async function ResidentPage({ params, searchParams }: { params: P
       <Section title="Representatives">
         {r.representatives.filter(rep => !rep.self).length ? r.representatives.filter(rep => !rep.self).map(rep => (
           <Row key={rep.id}>
-            <div className="min-w-0 flex-1 space-y-0.5">
+            <div className="min-w-0 flex-1 basis-60 space-y-0.5">
               <Title status={rep.status === 'active' ? null : rep.status}>{rep.contact ? `${rep.contact.firstName} ${rep.contact.lastName}` : rep.reference}</Title>
-              <Meta>{rep.roles.map(label).join(', ')} · contact {rep.contactPriority}{rep.contact?.phone ? ` · ${rep.contact.phone}` : ''}{rep.contact?.email ? ` · ${rep.contact.email}` : ''}</Meta>
+              <Meta>{rep.roles.map(label).join(', ')}{rep.contactPriority === 1 ? ' · first to call' : rep.contactPriority > 1 ? ` · call ${ordinal(rep.contactPriority)}` : ''}{rep.contact?.phone ? ` · ${rep.contact.phone}` : ''}{rep.contact?.email ? ` · ${rep.contact.email}` : ''}</Meta>
             </div>
             {rep.portalAccount ? <span className="text-xs text-muted-foreground">Family portal: {label(rep.portalAccount.status).toLowerCase()}</span> : null}
           </Row>
@@ -106,7 +108,7 @@ export default async function ResidentPage({ params, searchParams }: { params: P
         <Section title="Coverage">
           {stay.coverage.map(c => (
             <Row key={c.id}>
-              <div className="min-w-0 flex-1 space-y-0.5">
+              <div className="min-w-0 flex-1 basis-60 space-y-0.5">
                 <Title status={c.endDate ? 'ended' : null}>{c.payer?.name ?? 'Payer'}</Title>
                 <Meta>{label(c.rank)} · from {when(c.startDate, tz, 'date')}{c.endDate ? ` to ${when(c.endDate, tz, 'date')}` : ''}</Meta>
               </div>
@@ -119,7 +121,7 @@ export default async function ResidentPage({ params, searchParams }: { params: P
         <Section key={s.id} title={`Census · stay ${s.reference}`} aside={<Link className="text-xs underline underline-offset-4" href={`/dashboard/platform/census/events?community=${slug}&stay=${s.id}`}>All events</Link>}>
           {s.events.map(e => (
             <Row key={e.id}>
-              <div className="min-w-0 flex-1 space-y-0.5">
+              <div className="min-w-0 flex-1 basis-60 space-y-0.5">
                 <span className="break-words font-medium">{eventText(e)}</span>
                 <Meta>{when(e.effectiveAt, tz)}{e.actor ? ` · ${e.actor.name}` : ''}</Meta>
               </div>
@@ -131,7 +133,7 @@ export default async function ResidentPage({ params, searchParams }: { params: P
       <Section title="Notices">
         {data.noticeDeliveries.length ? data.noticeDeliveries.map(n => (
           <Row key={n.id}>
-            <div className="min-w-0 flex-1 space-y-0.5">
+            <div className="min-w-0 flex-1 basis-60 space-y-0.5">
               <Title status={n.acknowledgement === 'signed' ? 'signed' : null}>{label(n.kind)}</Title>
               <Meta>{label(n.method)} · {when(n.deliveredAt, tz)}{n.recipientRepresentative?.contact ? ` · to ${n.recipientRepresentative.contact.firstName} ${n.recipientRepresentative.contact.lastName}` : ''}{n.copyToOmbudsmanAt ? ` · ombudsman copy ${when(n.copyToOmbudsmanAt, tz, 'day')}` : ''}</Meta>
             </div>

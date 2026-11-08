@@ -3,7 +3,7 @@ import { command } from '../lib/command'
 import { seedOperatorPlatform } from '../seed/platform'
 import { runCensusSeed } from '../seed/census'
 
-/** Onboarding: load the Ridgeline Senior Living / Maple Ridge spine (fictional, synthetic=true). Idempotent per key and per record. */
+/** Onboarding: load the Ridgeline Senior Living / Maple Ridge spine (synthetic=true). Idempotent per key and per record. */
 export async function loadOperatorSetup(_root: unknown, args: { idempotencyKey: string }, context: any) {
   const actor = actorFromSession(context.session)
   requirePermission(actor, 'canManageOnboarding')

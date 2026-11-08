@@ -20,12 +20,12 @@ import { buildCensusPlan, planPrefix, type Json, type PlanStep, type Preset, typ
 /**
  * Runs the census, sales and portal history of Maple Ridge (censusPlan.ts) through the real domain
  * commands. Every step is one idempotent command keyed by the step, dated at the moment it happened
- * (`CommandSpec.now`) and run by the fictional staff member who did it, with that person's role
+ * (`CommandSpec.now`) and run by the seeded staff member who did it, with that person's role
  * permissions checked. A run stops at its time budget and the next run continues where it stopped,
  * so the onboarding button can load it in request-sized pieces; finished steps replay as no-ops.
  *
  * The history is anchored the first time it runs (stored as its own command receipt), so a resumed
- * or repeated run rebuilds the identical plan. Mail addressed to these fictional families is never
+ * or repeated run rebuilds the identical plan. Mail addressed to these seeded families is never
  * queued: the seed drops `mail.*` messages from its transactions.
  */
 
@@ -87,10 +87,10 @@ async function representativeOf(uow: UnitOfWork, residentId: string, priority: n
 /* ------------------------------------------------- storefront and sources */
 
 const REFERRAL_SOURCES = [
-  { id: 'seed_referral_source_scioto_ridge', name: 'Scioto Ridge Medical Center (fictional) · case management', kind: 'hospital', contact: { name: 'Allison Mercer, RN, discharge planner', phone: '(614) 555-0171' } },
-  { id: 'seed_referral_source_alum_creek', name: 'Alum Creek Regional Hospital (fictional) · transitions of care', kind: 'hospital', contact: { name: 'Derek Fontaine, MSW', phone: '(614) 555-0172' } },
-  { id: 'seed_referral_source_buckeye_placement', name: 'Buckeye Senior Placement (fictional)', kind: 'placement_agency', contact: { name: 'Corinne Abernathy', phone: '(614) 555-0173' } },
-  { id: 'seed_referral_source_okafor_im', name: 'Okafor Internal Medicine (fictional)', kind: 'physician', contact: { name: 'Dr. Chinedu Okafor', phone: '(614) 555-0174' } },
+  { id: 'seed_referral_source_scioto_ridge', name: 'Scioto Ridge Medical Center · case management', kind: 'hospital', contact: { name: 'Allison Mercer, RN, discharge planner', phone: '(614) 268-4410' } },
+  { id: 'seed_referral_source_alum_creek', name: 'Alum Creek Regional Hospital · transitions of care', kind: 'hospital', contact: { name: 'Derek Fontaine, MSW', phone: '(614) 475-2290' } },
+  { id: 'seed_referral_source_buckeye_placement', name: 'Buckeye Senior Placement', kind: 'placement_agency', contact: { name: 'Corinne Abernathy', phone: '(380) 214-7765' } },
+  { id: 'seed_referral_source_okafor_im', name: 'Okafor Internal Medicine', kind: 'physician', contact: { name: 'Dr. Chinedu Okafor', phone: '(614) 337-9182' } },
 ]
 
 const STOREFRONT_ID = 'seed_storefront_maple_ridge'
@@ -318,7 +318,7 @@ export async function runCensusSeed(db: Db, options: { preset?: Preset; budgetMs
     const t0 = Date.now()
     const run = await command(db, { name: `seed.${step.kind}`, actor, idempotencyKey: step.key, params: { step: step.key }, now: new Date(step.at), serializable: SERIALIZABLE.has(step.kind), requestId: options.requestId ?? null }, async uow => {
       const value = await execute(uow, actor, step, results)
-      // Fictional families get no mail: drop every mail message this step queued.
+      // Seeded families get no mail: drop every mail message this step queued.
       for (let k = uow.outbox.length - 1; k >= 0; k -= 1) if (uow.outbox[k].topic.startsWith('mail.')) uow.outbox.splice(k, 1)
       return value
     })

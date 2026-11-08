@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:node": "node --test tests/*.test.cjs && node --import tsx --test features/keystone/lib/internal-origin.node-test.ts features/keystone/lib/keystonePrismaErrors.node-test.ts",
-    "verify": "npm run typecheck && npm run lint && npm test && npm run test:node"
+    "verify": "npm run typecheck && npm run lint && npm test && npm run test:node",
+    "worker": "tsx scripts/worker.ts"
   },
   "dependencies": {
     "@ai-sdk/mcp": "^1.0.13",

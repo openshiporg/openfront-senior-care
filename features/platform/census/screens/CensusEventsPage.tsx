@@ -71,7 +71,7 @@ export default async function CensusEventsPage({ searchParams }: { searchParams?
           const late = new Date(e.recordedAt).getTime() - new Date(e.effectiveAt).getTime() > 6 * 3_600_000;
           return (
             <Row key={e.id}>
-              <div className="min-w-0 flex-1 space-y-0.5">
+              <div className="min-w-0 flex-1 basis-60 space-y-0.5">
                 <Title aside={late ? <span className="text-xs text-amber-700 dark:text-amber-400">Recorded {when(e.recordedAt, tz)}</span> : null}>
                   {e.stay?.resident ? <Link className="hover:underline" href={`/dashboard/platform/census/residents/${e.stay.resident.id}?community=${community.slug}`}>{who}</Link> : who} · {label(e.kind)}
                 </Title>

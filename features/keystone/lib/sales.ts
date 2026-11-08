@@ -318,3 +318,36 @@ export async function resolveWaitlistOffer(uow: UnitOfWork, actor: Actor, input:
   await casUpdate(uow, { model: 'WaitlistEntry', id: entry.id, version: input.expectedVersion, from: ['offered'], to: input.to, actor, eventType: `waitlist.${input.to}` })
   return { waitlistEntryId: entry.id, status: input.to }
 }
+
+/**
+ * The offer-expiry job: offered → expired for every offer past its deadline, which also releases the
+ * held apartment or bed. Each entry is locked and re-checked, so a family accepting at the same
+ * moment wins or loses cleanly.
+ */
+export async function expireWaitlistOffers(uow: UnitOfWork, actor: Actor) {
+  const due = await uow.tx.waitlistEntry.findMany({ where: { status: 'offered', offerExpiresAt: { lt: uow.now } }, select: { id: true }, take: 200, orderBy: { offerExpiresAt: 'asc' } })
+  let expired = 0
+  for (const row of due) {
+    const entry = await lockRow<{ id: string; status: string; version: number }>(uow.tx, 'WaitlistEntry', row.id)
+    if (entry.status !== 'offered') continue
+    await resolveWaitlistOffer(uow, actor, { waitlistEntryId: entry.id, to: 'expired', expectedVersion: entry.version })
+    expired += 1
+  }
+  return { expired }
+}
+
+/**
+ * The tour-hold job: a web tour request that nobody confirmed before its hold ran out is cancelled,
+ * so the seat goes back on the storefront. Staff-booked tours are confirmed at once and never held.
+ */
+export async function expireTourHolds(uow: UnitOfWork, actor: Actor) {
+  const due = await uow.tx.tour.findMany({ where: { status: 'requested', holdExpiresAt: { lt: uow.now } }, select: { id: true }, take: 200, orderBy: { holdExpiresAt: 'asc' } })
+  let cancelled = 0
+  for (const row of due) {
+    const tour = await lockRow<{ id: string; status: string; version: number }>(uow.tx, 'Tour', row.id)
+    if (tour.status !== 'requested') continue
+    await casUpdate(uow, { model: 'Tour', id: tour.id, version: tour.version, from: ['requested'], to: 'cancelled', actor, eventType: 'tour.hold_expired', reason: 'Not confirmed before the hold ran out', data: { holdExpiresAt: null } })
+    cancelled += 1
+  }
+  return { cancelled }
+}

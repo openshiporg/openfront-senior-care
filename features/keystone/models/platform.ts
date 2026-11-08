@@ -58,7 +58,7 @@ export const Community = list({
     settingsOffered: json({ defaultValue: [] }),
     jurisdictionPack: relationship({ ref: 'JurisdictionPack' }),
     holidayCalendar: relationship({ ref: 'HolidayCalendar' }),
-    identifiers: json({ defaultValue: {}, ui: { description: 'CCN, NPI, state licence, Medicaid provider id, NHSN OrgID. Seeded values are fictional.' } }),
+    identifiers: json({ defaultValue: {}, ui: { description: 'CCN, NPI, state licence, Medicaid provider id, NHSN OrgID. Seeded values are invented.' } }),
     bedHoldPolicy: relationship({ ref: 'BedHoldPolicy' }),
     buildings: relationship({ ref: 'Building.community', many: true }),
     units: relationship({ ref: 'Unit.community', many: true }),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildCensusPlan, FAMILY_MAIL_DOMAINS, type PlanStep } from './censusPlan'
+import { buildCensusPlan, familyPhone, FAMILY_MAIL_DOMAINS, memberNumber, type PlanStep } from './censusPlan'
 
 const ANCHOR = new Date('2026-11-08T17:00:00Z')
 
@@ -67,5 +67,26 @@ describe.each(['small', 'full'] as const)('census plan (%s)', preset => {
     expect(n.available).toBeGreaterThan(0)
     expect(summary.hospice).toBeGreaterThanOrEqual(6)
     expect(summary.portalAccounts).toBe(30)
+  })
+})
+
+describe('realistic identifiers', () => {
+  const plan = buildCensusPlan({ anchor: ANCHOR, preset: 'full', timeZone: 'America/New_York' })
+  const text = JSON.stringify(plan.steps)
+
+  it('never uses 555 numbers, placeholder member ids or labels like "fictional"', () => {
+    expect(text).not.toMatch(/555-|SEED-|\(sample\)/)
+    expect(text).not.toMatch(/fictional/i)
+    for (let n = 0; n < 200; n += 1) expect(familyPhone(n)).toMatch(/^\((614|380|740|216|513|937|412|317)\) [2-9]\d{2}-\d{4}$/)
+  })
+
+  it('formats member numbers like the real payers do', () => {
+    for (let n = 0; n < 100; n += 1) {
+      // MBI: no S, L, O, I, B or Z; position 1 is 1-9.
+      expect(memberNumber('mbi', `r${n}`)).toMatch(/^[1-9][AC-HJKMNP-RT-Y][AC-HJKMNP-RT-Y0-9]\d-[AC-HJKMNP-RT-Y][AC-HJKMNP-RT-Y0-9]\d-[AC-HJKMNP-RT-Y]{2}\d{2}$/)
+      expect(memberNumber('medicaid', `r${n}`)).toMatch(/^[1-9]\d{11}$/)
+      expect(memberNumber('ltc', `r${n}`)).toMatch(/^LTC\d{9}$/)
+    }
+    expect(memberNumber('mbi', 'same')).toBe(memberNumber('mbi', 'same'))
   })
 })

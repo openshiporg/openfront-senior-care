@@ -44,10 +44,10 @@ export default async function CompliancePage({ searchParams }: { searchParams?: 
           const who = c.resident ? `${c.resident.preferredName || c.resident.firstName} ${c.resident.lastName}` : null;
           return (
             <Row key={c.id}>
-              <div className="min-w-0 flex-1 space-y-0.5">
-                <Title status={c.status}>{c.obligation?.description || label(c.obligationCode.toLowerCase())}</Title>
+              <div className="min-w-0 flex-1 basis-60 space-y-0.5">
+                <Title status={c.status}>{who && c.resident ? <Link className="hover:underline" href={`/dashboard/platform/census/residents/${c.resident.id}?community=${community.slug}`}>{who}</Link> : label(c.subjectType)}</Title>
                 <Meta>
-                  {who && c.resident ? <Link className="hover:underline" href={`/dashboard/platform/census/residents/${c.resident.id}?community=${community.slug}`}>{who}</Link> : label(c.subjectType)}
+                  {(c.obligation?.description || label(c.obligationCode.toLowerCase())).replace(/\.\s*$/, '')}
                   {' · '}{c.status === 'satisfied' || c.status === 'satisfied_late' ? `done ${when(c.satisfiedAt, tz)} (due ${when(c.dueAt, tz, 'day')})` : `due ${when(c.dueAt, tz)}`}
                   {c.ownerRole ? ` · ${label(c.ownerRole)}` : ''}{c.escalationLevel > 0 ? ` · escalated ${c.escalationLevel}×` : ''}
                 </Meta>

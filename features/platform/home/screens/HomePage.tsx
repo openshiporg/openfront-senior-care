@@ -9,6 +9,8 @@ type Event = { id: string; kind: string; effectiveAt: string; stay: { resident: 
 
 const SETTINGS = ['nursing_facility', 'assisted_living', 'memory_care', 'independent_living'];
 const sum = (r: Record<string, number>) => Object.values(r).reduce((a, b) => a + b, 0);
+/** The obligation as a phrase for a row: "Signed admission agreement on file" (no trailing period). */
+const obligationText = (c: { obligation?: { description: string } | null; obligationCode: string }) => (c.obligation?.description || label(c.obligationCode.toLowerCase())).replace(/\.\s*$/, '');
 const nameOf = (r: { firstName: string; preferredName: string; lastName: string }) => `${r.preferredName || r.firstName} ${r.lastName}`;
 
 /** The administrator's morning view: tonight's census by level of care, what's due, and what changed. */
@@ -17,7 +19,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   if (!community) {
     return (
       <Page title="Today">
-        <Empty>No community yet. Use “Load Maple Ridge (fictional)” in the sidebar to load an operator, a community and its census, or ask an administrator to assign you to a community.</Empty>
+        <Empty>No community yet. Use “Load Maple Ridge” in the sidebar to load an operator, a community and its census, or ask an administrator to assign you to a community.</Empty>
       </Page>
     );
   }
@@ -84,9 +86,9 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           <Section title={`Deadlines${clocks.overdue ? ` · ${clocks.overdue} overdue` : ''}`} aside={<Link className="text-xs underline underline-offset-4" href={`/dashboard/platform/compliance?community=${slug}`}>All</Link>}>
             {clocks.complianceClocks.length ? clocks.complianceClocks.map(c => (
               <Row key={c.id}>
-                <div className="min-w-0 flex-1 space-y-0.5">
-                  <Title status={c.status}>{c.obligation?.description || label(c.obligationCode.toLowerCase())}</Title>
-                  <Meta>{c.resident ? `${nameOf(c.resident)} · ` : ''}due {when(c.dueAt, tz)}</Meta>
+                <div className="min-w-0 flex-1 basis-60 space-y-0.5">
+                  <Title status={c.status}>{c.resident ? <Link className="hover:underline" href={`/dashboard/platform/census/residents/${c.resident.id}?community=${slug}`}>{nameOf(c.resident)}</Link> : obligationText(c)}</Title>
+                  <Meta>{c.resident ? `${obligationText(c)} · ` : ''}due {when(c.dueAt, tz)}</Meta>
                 </div>
               </Row>
             )) : <Empty>Nothing is due.</Empty>}
@@ -95,7 +97,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         <Section title="Census changes, last 3 days" aside={<Link className="text-xs underline underline-offset-4" href={`/dashboard/platform/census/events?community=${slug}`}>All</Link>}>
           {events.length ? events.map(e => (
             <Row key={e.id}>
-              <div className="min-w-0 flex-1 space-y-0.5">
+              <div className="min-w-0 flex-1 basis-60 space-y-0.5">
                 <span className="font-medium">{e.stay?.resident ? nameOf(e.stay.resident) : 'Resident'} · {label(e.kind).toLowerCase()}</span>
                 <Meta>{when(e.effectiveAt, tz)}</Meta>
               </div>

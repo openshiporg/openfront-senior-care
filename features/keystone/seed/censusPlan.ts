@@ -4,7 +4,7 @@ import { COMMUNITY, FAMILY_NAMES, GIVEN_NAMES, NF_UNITS, RESIDENTIAL_UNITS, nfRo
 /**
  * The census, sales and portal history of Maple Ridge (BUILD-PLAN §5), as a pure, deterministic
  * list of steps. Each step is one real domain command (admission, room change, leave, discharge,
- * referral, tour, waitlist offer, portal grant, midnight sign-off...) run by the fictional staff
+ * referral, tour, waitlist offer, portal grant, midnight sign-off...) run by the seeded staff
  * member who would do it, at the time it happened. The history is time-shifted: it ends at the
  * anchor (the moment the seed was first loaded) and runs back 60 days, with long-stay residents
  * admitted before that.
@@ -14,7 +14,7 @@ import { COMMUNITY, FAMILY_NAMES, GIVEN_NAMES, NF_UNITS, RESIDENTIAL_UNITS, nfRo
  * state matches the census targets (scaled for the `small` preset used by tests).
  *
  * Every person is invented. Family and representative emails use consumer mail domains with
- * numbered local parts, phone numbers use the reserved 555-01xx range, and every row is synthetic.
+ * numbered local parts, phone numbers are ordinary Ohio-area numbers, and every row is synthetic.
  */
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
@@ -53,7 +53,36 @@ export const FAMILY_MAIL_DOMAINS = ['gmail.com', 'yahoo.com', 'outlook.com'] as 
 
 const slug = (value: string) => value.toLowerCase().normalize('NFD').replace(/[^a-z]/g, '')
 export const familyEmail = (first: string, last: string, n: number) => `${slug(first)}.${slug(last)}${(n * 37) % 89 + 11}@${FAMILY_MAIL_DOMAINS[n % 3]}`
-export const familyPhone = (n: number) => `(614) 555-01${String(n % 100).padStart(2, '0')}`
+// Families mostly live around Columbus (614/380); some call from elsewhere in Ohio or nearby states.
+const FAMILY_AREAS = ['614', '614', '380', '614', '740', '216', '513', '614', '937', '412', '614', '317'] as const
+const FAMILY_EXCHANGES = ['214', '237', '262', '268', '291', '316', '337', '351', '404', '418', '431', '459', '476', '488', '523', '561', '575', '732', '777', '865', '891', '946'] as const
+/** A stable, ordinary-looking US number per index (never the 555 range). */
+export const familyPhone = (n: number) => {
+  const area = FAMILY_AREAS[n % FAMILY_AREAS.length]
+  const exchange = FAMILY_EXCHANGES[(n * 7 + 3) % FAMILY_EXCHANGES.length]
+  const line = String((n * 7919 + 2741) % 9000 + 1000)
+  return `(${area}) ${exchange}-${line}`
+}
+
+/**
+ * Deterministic member numbers in each payer's real format: an 11-character Medicare Beneficiary
+ * Identifier (C A AN N A AN N A A N N, never S L O I B Z), a 12-digit Ohio Medicaid billing number,
+ * and an insurer-style policy number for long-term care cover.
+ */
+const MBI_ALPHA = 'ACDEFGHJKMNPQRTUVWXY'
+const MBI_ALNUM = `0123456789${MBI_ALPHA}`
+export const memberNumber = (kind: 'mbi' | 'medicaid' | 'ltc', seed: string) => {
+  let h = 2166136261
+  for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0
+  const next = (n: number) => { h = Math.imul(h ^ (h >>> 15), 2246822519) >>> 0; return h % n }
+  if (kind === 'mbi') {
+    const pattern = ['C', 'A', 'AN', 'N', 'A', 'AN', 'N', 'A', 'A', 'N', 'N']
+    const id = pattern.map(slot => slot === 'C' ? String(1 + next(9)) : slot === 'N' ? String(next(10)) : slot === 'A' ? MBI_ALPHA[next(MBI_ALPHA.length)] : MBI_ALNUM[next(MBI_ALNUM.length)]).join('')
+    return `${id.slice(0, 4)}-${id.slice(4, 7)}-${id.slice(7)}`
+  }
+  if (kind === 'medicaid') return Array.from({ length: 12 }, (_, i) => (i === 0 ? 1 + next(9) : next(10))).join('')
+  return `LTC${String(100000000 + next(900000000))}`
+}
 
 type Rep = { firstName: string; lastName: string; email?: string; phone: string; roles: string[]; contactPriority: number }
 type Resident = { code: string; firstName: string; lastName: string; sex: 'female' | 'male'; dateOfBirth: string; payer: PayerKey; hospice?: boolean; reps: Rep[]; selfRepresented?: boolean; placementReason?: string }
@@ -271,7 +300,7 @@ export function buildCensusPlan(options: { anchor: Date; preset?: Preset; timeZo
     const effective = plan.when
     const pasrr = nursing && !plan.prospect ? { completedAt: plus(effective, -26 * 60).toISOString(), result: 'Level I negative: no serious mental illness or intellectual disability indicated; Level II not required.' } : null
     const reps = [...r.reps, ...(r.hospice ? [{ firstName: 'Carmen', lastName: 'Ostrowski', phone: familyPhone(77), roles: ['hospice_contact'], contactPriority: 9 }] : [])]
-    const memberPrefix = r.payer.startsWith('medicare') ? 'SEED-MBI' : MEDICAID.includes(r.payer) ? 'SEED-OHMCD' : r.payer === 'ltc' ? 'SEED-LTC' : ''
+    const memberKind = r.payer.startsWith('medicare') ? 'mbi' : MEDICAID.includes(r.payer) ? 'medicaid' : r.payer === 'ltc' ? 'ltc' : null
     const notices = [
       ...(nursing ? [{ kind: 'bed_hold_policy', method: 'in_person', deliveredAt: effective.toISOString(), acknowledgement: 'signed', note: 'Bed-hold and readmission policy explained at admission.' }] : []),
       { kind: 'privacy_practices', method: 'in_person', deliveredAt: effective.toISOString(), acknowledgement: 'signed', note: 'Notice of privacy practices given at admission.' },
@@ -281,7 +310,7 @@ export function buildCensusPlan(options: { anchor: Date; preset?: Preset; timeZo
       representatives: reps.map(rep => ({ firstName: rep.firstName, lastName: rep.lastName, email: rep.email ?? null, phone: rep.phone, roles: rep.roles, contactPriority: rep.contactPriority })),
       selfRepresented: Boolean(r.selfRepresented),
       bedId: bed ?? null, apartmentId: apt ?? null,
-      payerId: PAYER_ID[r.payer], memberReference: memberPrefix ? `${memberPrefix}-${r.code.toUpperCase()}` : null,
+      payerId: PAYER_ID[r.payer], memberReference: memberKind ? memberNumber(memberKind, `${r.code}:${r.payer}`) : null,
       qualifyingStayFrom: plan.qualifying ? localDate(tz, plus(effective, -5 * 1440)) : null, qualifyingStayTo: plan.qualifying ? localDate(tz, effective) : null,
       admissionSource: plan.source, effectiveAt: effective.toISOString(), pasrrLevel1: pasrr, placementReason: r.placementReason ?? null,
       companionRelationship: plan.place.companionOf ? 'spouse' : null, notices, prospectId: plan.prospect ?? null, reservationId: plan.reservation ?? null,
@@ -356,7 +385,7 @@ export function buildCensusPlan(options: { anchor: Date; preset?: Preset; timeZo
     }
     const startKey = emit('leave_start', id, nurseFor(bed.unit), plan.start, {
       stay: ref(key('admit', plan.code), 'stayId'), leaveKind: 'hospital', holdElected: plan.hold !== 'none', holdPaidBy: plan.hold === 'none' ? 'none' : plan.hold,
-      facilityInitiated: true, effectiveAt: plan.start.toISOString(), destination: 'Scioto Ridge Medical Center emergency department (fictional)',
+      facilityInitiated: true, effectiveAt: plan.start.toISOString(), destination: 'Scioto Ridge Medical Center emergency department',
       noticeAtTransfer: { method: 'phone_then_mail', deliveredAt: plan.start.toISOString(), acknowledgement: 'not_required', note: plan.hold === 'none' ? 'Bed-hold notice given; the representative declined the hold.' : 'Bed-hold notice explained by phone; written copy mailed to the representative.' },
     })
     if (plan.ombudsmanCopy) {

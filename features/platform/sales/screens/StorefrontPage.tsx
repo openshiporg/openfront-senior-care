@@ -64,7 +64,7 @@ export default async function StorefrontPage({ searchParams }: { searchParams?: 
       <Section title="Starting prices">
         {data.publishedPrices.length ? data.publishedPrices.map(p => (
           <Row key={p.id}>
-            <div className="min-w-0 flex-1 space-y-0.5">
+            <div className="min-w-0 flex-1 basis-60 space-y-0.5">
               <Title status={p.status}>{p.label}</Title>
               <Meta>
                 From {money(p.fromMinor)}{p.toMinor ? ` to ${money(p.toMinor)}` : ''} a {p.period}{p.communityFeeMinor ? ` · community fee ${money(p.communityFeeMinor)}` : ''}
@@ -91,7 +91,7 @@ export default async function StorefrontPage({ searchParams }: { searchParams?: 
           const booked = s.tours.filter(t => t.status === 'requested' || t.status === 'confirmed').length;
           return (
             <Row key={s.id}>
-              <div className="min-w-0 flex-1 space-y-0.5">
+              <div className="min-w-0 flex-1 basis-60 space-y-0.5">
                 <Title status={booked >= s.capacity ? 'reserved' : 'available'} statusText={booked >= s.capacity ? 'Full' : `${s.capacity - booked} open`}>{when(s.startsAt, tz)}</Title>
                 <Meta>{label(s.kind)} · {booked} of {s.capacity} booked</Meta>
               </div>

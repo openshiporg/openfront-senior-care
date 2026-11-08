@@ -21,7 +21,7 @@ import {
  * books a tour, joins the waitlist; admissions completes the tour, offers an apartment, the family
  * accepts, and the resident is admitted on that reservation. The sales trail closes only at
  * admission. Then the representative is invited to the portal and reads only what was granted.
- * Every person is fictional.
+ * Every person is invented.
  */
 
 const roleOf = (id: string) => ROLES.find(role => role.id === id)!.permissions as Permission[]
@@ -88,7 +88,7 @@ describe.skipIf(!hasTestDatabase)('storefront to admission (database)', () => {
     expect(await prisma.lead.count()).toBe(before)
     await expect(submitInquiryMutation(null, { input: { communitySlug: slug, contactName: 'Janet Whitfield', contactEmail: 'janet.whitfield@gmail.com', consentToContact: false } }, anonymous(prisma))).rejects.toMatchObject({ code: 'INVALID_INPUT' })
 
-    const tour = await requestTourMutation(null, { input: { communitySlug: slug, slotId: slot.id, kind: 'in_person', contactName: 'Janet Whitfield', contactEmail: 'janet.whitfield@gmail.com', contactPhone: '(614) 555-0161', notes: 'For my mother, Agnes.', consentToContact: true } }, anonymous(prisma)) as any
+    const tour = await requestTourMutation(null, { input: { communitySlug: slug, slotId: slot.id, kind: 'in_person', contactName: 'Janet Whitfield', contactEmail: 'janet.whitfield@gmail.com', contactPhone: '(614) 291-4836', notes: 'For my mother, Agnes.', consentToContact: true } }, anonymous(prisma)) as any
     expect(tour.manageToken).toEqual(expect.any(String))
     const tourRow = await prisma.tour.findUniqueOrThrow({ where: { publicCode: tour.publicCode } })
     expect(tourRow.status).toBe('requested')
@@ -141,7 +141,7 @@ describe.skipIf(!hasTestDatabase)('storefront to admission (database)', () => {
       input: {
         communityId: COMMUNITY.id, prospectId, reservationId, apartmentId,
         resident: { firstName: 'Agnes', lastName: 'Whitfield', dateOfBirth: '1940-02-11', sex: 'female' },
-        representatives: [{ firstName: 'Janet', lastName: 'Whitfield', email: 'janet.whitfield@gmail.com', phone: '(614) 555-0161', roles: ['healthcare_poa', 'financial_responsible'], contactPriority: 1 }],
+        representatives: [{ firstName: 'Janet', lastName: 'Whitfield', email: 'janet.whitfield@gmail.com', phone: '(614) 291-4836', roles: ['healthcare_poa', 'financial_responsible'], contactPriority: 1 }],
         payerId: 'seed_payer_private', admissionSource: 'community_home', effectiveAt: new Date().toISOString(),
         notices: [{ kind: 'privacy_practices', method: 'in_person', deliveredAt: new Date().toISOString(), acknowledgement: 'signed' }],
       } as never,
