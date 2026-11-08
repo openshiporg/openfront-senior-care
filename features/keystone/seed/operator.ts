@@ -50,21 +50,21 @@ export const ROLES: RoleSeed[] = [
 export type StaffSeed = { id: string; name: string; email: string; title: string; roleId: string; kind: 'staff' | 'surveyor'; accessDays?: number }
 
 export const STAFF: StaffSeed[] = [
-  { id: 'seed_user_castellanos', name: 'Naomi Castellanos', email: 'naomi.castellanos@mapleridge.example', title: 'Executive Director', roleId: 'seed_role_executive_director', kind: 'staff' },
-  { id: 'seed_user_oyelaran', name: 'Patrick Oyelaran, RN', email: 'patrick.oyelaran@mapleridge.example', title: 'Director of Nursing', roleId: 'seed_role_don', kind: 'staff' },
-  { id: 'seed_user_lindqvist', name: 'Grace Lindqvist, RN', email: 'grace.lindqvist@mapleridge.example', title: 'Assistant Director of Nursing', roleId: 'seed_role_adon', kind: 'staff' },
-  { id: 'seed_user_ramos', name: 'Luis Ramos, LPN', email: 'luis.ramos@mapleridge.example', title: 'Charge Nurse, Birch', roleId: 'seed_role_charge_nurse', kind: 'staff' },
-  { id: 'seed_user_vukovic', name: 'Renata Vukovic, RN', email: 'renata.vukovic@mapleridge.example', title: 'MDS Coordinator', roleId: 'seed_role_mds', kind: 'staff' },
-  { id: 'seed_user_achterberg', name: 'Samuel Achterberg, RN', email: 'samuel.achterberg@mapleridge.example', title: 'Infection Preventionist', roleId: 'seed_role_ip', kind: 'staff' },
-  { id: 'seed_user_patel', name: 'Devika Patel', email: 'devika.patel@mapleridge.example', title: 'Admissions Director', roleId: 'seed_role_admissions', kind: 'staff' },
-  { id: 'seed_user_brooks', name: 'Tasha Brooks, MSW', email: 'tasha.brooks@mapleridge.example', title: 'Social Services Director', roleId: 'seed_role_social_services', kind: 'staff' },
-  { id: 'seed_user_holloway', name: 'Tamsin Holloway', email: 'tamsin.holloway@mapleridge.example', title: 'Business Office Manager', roleId: 'seed_role_business_office', kind: 'staff' },
-  { id: 'seed_user_almeida', name: 'Jorge Almeida', email: 'jorge.almeida@mapleridge.example', title: 'Trust Officer', roleId: 'seed_role_trust_officer', kind: 'staff' },
-  { id: 'seed_user_durand', name: 'Keisha Durand', email: 'keisha.durand@mapleridge.example', title: 'Scheduler', roleId: 'seed_role_scheduler', kind: 'staff' },
-  { id: 'seed_user_ferreira_kahn', name: 'Martin Ferreira-Kahn', email: 'martin.ferreira-kahn@ridgeline.example', title: 'Privacy Officer', roleId: 'seed_role_privacy_officer', kind: 'staff' },
-  { id: 'seed_user_brandvold', name: 'Dr. Ilse Brandvold', email: 'ilse.brandvold@mapleridge.example', title: 'Medical Director', roleId: 'seed_role_prescriber', kind: 'staff' },
-  { id: 'seed_user_adewale', name: 'Dr. Femi Adewale', email: 'femi.adewale@mapleridge.example', title: 'Consultant Pharmacist', roleId: 'seed_role_consultant_pharmacist', kind: 'staff' },
-  { id: 'seed_user_ferris', name: 'Owen Ferris', email: 'owen.ferris@ridgeline.example', title: 'Operator Administrator', roleId: 'seed_role_operator_admin', kind: 'staff' },
+  { id: 'seed_user_castellanos', name: 'Naomi Castellanos', email: 'naomi.castellanos@mapleridgeseniorliving.com', title: 'Executive Director', roleId: 'seed_role_executive_director', kind: 'staff' },
+  { id: 'seed_user_oyelaran', name: 'Patrick Oyelaran, RN', email: 'patrick.oyelaran@mapleridgeseniorliving.com', title: 'Director of Nursing', roleId: 'seed_role_don', kind: 'staff' },
+  { id: 'seed_user_lindqvist', name: 'Grace Lindqvist, RN', email: 'grace.lindqvist@mapleridgeseniorliving.com', title: 'Assistant Director of Nursing', roleId: 'seed_role_adon', kind: 'staff' },
+  { id: 'seed_user_ramos', name: 'Luis Ramos, LPN', email: 'luis.ramos@mapleridgeseniorliving.com', title: 'Charge Nurse, Birch', roleId: 'seed_role_charge_nurse', kind: 'staff' },
+  { id: 'seed_user_vukovic', name: 'Renata Vukovic, RN', email: 'renata.vukovic@mapleridgeseniorliving.com', title: 'MDS Coordinator', roleId: 'seed_role_mds', kind: 'staff' },
+  { id: 'seed_user_achterberg', name: 'Samuel Achterberg, RN', email: 'samuel.achterberg@mapleridgeseniorliving.com', title: 'Infection Preventionist', roleId: 'seed_role_ip', kind: 'staff' },
+  { id: 'seed_user_patel', name: 'Devika Patel', email: 'devika.patel@mapleridgeseniorliving.com', title: 'Admissions Director', roleId: 'seed_role_admissions', kind: 'staff' },
+  { id: 'seed_user_brooks', name: 'Tasha Brooks, MSW', email: 'tasha.brooks@mapleridgeseniorliving.com', title: 'Social Services Director', roleId: 'seed_role_social_services', kind: 'staff' },
+  { id: 'seed_user_holloway', name: 'Tamsin Holloway', email: 'tamsin.holloway@mapleridgeseniorliving.com', title: 'Business Office Manager', roleId: 'seed_role_business_office', kind: 'staff' },
+  { id: 'seed_user_almeida', name: 'Jorge Almeida', email: 'jorge.almeida@mapleridgeseniorliving.com', title: 'Trust Officer', roleId: 'seed_role_trust_officer', kind: 'staff' },
+  { id: 'seed_user_durand', name: 'Keisha Durand', email: 'keisha.durand@mapleridgeseniorliving.com', title: 'Scheduler', roleId: 'seed_role_scheduler', kind: 'staff' },
+  { id: 'seed_user_ferreira_kahn', name: 'Martin Ferreira-Kahn', email: 'martin.ferreira-kahn@ridgelineseniorcommunities.com', title: 'Privacy Officer', roleId: 'seed_role_privacy_officer', kind: 'staff' },
+  { id: 'seed_user_brandvold', name: 'Dr. Ilse Brandvold', email: 'ilse.brandvold@mapleridgeseniorliving.com', title: 'Medical Director', roleId: 'seed_role_prescriber', kind: 'staff' },
+  { id: 'seed_user_adewale', name: 'Dr. Femi Adewale', email: 'femi.adewale@mapleridgeseniorliving.com', title: 'Consultant Pharmacist', roleId: 'seed_role_consultant_pharmacist', kind: 'staff' },
+  { id: 'seed_user_ferris', name: 'Owen Ferris', email: 'owen.ferris@ridgelineseniorcommunities.com', title: 'Operator Administrator', roleId: 'seed_role_operator_admin', kind: 'staff' },
 ]
 
 export type PolicySeed = { action: string; description: string; requiredPermission: Permission; expiresAfterMinutes: number }

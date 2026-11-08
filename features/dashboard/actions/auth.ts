@@ -164,7 +164,6 @@ export async function getAuthenticatedUser() {
         }
       }
       usersCount
-      firmSettings { displayName }
     }
   `;
 

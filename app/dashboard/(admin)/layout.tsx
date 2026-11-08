@@ -12,7 +12,7 @@ export default async function ListLayout({ children }: { children: React.ReactNo
   
   const adminMeta = adminMetaResponse.success ? adminMetaResponse.data : null;
   const user = userResponse.success && userResponse.data?.authenticatedItem
-    ? { ...userResponse.data.authenticatedItem, menuItemsCount: userResponse.data.usersCount > 1 ? userResponse.data.usersCount : 0, brandName: userResponse.data.firmSettings?.displayName ?? null }
+    ? { ...userResponse.data.authenticatedItem, menuItemsCount: userResponse.data.usersCount > 1 ? userResponse.data.usersCount : 0 }
     : null;
 
   return (

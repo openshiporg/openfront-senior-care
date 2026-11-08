@@ -312,7 +312,8 @@ export async function admitResident(uow: UnitOfWork, actor: Actor, input: AdmitI
     setting = apartment.unit.setting
     if (apartment.unit.secured && !input.placementReason?.trim()) throw new DomainError(Codes.GUARD_FAILED, 'A memory-care (secured unit) placement needs a documented reason.', { field: 'placementReason' })
   }
-  if (setting === 'nursing_facility' && medicaidCertified && !input.pasrrLevel1 && !input.residentId) {
+  const prospectScreen = input.prospectId ? await uow.tx.preAdmissionScreen.findFirst({ where: { prospectId: input.prospectId, kind: 'pasrr_level1' }, select: { id: true } }) : null
+  if (setting === 'nursing_facility' && medicaidCertified && !input.pasrrLevel1 && !prospectScreen && !input.residentId) {
     throw new DomainError(Codes.GUARD_FAILED, 'A Level I PASRR screen must be completed before admission to a Medicaid-certified nursing facility bed.', { field: 'pasrrLevel1' })
   }
   if (!input.selfRepresented && !input.representatives?.length && !input.residentId) throw new DomainError(Codes.GUARD_FAILED, 'Add at least one representative, or record that the resident represents themself.', { field: 'representatives' })
@@ -358,6 +359,7 @@ export async function admitResident(uow: UnitOfWork, actor: Actor, input: AdmitI
       auditCreate(uow, actor, 'Representative', row.id, 'representative.added', { self: true })
     }
   }
+  if (prospectScreen) await uow.tx.preAdmissionScreen.updateMany({ where: { prospectId: input.prospectId!, residentId: null }, data: { residentId } })
   if (input.pasrrLevel1) {
     const screen = await uow.tx.preAdmissionScreen.create({ data: { residentId, prospectId: input.prospectId ?? null, kind: 'pasrr_level1', result: input.pasrrLevel1.result, completedAt: new Date(input.pasrrLevel1.completedAt) } })
     auditCreate(uow, actor, 'PreAdmissionScreen', screen.id, 'pre_admission_screen.recorded', { kind: 'pasrr_level1' })
@@ -378,6 +380,8 @@ export async function admitResident(uow: UnitOfWork, actor: Actor, input: AdmitI
     coverageId: coverage.id, idempotencyKey: input.idempotencyKey, detail: { admissionSource: input.admissionSource },
   }, { reservationId: input.reservationId, companionRelationship: input.companionRelationship })
 
+  await convertSalesRecords(uow, actor, { stayId: stay.id, residentId, prospectId: input.prospectId ?? null, reservationId: input.reservationId ?? null })
+
   const resident = await uow.tx.resident.findUniqueOrThrow({ where: { id: residentId }, select: { version: true, status: true } })
   await casUpdate(uow, { model: 'Resident', id: residentId, version: resident.version, from: [resident.status], to: 'current', actor, eventType: 'resident.admitted', data: { currentStayId: stay.id, communityId: input.communityId } })
 
@@ -385,6 +389,37 @@ export async function admitResident(uow: UnitOfWork, actor: Actor, input: AdmitI
   for (const notice of input.notices ?? []) await recordNotice(uow, actor, { ...notice, stayId: stay.id })
   uow.emit({ topic: 'portal.invite_representatives', aggregateType: 'Stay', aggregateId: stay.id, payload: { stayId: stay.id }, dedupeKey: `portal.invite:${stay.id}` })
   return { stayId: stay.id, residentId, eventId: event.id, status: after.status, presence: after.presence }
+}
+
+/**
+ * Admission closes the sales trail (SM§1.1, §1.3, §1.4): the reservation's waitlist entry becomes
+ * `converted`, its referral `admitted`, and the prospect's lead `moved_in`. These are the only paths
+ * to those statuses; staff commands refuse them.
+ */
+async function convertSalesRecords(uow: UnitOfWork, actor: Actor, input: { stayId: string; residentId: string; prospectId: string | null; reservationId: string | null }) {
+  const reservation = input.reservationId ? await uow.tx.placeReservation.findUnique({ where: { id: input.reservationId }, select: { prospectId: true, referralId: true, waitlistEntryId: true, consumedByStayId: true } }) : null
+  if (reservation && reservation.consumedByStayId !== input.stayId) return
+  const prospectId = input.prospectId ?? reservation?.prospectId ?? null
+  if (prospectId && !input.prospectId) {
+    const prospect = await uow.tx.prospect.findUnique({ where: { id: prospectId }, select: { convertedResidentId: true } })
+    if (prospect && !prospect.convertedResidentId) await uow.tx.prospect.update({ where: { id: prospectId }, data: { convertedResidentId: input.residentId } })
+  }
+  const meta = { stayId: input.stayId, residentId: input.residentId }
+  if (reservation?.waitlistEntryId) {
+    const entry = await lockRow<{ id: string; status: string; version: number }>(uow.tx, 'WaitlistEntry', reservation.waitlistEntryId)
+    if (['active', 'offered', 'accepted'].includes(entry.status)) await casUpdate(uow, { model: 'WaitlistEntry', id: entry.id, version: entry.version, from: [entry.status], to: 'converted', actor, eventType: 'waitlist.converted', metadata: meta })
+  }
+  if (reservation?.referralId) {
+    const referral = await lockRow<{ id: string; status: string; version: number }>(uow.tx, 'Referral', reservation.referralId)
+    if (referral.status === 'accepted') await casUpdate(uow, { model: 'Referral', id: referral.id, version: referral.version, from: ['accepted'], to: 'admitted', actor, eventType: 'referral.admitted', metadata: meta })
+  }
+  if (prospectId) {
+    const prospect = await uow.tx.prospect.findUnique({ where: { id: prospectId }, select: { leadId: true } })
+    if (prospect?.leadId) {
+      const lead = await lockRow<{ id: string; status: string; version: number }>(uow.tx, 'Lead', prospect.leadId)
+      if (lead.status !== 'moved_in' && lead.status !== 'lost') await casUpdate(uow, { model: 'Lead', id: lead.id, version: lead.version, from: [lead.status], to: 'moved_in', actor, eventType: 'lead.moved_in', metadata: meta })
+    }
+  }
 }
 
 export async function addRepresentative(uow: UnitOfWork, actor: Actor, residentId: string, communityId: string, rep: NonNullable<AdmitInput['representatives']>[number], synthetic: boolean) {
@@ -577,6 +612,31 @@ export type NoticeInput = {
   acknowledgement?: 'signed' | 'refused_witnessed' | 'not_required'
   copyToOmbudsmanAt?: string | Date | null
   note?: string | null
+}
+
+/**
+ * Files the signed admission (NF) or residency (AL/MC/IL) agreement for a stay and satisfies the
+ * admission-agreement clock. 42 CFR 483.15(a) limits what an NF agreement may require (no third-party
+ * guarantee, no waiver of rights); the template carries that wording, this records the signature.
+ */
+export async function recordAdmissionAgreement(uow: UnitOfWork, actor: Actor, input: { stayId: string; signedAt: string | Date; signedByRepresentativeId?: string | null; storageKey?: string | null; sha256?: string | null; note?: string | null }) {
+  const stay = await uow.tx.stay.findUnique({ where: { id: input.stayId }, select: { id: true, residentId: true, communityId: true, setting: true, status: true } })
+  if (!stay) throw new DomainError(Codes.NOT_FOUND, 'Stay not found.')
+  if (stay.status === 'pre_admit') throw new DomainError(Codes.GUARD_FAILED, 'Admit the resident first.')
+  const signedAt = new Date(input.signedAt)
+  if (Number.isNaN(signedAt.getTime()) || signedAt.getTime() > uow.now.getTime() + MAX_FUTURE_SKEW_MS) throw new DomainError(Codes.INVALID_INPUT, 'The signing time must be a real time, not in the future.', { field: 'signedAt' })
+  if (input.signedByRepresentativeId) {
+    const rep = await uow.tx.representative.findUnique({ where: { id: input.signedByRepresentativeId }, select: { residentId: true } })
+    if (rep?.residentId !== stay.residentId) throw new DomainError(Codes.INVALID_INPUT, 'That representative does not represent this resident.', { field: 'signedByRepresentativeId' })
+  }
+  if (input.sha256 && !/^[a-f0-9]{64}$/.test(input.sha256)) throw new DomainError(Codes.INVALID_INPUT, 'The file digest must be a SHA-256 hex string.', { field: 'sha256' })
+  const nursing = stay.setting === 'nursing_facility'
+  const document = await uow.tx.document.create({
+    data: { title: nursing ? 'Admission agreement (signed)' : 'Residency agreement (signed)', kind: nursing ? 'admission_agreement' : 'residency_agreement', communityId: stay.communityId, residentId: stay.residentId, phiTier: 'dem', storageKey: input.storageKey ?? '', sha256: input.sha256 ?? '', status: 'signed', signedAt },
+  })
+  auditCreate(uow, actor, 'Document', document.id, 'document.agreement_signed', { stayId: stay.id, kind: document.kind, signedAt, signedByRepresentativeId: input.signedByRepresentativeId ?? null, paperOnFile: !input.storageKey }, { reason: input.note ?? null })
+  const satisfiedClocks = await satisfyByEvidence(uow, actor, { subjectType: 'Stay', subjectId: stay.id }, { type: 'document:admission_agreement', id: document.id, at: signedAt })
+  return { documentId: document.id, satisfiedClocks }
 }
 
 /** Records that a notice reached the resident or representative, and satisfies the clocks it evidences. */

@@ -8,6 +8,7 @@ import { sendPasswordResetEmail } from "./lib/mail";
 import { withMcpBearerSessions } from "./mcp-oauth/session";
 import { isSignedIn, NEVER_DEFAULT, permissionNames, type Session } from "./access";
 import { addDatabaseConstraints } from "./prismaConstraints";
+import { throwKeystonePrismaErrors } from "./lib/keystonePrismaErrors";
 
 const databaseURL = process.env.DATABASE_URL || "file:./keystone.db";
 
@@ -66,6 +67,8 @@ export default withAuth(
       provider: "postgresql",
       url: databaseURL,
       extendPrismaSchema: addDatabaseConstraints,
+      // Keystone 6.5 returns failed Prisma queries instead of throwing; rethrow so a failed write aborts its transaction.
+      extendPrismaClient: throwKeystonePrismaErrors,
     },
     lists: models,
     storage: {

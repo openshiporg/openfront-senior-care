@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { q, operatorTimeZone } from '../../lib/server';
-import { when } from '../../lib/format';
+import { when, label } from '../../lib/format';
 import { Page, Row, Empty, Meta, Section, Stat } from '../../components/ui';
 
 type Event = { id: string; seq: number; at: string; eventType: string; entityType: string; entityId: string; reason: string; hash: string; prevHash: string; actorUser: { name: string } | null; actorAgent: { name: string } | null; approver: { name: string } | null };
@@ -33,19 +33,19 @@ export default async function AuditPage({ searchParams }: { searchParams?: Promi
         <Stat name="Head hash" value={<span className="break-all font-mono text-xs">{v.lastHash.slice(0, 16)}</span>} />
       </div>
       {!v.ok && v.problem ? <p role="alert" className="text-sm text-red-600">{v.problem}</p> : null}
-      <Section title={entity ? `Events for ${entity}` : 'Latest events'} aside={entity ? <Link href="/dashboard/platform/audit" className="text-xs underline">Show all</Link> : null}>
+      <Section title={entity ? `Events for ${label(entity)}` : 'Latest events'} aside={entity ? <Link href="/dashboard/platform/audit" className="text-xs underline">Show all</Link> : null}>
         {data.auditEvents.length ? data.auditEvents.map(e => (
           <Row key={e.id}>
             <div className="min-w-0 flex-1 space-y-1">
-              <div className="flex flex-wrap items-baseline gap-x-2"><span className="font-mono text-xs text-muted-foreground">#{e.seq}</span><span className="font-medium">{e.eventType}</span></div>
+              <div className="flex flex-wrap items-baseline gap-x-2"><span className="font-mono text-xs text-muted-foreground">#{e.seq}</span><span className="font-medium">{label(e.eventType)}</span></div>
               <Meta>
-                <Link className="underline underline-offset-2" href={`/dashboard/platform/audit?entity=${encodeURIComponent(e.entityId)}`}>{e.entityType} {e.entityId}</Link>
+                <Link className="underline underline-offset-2" href={`/dashboard/platform/audit?entity=${encodeURIComponent(e.entityId)}`}>{label(e.entityType)} <span className="font-mono">{e.entityId}</span></Link>
                 {' · '}{e.actorUser?.name ?? (e.actorAgent ? `agent ${e.actorAgent.name}` : 'system')}{e.approver ? ` · approved by ${e.approver.name}` : ''}{e.reason ? ` · ${e.reason}` : ''}
               </Meta>
             </div>
             <div className="text-right">
               <Meta>{when(e.at, tz)}</Meta>
-              <p className="font-mono text-[11px] text-muted-foreground">{e.hash.slice(0, 12)}</p>
+              <p className="font-mono text-xs text-muted-foreground">{e.hash.slice(0, 12)}</p>
             </div>
           </Row>
         )) : <Empty>No audit events yet.</Empty>}

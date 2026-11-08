@@ -61,7 +61,7 @@ describe.skipIf(!hasTestDatabase)('census lifecycle (database)', () => {
   const admitInput = (bedId: string, firstName: string, effectiveAt: string) => ({
     communityId: COMMUNITY.id,
     resident: { firstName, lastName: 'Whitaker', dateOfBirth: '1938-04-12', sex: 'female' },
-    representatives: [{ firstName: 'Colin', lastName: 'Whitaker', email: `${uniqueKey('rep')}@family.example`, roles: ['healthcare_poa', 'financial_responsible'] }],
+    representatives: [{ firstName: 'Colin', lastName: 'Whitaker', email: `${uniqueKey('rep')}@gmail.com`, roles: ['healthcare_poa', 'financial_responsible'] }],
     bedId, payerId: 'seed_payer_ohio_medicaid', admissionSource: 'acute_hospital', effectiveAt,
     pasrrLevel1: { completedAt: at(-6 * DAY), result: 'No Level II referral indicated' },
     notices: [

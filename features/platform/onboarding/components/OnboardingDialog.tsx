@@ -53,7 +53,7 @@ const OnboardingDialog: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
     <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
       <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-[95vw] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="shrink-0 border-b px-4 py-4 sm:px-6">
-          <DialogTitle>Fund setup</DialogTitle>
+          <DialogTitle>Community setup</DialogTitle>
           <DialogDescription>Loads Ridgeline Senior Communities and Maple Ridge Senior Living, a fictional operator in Columbus, Ohio, so you can explore every screen. Every record is marked synthetic. Existing records are kept; loading again changes nothing.</DialogDescription>
         </DialogHeader>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
@@ -77,7 +77,7 @@ const OnboardingDialog: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
           ) : null}
           {step === 'done' ? (
             <div className="flex flex-wrap gap-4 text-sm">
-              <Link href="/dashboard/platform/strategies" className="font-medium underline underline-offset-4" onClick={onClose}>Strategy studio</Link>
+              <Link href="/dashboard/platform/census" className="font-medium underline underline-offset-4" onClick={onClose}>Census</Link>
               <Link href="/dashboard/platform/approvals" className="font-medium underline underline-offset-4" onClick={onClose}>Approvals</Link>
               <Link href="/dashboard/AuditEvents" className="font-medium underline underline-offset-4" onClick={onClose}>Audit log</Link>
             </div>

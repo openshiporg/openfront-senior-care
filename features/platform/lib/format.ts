@@ -46,15 +46,26 @@ export const quantity = (value: string | null | undefined) => decimalText(value,
 
 export const bps = (value: number | null | undefined) => (value === null || value === undefined ? '—' : `${value} bps`)
 
-export function when(iso: string | null | undefined, tz = 'America/New_York', style: 'full' | 'time' | 'day' | 'seconds' = 'full') {
-  if (!iso) return ''
-  const d = new Date(iso)
-  const opts: Intl.DateTimeFormatOptions =
-    style === 'time' ? { hour: 'numeric', minute: '2-digit' }
-    : style === 'seconds' ? { hour: 'numeric', minute: '2-digit', second: '2-digit' }
-    : style === 'day' ? { weekday: 'short', month: 'short', day: 'numeric' }
-    : { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }
-  return new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: style === 'day' ? undefined : 'short', ...opts }).format(d)
+function yearIn(d: Date, tz: string) {
+  return new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric' }).format(d)
 }
 
-export const label = (value: string | null | undefined) => (value || '').replaceAll('_', ' ')
+/**
+ * Human dates: "Tue, Nov 10" (the year is added only when it is not the current year), with the time and
+ * zone for 'full'. Never ISO. `date` reads a calendar date ("2026-11-10") as that day, not as UTC midnight.
+ */
+export function when(iso: string | null | undefined, tz = 'America/New_York', style: 'full' | 'time' | 'day' | 'seconds' | 'date' = 'full') {
+  if (!iso) return ''
+  const calendar = style === 'date' || /^\d{4}-\d{2}-\d{2}$/.test(iso)
+  const d = calendar ? new Date(`${iso.slice(0, 10)}T12:00:00Z`) : new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const zone = calendar ? 'UTC' : tz
+  const withYear = yearIn(d, zone) !== yearIn(new Date(), tz)
+  const dayPart: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric', ...(withYear ? { year: 'numeric' } : {}) }
+  if (calendar || style === 'day') return new Intl.DateTimeFormat('en-US', { timeZone: zone, ...dayPart }).format(d)
+  const time: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit', ...(style === 'seconds' ? { second: '2-digit' } : {}), timeZoneName: 'short' }
+  if (style === 'time' || style === 'seconds') return new Intl.DateTimeFormat('en-US', { timeZone: tz, ...time }).format(d)
+  return new Intl.DateTimeFormat('en-US', { timeZone: tz, ...dayPart, ...time }).format(d)
+}
+
+export { label } from '@/lib/labels'

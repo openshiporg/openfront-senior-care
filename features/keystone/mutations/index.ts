@@ -29,6 +29,11 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         censusSummary(communityId: ID!, date: String): JSON
         bedBoard(communityId: ID!, unitId: ID): JSON
         residentRoster(communityId: ID!, status: String): JSON
+        storefrontCommunity(slug: String!): JSON
+        portalMe: JSON
+        portalUpdates(residentId: ID!): JSON
+        portalCalendar(residentId: ID!): JSON
+        portalDocuments(residentId: ID!): JSON
       }
       input UserUpdateProfileInput { name: String, email: String, password: String, onboardingStatus: String }
       type Mutation {
@@ -46,6 +51,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         dischargeResident(stayId: ID!, disposition: String!, initiatedBy: String!, effectiveAt: String!, observedAt: String, noticeException: String, expectedVersion: Int, idempotencyKey: String!): JSON
         recordDeath(stayId: ID!, effectiveAt: String!, pronouncedBy: String!, observedAt: String, expectedVersion: Int, idempotencyKey: String!): JSON
         recordNotice(input: JSON!, idempotencyKey: String!): JSON
+        recordAdmissionAgreement(stayId: ID!, signedAt: String!, signedByRepresentativeId: ID, note: String, idempotencyKey: String!): JSON
         correctCensus(input: JSON!, idempotencyKey: String!): JSON
         snapshotCensusDay(communityId: ID!, date: String!, idempotencyKey: String!): JSON
         signOffCensusDay(communityId: ID!, date: String!, note: String, idempotencyKey: String!): JSON
@@ -58,6 +64,12 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
 
         submitInquiry(input: JSON!): JSON
         requestTour(input: JSON!): JSON
+        joinWaitlist(input: JSON!): JSON
+        recordReferral(input: JSON!, idempotencyKey: String!): JSON
+        openTourSlots(communityId: ID!, slots: JSON!, idempotencyKey: String!): JSON
+        scheduleTour(leadId: ID!, slotId: ID!, kind: String!, notes: String, idempotencyKey: String!): JSON
+        setStorefrontPublished(communityId: ID!, published: Boolean!, idempotencyKey: String!): JSON
+        movePublishedPrice(priceId: ID!, to: String!, expectedVersion: Int!, idempotencyKey: String!): JSON
         cancelTourByToken(token: String!, reason: String): JSON
         acceptPortalInvitation(token: String!, password: String!): JSON
         recordInquiry(input: JSON!, idempotencyKey: String!): JSON
@@ -88,6 +100,11 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         censusSummary: op(reads.censusSummary),
         bedBoard: op(reads.bedBoard),
         residentRoster: op(reads.residentRoster),
+        storefrontCommunity: op(front.storefrontCommunityQuery),
+        portalMe: op(front.portalMeQuery),
+        portalUpdates: op(front.portalUpdatesQuery),
+        portalCalendar: op(front.portalCalendarQuery),
+        portalDocuments: op(front.portalDocumentsQuery),
       },
       Mutation: {
         updateActiveUser,
@@ -104,6 +121,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         dischargeResident: op(census.dischargeResidentMutation),
         recordDeath: op(census.recordDeathMutation),
         recordNotice: op(census.recordNoticeMutation),
+        recordAdmissionAgreement: op(census.recordAdmissionAgreementMutation),
         correctCensus: op(census.correctCensus),
         snapshotCensusDay: op(census.snapshotCensusDayMutation),
         signOffCensusDay: op(census.signOffCensusDayMutation),
@@ -116,6 +134,12 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
 
         submitInquiry: op(front.submitInquiryMutation),
         requestTour: op(front.requestTourMutation),
+        joinWaitlist: op(front.joinWaitlistMutation),
+        recordReferral: op(front.recordReferralMutation),
+        openTourSlots: op(front.openTourSlotsMutation),
+        scheduleTour: op(front.scheduleTourMutation),
+        setStorefrontPublished: op(front.setStorefrontPublishedMutation),
+        movePublishedPrice: op(front.movePublishedPriceMutation),
         cancelTourByToken: op(front.cancelTourByToken),
         acceptPortalInvitation: op(front.acceptPortalInvitationMutation),
         recordInquiry: op(front.recordInquiryMutation),

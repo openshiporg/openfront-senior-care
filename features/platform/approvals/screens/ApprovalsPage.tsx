@@ -1,6 +1,6 @@
 import { q, operatorTimeZone } from '../../lib/server';
 import { when, label } from '../../lib/format';
-import { Page, Row, Empty, Status, Meta, Section, Tabs } from '../../components/ui';
+import { Page, Row, Empty, Title, Meta, Section, Tabs } from '../../components/ui';
 import { ActionButton } from '../../components/ActionButton';
 
 type Request = {
@@ -43,18 +43,17 @@ export default async function ApprovalsPage({ searchParams }: { searchParams?: P
           return (
             <Row key={r.id}>
               <div className="min-w-0 flex-1 space-y-1">
-                <span className="font-medium">{label(r.action.replace('.', ' · '))}</span>
+                <Title status={expired ? 'expired' : r.status}>{label(r.action)}</Title>
                 {r.summary ? <p className="break-words text-sm">{r.summary}</p> : null}
                 <Meta>
                   Asked by {r.requestedBy?.name ?? (r.requestedByAgent ? `agent ${r.requestedByAgent.name}` : 'the system')} · {when(r.createdAt, tz)}
-                  {r.expiresAt ? ` · ${expired ? 'expired' : 'expires'} ${when(r.expiresAt, tz)}` : ''} · needs {r.requiredPermission.replace(/^can/, '').replace(/([A-Z])/g, ' $1').trim().toLowerCase()}
+                  {r.expiresAt ? ` · ${expired ? 'expired' : 'expires'} ${when(r.expiresAt, tz)}` : ''} · needs {label(r.requiredPermission.replace(/^can/, '')).toLowerCase()} permission
                 </Meta>
                 {r.decisions.map((d, i) => <Meta key={i}><br />{d.decision === 'approve' ? 'Approved' : 'Rejected'} by {d.decidedBy?.name ?? 'someone'} · {when(d.at, tz)}{d.reason ? ` · ${d.reason}` : ''}</Meta>)}
                 {r.consumedAt ? <Meta><br />Carried out {when(r.consumedAt, tz)}</Meta> : null}
-                <p className="break-all font-mono text-[11px] text-muted-foreground">{r.targetList} {r.targetId} · payload {r.payloadHash.slice(0, 12)}</p>
+                <p className="break-all text-xs text-muted-foreground">{label(r.targetList)} <span className="font-mono">{r.targetId}</span> · payload <span className="font-mono">{r.payloadHash.slice(0, 12)}</span></p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Status value={expired ? 'expired' : r.status} />
                 {r.status === 'pending' && !expired && !mine ? (
                   <>
                     <ActionButton op="decideApprovalRequest" vars={{ requestId: r.id, decision: 'approve', expectedVersion: r.version }} paths={['/dashboard/platform/approvals']}>Approve</ActionButton>

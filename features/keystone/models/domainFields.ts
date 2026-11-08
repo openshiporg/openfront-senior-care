@@ -1,3 +1,4 @@
+import { label } from '../../../lib/labels'
 import { bigInt, decimal, integer, select, text } from '@keystone-6/core/fields'
 
 /** Ledger cash in minor units (SCHEMA G2). */
@@ -35,7 +36,7 @@ export const hours = exact(8, 2)
 export const bps = (defaultValue?: number) =>
   integer({ ...(defaultValue !== undefined ? { defaultValue } : {}), validation: { isRequired: defaultValue !== undefined } })
 
-const option = (value: string) => ({ label: value.replaceAll('_', ' ').replaceAll('.', ' · '), value })
+const option = (value: string) => ({ label: label(value), value })
 
 /**
  * A lifecycle status. It changes only through transition mutations (SCHEMA G7): never through the

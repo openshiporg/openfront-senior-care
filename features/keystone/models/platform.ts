@@ -1,3 +1,4 @@
+import { label } from '../../../lib/labels'
 import { list } from '@keystone-6/core'
 import { calendarDay, checkbox, integer, json, relationship, select, text, timestamp } from '@keystone-6/core/fields'
 import { isStaff, permissions } from '../access'
@@ -22,7 +23,7 @@ export const OperatorSettings = list({
     homeTimeZone: text({ defaultValue: 'America/New_York', validation: { isRequired: true } }),
     jurisdictionPacks: relationship({ ref: 'JurisdictionPack', many: true }),
     // Changed only through the maker-checker mutation requestOperatorControls.
-    inferencePolicy: select({ type: 'string', options: ['self_hosted_only', 'self_hosted_or_baa', 'any_registered'].map(value => ({ label: value.replaceAll('_', ' '), value })), defaultValue: 'self_hosted_only', validation: { isRequired: true }, ...readOnly }),
+    inferencePolicy: select({ type: 'string', options: ['self_hosted_only', 'self_hosted_or_baa', 'any_registered'].map(value => ({ label: label(value), value })), defaultValue: 'self_hosted_only', validation: { isRequired: true }, ...readOnly }),
     breakGlassMaxHours: integer({ ...readOnly, defaultValue: 4 }),
     reauthMinutes: integer({ ...readOnly, defaultValue: 15 }),
     bedHoldNoticeGraceHours: integer({ ...readOnly, defaultValue: 24, ui: { ...readOnly.ui, description: 'Operator policy: how long after an emergency transfer the written bed-hold notice may be recorded. 42 CFR 483.15(d)(2) says "at the time of transfer"; the grace window is policy (verify with counsel).' } }),
@@ -127,7 +128,7 @@ export const BreakGlassGrant = list({
 })
 
 function fixedChoiceText(values: string[]) {
-  return select({ type: 'string', options: values.map(value => ({ label: value.replaceAll('_', ' '), value })), validation: { isRequired: true }, ...readOnly })
+  return select({ type: 'string', options: values.map(value => ({ label: label(value), value })), validation: { isRequired: true }, ...readOnly })
 }
 
 export const AgentIdentity = list({
@@ -328,7 +329,7 @@ export const NotificationDelivery = list({
   fields: {
     notification: relationship({ ref: 'Notification.deliveries', ...readOnly }),
     attempt: integer({ defaultValue: 1, ...readOnly }),
-    outcome: select({ type: 'string', options: ['sent', 'failed', 'unknown'].map(value => ({ label: value, value })), validation: { isRequired: true }, ...readOnly }),
+    outcome: select({ type: 'string', options: ['sent', 'failed', 'unknown'].map(value => ({ label: label(value), value })), validation: { isRequired: true }, ...readOnly }),
     providerMessageId: systemText(),
     at: timestamp({ ...readOnly, defaultValue: { kind: 'now' } }),
   },
@@ -402,7 +403,7 @@ export const ApprovalDecision = list({
   fields: {
     request: relationship({ ref: 'ApprovalRequest.decisions', ...readOnly }),
     decidedBy: relationship({ ref: 'User', ...readOnly }),
-    decision: select({ type: 'string', options: ['approve', 'reject'].map(value => ({ label: value, value })), validation: { isRequired: true }, ...readOnly }),
+    decision: select({ type: 'string', options: ['approve', 'reject'].map(value => ({ label: label(value), value })), validation: { isRequired: true }, ...readOnly }),
     reason: systemText(),
     at: timestamp({ defaultValue: { kind: 'now' }, ...readOnly }),
   },
@@ -419,7 +420,7 @@ export const Document = list({
     kind: choice(['admission_agreement', 'residency_agreement', 'notice', 'bed_hold_policy', 'authority', 'advance_directive', 'referral_packet', 'pasrr', 'photo', 'floor_plan', 'policy', 'pack_source', 'other'], 'other'),
     community: relationship({ ref: 'Community', ...readOnly }),
     resident: relationship({ ref: 'Resident', ...readOnly }),
-    phiTier: select({ type: 'string', options: ['pub', 'op', 'dem', 'clin', 'sens', 'ident', 'fin'].map(value => ({ label: value, value })), defaultValue: 'op', validation: { isRequired: true }, ...readOnly }),
+    phiTier: select({ type: 'string', options: ['pub', 'op', 'dem', 'clin', 'sens', 'ident', 'fin'].map(value => ({ label: label(value), value })), defaultValue: 'op', validation: { isRequired: true }, ...readOnly }),
     template: relationship({ ref: 'DocumentTemplate', ...readOnly }),
     storageKey: systemText(),
     sha256: systemText(),

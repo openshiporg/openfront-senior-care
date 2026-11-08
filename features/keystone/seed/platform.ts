@@ -19,10 +19,28 @@ import { PACKS, US_OH_PACK } from './packs'
  * Seeded people cannot sign in until an administrator sets a password or sends a reset link.
  * A bcrypt hash of 32 random bytes that were discarded, so no password matches it.
  */
-const UNUSABLE_PASSWORD_HASH = '$2a$10$3dITCbIvf5zFA.1U8KZDhOHC3EEexi3KYy5ysZK1cRF6LHMm0H.ya'
+export const UNUSABLE_PASSWORD_HASH = '$2a$10$3dITCbIvf5zFA.1U8KZDhOHC3EEexi3KYy5ysZK1cRF6LHMm0H.ya'
 
 const day = (date: string) => new Date(`${date}T00:00:00Z`)
-const seedMeta = { metadata: { seed: true } }
+export const seedMeta = { metadata: { seed: true } }
+
+/** The rooms of a nursing unit: isolation rooms are private (one bed); the rest semi-private (A/B). */
+export function nfRooms(unit: (typeof NF_UNITS)[number]) {
+  const rooms: { number: string; kind: string; isolation: boolean; beds: string[] }[] = []
+  let remaining: number = unit.beds
+  for (let i = 0; remaining > 0; i += 1) {
+    const isolation = i < unit.isolationRooms
+    const number = String(unit.firstRoom + i)
+    const beds = isolation || remaining === 1 ? ['A'] : ['A', 'B']
+    rooms.push({ number, kind: beds.length === 1 ? 'private' : 'semi_private', isolation, beds })
+    remaining -= beds.length
+  }
+  return rooms
+}
+
+/** Bed ids of a nursing unit in room order, with their labels (e.g. 112A). */
+export const nfBeds = (unit: (typeof NF_UNITS)[number]) =>
+  nfRooms(unit).flatMap(room => room.beds.map(label => ({ id: `seed_room_${unit.code.toLowerCase()}_${room.number}_${label.toLowerCase()}`, label: `${room.number}${label}` })))
 
 export async function seedOperatorPlatform(uow: UnitOfWork, actor: Actor) {
   const { tx } = uow
@@ -107,17 +125,7 @@ export async function seedOperatorPlatform(uow: UnitOfWork, actor: Actor) {
     if (await tx.unit.findUnique({ where: { id: unit.id } })) continue
     await tx.unit.create({ data: { id: unit.id, communityId: community.id, buildingId: 'seed_building_health_center', name: unit.name, code: unit.code, setting: 'nursing_facility', specialty: unit.specialty, secured: false, status: 'active' } })
     created.units += 1
-    // Isolation rooms are private (one bed); the rest semi-private (A/B).
-    const rooms: { number: string; kind: string; isolation: boolean; beds: string[] }[] = []
-    let remaining: number = unit.beds
-    for (let i = 0; remaining > 0; i += 1) {
-      const isolation = i < unit.isolationRooms
-      const number = String(unit.firstRoom + i)
-      const beds = isolation || remaining === 1 ? ['A'] : ['A', 'B']
-      rooms.push({ number, kind: beds.length === 1 ? 'private' : 'semi_private', isolation, beds })
-      remaining -= beds.length
-    }
-    for (const room of rooms) {
+    for (const room of nfRooms(unit)) {
       const roomId = `seed_room_${unit.code.toLowerCase()}_${room.number}`
       await tx.room.create({ data: { id: roomId, unitId: unit.id, number: room.number, kind: room.kind, isolationCapable: room.isolation, privateBath: room.isolation } })
       await tx.bed.createMany({ data: room.beds.map(label => ({ id: `${roomId}_${label.toLowerCase()}`, roomId, label: `${room.number}${label}`, certification: 'dual', licensed: true, status: 'available' })) })

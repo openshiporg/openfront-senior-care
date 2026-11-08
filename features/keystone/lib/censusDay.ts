@@ -2,8 +2,8 @@ import { localDate } from './calendar'
 import { actorUserId, type Actor } from './actor'
 import { type Tx } from './db'
 import { DomainError, Codes } from './errors'
-import { loadCensusEvents, closedThrough } from './census'
-import { presenceAt } from './censusProjection'
+import { closedThrough } from './census'
+import { presenceAt, type CensusEventInput, type CensusEventKind } from './censusProjection'
 import type { UnitOfWork } from './unitOfWork'
 
 /**
@@ -34,21 +34,42 @@ export async function deriveCensusDay(tx: Tx, communityId: string, date: string)
     where: { communityId, admittedAt: { not: null }, OR: [{ dischargedAt: null }, { dischargedAt: { gte: new Date(dayStart.getTime() - 86_400_000) } }] },
     select: { id: true, setting: true, residentId: true },
   })
+  // Batched: one query each for events, voids, places and coverage (the midnight job runs for every stay).
+  const stayIds = stays.map(stay => stay.id)
+  const [eventRows, voidRows, coverages] = await Promise.all([
+    tx.censusEvent.findMany({ where: { stayId: { in: stayIds }, voidsEventId: null, kind: { not: 'correction' } }, orderBy: [{ effectiveAt: 'asc' }, { seq: 'asc' }] }),
+    tx.censusEvent.findMany({ where: { stayId: { in: stayIds }, voidsEventId: { not: null } }, select: { voidsEventId: true } }),
+    tx.coveragePeriod.findMany({
+      where: { stayId: { in: stayIds }, rank: 'primary', startDate: { lte: dayStart }, OR: [{ endDate: null }, { endDate: { gt: dayStart } }], status: { in: ['active', 'ending', 'ended', 'retro_approved'] } },
+      orderBy: { startDate: 'desc' }, select: { id: true, stayId: true, payer: { select: { kind: true } } },
+    }),
+  ])
+  const voided = new Set(voidRows.map(row => row.voidsEventId))
+  const eventsByStay = new Map<string, CensusEventInput[]>()
+  for (const row of eventRows) {
+    if (voided.has(row.id) || !row.stayId) continue
+    const list = eventsByStay.get(row.stayId) ?? []
+    list.push({ seq: list.length + 1, kind: row.kind as CensusEventKind, effectiveAt: row.effectiveAt, toBedId: row.toBedId, toApartmentId: row.toApartmentId, leaveKind: row.leaveKind, holdElected: row.holdElected, holdPaidBy: row.holdPaidBy, dischargeDisposition: row.dischargeDisposition })
+    eventsByStay.set(row.stayId, list)
+  }
+  const coverageByStay = new Map<string, { id: string; payerKind: string }>()
+  for (const row of coverages) if (row.stayId && !coverageByStay.has(row.stayId)) coverageByStay.set(row.stayId, { id: row.id, payerKind: row.payer?.kind ?? 'uncovered' })
+  const projected = stays.map(stay => ({ stay, projection: presenceAt(eventsByStay.get(stay.id) ?? [], timeZone, date) })).filter(({ projection }) => projection.presence === 'in_house' || projection.presence === 'on_leave_hold')
+  const bedIds = projected.map(({ projection }) => (projection.presence === 'in_house' ? projection.currentBedId : projection.heldBedId)).filter((id): id is string => Boolean(id))
+  const apartmentIds = projected.map(({ projection }) => projection.currentApartmentId).filter((id): id is string => Boolean(id))
+  const [beds, apartments] = await Promise.all([
+    bedIds.length ? tx.bed.findMany({ where: { id: { in: bedIds } }, select: { id: true, room: { select: { unitId: true } } } }) : Promise.resolve([]),
+    apartmentIds.length ? tx.apartment.findMany({ where: { id: { in: apartmentIds } }, select: { id: true, unitId: true } }) : Promise.resolve([]),
+  ])
+  const unitOfBed = new Map(beds.map(bed => [bed.id, bed.room?.unitId ?? null]))
+  const unitOfApartment = new Map(apartments.map(apartment => [apartment.id, apartment.unitId]))
   const rows: { stayId: string; setting: string; presence: string; bedId: string | null; apartmentId: string | null; unitId: string | null; coverageId: string | null; payerKind: string }[] = []
-  for (const stay of stays) {
-    const events = await loadCensusEvents(tx, stay.id)
-    const projection = presenceAt(events.map((event, index) => ({ ...event, seq: index + 1 })), timeZone, date)
-    if (projection.presence !== 'in_house' && projection.presence !== 'on_leave_hold') continue
+  for (const { stay, projection } of projected) {
     const bedId = projection.presence === 'in_house' ? projection.currentBedId : projection.heldBedId
     const apartmentId = projection.currentApartmentId
-    let unitId: string | null = null
-    if (bedId) unitId = (await tx.bed.findUnique({ where: { id: bedId }, select: { room: { select: { unitId: true } } } }))?.room?.unitId ?? null
-    else if (apartmentId) unitId = (await tx.apartment.findUnique({ where: { id: apartmentId }, select: { unitId: true } }))?.unitId ?? null
-    const coverage = await tx.coveragePeriod.findFirst({
-      where: { stayId: stay.id, rank: 'primary', startDate: { lte: dayStart }, OR: [{ endDate: null }, { endDate: { gt: dayStart } }], status: { in: ['active', 'ending', 'ended', 'retro_approved'] } },
-      orderBy: { startDate: 'desc' }, include: { payer: { select: { kind: true } } },
-    })
-    rows.push({ stayId: stay.id, setting: stay.setting, presence: projection.presence, bedId, apartmentId, unitId, coverageId: coverage?.id ?? null, payerKind: coverage?.payer?.kind ?? 'uncovered' })
+    const unitId = bedId ? unitOfBed.get(bedId) ?? null : apartmentId ? unitOfApartment.get(apartmentId) ?? null : null
+    const coverage = coverageByStay.get(stay.id)
+    rows.push({ stayId: stay.id, setting: stay.setting, presence: projection.presence, bedId, apartmentId, unitId, coverageId: coverage?.id ?? null, payerKind: coverage?.payerKind ?? 'uncovered' })
   }
   const totals: CensusTotals = { present: rows.length, inHouse: 0, onLeaveHold: 0, bySetting: {}, byUnit: {}, byPayer: {} }
   for (const row of rows) {
@@ -72,10 +93,18 @@ export async function snapshotCensusDay(uow: UnitOfWork, actor: Actor, input: { 
   const byStay = new Map(existing.map(row => [row.stayId, row]))
   let written = 0
   let superseded = 0
+  const rowData = (row: (typeof derived.rows)[number]) => ({ communityId: input.communityId, stayId: row.stayId, date: day(input.date), setting: row.setting, bedId: row.bedId, apartmentId: row.apartmentId, unitId: row.unitId, presence: row.presence, primaryCoverageId: row.coverageId, payerKind: row.payerKind, billableForPayer: row.payerKind !== 'uncovered', snapshotRunId: input.runId ?? null })
+  // First snapshot of a day: one insert for every row.
+  const fresh = derived.rows.filter(row => !byStay.has(row.stayId))
+  if (fresh.length) {
+    await uow.tx.censusDay.createMany({ data: fresh.map(rowData) })
+    written += fresh.length
+  }
   for (const row of derived.rows) {
     const prior = byStay.get(row.stayId)
+    if (!prior) continue
     byStay.delete(row.stayId)
-    const same = prior && prior.presence === row.presence && prior.bedId === row.bedId && prior.apartmentId === row.apartmentId && prior.unitId === row.unitId && prior.primaryCoverageId === row.coverageId
+    const same = prior.presence === row.presence && prior.bedId === row.bedId && prior.apartmentId === row.apartmentId && prior.unitId === row.unitId && prior.primaryCoverageId === row.coverageId
     if (same) continue
     const created = await uow.tx.censusDay.create({ data: { communityId: input.communityId, stayId: row.stayId, date: day(input.date), setting: row.setting, bedId: row.bedId, apartmentId: row.apartmentId, unitId: row.unitId, presence: row.presence, primaryCoverageId: row.coverageId, payerKind: row.payerKind, billableForPayer: row.payerKind !== 'uncovered', snapshotRunId: input.runId ?? null } })
     written += 1

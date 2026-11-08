@@ -1,4 +1,4 @@
-import { admitResident, changeRoom, dischargeResident, endLeave, recordDeath, recordNotice, releaseBedHold, startLeave, verifyCensusChain, verifyCensusProjection, type AdmitInput, type DischargeInput, type NoticeInput, type StartLeaveInput } from '../lib/census'
+import { admitResident, changeRoom, recordAdmissionAgreement, dischargeResident, endLeave, recordDeath, recordNotice, releaseBedHold, startLeave, verifyCensusChain, verifyCensusProjection, type AdmitInput, type DischargeInput, type NoticeInput, type StartLeaveInput } from '../lib/census'
 import { applyCorrection, requestClosedPeriodCorrection, type CorrectionPayload } from '../lib/censusCorrection'
 import { closedThrough } from '../lib/census'
 import { signOffCensusDay, snapshotCensusDay } from '../lib/censusDay'
@@ -50,6 +50,11 @@ export async function recordDeathMutation(_root: unknown, args: { stayId: string
 export async function recordNoticeMutation(_root: unknown, args: { input: NoticeInput; idempotencyKey: string }, context: Ctx) {
   return runDomain(context, args, { name: 'census.notice', permissions: ['canAdmitDischarge', 'canRecordCensus', 'canManageRepresentatives'], community: tx => communityOf.stay(tx, args.input.stayId) }, (uow, actor) =>
     recordNotice(uow, actor, args.input))
+}
+
+export async function recordAdmissionAgreementMutation(_root: unknown, args: { stayId: string; signedAt: string; signedByRepresentativeId?: string | null; note?: string | null; idempotencyKey: string }, context: Ctx) {
+  return runDomain(context, args, { name: 'census.agreement', permissions: ['canAdmitDischarge', 'canManageRepresentatives'], humanOnly: true, community: tx => communityOf.stay(tx, args.stayId) }, (uow, actor) =>
+    recordAdmissionAgreement(uow, actor, { stayId: args.stayId, signedAt: args.signedAt, signedByRepresentativeId: args.signedByRepresentativeId, note: args.note }))
 }
 
 /**

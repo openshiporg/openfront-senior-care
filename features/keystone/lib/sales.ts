@@ -14,6 +14,7 @@ import type { UnitOfWork } from './unitOfWork'
  * and return only a public code. Staff transitions take a version for CAS.
  */
 
+const SETTING_VALUES = ['nursing_facility', 'assisted_living', 'memory_care', 'independent_living']
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const clean = (value: unknown, max: number) => (typeof value === 'string' ? value.trim().slice(0, max) : '')
 
@@ -55,7 +56,7 @@ export async function submitInquiry(uow: UnitOfWork, input: InquiryInput) {
   const lead = await uow.tx.lead.create({ data: { reference: await nextReference(uow.tx, 'LEAD', uow.now), communityId: community.id, primaryContactId: contact.id, status: 'new', nextActionAt: new Date(uow.now.getTime() + 4 * 3_600_000), synthetic: community.synthetic } })
   const forFirst = clean(input.forWhomFirstName, 80)
   if (forFirst) {
-    await uow.tx.prospect.create({ data: { reference: await nextReference(uow.tx, 'PRO', uow.now), communityId: community.id, leadId: lead.id, firstName: forFirst, lastName: clean(input.forWhomLastName, 80), desiredSetting: ['nursing_facility', 'assisted_living', 'memory_care', 'independent_living'].includes(String(input.desiredSetting)) ? input.desiredSetting : null, synthetic: community.synthetic } })
+    await uow.tx.prospect.create({ data: { reference: await nextReference(uow.tx, 'PRO', uow.now), communityId: community.id, leadId: lead.id, firstName: forFirst, lastName: clean(input.forWhomLastName, 80), desiredSetting: SETTING_VALUES.includes(String(input.desiredSetting)) ? input.desiredSetting : null, synthetic: community.synthetic } })
   }
   const code = publicCode('INQ')
   const utm = Object.fromEntries(Object.entries(input.utm ?? {}).slice(0, 10).map(([key, value]) => [clean(key, 40), clean(value, 200)]))
@@ -66,20 +67,31 @@ export async function submitInquiry(uow: UnitOfWork, input: InquiryInput) {
 }
 
 /** Staff: record an inquiry taken by phone or in person. */
-export async function recordInquiry(uow: UnitOfWork, actor: Actor, input: Omit<InquiryInput, 'communitySlug' | 'website'> & { communityId: string; source: string }) {
-  const community = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { slug: true } })
+export async function recordInquiry(uow: UnitOfWork, actor: Actor, input: Omit<InquiryInput, 'communitySlug' | 'website'> & { communityId: string; source: string; referralSourceId?: string | null }) {
+  const community = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { slug: true, synthetic: true } })
   if (!community) throw new DomainError(Codes.NOT_FOUND, 'Community not found.')
   const sources = ['phone', 'walk_in', 'referral_agency', 'hospital', 'resident_referral', 'other']
   if (!sources.includes(input.source)) throw new DomainError(Codes.INVALID_INPUT, 'Choose where the inquiry came from.', { field: 'source' })
   const name = clean(input.contactName, 120)
   if (!name) throw new DomainError(Codes.INVALID_INPUT, 'Enter the caller\'s name.', { field: 'contactName' })
   const [firstName, ...rest] = name.split(/\s+/)
-  const contact = await uow.tx.contact.create({ data: { reference: await nextReference(uow.tx, 'CON', uow.now), communityId: input.communityId, firstName, lastName: rest.join(' '), email: clean(input.contactEmail, 200).toLowerCase(), phone: clean(input.contactPhone, 40), consentToContact: Boolean(input.consentToContact) } })
-  const lead = await uow.tx.lead.create({ data: { reference: await nextReference(uow.tx, 'LEAD', uow.now), communityId: input.communityId, primaryContactId: contact.id, ownerId: actorUserId(actor), status: 'contacted' } })
+  const synthetic = community.synthetic
+  const contact = await uow.tx.contact.create({ data: { reference: await nextReference(uow.tx, 'CON', uow.now), communityId: input.communityId, firstName, lastName: rest.join(' '), email: clean(input.contactEmail, 200).toLowerCase(), phone: clean(input.contactPhone, 40), consentToContact: Boolean(input.consentToContact), synthetic } })
+  if (input.referralSourceId) {
+    const source = await uow.tx.referralSource.findUnique({ where: { id: input.referralSourceId }, select: { communityId: true } })
+    if (!source || source.communityId !== input.communityId) throw new DomainError(Codes.NOT_FOUND, 'Referral source not found.', { field: 'referralSourceId' })
+  }
+  const lead = await uow.tx.lead.create({ data: { reference: await nextReference(uow.tx, 'LEAD', uow.now), communityId: input.communityId, primaryContactId: contact.id, ownerId: actorUserId(actor), status: 'contacted', referralSourceId: input.referralSourceId ?? null, nextActionAt: new Date(uow.now.getTime() + 24 * 3_600_000), synthetic } })
+  const forFirst = clean(input.forWhomFirstName, 80)
+  let prospectId: string | null = null
+  if (forFirst) {
+    const prospect = await uow.tx.prospect.create({ data: { reference: await nextReference(uow.tx, 'PRO', uow.now), communityId: input.communityId, leadId: lead.id, firstName: forFirst, lastName: clean(input.forWhomLastName, 80), desiredSetting: SETTING_VALUES.includes(String(input.desiredSetting)) ? input.desiredSetting : null, synthetic } })
+    prospectId = prospect.id
+  }
   const code = publicCode('INQ')
   const inquiry = await uow.tx.inquiry.create({ data: { publicCode: code, communityId: input.communityId, source: input.source, contactName: name, contactEmail: clean(input.contactEmail, 200), contactPhone: clean(input.contactPhone, 40), relationship: clean(input.relationship, 80), message: clean(input.message, 4000), consentToContact: Boolean(input.consentToContact), leadId: lead.id } })
-  auditCreate(uow, actor, 'Inquiry', inquiry.id, 'inquiry.recorded', { publicCode: code, leadId: lead.id, source: input.source })
-  return { inquiryId: inquiry.id, leadId: lead.id, publicCode: code }
+  auditCreate(uow, actor, 'Inquiry', inquiry.id, 'inquiry.recorded', { publicCode: code, leadId: lead.id, source: input.source, prospectId })
+  return { inquiryId: inquiry.id, leadId: lead.id, prospectId, publicCode: code }
 }
 
 /** Lead transitions guarded by evidence (SM§1.1). `moved_in` happens only through admission. */
@@ -165,6 +177,22 @@ export async function requestTour(uow: UnitOfWork, input: { communitySlug: strin
   return { publicCode: code, manageToken: token, holdExpiresAt: tour.holdExpiresAt }
 }
 
+/** Staff: book a tour for a lead (by phone or in person). Confirmed at once; the lead moves to tour_scheduled. */
+export async function scheduleTour(uow: UnitOfWork, actor: Actor, input: { leadId: string; slotId: string; kind: 'in_person' | 'virtual'; notes?: string | null }) {
+  const lead = await uow.tx.lead.findUnique({ where: { id: input.leadId }, select: { id: true, communityId: true, status: true, version: true } })
+  if (!lead) throw new DomainError(Codes.NOT_FOUND, 'Lead not found.')
+  if (lead.status === 'lost' || lead.status === 'moved_in') throw new DomainError(Codes.GUARD_FAILED, `This lead is ${lead.status.replace('_', ' ')}.`, { currentStatus: lead.status })
+  if (input.kind !== 'in_person' && input.kind !== 'virtual') throw new DomainError(Codes.INVALID_INPUT, 'Choose in person or virtual.', { field: 'kind' })
+  const slot = await slotHasRoom(uow, input.slotId)
+  if (slot.communityId !== lead.communityId) throw new DomainError(Codes.NOT_FOUND, 'Tour time not found.')
+  if (slot.kind !== 'either' && slot.kind !== input.kind) throw new DomainError(Codes.INVALID_INPUT, `This time is for ${slot.kind.replace('_', ' ')} tours.`, { field: 'kind' })
+  const tour = await uow.tx.tour.create({ data: { publicCode: publicCode('TOUR'), communityId: slot.communityId, slotId: slot.id, leadId: lead.id, kind: input.kind, status: 'confirmed', notes: clean(input.notes, 2000) } })
+  auditCreate(uow, actor, 'Tour', tour.id, 'tour.scheduled', { slotId: slot.id, leadId: lead.id, kind: input.kind })
+  if (LEAD_EDGES.tour_scheduled.includes(lead.status)) await casUpdate(uow, { model: 'Lead', id: lead.id, version: lead.version, from: [lead.status], to: 'tour_scheduled', actor, eventType: 'lead.tour_scheduled', metadata: { tourId: tour.id } })
+  uow.emit({ topic: 'mail.tour_confirmed', aggregateType: 'Tour', aggregateId: tour.id, payload: { tourId: tour.id }, dedupeKey: `mail.tour_confirmed:${tour.id}` })
+  return { tourId: tour.id, publicCode: tour.publicCode, startsAt: slot.startsAt }
+}
+
 /** Public: cancel with the manage token. */
 export async function cancelTourWithToken(uow: UnitOfWork, input: { token: string; reason?: string | null }) {
   const payload = verifyPublicToken(input.token, 'tour-manage')
@@ -216,6 +244,47 @@ export async function moveReferral(uow: UnitOfWork, actor: Actor, input: { refer
   }
   await casUpdate(uow, { model: 'Referral', id: referral.id, version: input.expectedVersion, from, to: input.to, actor, eventType: `referral.${input.to}`, data: input.to === 'declined' ? { declineReason: input.declineReason } : {} })
   return { referralId: referral.id, status: input.to, reservationId: reservation?.reservationId ?? null }
+}
+
+const EXPECTED_PAYERS = ['medicare_a', 'medicare_advantage', 'medicaid', 'medicaid_pending', 'private_pay', 'commercial', 'hospice', 'other']
+
+/**
+ * Staff: record a referral received from a hospital, physician or placement agency (by phone, fax or
+ * the referral portal). Creates the Prospect and the Referral with its response deadline; the
+ * deadline is the operator's referral response window (hospitals place with whoever answers first).
+ */
+export async function recordReferral(uow: UnitOfWork, actor: Actor, input: { communityId: string; sourceId?: string | null; firstName: string; lastName: string; dateOfBirth?: string | null; desiredSetting?: string | null; expectedPayer: string; clinicalSummary?: string | null; pasrrLevel1?: { completedAt: string; result: string } | null; pasrrLevel2Required?: boolean; responseHours?: number | null; receivedAt?: Date | null }) {
+  const community = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { id: true, synthetic: true } })
+  if (!community) throw new DomainError(Codes.NOT_FOUND, 'Community not found.')
+  const firstName = clean(input.firstName, 80)
+  const lastName = clean(input.lastName, 80)
+  if (!firstName || !lastName) throw new DomainError(Codes.INVALID_INPUT, 'Enter the person\'s first and last name.', { field: 'firstName' })
+  if (!EXPECTED_PAYERS.includes(input.expectedPayer)) throw new DomainError(Codes.INVALID_INPUT, 'Choose the expected payer.', { field: 'expectedPayer' })
+  if (input.dateOfBirth && !/^\d{4}-\d{2}-\d{2}$/.test(input.dateOfBirth)) throw new DomainError(Codes.INVALID_INPUT, 'Date of birth must be YYYY-MM-DD.', { field: 'dateOfBirth' })
+  if (input.sourceId) {
+    const source = await uow.tx.referralSource.findUnique({ where: { id: input.sourceId }, select: { communityId: true } })
+    if (!source || source.communityId !== community.id) throw new DomainError(Codes.NOT_FOUND, 'Referral source not found.', { field: 'sourceId' })
+  }
+  const receivedAt = input.receivedAt ?? uow.now
+  if (receivedAt.getTime() > uow.now.getTime() + 5 * 60_000) throw new DomainError(Codes.INVALID_INPUT, 'The referral cannot be received in the future.', { field: 'receivedAt' })
+  const hours = Math.min(Math.max(input.responseHours ?? 4, 1), 72)
+  const prospect = await uow.tx.prospect.create({ data: { reference: await nextReference(uow.tx, 'PRO', uow.now), communityId: community.id, firstName, lastName, dateOfBirth: input.dateOfBirth ? new Date(`${input.dateOfBirth}T00:00:00Z`) : null, desiredSetting: SETTING_VALUES.includes(String(input.desiredSetting)) ? input.desiredSetting : 'nursing_facility', synthetic: community.synthetic } })
+  // The hospital's Level I PASRR screen travels with the referral packet (42 CFR 483.106).
+  let pasrrLevel1Id: string | null = null
+  if (input.pasrrLevel1) {
+    const completedAt = new Date(input.pasrrLevel1.completedAt)
+    if (Number.isNaN(completedAt.getTime()) || completedAt.getTime() > uow.now.getTime() + 5 * 60_000) throw new DomainError(Codes.INVALID_INPUT, 'Enter when the Level I screen was completed.', { field: 'pasrrLevel1' })
+    const doc = await uow.tx.document.create({ data: { title: 'PASRR Level I screen', kind: 'pasrr', communityId: community.id, phiTier: 'clin', status: 'final' } })
+    await uow.tx.preAdmissionScreen.create({ data: { prospectId: prospect.id, kind: 'pasrr_level1', result: clean(input.pasrrLevel1.result, 500), completedAt, documentId: doc.id } })
+    auditCreate(uow, actor, 'Document', doc.id, 'pre_admission_screen.received', { kind: 'pasrr_level1', prospectId: prospect.id })
+    pasrrLevel1Id = doc.id
+  }
+  const referral = await uow.tx.referral.create({
+    data: { reference: await nextReference(uow.tx, 'REF', uow.now), communityId: community.id, sourceId: input.sourceId ?? null, receivedAt, prospectId: prospect.id, expectedPayer: input.expectedPayer, pasrrLevel1Id, clinicalSummary: clean(input.clinicalSummary, 8000), pasrrLevel2Required: Boolean(input.pasrrLevel2Required), status: 'received', responseDueAt: new Date(receivedAt.getTime() + hours * 3_600_000) },
+  })
+  auditCreate(uow, actor, 'Referral', referral.id, 'referral.received', { reference: referral.reference, sourceId: input.sourceId ?? null, expectedPayer: input.expectedPayer, responseDueAt: referral.responseDueAt })
+  uow.emit({ topic: 'task.referral_response', aggregateType: 'Referral', aggregateId: referral.id, payload: { referralId: referral.id, communityId: community.id }, dedupeKey: `task.referral_response:${referral.id}` })
+  return { referralId: referral.id, reference: referral.reference, prospectId: prospect.id, responseDueAt: referral.responseDueAt }
 }
 
 /* ----------------------------------------------------------------- waitlist */
