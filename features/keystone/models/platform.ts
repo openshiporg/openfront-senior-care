@@ -214,27 +214,6 @@ export const CommandReceipt = list({
   },
 })
 
-export const OutboxEvent = list({
-  access: governed('canManageIntegrations'),
-  ui: { listView: { initialColumns: ['topic', 'status', 'attempts', 'nextAttemptAt', 'aggregateType', 'aggregateId'] } },
-  fields: {
-    topic: systemText({ indexed: true, required: true }),
-    aggregateType: systemText({ required: true }),
-    aggregateId: systemText({ indexed: true, required: true }),
-    dedupeKey: systemText({ indexed: 'unique', required: true }),
-    payload: json({ ...readOnly }),
-    status: lifecycle(['pending', 'leased', 'delivered', 'failed', 'dead']),
-    attempts: integer({ defaultValue: 0, ...readOnly }),
-    nextAttemptAt: timestamp({ defaultValue: { kind: 'now' }, ...readOnly }),
-    leaseOwner: systemText(),
-    leaseExpiresAt: timestamp({ ...readOnly }),
-    fencingToken: integer({ defaultValue: 0, ...readOnly }),
-    lastError: systemText(),
-    deliveredAt: timestamp({ ...readOnly }),
-    ...trackingFields,
-  },
-})
-
 export const Lease = list({
   access: serverOnly,
   graphql: { omit: true },

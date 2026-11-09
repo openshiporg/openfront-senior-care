@@ -3056,110 +3056,6 @@ input JurisdictionPackRelateToManyForCreateInput {
   connect: [JurisdictionPackWhereUniqueInput!]
 }
 
-type OutboxEvent {
-  id: ID!
-  topic: String
-  aggregateType: String
-  aggregateId: String
-  dedupeKey: String
-  payload: JSON
-  status: String
-  attempts: Int
-  nextAttemptAt: DateTime
-  leaseOwner: String
-  leaseExpiresAt: DateTime
-  fencingToken: Int
-  lastError: String
-  deliveredAt: DateTime
-  createdAt: DateTime
-  updatedAt: DateTime
-}
-
-input OutboxEventWhereUniqueInput {
-  id: ID
-  dedupeKey: String
-}
-
-input OutboxEventWhereInput {
-  AND: [OutboxEventWhereInput!]
-  OR: [OutboxEventWhereInput!]
-  NOT: [OutboxEventWhereInput!]
-  id: IDFilter
-  topic: StringFilter
-  aggregateType: StringFilter
-  aggregateId: StringFilter
-  dedupeKey: StringFilter
-  status: StringFilter
-  attempts: IntNullableFilter
-  nextAttemptAt: DateTimeNullableFilter
-  leaseOwner: StringFilter
-  leaseExpiresAt: DateTimeNullableFilter
-  fencingToken: IntNullableFilter
-  lastError: StringFilter
-  deliveredAt: DateTimeNullableFilter
-  createdAt: DateTimeFilter
-  updatedAt: DateTimeFilter
-}
-
-input OutboxEventOrderByInput {
-  id: OrderDirection
-  topic: OrderDirection
-  aggregateType: OrderDirection
-  aggregateId: OrderDirection
-  dedupeKey: OrderDirection
-  status: OrderDirection
-  attempts: OrderDirection
-  nextAttemptAt: OrderDirection
-  leaseOwner: OrderDirection
-  leaseExpiresAt: OrderDirection
-  fencingToken: OrderDirection
-  lastError: OrderDirection
-  deliveredAt: OrderDirection
-  createdAt: OrderDirection
-  updatedAt: OrderDirection
-}
-
-input OutboxEventUpdateInput {
-  topic: String
-  aggregateType: String
-  aggregateId: String
-  dedupeKey: String
-  payload: JSON
-  status: String
-  attempts: Int
-  nextAttemptAt: DateTime
-  leaseOwner: String
-  leaseExpiresAt: DateTime
-  fencingToken: Int
-  lastError: String
-  deliveredAt: DateTime
-  createdAt: DateTime
-  updatedAt: DateTime
-}
-
-input OutboxEventUpdateArgs {
-  where: OutboxEventWhereUniqueInput!
-  data: OutboxEventUpdateInput!
-}
-
-input OutboxEventCreateInput {
-  topic: String
-  aggregateType: String
-  aggregateId: String
-  dedupeKey: String
-  payload: JSON
-  status: String
-  attempts: Int
-  nextAttemptAt: DateTime
-  leaseOwner: String
-  leaseExpiresAt: DateTime
-  fencingToken: Int
-  lastError: String
-  deliveredAt: DateTime
-  createdAt: DateTime
-  updatedAt: DateTime
-}
-
 type PhiReadAudit {
   id: ID!
   occurredAt: DateTime
@@ -8058,12 +7954,6 @@ type Mutation {
   updateOperatorSettingsItems(data: [OperatorSettingsUpdateArgs!]!): [OperatorSettings]
   deleteOperatorSettings(where: OperatorSettingsWhereUniqueInput! = {id: 1}): OperatorSettings
   deleteOperatorSettingsItems(where: [OperatorSettingsWhereUniqueInput!]!): [OperatorSettings]
-  createOutboxEvent(data: OutboxEventCreateInput!): OutboxEvent
-  createOutboxEvents(data: [OutboxEventCreateInput!]!): [OutboxEvent]
-  updateOutboxEvent(where: OutboxEventWhereUniqueInput!, data: OutboxEventUpdateInput!): OutboxEvent
-  updateOutboxEvents(data: [OutboxEventUpdateArgs!]!): [OutboxEvent]
-  deleteOutboxEvent(where: OutboxEventWhereUniqueInput!): OutboxEvent
-  deleteOutboxEvents(where: [OutboxEventWhereUniqueInput!]!): [OutboxEvent]
   createPhiReadAudit(data: PhiReadAuditCreateInput!): PhiReadAudit
   createPhiReadAudits(data: [PhiReadAuditCreateInput!]!): [PhiReadAudit]
   updatePhiReadAudit(where: PhiReadAuditWhereUniqueInput!, data: PhiReadAuditUpdateInput!): PhiReadAudit
@@ -8500,9 +8390,6 @@ type Query {
   operatorSettings(where: OperatorSettingsWhereUniqueInput! = {id: 1}): OperatorSettings
   operatorSettingsItems(where: OperatorSettingsWhereInput! = {id: {equals: 1}}, orderBy: [OperatorSettingsOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: OperatorSettingsWhereUniqueInput): [OperatorSettings!]
   operatorSettingsItemsCount(where: OperatorSettingsWhereInput! = {id: {equals: 1}}): Int
-  outboxEvent(where: OutboxEventWhereUniqueInput!): OutboxEvent
-  outboxEvents(where: OutboxEventWhereInput! = {}, orderBy: [OutboxEventOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: OutboxEventWhereUniqueInput): [OutboxEvent!]
-  outboxEventsCount(where: OutboxEventWhereInput! = {}): Int
   phiReadAudit(where: PhiReadAuditWhereUniqueInput!): PhiReadAudit
   phiReadAudits(where: PhiReadAuditWhereInput! = {}, orderBy: [PhiReadAuditOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PhiReadAuditWhereUniqueInput): [PhiReadAudit!]
   phiReadAuditsCount(where: PhiReadAuditWhereInput! = {}): Int

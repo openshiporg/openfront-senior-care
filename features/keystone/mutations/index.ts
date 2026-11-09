@@ -15,7 +15,7 @@ import '../lib/censusCorrection'
 const graphql = String.raw
 
 // Every domain resolver checks permission (and community assignment) itself and runs as one
-// idempotent command: the state change, audit events, outbox messages and clocks commit in one
+// idempotent command: the state change, audit events and clocks commit in one
 // transaction (features/keystone/lib). Census commands run at Serializable isolation.
 export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
   return mergeSchemas({

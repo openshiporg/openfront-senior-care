@@ -741,7 +741,6 @@ __export(platform_exports, {
   Notification: () => Notification,
   NotificationDelivery: () => NotificationDelivery,
   OperatorSettings: () => OperatorSettings,
-  OutboxEvent: () => OutboxEvent,
   PhiReadAudit: () => PhiReadAudit,
   ProcessorRegistration: () => ProcessorRegistration,
   RegulatoryObligation: () => RegulatoryObligation,
@@ -911,7 +910,7 @@ var Community = (0, import_core7.list)({
     settingsOffered: (0, import_fields7.json)({ defaultValue: [] }),
     jurisdictionPack: (0, import_fields7.relationship)({ ref: "JurisdictionPack" }),
     holidayCalendar: (0, import_fields7.relationship)({ ref: "HolidayCalendar" }),
-    identifiers: (0, import_fields7.json)({ defaultValue: {}, ui: { description: "CCN, NPI, state licence, Medicaid provider id, NHSN OrgID. Seeded values are fictional." } }),
+    identifiers: (0, import_fields7.json)({ defaultValue: {}, ui: { description: "CCN, NPI, state licence, Medicaid provider id, NHSN OrgID. Seeded values are invented." } }),
     bedHoldPolicy: (0, import_fields7.relationship)({ ref: "BedHoldPolicy" }),
     buildings: (0, import_fields7.relationship)({ ref: "Building.community", many: true }),
     units: (0, import_fields7.relationship)({ ref: "Unit.community", many: true }),
@@ -1054,26 +1053,6 @@ var CommandReceipt = (0, import_core7.list)({
     responseBody: (0, import_fields7.json)(),
     recoveryPoint: (0, import_fields7.text)({ defaultValue: "completed" }),
     completedAt: (0, import_fields7.timestamp)({ defaultValue: { kind: "now" } }),
-    ...trackingFields
-  }
-});
-var OutboxEvent = (0, import_core7.list)({
-  access: governed("canManageIntegrations"),
-  ui: { listView: { initialColumns: ["topic", "status", "attempts", "nextAttemptAt", "aggregateType", "aggregateId"] } },
-  fields: {
-    topic: systemText({ indexed: true, required: true }),
-    aggregateType: systemText({ required: true }),
-    aggregateId: systemText({ indexed: true, required: true }),
-    dedupeKey: systemText({ indexed: "unique", required: true }),
-    payload: (0, import_fields7.json)({ ...readOnly }),
-    status: lifecycle(["pending", "leased", "delivered", "failed", "dead"]),
-    attempts: (0, import_fields7.integer)({ defaultValue: 0, ...readOnly }),
-    nextAttemptAt: (0, import_fields7.timestamp)({ defaultValue: { kind: "now" }, ...readOnly }),
-    leaseOwner: systemText(),
-    leaseExpiresAt: (0, import_fields7.timestamp)({ ...readOnly }),
-    fencingToken: (0, import_fields7.integer)({ defaultValue: 0, ...readOnly }),
-    lastError: systemText(),
-    deliveredAt: (0, import_fields7.timestamp)({ ...readOnly }),
     ...trackingFields
   }
 });
@@ -2761,29 +2740,15 @@ var UnitOfWork = class {
     this.now = now;
     this.requestId = requestId;
     this.audits = [];
-    this.outbox = [];
   }
   audit(event) {
     this.audits.push({ requestId: this.requestId, ...event });
   }
-  emit(message) {
-    this.outbox.push(message);
-  }
 };
-async function flushOutbox(tx, messages, now) {
-  if (!messages.length) return;
-  const rows = messages.map((message) => {
-    const payload = toJsonValue(message.payload);
-    const dedupeKey = message.dedupeKey ?? `${message.topic}:${message.aggregateType}:${message.aggregateId}:${sha256(canonicalJson(payload))}`;
-    return { topic: message.topic, aggregateType: message.aggregateType, aggregateId: message.aggregateId, dedupeKey, payload, status: "pending", nextAttemptAt: message.availableAt ?? now };
-  });
-  await tx.outboxEvent.createMany({ data: rows, skipDuplicates: true });
-}
 async function runInTransaction(db, work, options = {}) {
   return db.$transaction(async (tx) => {
     const uow = new UnitOfWork(tx, options.now ?? /* @__PURE__ */ new Date(), options.requestId ?? null);
     const result = await work(uow);
-    await flushOutbox(tx, uow.outbox, uow.now);
     await appendAuditEvents(tx, uow.audits, uow.now);
     return result;
   }, options.serializable ? { ...TRANSACTION_OPTIONS, isolationLevel: "Serializable" } : TRANSACTION_OPTIONS);
@@ -3059,9 +3024,9 @@ var COMMUNITY = {
   region: "OH",
   postalCode: "43219",
   country: "US",
-  phone: "(614) 555-0142",
+  phone: "(614) 471-3800",
   settingsOffered: ["nursing_facility", "assisted_living", "memory_care", "independent_living"],
-  identifiers: { ccn: "SEED-CCN-0001", npi: "SEED-NPI-0001", stateLicence: "SEED-OH-NH-0001", medicaidProviderId: "SEED-OH-MCD-0001", nhsnOrgId: "SEED-NHSN-0001" }
+  identifiers: { ccn: "366427", npi: "1487296530", stateLicence: "NH-2194", medicaidProviderId: "0318462", nhsnOrgId: "48271" }
 };
 var NF_UNITS = [
   { id: "seed_unit_birch", name: "Birch", code: "BIR", specialty: "short_stay_rehab", firstRoom: 101, beds: 32, isolationRooms: 0 },
@@ -3090,9 +3055,9 @@ function apartmentTypeFor(unitCode, index) {
 var PAYERS = [
   { id: "seed_payer_medicare_a", name: "Medicare Part A", kind: "medicare_a", claimFormat: "837i", dayCountingRule: "count_admit_not_discharge" },
   { id: "seed_payer_ohio_medicaid", name: "Ohio Medicaid (fee-for-service)", kind: "medicaid_ffs", claimFormat: "837i", dayCountingRule: "count_admit_not_discharge" },
-  { id: "seed_payer_buckeye_ma", name: "Buckeye Health Advantage (fictional MA plan)", kind: "medicare_advantage", claimFormat: "837i", dayCountingRule: "count_admit_not_discharge" },
-  { id: "seed_payer_ohio_mco", name: "Scioto Care Partners (fictional Ohio Medicaid MCO)", kind: "medicaid_mco", claimFormat: "837i", dayCountingRule: "count_admit_not_discharge" },
-  { id: "seed_payer_lakeshore_ltc", name: "Lakeshore Long-Term Care Insurance (fictional)", kind: "ltc_insurance", claimFormat: "invoice", dayCountingRule: "count_admit_not_discharge" },
+  { id: "seed_payer_buckeye_ma", name: "Buckeye Health Advantage", kind: "medicare_advantage", claimFormat: "837i", dayCountingRule: "count_admit_not_discharge" },
+  { id: "seed_payer_ohio_mco", name: "Scioto Care Partners", kind: "medicaid_mco", claimFormat: "837i", dayCountingRule: "count_admit_not_discharge" },
+  { id: "seed_payer_lakeshore_ltc", name: "Lakeshore Long-Term Care Insurance", kind: "ltc_insurance", claimFormat: "invoice", dayCountingRule: "count_admit_not_discharge" },
   { id: "seed_payer_private", name: "Private pay", kind: "private_pay", claimFormat: "invoice", dayCountingRule: "count_admit_not_discharge" }
 ];
 var FAMILY_NAMES = ["Abbott", "Bauer", "Castillo", "Delgado", "Eastman", "Fischer", "Gallagher", "Hoffman", "Iverson", "Jablonski", "Kowalski", "Lindgren", "Mahoney", "Novak", "Ortega", "Pruitt", "Quinlan", "Rasmussen", "Sorensen", "Takahashi", "Underwood", "Vasquez", "Whitaker", "Yoder"];
@@ -3241,7 +3206,7 @@ async function seedOperatorPlatform(uow, actor) {
     const rule3 = US_OH_PACK.rules.medicaidBedHold ?? {};
     const policy = await tx.bedHoldPolicy.upsert({
       where: { id: "seed_bed_hold_policy_maple_ridge" },
-      create: { id: "seed_bed_hold_policy_maple_ridge", name: "Maple Ridge bed-hold policy", communityId: community.id, jurisdictionPackId: "seed_pack_us_oh", medicaidHoldDaysPerYear: rule3.daysPerCalendarYear, medicaidHoldPaid: true, medicaidHoldRateRule: rule3.rateRule, therapeuticLeaveDaysPerYear: rule3.daysPerCalendarYear, privateHoldDailyRateMinor: 31500n, ruleRef: rule3.ruleRef, verifyNote: `${rule3.verifyNote} Private hold charge is the operator's contract rate (fictional).`, effectiveFrom: day("2026-01-01") },
+      create: { id: "seed_bed_hold_policy_maple_ridge", name: "Maple Ridge bed-hold policy", communityId: community.id, jurisdictionPackId: "seed_pack_us_oh", medicaidHoldDaysPerYear: rule3.daysPerCalendarYear, medicaidHoldPaid: true, medicaidHoldRateRule: rule3.rateRule, therapeuticLeaveDaysPerYear: rule3.daysPerCalendarYear, privateHoldDailyRateMinor: 31500n, ruleRef: rule3.ruleRef, verifyNote: `${rule3.verifyNote} Private hold charge is the operator's contract rate.`, effectiveFrom: day("2026-01-01") },
       update: {}
     });
     await tx.community.update({ where: { id: community.id }, data: { bedHoldPolicyId: policy.id } });
@@ -3385,7 +3350,6 @@ async function openClock(uow, actor, input, known) {
     }
   });
   uow.audit({ eventType: "clock.opened", entityType: "ComplianceClock", entityId: clock.id, actorUserId: actorUserId(actor), actorAgentId: actorAgentId(actor), after: { obligationCode: clock.obligationCode, subjectType: clock.subjectType, subjectId: clock.subjectId, dueAt: clock.dueAt } });
-  uow.emit({ topic: "clock.opened", aggregateType: "ComplianceClock", aggregateId: clock.id, payload: { obligationCode: clock.obligationCode, dueAt: clock.dueAt }, dedupeKey: `clock.opened:${clock.id}` });
   return clock;
 }
 async function openClocksForFact(uow, actor, input) {
@@ -3438,7 +3402,6 @@ async function sweepClocks(uow, actor) {
     if (result.count !== 1) continue;
     overdue += 1;
     uow.audit({ eventType: "clock.overdue", entityType: "ComplianceClock", entityId: clock.id, actorUserId: actorUserId(actor), before: { status: "open" }, after: { status: "overdue", escalationLevel: (clock.escalationLevel ?? 0) + 1 } });
-    uow.emit({ topic: "clock.overdue", aggregateType: "ComplianceClock", aggregateId: clock.id, payload: { obligationCode: clock.obligationCode, communityId: clock.communityId, ownerRole: clock.ownerRole }, dedupeKey: `clock.overdue:${clock.id}:${(clock.escalationLevel ?? 0) + 1}` });
   }
   return { checked: due.length, overdue };
 }
@@ -3697,7 +3660,6 @@ async function reconcileBed(uow, actor, stay, bedId2, from, to, options) {
     await uow.tx.bedOccupancy.update({ where: { id: open.id }, data: { endAt, closedByEventId: options.eventId } });
     uow.audit({ eventType: "bed_occupancy.closed", entityType: "BedOccupancy", entityId: open.id, actorUserId: actorUserId(actor), actorAgentId: actorAgentId(actor), after: { endAt } });
   }
-  uow.emit({ topic: "housekeeping.turnover", aggregateType: "Bed", aggregateId: bedId2, payload: { bedId: bedId2, reason: "census_release" }, dedupeKey: `housekeeping.turnover:${bedId2}:${options.eventId}` });
 }
 async function reconcileApartment(uow, actor, stay, apartmentId, had, has, options) {
   const apartment = await lockRow(uow.tx, "Apartment", apartmentId);
@@ -3718,7 +3680,6 @@ async function reconcileApartment(uow, actor, stay, apartmentId, had, has, optio
   }
   const remaining = Math.max(0, apartment.occupantCount - 1);
   await casUpdate(uow, { model: "Apartment", id: apartmentId, version: apartment.version, from: ["occupied"], to: remaining === 0 ? "turnover" : "occupied", actor, eventType: "apartment.occupant_removed", data: { occupantCount: remaining }, metadata });
-  if (remaining === 0) uow.emit({ topic: "housekeeping.turnover", aggregateType: "Apartment", aggregateId: apartmentId, payload: { apartmentId, reason: "census_release" }, dedupeKey: `housekeeping.turnover:${apartmentId}:${options.eventId}` });
 }
 async function consumeReservation(uow, actor, reservationId, version2, stayId) {
   await casUpdate(uow, { model: "PlaceReservation", id: reservationId, version: version2, from: ["active"], to: "consumed", actor, eventType: "reservation.consumed", data: { consumedByStayId: stayId } });
@@ -3782,7 +3743,6 @@ ${canonicalJson(body)}`);
     });
     prevHash = hash;
     events.push({ id: row.id, seq: row.seq, kind: row.kind });
-    uow.emit({ topic: `census.${input.kind}`, aggregateType: "Stay", aggregateId: stay.id, payload: { stayId: stay.id, eventId: row.id, communityId: stay.communityId, effectiveAt: input.effectiveAt, late: Boolean(options.late) }, dedupeKey: `census:${row.id}` });
   }
   const lastInput = inputs[inputs.length - 1];
   await reconcilePlaces(uow, actor, stay, before, after, { reservationId: options.reservationId, companionRelationship: options.companionRelationship, eventId: events[events.length - 1].id, effectiveAt: options.late ? uow.now : lastInput.effectiveAt });
@@ -3931,7 +3891,6 @@ async function admitResident(uow, actor, input) {
   await casUpdate(uow, { model: "Resident", id: residentId, version: resident.version, from: [resident.status], to: "current", actor, eventType: "resident.admitted", data: { currentStayId: stay.id, communityId: input.communityId } });
   await openClocksForFact(uow, actor, { fact: "census.admission", communityId: input.communityId, residentId, subjectType: "Stay", subjectId: stay.id, startedAt: input.effectiveAt, setting, payerKind: payer.kind, evidence: { type: "census_event:admission", id: event.id } });
   for (const notice of input.notices ?? []) await recordNotice(uow, actor, { ...notice, stayId: stay.id });
-  uow.emit({ topic: "portal.invite_representatives", aggregateType: "Stay", aggregateId: stay.id, payload: { stayId: stay.id }, dedupeKey: `portal.invite:${stay.id}` });
   return { stayId: stay.id, residentId, eventId: event.id, status: after.status, presence: after.presence };
 }
 async function convertSalesRecords(uow, actor, input) {
@@ -3997,7 +3956,6 @@ async function changeRoom(uow, actor, input) {
     idempotencyKey: input.idempotencyKey,
     detail: { reason: input.reason ?? null }
   }, { companionRelationship: input.companionRelationship, reservationId: input.reservationId });
-  uow.emit({ topic: "task.room_change_notice", aggregateType: "Stay", aggregateId: stay.id, payload: { stayId: stay.id, eventId: result.event.id }, dedupeKey: `task.room_change_notice:${result.event.id}` });
   return { stayId: stay.id, eventId: result.event.id, presence: result.after.presence, version: result.version };
 }
 async function startLeave(uow, actor, input) {
@@ -4039,7 +3997,6 @@ async function startLeave(uow, actor, input) {
   await openClocksForFact(uow, actor, { ...subject, fact: "census.leave_start", evidence: { type: "census_event:leave_start", id: result.event.id } });
   if (input.facilityInitiated) await openClocksForFact(uow, actor, { ...subject, fact: "census.facility_initiated_transfer" });
   if (input.noticeAtTransfer) await recordNotice(uow, actor, { ...input.noticeAtTransfer, kind: "bed_hold_at_transfer", stayId: stay.id, censusEventId: result.event.id });
-  if (input.leaveKind === "hospital") uow.emit({ topic: "task.transfer_packet", aggregateType: "Stay", aggregateId: stay.id, payload: { stayId: stay.id, eventId: result.event.id }, dedupeKey: `task.transfer_packet:${result.event.id}` });
   return { stayId: stay.id, eventId: result.event.id, presence: result.after.presence, version: result.version };
 }
 async function bedHoldPolicyFor(tx, communityId) {
@@ -4090,7 +4047,6 @@ async function dischargeResident(uow, actor, input) {
     const notice = await uow.tx.noticeDelivery.findFirst({ where: { subjectType: "Stay", subjectId: stay.id, kind: "transfer_discharge", copyToOmbudsmanAt: { not: null } } });
     if (notice) await satisfyByEvidence(uow, actor, { subjectType: "Stay", subjectId: stay.id, occurrenceKey: result.event.id }, { type: "ombudsman_copy", id: notice.id, at: notice.copyToOmbudsmanAt });
   }
-  uow.emit({ topic: "portal.stay_ended", aggregateType: "Stay", aggregateId: stay.id, payload: { stayId: stay.id }, dedupeKey: `portal.stay_ended:${stay.id}` });
   return { stayId: stay.id, eventId: result.event.id, status: result.after.status };
 }
 async function recordDeath(uow, actor, input) {
@@ -4099,7 +4055,6 @@ async function recordDeath(uow, actor, input) {
   const result = await appendCensusEvent(uow, actor, stay, { kind: "death", effectiveAt: input.effectiveAt, observedAt: input.observedAt, fromBedId: stay.currentBedId ?? stay.heldBedId, fromApartmentId: stay.currentApartmentId, idempotencyKey: input.idempotencyKey, detail: { pronouncedBy: input.pronouncedBy.trim() } });
   await endStay(uow, actor, stay, input.effectiveAt, "death", "deceased");
   await openClocksForFact(uow, actor, { fact: "census.death", communityId: stay.communityId, residentId: stay.residentId, subjectType: "Stay", subjectId: stay.id, startedAt: input.effectiveAt, setting: stay.setting, payerKind: await primaryPayerKind(uow.tx, stay.id) });
-  uow.emit({ topic: "task.family_notification", aggregateType: "Stay", aggregateId: stay.id, payload: { stayId: stay.id }, dedupeKey: `task.family_notification:${stay.id}` });
   return { stayId: stay.id, eventId: result.event.id, status: result.after.status };
 }
 async function endStay(uow, actor, stay, at, reason, residentStatus) {
@@ -4299,7 +4254,6 @@ async function signOffCensusDay(uow, actor, input) {
   const snapshot = await snapshotCensusDay(uow, actor, { communityId: input.communityId, date: input.date });
   const signoff = await uow.tx.censusSignoff.create({ data: { communityId: input.communityId, date: day2(input.date), totals: snapshot.totals, signedById: actor.userId, signedAt: uow.now, note: input.note?.trim() ?? "" } });
   uow.audit({ eventType: "census.signed_off", entityType: "CensusSignoff", entityId: signoff.id, actorUserId: actor.userId, after: { communityId: input.communityId, date: input.date, totals: snapshot.totals } });
-  uow.emit({ topic: "census.signed_off", aggregateType: "Community", aggregateId: input.communityId, payload: { date: input.date }, dedupeKey: `census.signed_off:${input.communityId}:${input.date}` });
   return { signoffId: signoff.id, date: input.date, totals: snapshot.totals };
 }
 
@@ -4357,7 +4311,6 @@ async function endReservation(uow, actor, input) {
   const place = await lockPlace(uow.tx, { bedId: reservation.bedId, apartmentId: reservation.apartmentId });
   await casUpdate(uow, { model: "PlaceReservation", id: reservation.id, version: reservation.version, from: ["active"], to: input.to, actor, eventType: `reservation.${input.to}`, reason: input.reason ?? null });
   if (place.row.status === "reserved") await casUpdate(uow, { model: place.model, id: place.id, version: place.row.version, from: ["reserved"], to: "available", actor, eventType: `${place.model.toLowerCase()}.reservation_ended`, metadata: { reservationId: reservation.id } });
-  uow.emit({ topic: "availability.changed", aggregateType: place.model, aggregateId: place.id, payload: { [place.model === "Bed" ? "bedId" : "apartmentId"]: place.id }, dedupeKey: `availability:${reservation.id}:${input.to}` });
   return { reservationId: reservation.id, status: input.to };
 }
 async function markPlaceReady(uow, actor, input) {
@@ -4366,7 +4319,6 @@ async function markPlaceReady(uow, actor, input) {
   const from = place.model === "Bed" ? "cleaning" : "turnover";
   if (place.model === "Apartment" && (place.row.occupantCount ?? 0) > 0) throw new DomainError(Codes.GUARD_FAILED, `${place.name} still has a resident.`);
   await casUpdate(uow, { model: place.model, id: place.id, version: place.row.version, from: [from], to: "available", actor, eventType: `${place.model.toLowerCase()}.ready`, reason: input.note ?? null, data: { statusReason: "" } });
-  uow.emit({ topic: "availability.changed", aggregateType: place.model, aggregateId: place.id, payload: { placeId: place.id }, dedupeKey: `availability:${place.id}:ready:${place.row.version}` });
   return { id: place.id, status: "available", version: place.row.version + 1 };
 }
 async function setPlaceService(uow, actor, input) {
@@ -4380,7 +4332,6 @@ async function setPlaceService(uow, actor, input) {
     return { id: place.id, status: "out_of_service" };
   }
   await casUpdate(uow, { model: place.model, id: place.id, version: place.row.version, from: ["out_of_service"], to: "available", actor, eventType: `${place.model.toLowerCase()}.in_service`, reason: input.reason.trim(), data: { statusReason: "" } });
-  uow.emit({ topic: "availability.changed", aggregateType: place.model, aggregateId: place.id, payload: { placeId: place.id }, dedupeKey: `availability:${place.id}:in_service:${place.row.version}` });
   return { id: place.id, status: "available" };
 }
 async function recomputeAvailability(uow, communityId) {
@@ -4477,7 +4428,7 @@ async function inviteRepresentative(uow, actor, input) {
   }
   const token = createPublicToken("portal-invite", account.id, expiresAt.getTime());
   await uow.tx.portalAccount.update({ where: { id: account.id }, data: { invitationTokenHash: hashPublicToken(token), invitationExpiresAt: expiresAt } });
-  uow.emit({ topic: "mail.portal_invitation", aggregateType: "PortalAccount", aggregateId: account.id, payload: { accountId: account.id, contactId: rep.contactId, token, expiresAt }, dedupeKey: `mail.portal_invitation:${account.id}:${expiresAt.getTime()}` });
+  input.onToken?.(token);
   return { accountId: account.id, reference: account.reference, expiresAt };
 }
 async function acceptPortalInvitation(uow, input) {
@@ -4558,7 +4509,6 @@ async function openBreakGlass(uow, actor, input) {
   if (open) return { grantId: open.id, expiresAt: open.expiresAt, reused: true };
   const grant = await uow.tx.breakGlassGrant.create({ data: { userId: actor.userId, residentId: input.residentId, reason: input.reason, note: input.note.trim(), requestedAt: uow.now, expiresAt: new Date(uow.now.getTime() + hours2 * 36e5), status: "active" } });
   auditCreate(uow, actor, "BreakGlassGrant", grant.id, "break_glass.opened", { residentId: input.residentId, reason: input.reason, hours: hours2 });
-  uow.emit({ topic: "privacy.break_glass_opened", aggregateType: "BreakGlassGrant", aggregateId: grant.id, payload: { grantId: grant.id }, dedupeKey: `privacy.break_glass:${grant.id}` });
   return { grantId: grant.id, expiresAt: grant.expiresAt, reused: false };
 }
 async function endBreakGlass(uow, actor, input) {
@@ -4576,7 +4526,6 @@ async function reviewBreakGlass(uow, actor, input) {
   if (input.expectedVersion != null && input.expectedVersion !== grant.version) throw new DomainError(Codes.STALE_STATE, "The grant changed since you loaded it.", { currentStatus: grant.status, currentVersion: grant.version });
   const from = grant.status === "active" && grant.expiresAt && grant.expiresAt.getTime() <= uow.now.getTime() ? "active" : "ended";
   await casUpdate(uow, { model: "BreakGlassGrant", id: grant.id, version: grant.version, from: [from], to: input.outcome, actor, eventType: `break_glass.${input.outcome}`, reason: input.note.trim(), data: { reviewedById: actor.userId, reviewNote: input.note.trim(), ...from === "active" ? { endedAt: grant.expiresAt } : {} } });
-  if (input.outcome === "reviewed_violation") uow.emit({ topic: "privacy.break_glass_violation", aggregateType: "BreakGlassGrant", aggregateId: grant.id, payload: { grantId: grant.id }, dedupeKey: `privacy.violation:${grant.id}` });
   return { grantId: grant.id, status: input.outcome };
 }
 
@@ -4610,7 +4559,6 @@ async function submitInquiry(uow, input) {
   const utm = Object.fromEntries(Object.entries(input.utm ?? {}).slice(0, 10).map(([key, value]) => [clean(key, 40), clean(value, 200)]));
   const inquiry = await uow.tx.inquiry.create({ data: { publicCode: code, communityId: community.id, source: "website", contactName: name, contactEmail: email, contactPhone: phone, relationship: clean(input.relationship, 80), message: clean(input.message, 4e3), consentToContact: true, utm, leadId: lead.id } });
   uow.audit({ eventType: "inquiry.received", entityType: "Inquiry", entityId: inquiry.id, actorUserId: null, after: { publicCode: code, leadId: lead.id, communityId: community.id } });
-  uow.emit({ topic: "task.sales_callback", aggregateType: "Lead", aggregateId: lead.id, payload: { leadId: lead.id, communityId: community.id }, dedupeKey: `task.sales_callback:${lead.id}` });
   return { publicCode: code };
 }
 async function recordInquiry(uow, actor, input) {
@@ -4709,7 +4657,6 @@ async function requestTour(uow, input) {
   const token = createPublicToken("tour-manage", tour.id, slot.startsAt.getTime() + 864e5);
   await uow.tx.tour.update({ where: { id: tour.id }, data: { guestTokenHash: hashPublicToken(token) } });
   uow.audit({ eventType: "tour.requested", entityType: "Tour", entityId: tour.id, actorUserId: null, after: { publicCode: code, slotId: slot.id } });
-  uow.emit({ topic: "mail.tour_requested", aggregateType: "Tour", aggregateId: tour.id, payload: { tourId: tour.id }, dedupeKey: `mail.tour_requested:${tour.id}` });
   return { publicCode: code, manageToken: token, holdExpiresAt: tour.holdExpiresAt };
 }
 async function scheduleTour(uow, actor, input) {
@@ -4723,7 +4670,6 @@ async function scheduleTour(uow, actor, input) {
   const tour = await uow.tx.tour.create({ data: { publicCode: publicCode("TOUR"), communityId: slot.communityId, slotId: slot.id, leadId: lead.id, kind: input.kind, status: "confirmed", notes: clean(input.notes, 2e3) } });
   auditCreate(uow, actor, "Tour", tour.id, "tour.scheduled", { slotId: slot.id, leadId: lead.id, kind: input.kind });
   if (LEAD_EDGES.tour_scheduled.includes(lead.status)) await casUpdate(uow, { model: "Lead", id: lead.id, version: lead.version, from: [lead.status], to: "tour_scheduled", actor, eventType: "lead.tour_scheduled", metadata: { tourId: tour.id } });
-  uow.emit({ topic: "mail.tour_confirmed", aggregateType: "Tour", aggregateId: tour.id, payload: { tourId: tour.id }, dedupeKey: `mail.tour_confirmed:${tour.id}` });
   return { tourId: tour.id, publicCode: tour.publicCode, startsAt: slot.startsAt };
 }
 async function cancelTourWithToken(uow, input) {
@@ -4801,7 +4747,6 @@ async function recordReferral(uow, actor, input) {
     data: { reference: await nextReference(uow.tx, "REF", uow.now), communityId: community.id, sourceId: input.sourceId ?? null, receivedAt, prospectId: prospect.id, expectedPayer: input.expectedPayer, pasrrLevel1Id, clinicalSummary: clean(input.clinicalSummary, 8e3), pasrrLevel2Required: Boolean(input.pasrrLevel2Required), status: "received", responseDueAt: new Date(receivedAt.getTime() + hours2 * 36e5) }
   });
   auditCreate(uow, actor, "Referral", referral.id, "referral.received", { reference: referral.reference, sourceId: input.sourceId ?? null, expectedPayer: input.expectedPayer, responseDueAt: referral.responseDueAt });
-  uow.emit({ topic: "task.referral_response", aggregateType: "Referral", aggregateId: referral.id, payload: { referralId: referral.id, communityId: community.id }, dedupeKey: `task.referral_response:${referral.id}` });
   return { referralId: referral.id, reference: referral.reference, prospectId: prospect.id, responseDueAt: referral.responseDueAt };
 }
 async function addToWaitlist(uow, actor, input) {
@@ -4935,7 +4880,31 @@ var REP_GIVEN = ["Karen", "Michael", "Susan", "David", "Lisa", "Robert", "Julie"
 var FAMILY_MAIL_DOMAINS = ["gmail.com", "yahoo.com", "outlook.com"];
 var slug = (value) => value.toLowerCase().normalize("NFD").replace(/[^a-z]/g, "");
 var familyEmail = (first, last, n) => `${slug(first)}.${slug(last)}${n * 37 % 89 + 11}@${FAMILY_MAIL_DOMAINS[n % 3]}`;
-var familyPhone = (n) => `(614) 555-01${String(n % 100).padStart(2, "0")}`;
+var FAMILY_AREAS = ["614", "614", "380", "614", "740", "216", "513", "614", "937", "412", "614", "317"];
+var FAMILY_EXCHANGES = ["214", "237", "262", "268", "291", "316", "337", "351", "404", "418", "431", "459", "476", "488", "523", "561", "575", "732", "777", "865", "891", "946"];
+var familyPhone = (n) => {
+  const area = FAMILY_AREAS[n % FAMILY_AREAS.length];
+  const exchange = FAMILY_EXCHANGES[(n * 7 + 3) % FAMILY_EXCHANGES.length];
+  const line = String((n * 7919 + 2741) % 9e3 + 1e3);
+  return `(${area}) ${exchange}-${line}`;
+};
+var MBI_ALPHA = "ACDEFGHJKMNPQRTUVWXY";
+var MBI_ALNUM = `0123456789${MBI_ALPHA}`;
+var memberNumber = (kind, seed) => {
+  let h = 2166136261;
+  for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  const next = (n) => {
+    h = Math.imul(h ^ h >>> 15, 2246822519) >>> 0;
+    return h % n;
+  };
+  if (kind === "mbi") {
+    const pattern = ["C", "A", "AN", "N", "A", "AN", "N", "A", "A", "N", "N"];
+    const id = pattern.map((slot) => slot === "C" ? String(1 + next(9)) : slot === "N" ? String(next(10)) : slot === "A" ? MBI_ALPHA[next(MBI_ALPHA.length)] : MBI_ALNUM[next(MBI_ALNUM.length)]).join("");
+    return `${id.slice(0, 4)}-${id.slice(4, 7)}-${id.slice(7)}`;
+  }
+  if (kind === "medicaid") return Array.from({ length: 12 }, (_, i) => i === 0 ? 1 + next(9) : next(10)).join("");
+  return `LTC${String(1e8 + next(9e8))}`;
+};
 var PAYER_ID = {
   medicare_a: "seed_payer_medicare_a",
   medicare_advantage: "seed_payer_buckeye_ma",
@@ -4946,7 +4915,7 @@ var PAYER_ID = {
 };
 var MEDICAID = ["medicaid_ffs", "medicaid_mco"];
 var MC_REASONS = [
-  "Moderate dementia with exit-seeking; secured neighbourhood agreed at the care conference with the healthcare POA.",
+  "Moderate dementia with exit-seeking; secured neighborhood agreed at the care conference with the healthcare POA.",
   "Alzheimer's disease with nighttime wandering; secured unit recommended by the attending physician and accepted by the family.",
   "Vascular dementia with two community elopements before admission; secured placement chosen with the representative.",
   "Frontotemporal dementia; needs a structured, secured setting per the neurologist's recommendation and family consent."
@@ -5113,7 +5082,7 @@ function buildCensusPlan(options) {
     const effective = plan.when;
     const pasrr = nursing && !plan.prospect ? { completedAt: plus(effective, -26 * 60).toISOString(), result: "Level I negative: no serious mental illness or intellectual disability indicated; Level II not required." } : null;
     const reps = [...r.reps, ...r.hospice ? [{ firstName: "Carmen", lastName: "Ostrowski", phone: familyPhone(77), roles: ["hospice_contact"], contactPriority: 9 }] : []];
-    const memberPrefix = r.payer.startsWith("medicare") ? "SEED-MBI" : MEDICAID.includes(r.payer) ? "SEED-OHMCD" : r.payer === "ltc" ? "SEED-LTC" : "";
+    const memberKind = r.payer.startsWith("medicare") ? "mbi" : MEDICAID.includes(r.payer) ? "medicaid" : r.payer === "ltc" ? "ltc" : null;
     const notices = [
       ...nursing ? [{ kind: "bed_hold_policy", method: "in_person", deliveredAt: effective.toISOString(), acknowledgement: "signed", note: "Bed-hold and readmission policy explained at admission." }] : [],
       { kind: "privacy_practices", method: "in_person", deliveredAt: effective.toISOString(), acknowledgement: "signed", note: "Notice of privacy practices given at admission." }
@@ -5125,7 +5094,7 @@ function buildCensusPlan(options) {
       bedId: bed ?? null,
       apartmentId: apt ?? null,
       payerId: PAYER_ID[r.payer],
-      memberReference: memberPrefix ? `${memberPrefix}-${r.code.toUpperCase()}` : null,
+      memberReference: memberKind ? memberNumber(memberKind, `${r.code}:${r.payer}`) : null,
       qualifyingStayFrom: plan.qualifying ? localDate(tz, plus(effective, -5 * 1440)) : null,
       qualifyingStayTo: plan.qualifying ? localDate(tz, effective) : null,
       admissionSource: plan.source,
@@ -5205,7 +5174,7 @@ function buildCensusPlan(options) {
       holdPaidBy: plan.hold === "none" ? "none" : plan.hold,
       facilityInitiated: true,
       effectiveAt: plan.start.toISOString(),
-      destination: "Scioto Ridge Medical Center emergency department (fictional)",
+      destination: "Scioto Ridge Medical Center emergency department",
       noticeAtTransfer: { method: "phone_then_mail", deliveredAt: plan.start.toISOString(), acknowledgement: "not_required", note: plan.hold === "none" ? "Bed-hold notice given; the representative declined the hold." : "Bed-hold notice explained by phone; written copy mailed to the representative." }
     });
     if (plan.ombudsmanCopy) {
@@ -5707,10 +5676,10 @@ async function representativeOf(uow, residentId, priority) {
   return rep.id;
 }
 var REFERRAL_SOURCES = [
-  { id: "seed_referral_source_scioto_ridge", name: "Scioto Ridge Medical Center (fictional) \xB7 case management", kind: "hospital", contact: { name: "Allison Mercer, RN, discharge planner", phone: "(614) 555-0171" } },
-  { id: "seed_referral_source_alum_creek", name: "Alum Creek Regional Hospital (fictional) \xB7 transitions of care", kind: "hospital", contact: { name: "Derek Fontaine, MSW", phone: "(614) 555-0172" } },
-  { id: "seed_referral_source_buckeye_placement", name: "Buckeye Senior Placement (fictional)", kind: "placement_agency", contact: { name: "Corinne Abernathy", phone: "(614) 555-0173" } },
-  { id: "seed_referral_source_okafor_im", name: "Okafor Internal Medicine (fictional)", kind: "physician", contact: { name: "Dr. Chinedu Okafor", phone: "(614) 555-0174" } }
+  { id: "seed_referral_source_scioto_ridge", name: "Scioto Ridge Medical Center \xB7 case management", kind: "hospital", contact: { name: "Allison Mercer, RN, discharge planner", phone: "(614) 268-4410" } },
+  { id: "seed_referral_source_alum_creek", name: "Alum Creek Regional Hospital \xB7 transitions of care", kind: "hospital", contact: { name: "Derek Fontaine, MSW", phone: "(614) 475-2290" } },
+  { id: "seed_referral_source_buckeye_placement", name: "Buckeye Senior Placement", kind: "placement_agency", contact: { name: "Corinne Abernathy", phone: "(380) 214-7765" } },
+  { id: "seed_referral_source_okafor_im", name: "Okafor Internal Medicine", kind: "physician", contact: { name: "Dr. Chinedu Okafor", phone: "(614) 337-9182" } }
 ];
 var STOREFRONT_ID = "seed_storefront_maple_ridge";
 var PRICES = [
@@ -5730,11 +5699,11 @@ async function loadStorefront(uow, actor) {
       data: {
         id: STOREFRONT_ID,
         heroTitle: "Care that feels like home, on Columbus's east side",
-        heroBody: "Maple Ridge Senior Living offers independent living, assisted living, a secured memory care neighbourhood and a Medicare- and Medicaid-certified nursing and rehabilitation center on one campus, so residents can stay as their needs change.",
+        heroBody: "Maple Ridge Senior Living offers independent living, assisted living, a secured memory care neighborhood and a Medicare- and Medicaid-certified nursing and rehabilitation center on one campus, so residents can stay as their needs change.",
         amenities: ["Restaurant-style dining with three meals a day", "Therapy gym with physical, occupational and speech therapy", "Courtyard gardens and walking paths", "Chapel and weekly services", "Salon and barber", "Scheduled transportation to appointments", "Housekeeping and linen service", "Library and computer lounge"],
         diningCopy: "Our chef plans seasonal menus with the residents' food committee. Therapeutic and texture-modified diets are prepared in the same kitchen, and families are welcome at Sunday brunch.",
         activitiesCopy: "Seven days of programs: exercise classes, music and art, outings, faith services and intergenerational visits with the elementary school next door.",
-        careLevelsCopy: "Independent living with services on request; assisted living with help for bathing, dressing and medications; memory care in the secured Harbor neighbourhood; and 24-hour skilled nursing with short-term rehabilitation in Birch.",
+        careLevelsCopy: "Independent living with services on request; assisted living with help for bathing, dressing and medications; memory care in the secured Harbor neighborhood; and 24-hour skilled nursing with short-term rehabilitation in Birch.",
         faq: [
           { q: "Do you accept Medicare and Medicaid?", a: "Our nursing center accepts Medicare Part A, Medicare Advantage plans we contract with, and Ohio Medicaid. Assisted living, memory care and independent living are private pay or long-term care insurance." },
           { q: "Can couples live together?", a: "Yes. Companion suites in assisted living are designed for two, and spouses in different levels of care are on the same campus." },
@@ -5848,10 +5817,10 @@ async function execute(uow, actor, step, results) {
     }
     case "accept": {
       const rep = await uow.tx.representative.findFirstOrThrow({ where: { portalAccountId: str(i.account) }, select: { id: true } });
-      await inviteRepresentative(uow, seedActor("seed_user_brooks"), { representativeId: rep.id });
-      const message = uow.outbox.find((m) => m.topic === "mail.portal_invitation" && m.aggregateId === i.account);
-      const token = message?.payload?.token;
-      if (!token) throw new Error("Seed: the invitation message carried no token");
+      let token = "";
+      await inviteRepresentative(uow, seedActor("seed_user_brooks"), { representativeId: rep.id, onToken: (value) => {
+        token = value;
+      } });
       return acceptPortalInvitation(uow, { token, passwordHash: UNUSABLE_PASSWORD_HASH });
     }
     case "scope_propose": {
@@ -5930,7 +5899,6 @@ async function runCensusSeed(db, options = {}) {
     const t0 = Date.now();
     const run = await command(db, { name: `seed.${step.kind}`, actor, idempotencyKey: step.key, params: { step: step.key }, now: new Date(step.at), serializable: SERIALIZABLE.has(step.kind), requestId: options.requestId ?? null }, async (uow) => {
       const value = await execute(uow, actor, step, results);
-      for (let k = uow.outbox.length - 1; k >= 0; k -= 1) if (uow.outbox[k].topic.startsWith("mail.")) uow.outbox.splice(k, 1);
       return value;
     });
     results.set(step.key, run.value ?? {});
@@ -5994,7 +5962,6 @@ async function requestApproval(uow, actor, input) {
     }
   });
   uow.audit({ eventType: "approval.requested", entityType: "ApprovalRequest", entityId: created.id, actorUserId: actorUserId(actor), actorAgentId: actorAgentId(actor), after: { action: input.action, targetList: input.targetList, targetId: input.targetId, payloadHash: created.payloadHash, requiredPermission } });
-  uow.emit({ topic: "notify.approval", aggregateType: "ApprovalRequest", aggregateId: created.id, payload: { action: input.action, requiredPermission }, dedupeKey: `notify.approval:${created.id}` });
   return created;
 }
 async function decideApproval(uow, actor, input) {

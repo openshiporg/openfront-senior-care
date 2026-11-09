@@ -26,7 +26,6 @@ export async function openBreakGlass(uow: UnitOfWork, actor: Actor, input: { res
   if (open) return { grantId: open.id, expiresAt: open.expiresAt, reused: true }
   const grant = await uow.tx.breakGlassGrant.create({ data: { userId: actor.userId, residentId: input.residentId, reason: input.reason, note: input.note.trim(), requestedAt: uow.now, expiresAt: new Date(uow.now.getTime() + hours * 3_600_000), status: 'active' } })
   auditCreate(uow, actor, 'BreakGlassGrant', grant.id, 'break_glass.opened', { residentId: input.residentId, reason: input.reason, hours })
-  uow.emit({ topic: 'privacy.break_glass_opened', aggregateType: 'BreakGlassGrant', aggregateId: grant.id, payload: { grantId: grant.id }, dedupeKey: `privacy.break_glass:${grant.id}` })
   return { grantId: grant.id, expiresAt: grant.expiresAt, reused: false }
 }
 
@@ -55,6 +54,5 @@ export async function reviewBreakGlass(uow: UnitOfWork, actor: Actor, input: { g
   // An active grant past expiry is ended first so the review sees the final record.
   const from = grant.status === 'active' && grant.expiresAt && grant.expiresAt.getTime() <= uow.now.getTime() ? 'active' : 'ended'
   await casUpdate(uow, { model: 'BreakGlassGrant', id: grant.id, version: grant.version, from: [from], to: input.outcome, actor, eventType: `break_glass.${input.outcome}`, reason: input.note.trim(), data: { reviewedById: actor.userId, reviewNote: input.note.trim(), ...(from === 'active' ? { endedAt: grant.expiresAt } : {}) } })
-  if (input.outcome === 'reviewed_violation') uow.emit({ topic: 'privacy.break_glass_violation', aggregateType: 'BreakGlassGrant', aggregateId: grant.id, payload: { grantId: grant.id }, dedupeKey: `privacy.violation:${grant.id}` })
   return { grantId: grant.id, status: input.outcome }
 }

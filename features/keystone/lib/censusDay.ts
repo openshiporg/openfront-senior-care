@@ -136,6 +136,5 @@ export async function signOffCensusDay(uow: UnitOfWork, actor: Actor, input: { c
   const snapshot = await snapshotCensusDay(uow, actor, { communityId: input.communityId, date: input.date })
   const signoff = await uow.tx.censusSignoff.create({ data: { communityId: input.communityId, date: day(input.date), totals: snapshot.totals as never, signedById: actor.userId, signedAt: uow.now, note: input.note?.trim() ?? '' } })
   uow.audit({ eventType: 'census.signed_off', entityType: 'CensusSignoff', entityId: signoff.id, actorUserId: actor.userId, after: { communityId: input.communityId, date: input.date, totals: snapshot.totals } })
-  uow.emit({ topic: 'census.signed_off', aggregateType: 'Community', aggregateId: input.communityId, payload: { date: input.date }, dedupeKey: `census.signed_off:${input.communityId}:${input.date}` })
   return { signoffId: signoff.id, date: input.date, totals: snapshot.totals }
 }

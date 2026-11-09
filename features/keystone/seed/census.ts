@@ -235,13 +235,10 @@ async function execute(uow: UnitOfWork, actor: Actor, step: PlanStep, results: M
       return { accountId: invited.accountId, reference: invited.reference, representativeId }
     }
     case 'accept': {
-      // The family member follows the emailed link: the invitation is re-sent at that moment (its
-      // token lives only in the mail message) and accepted with the token from that message.
+      // The family member follows the link staff gave them: the invitation is re-issued at that moment and accepted with its token.
       const rep = await uow.tx.representative.findFirstOrThrow({ where: { portalAccountId: str(i.account) }, select: { id: true } })
-      await inviteRepresentative(uow, seedActor('seed_user_brooks'), { representativeId: rep.id })
-      const message = uow.outbox.find(m => m.topic === 'mail.portal_invitation' && m.aggregateId === i.account)
-      const token = (message?.payload as { token?: string } | undefined)?.token
-      if (!token) throw new Error('Seed: the invitation message carried no token')
+      let token = ''
+      await inviteRepresentative(uow, seedActor('seed_user_brooks'), { representativeId: rep.id, onToken: value => { token = value } })
       return acceptPortalInvitation(uow, { token, passwordHash: UNUSABLE_PASSWORD_HASH })
     }
     case 'scope_propose': {
@@ -318,8 +315,6 @@ export async function runCensusSeed(db: Db, options: { preset?: Preset; budgetMs
     const t0 = Date.now()
     const run = await command(db, { name: `seed.${step.kind}`, actor, idempotencyKey: step.key, params: { step: step.key }, now: new Date(step.at), serializable: SERIALIZABLE.has(step.kind), requestId: options.requestId ?? null }, async uow => {
       const value = await execute(uow, actor, step, results)
-      // Seeded families get no mail: drop every mail message this step queued.
-      for (let k = uow.outbox.length - 1; k >= 0; k -= 1) if (uow.outbox[k].topic.startsWith('mail.')) uow.outbox.splice(k, 1)
       return value
     })
     results.set(step.key, (run.value ?? {}) as Value)

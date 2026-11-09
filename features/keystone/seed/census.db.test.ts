@@ -56,10 +56,9 @@ describe.skipIf(!hasTestDatabase)('census seed (database)', () => {
     }
     expect((await verifyAuditChain(prisma as never)).ok).toBe(true)
 
-    // The exit-gate sales path ended in an admission; seeded families were sent nothing.
+    // The exit-gate sales path ended in an admission; no family was mailed.
     expect(await prisma.lead.count({ where: { status: 'moved_in' } })).toBeGreaterThanOrEqual(1)
     expect(await prisma.waitlistEntry.count({ where: { status: 'converted' } })).toBeGreaterThanOrEqual(1)
-    expect(await prisma.outboxEvent.count({ where: { topic: { startsWith: 'mail.' } } })).toBe(0)
     expect(await prisma.portalAccount.count({ where: { status: 'active' } })).toBeGreaterThan(0)
     expect(await prisma.censusSignoff.count()).toBeGreaterThanOrEqual(2)
     expect(await prisma.resident.count({ where: { synthetic: false } })).toBe(0)

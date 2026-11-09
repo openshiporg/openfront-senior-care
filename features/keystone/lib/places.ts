@@ -78,7 +78,6 @@ export async function endReservation(uow: UnitOfWork, actor: Actor, input: { res
   const place = await lockPlace(uow.tx, { bedId: reservation.bedId, apartmentId: reservation.apartmentId })
   await casUpdate(uow, { model: 'PlaceReservation', id: reservation.id, version: reservation.version, from: ['active'], to: input.to, actor, eventType: `reservation.${input.to}`, reason: input.reason ?? null })
   if (place.row.status === 'reserved') await casUpdate(uow, { model: place.model, id: place.id, version: place.row.version, from: ['reserved'], to: 'available', actor, eventType: `${place.model.toLowerCase()}.reservation_ended`, metadata: { reservationId: reservation.id } })
-  uow.emit({ topic: 'availability.changed', aggregateType: place.model, aggregateId: place.id, payload: { [place.model === 'Bed' ? 'bedId' : 'apartmentId']: place.id }, dedupeKey: `availability:${reservation.id}:${input.to}` })
   return { reservationId: reservation.id, status: input.to }
 }
 
@@ -96,7 +95,6 @@ export async function markPlaceReady(uow: UnitOfWork, actor: Actor, input: Place
   const from = place.model === 'Bed' ? 'cleaning' : 'turnover'
   if (place.model === 'Apartment' && (place.row.occupantCount ?? 0) > 0) throw new DomainError(Codes.GUARD_FAILED, `${place.name} still has a resident.`)
   await casUpdate(uow, { model: place.model, id: place.id, version: place.row.version, from: [from], to: 'available', actor, eventType: `${place.model.toLowerCase()}.ready`, reason: input.note ?? null, data: { statusReason: '' } })
-  uow.emit({ topic: 'availability.changed', aggregateType: place.model, aggregateId: place.id, payload: { placeId: place.id }, dedupeKey: `availability:${place.id}:ready:${place.row.version}` })
   return { id: place.id, status: 'available', version: place.row.version + 1 }
 }
 
@@ -112,7 +110,6 @@ export async function setPlaceService(uow: UnitOfWork, actor: Actor, input: Plac
     return { id: place.id, status: 'out_of_service' }
   }
   await casUpdate(uow, { model: place.model, id: place.id, version: place.row.version, from: ['out_of_service'], to: 'available', actor, eventType: `${place.model.toLowerCase()}.in_service`, reason: input.reason.trim(), data: { statusReason: '' } })
-  uow.emit({ topic: 'availability.changed', aggregateType: place.model, aggregateId: place.id, payload: { placeId: place.id }, dedupeKey: `availability:${place.id}:in_service:${place.row.version}` })
   return { id: place.id, status: 'available' }
 }
 

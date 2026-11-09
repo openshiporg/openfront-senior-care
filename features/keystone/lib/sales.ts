@@ -63,7 +63,6 @@ export async function submitInquiry(uow: UnitOfWork, input: InquiryInput) {
   const utm = Object.fromEntries(Object.entries(input.utm ?? {}).slice(0, 10).map(([key, value]) => [clean(key, 40), clean(value, 200)]))
   const inquiry = await uow.tx.inquiry.create({ data: { publicCode: code, communityId: community.id, source: 'website', contactName: name, contactEmail: email, contactPhone: phone, relationship: clean(input.relationship, 80), message: clean(input.message, 4000), consentToContact: true, utm: utm as never, leadId: lead.id } })
   uow.audit({ eventType: 'inquiry.received', entityType: 'Inquiry', entityId: inquiry.id, actorUserId: null, after: { publicCode: code, leadId: lead.id, communityId: community.id } })
-  uow.emit({ topic: 'task.sales_callback', aggregateType: 'Lead', aggregateId: lead.id, payload: { leadId: lead.id, communityId: community.id }, dedupeKey: `task.sales_callback:${lead.id}` })
   return { publicCode: code }
 }
 
@@ -174,7 +173,6 @@ export async function requestTour(uow: UnitOfWork, input: { communitySlug: strin
   const token = createPublicToken('tour-manage', tour.id, slot.startsAt.getTime() + 86_400_000)
   await uow.tx.tour.update({ where: { id: tour.id }, data: { guestTokenHash: hashPublicToken(token) } })
   uow.audit({ eventType: 'tour.requested', entityType: 'Tour', entityId: tour.id, actorUserId: null, after: { publicCode: code, slotId: slot.id } })
-  uow.emit({ topic: 'mail.tour_requested', aggregateType: 'Tour', aggregateId: tour.id, payload: { tourId: tour.id }, dedupeKey: `mail.tour_requested:${tour.id}` })
   return { publicCode: code, manageToken: token, holdExpiresAt: tour.holdExpiresAt }
 }
 
@@ -190,7 +188,6 @@ export async function scheduleTour(uow: UnitOfWork, actor: Actor, input: { leadI
   const tour = await uow.tx.tour.create({ data: { publicCode: publicCode('TOUR'), communityId: slot.communityId, slotId: slot.id, leadId: lead.id, kind: input.kind, status: 'confirmed', notes: clean(input.notes, 2000) } })
   auditCreate(uow, actor, 'Tour', tour.id, 'tour.scheduled', { slotId: slot.id, leadId: lead.id, kind: input.kind })
   if (LEAD_EDGES.tour_scheduled.includes(lead.status)) await casUpdate(uow, { model: 'Lead', id: lead.id, version: lead.version, from: [lead.status], to: 'tour_scheduled', actor, eventType: 'lead.tour_scheduled', metadata: { tourId: tour.id } })
-  uow.emit({ topic: 'mail.tour_confirmed', aggregateType: 'Tour', aggregateId: tour.id, payload: { tourId: tour.id }, dedupeKey: `mail.tour_confirmed:${tour.id}` })
   return { tourId: tour.id, publicCode: tour.publicCode, startsAt: slot.startsAt }
 }
 
@@ -284,7 +281,6 @@ export async function recordReferral(uow: UnitOfWork, actor: Actor, input: { com
     data: { reference: await nextReference(uow.tx, 'REF', uow.now), communityId: community.id, sourceId: input.sourceId ?? null, receivedAt, prospectId: prospect.id, expectedPayer: input.expectedPayer, pasrrLevel1Id, clinicalSummary: clean(input.clinicalSummary, 8000), pasrrLevel2Required: Boolean(input.pasrrLevel2Required), status: 'received', responseDueAt: new Date(receivedAt.getTime() + hours * 3_600_000) },
   })
   auditCreate(uow, actor, 'Referral', referral.id, 'referral.received', { reference: referral.reference, sourceId: input.sourceId ?? null, expectedPayer: input.expectedPayer, responseDueAt: referral.responseDueAt })
-  uow.emit({ topic: 'task.referral_response', aggregateType: 'Referral', aggregateId: referral.id, payload: { referralId: referral.id, communityId: community.id }, dedupeKey: `task.referral_response:${referral.id}` })
   return { referralId: referral.id, reference: referral.reference, prospectId: prospect.id, responseDueAt: referral.responseDueAt }
 }
 

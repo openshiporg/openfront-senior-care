@@ -37,7 +37,7 @@ export const platformNavItems: PlatformNavItem[] = [
 
   { title: 'Break-glass', href: '/platform/privacy/break-glass', color: 'rose', description: 'Emergency access grants and the review queue.', icon: KeyRound, group: 'operator' },
   { title: 'Audit log', href: '/platform/audit', color: 'slate', description: 'Hash-chained audit events and chain verification.', icon: BookOpenCheck, group: 'operator' },
-  { title: 'Operations', href: '/platform/operations', color: 'slate', description: 'Outbox, jobs and leases.', icon: Activity, group: 'operator' },
+  { title: 'Operations', href: '/platform/operations', color: 'slate', description: 'Jobs and leases.', icon: Activity, group: 'operator' },
   { title: 'Operator settings', href: '/platform/settings', color: 'slate', description: 'Operator profile, communities, packs and approval policies.', icon: Settings, group: 'operator' },
 ]
 

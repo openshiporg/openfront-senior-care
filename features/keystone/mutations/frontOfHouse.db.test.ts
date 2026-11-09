@@ -158,11 +158,10 @@ describe.skipIf(!hasTestDatabase)('storefront to admission (database)', () => {
   it('invites the representative and serves only the granted portal scopes', async () => {
     const resident = await prisma.resident.findFirstOrThrow({ where: { firstName: 'Agnes', lastName: 'Whitfield' } })
     const rep = await prisma.representative.findFirstOrThrow({ where: { residentId: resident.id, self: false } })
-    // Invitation and acceptance (the token travels only in the mail message).
+    // Invitation and acceptance (the token is handed to the test, never stored or mailed).
     let token = ''
     await runInTransaction(prisma as never, async uow => {
-      await inviteRepresentative(uow, { kind: 'user', userId: 'seed_user_brooks', name: 'Brooks', permissions: new Set(roleOf('seed_role_social_services')) }, { representativeId: rep.id })
-      token = (uow.outbox.find(m => m.topic === 'mail.portal_invitation')?.payload as { token: string }).token
+      await inviteRepresentative(uow, { kind: 'user', userId: 'seed_user_brooks', name: 'Brooks', permissions: new Set(roleOf('seed_role_social_services')) }, { representativeId: rep.id, onToken: value => { token = value } })
     })
     await runInTransaction(prisma as never, uow => acceptPortalInvitation(uow, { token, passwordHash: '$2a$10$' + 'x'.repeat(53) }))
     await expect(runInTransaction(prisma as never, uow => acceptPortalInvitation(uow, { token, passwordHash: '$2a$10$' + 'x'.repeat(53) }))).rejects.toMatchObject({ code: 'GUARD_FAILED' })

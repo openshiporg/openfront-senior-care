@@ -26,7 +26,7 @@ export function authorityFor(roles: readonly string[], scope: Scope): Authority 
   return null
 }
 
-export async function inviteRepresentative(uow: UnitOfWork, actor: Actor, input: { representativeId: string }) {
+export async function inviteRepresentative(uow: UnitOfWork, actor: Actor, input: { representativeId: string; onToken?: (token: string) => void }) {
   const rep = await uow.tx.representative.findUnique({ where: { id: input.representativeId }, include: { contact: true, resident: { select: { id: true, communityId: true, status: true } }, portalAccount: true } })
   if (!rep || rep.status !== 'active') throw new DomainError(Codes.NOT_FOUND, 'Active representative not found.')
   if (!rep.contact?.email) throw new DomainError(Codes.GUARD_FAILED, 'The representative needs an email address for a portal invitation.', { field: 'email' })
@@ -47,8 +47,8 @@ export async function inviteRepresentative(uow: UnitOfWork, actor: Actor, input:
   }
   const token = createPublicToken('portal-invite', account.id, expiresAt.getTime())
   await uow.tx.portalAccount.update({ where: { id: account.id }, data: { invitationTokenHash: hashPublicToken(token), invitationExpiresAt: expiresAt } })
-  // The token travels only in the outbox message to the mailer; it is never returned to the caller.
-  uow.emit({ topic: 'mail.portal_invitation', aggregateType: 'PortalAccount', aggregateId: account.id, payload: { accountId: account.id, contactId: rep.contactId, token, expiresAt }, dedupeKey: `mail.portal_invitation:${account.id}:${expiresAt.getTime()}` })
+  // Nothing is mailed from here. The token is never stored in the command receipt or returned; callers that must hand it over (seed, tests) read it through `onToken`.
+  input.onToken?.(token)
   return { accountId: account.id, reference: account.reference, expiresAt }
 }
 

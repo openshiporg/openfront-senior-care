@@ -14,7 +14,7 @@ import { label } from '../../../lib/labels'
  * Census commands (STATE-MACHINES §4). Each command appends one CensusEvent to the stay's stream,
  * folds the stream into the projection, then reconciles places from the difference between the old
  * and new projections, so bed and apartment status are always a projection of census (SM§2.1).
- * The state change, hash-chained CensusEvent, audit events, outbox messages and compliance clocks
+ * The state change, hash-chained CensusEvent, audit events and compliance clocks
  * commit in one Serializable transaction (the caller's `command(..., { serializable: true })`).
  */
 
@@ -138,7 +138,6 @@ async function reconcileBed(uow: UnitOfWork, actor: Actor, stay: StayRow, bedId:
     await uow.tx.bedOccupancy.update({ where: { id: open.id }, data: { endAt, closedByEventId: options.eventId } })
     uow.audit({ eventType: 'bed_occupancy.closed', entityType: 'BedOccupancy', entityId: open.id, actorUserId: actorUserId(actor), actorAgentId: actorAgentId(actor), after: { endAt } })
   }
-  uow.emit({ topic: 'housekeeping.turnover', aggregateType: 'Bed', aggregateId: bedId, payload: { bedId, reason: 'census_release' }, dedupeKey: `housekeeping.turnover:${bedId}:${options.eventId}` })
 }
 
 async function reconcileApartment(uow: UnitOfWork, actor: Actor, stay: StayRow, apartmentId: string, had: boolean, has: boolean, options: ReconcileOptions) {
@@ -160,7 +159,6 @@ async function reconcileApartment(uow: UnitOfWork, actor: Actor, stay: StayRow, 
   }
   const remaining = Math.max(0, apartment.occupantCount - 1)
   await casUpdate(uow, { model: 'Apartment', id: apartmentId, version: apartment.version, from: ['occupied'], to: remaining === 0 ? 'turnover' : 'occupied', actor, eventType: 'apartment.occupant_removed', data: { occupantCount: remaining }, metadata })
-  if (remaining === 0) uow.emit({ topic: 'housekeeping.turnover', aggregateType: 'Apartment', aggregateId: apartmentId, payload: { apartmentId, reason: 'census_release' }, dedupeKey: `housekeeping.turnover:${apartmentId}:${options.eventId}` })
 }
 
 async function consumeReservation(uow: UnitOfWork, actor: Actor, reservationId: string, version: number, stayId: string) {
@@ -228,7 +226,6 @@ export async function appendCensusEvents(uow: UnitOfWork, actor: Actor, stay: St
     })
     prevHash = hash
     events.push({ id: row.id, seq: row.seq, kind: row.kind })
-    uow.emit({ topic: `census.${input.kind}`, aggregateType: 'Stay', aggregateId: stay.id, payload: { stayId: stay.id, eventId: row.id, communityId: stay.communityId, effectiveAt: input.effectiveAt, late: Boolean(options.late) }, dedupeKey: `census:${row.id}` })
   }
   const lastInput = inputs[inputs.length - 1]
   await reconcilePlaces(uow, actor, stay, before, after, { reservationId: options.reservationId, companionRelationship: options.companionRelationship, eventId: events[events.length - 1].id, effectiveAt: options.late ? uow.now : lastInput.effectiveAt })
@@ -388,7 +385,6 @@ export async function admitResident(uow: UnitOfWork, actor: Actor, input: AdmitI
 
   await openClocksForFact(uow, actor, { fact: 'census.admission', communityId: input.communityId, residentId, subjectType: 'Stay', subjectId: stay.id, startedAt: input.effectiveAt, setting, payerKind: payer.kind, evidence: { type: 'census_event:admission', id: event.id } })
   for (const notice of input.notices ?? []) await recordNotice(uow, actor, { ...notice, stayId: stay.id })
-  uow.emit({ topic: 'portal.invite_representatives', aggregateType: 'Stay', aggregateId: stay.id, payload: { stayId: stay.id }, dedupeKey: `portal.invite:${stay.id}` })
   return { stayId: stay.id, residentId, eventId: event.id, status: after.status, presence: after.presence }
 }
 
@@ -459,7 +455,6 @@ export async function changeRoom(uow: UnitOfWork, actor: Actor, input: { stayId:
     fromBedId: stay.currentBedId, fromApartmentId: stay.currentApartmentId, idempotencyKey: input.idempotencyKey, detail: { reason: input.reason ?? null },
   }, { companionRelationship: input.companionRelationship, reservationId: input.reservationId })
   // F559: residents get notice before a room change (verify the operator's notice policy).
-  uow.emit({ topic: 'task.room_change_notice', aggregateType: 'Stay', aggregateId: stay.id, payload: { stayId: stay.id, eventId: result.event.id }, dedupeKey: `task.room_change_notice:${result.event.id}` })
   return { stayId: stay.id, eventId: result.event.id, presence: result.after.presence, version: result.version }
 }
 
@@ -511,7 +506,6 @@ export async function startLeave(uow: UnitOfWork, actor: Actor, input: StartLeav
   await openClocksForFact(uow, actor, { ...subject, fact: 'census.leave_start', evidence: { type: 'census_event:leave_start', id: result.event.id } })
   if (input.facilityInitiated) await openClocksForFact(uow, actor, { ...subject, fact: 'census.facility_initiated_transfer' })
   if (input.noticeAtTransfer) await recordNotice(uow, actor, { ...input.noticeAtTransfer, kind: 'bed_hold_at_transfer', stayId: stay.id, censusEventId: result.event.id })
-  if (input.leaveKind === 'hospital') uow.emit({ topic: 'task.transfer_packet', aggregateType: 'Stay', aggregateId: stay.id, payload: { stayId: stay.id, eventId: result.event.id }, dedupeKey: `task.transfer_packet:${result.event.id}` })
   return { stayId: stay.id, eventId: result.event.id, presence: result.after.presence, version: result.version }
 }
 
@@ -574,7 +568,6 @@ export async function dischargeResident(uow: UnitOfWork, actor: Actor, input: Di
     const notice = await uow.tx.noticeDelivery.findFirst({ where: { subjectType: 'Stay', subjectId: stay.id, kind: 'transfer_discharge', copyToOmbudsmanAt: { not: null } } })
     if (notice) await satisfyByEvidence(uow, actor, { subjectType: 'Stay', subjectId: stay.id, occurrenceKey: result.event.id }, { type: 'ombudsman_copy', id: notice.id, at: notice.copyToOmbudsmanAt! })
   }
-  uow.emit({ topic: 'portal.stay_ended', aggregateType: 'Stay', aggregateId: stay.id, payload: { stayId: stay.id }, dedupeKey: `portal.stay_ended:${stay.id}` })
   return { stayId: stay.id, eventId: result.event.id, status: result.after.status }
 }
 
@@ -584,7 +577,6 @@ export async function recordDeath(uow: UnitOfWork, actor: Actor, input: { stayId
   const result = await appendCensusEvent(uow, actor, stay, { kind: 'death', effectiveAt: input.effectiveAt, observedAt: input.observedAt, fromBedId: stay.currentBedId ?? stay.heldBedId, fromApartmentId: stay.currentApartmentId, idempotencyKey: input.idempotencyKey, detail: { pronouncedBy: input.pronouncedBy.trim() } })
   await endStay(uow, actor, stay, input.effectiveAt, 'death', 'deceased')
   await openClocksForFact(uow, actor, { fact: 'census.death', communityId: stay.communityId!, residentId: stay.residentId, subjectType: 'Stay', subjectId: stay.id, startedAt: input.effectiveAt, setting: stay.setting, payerKind: await primaryPayerKind(uow.tx, stay.id) })
-  uow.emit({ topic: 'task.family_notification', aggregateType: 'Stay', aggregateId: stay.id, payload: { stayId: stay.id }, dedupeKey: `task.family_notification:${stay.id}` })
   return { stayId: stay.id, eventId: result.event.id, status: result.after.status }
 }
 

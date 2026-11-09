@@ -117,7 +117,6 @@ export async function openClock(uow: UnitOfWork, actor: Actor, input: OpenClockI
     },
   })
   uow.audit({ eventType: 'clock.opened', entityType: 'ComplianceClock', entityId: clock.id, actorUserId: actorUserId(actor), actorAgentId: actorAgentId(actor), after: { obligationCode: clock.obligationCode, subjectType: clock.subjectType, subjectId: clock.subjectId, dueAt: clock.dueAt } })
-  uow.emit({ topic: 'clock.opened', aggregateType: 'ComplianceClock', aggregateId: clock.id, payload: { obligationCode: clock.obligationCode, dueAt: clock.dueAt }, dedupeKey: `clock.opened:${clock.id}` })
   return clock
 }
 
@@ -211,7 +210,6 @@ export async function sweepClocks(uow: UnitOfWork, actor: Actor) {
     if (result.count !== 1) continue
     overdue += 1
     uow.audit({ eventType: 'clock.overdue', entityType: 'ComplianceClock', entityId: clock.id, actorUserId: actorUserId(actor), before: { status: 'open' }, after: { status: 'overdue', escalationLevel: (clock.escalationLevel ?? 0) + 1 } })
-    uow.emit({ topic: 'clock.overdue', aggregateType: 'ComplianceClock', aggregateId: clock.id, payload: { obligationCode: clock.obligationCode, communityId: clock.communityId, ownerRole: clock.ownerRole }, dedupeKey: `clock.overdue:${clock.id}:${(clock.escalationLevel ?? 0) + 1}` })
   }
   return { checked: due.length, overdue }
 }
