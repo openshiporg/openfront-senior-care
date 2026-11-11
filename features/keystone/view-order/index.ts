@@ -18,5 +18,6 @@ export const VIEW_ORDER = [
   "json",
   "integer",
   "bigInt",
-  "@keystone-6/core/fields/types/calendarDay/views"
+  "@keystone-6/core/fields/types/calendarDay/views",
+  "decimal"
 ];

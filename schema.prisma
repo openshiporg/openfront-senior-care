@@ -12,49 +12,86 @@ generator client {
 }
 
 model User {
-  id                                      String             @id @default(cuid())
-  name                                    String             @default("")
-  email                                   String             @unique @default("")
-  password                                String
-  role                                    Role?              @relation("User_role", fields: [roleId], references: [id])
-  roleId                                  String?            @map("role")
-  kind                                    UserKindType?      @default(staff)
-  title                                   String             @default("")
-  assignments                             StaffAssignment[]  @relation("StaffAssignment_user")
-  portalAccount                           PortalAccount?     @relation("PortalAccount_user")
-  synthetic                               Boolean            @default(false)
-  mfaEnrolled                             Boolean            @default(false)
-  accessExpiresAt                         DateTime?
-  onboardingStatus                        String?            @default("not_started")
-  createdAt                               DateTime           @default(now())
-  updatedAt                               DateTime           @default(now()) @updatedAt
-  passwordResetToken                      String?
-  passwordResetIssuedAt                   DateTime?
-  passwordResetRedeemedAt                 DateTime?
-  from_OAuthToken_user                    OAuthToken[]       @relation("OAuthToken_user")
-  from_AgentIdentity_owner                AgentIdentity[]    @relation("AgentIdentity_owner")
-  from_ApprovalDecision_decidedBy         ApprovalDecision[] @relation("ApprovalDecision_decidedBy")
-  from_ApprovalRequest_requestedBy        ApprovalRequest[]  @relation("ApprovalRequest_requestedBy")
-  from_AuditEvent_actorUser               AuditEvent[]       @relation("AuditEvent_actorUser")
-  from_AuditEvent_approver                AuditEvent[]       @relation("AuditEvent_approver")
-  from_BreakGlassGrant_user               BreakGlassGrant[]  @relation("BreakGlassGrant_user")
-  from_BreakGlassGrant_reviewedBy         BreakGlassGrant[]  @relation("BreakGlassGrant_reviewedBy")
-  from_Notification_recipient             Notification[]     @relation("Notification_recipient")
-  from_Proposal_proposedByUser            Proposal[]         @relation("Proposal_proposedByUser")
-  from_Proposal_acceptedBy                Proposal[]         @relation("Proposal_acceptedBy")
-  from_AdvanceDirective_verifiedBy        AdvanceDirective[] @relation("AdvanceDirective_verifiedBy")
-  from_Allergy_recordedBy                 Allergy[]          @relation("Allergy_recordedBy")
-  from_CensusEvent_actor                  CensusEvent[]      @relation("CensusEvent_actor")
-  from_CensusSignoff_signedBy             CensusSignoff[]    @relation("CensusSignoff_signedBy")
-  from_NoticeDelivery_deliveredBy         NoticeDelivery[]   @relation("NoticeDelivery_deliveredBy")
-  from_NoticeDelivery_witness             NoticeDelivery[]   @relation("NoticeDelivery_witness")
-  from_Representative_authorityVerifiedBy Representative[]   @relation("Representative_authorityVerifiedBy")
-  from_Lead_owner                         Lead[]             @relation("Lead_owner")
-  from_PortalAccount_invitedBy            PortalAccount[]    @relation("PortalAccount_invitedBy")
-  from_PortalScopeGrant_proposedBy        PortalScopeGrant[] @relation("PortalScopeGrant_proposedBy")
-  from_PortalScopeGrant_grantedBy         PortalScopeGrant[] @relation("PortalScopeGrant_grantedBy")
-  from_SalesActivity_by                   SalesActivity[]    @relation("SalesActivity_by")
-  from_TourSlot_host                      TourSlot[]         @relation("TourSlot_host")
+  id                                           String                     @id @default(cuid())
+  name                                         String                     @default("")
+  email                                        String                     @unique @default("")
+  password                                     String
+  role                                         Role?                      @relation("User_role", fields: [roleId], references: [id])
+  roleId                                       String?                    @map("role")
+  kind                                         UserKindType?              @default(staff)
+  title                                        String                     @default("")
+  assignments                                  StaffAssignment[]          @relation("StaffAssignment_user")
+  portalAccount                                PortalAccount?             @relation("PortalAccount_user")
+  synthetic                                    Boolean                    @default(false)
+  mfaEnrolled                                  Boolean                    @default(false)
+  accessExpiresAt                              DateTime?
+  onboardingStatus                             String?                    @default("not_started")
+  createdAt                                    DateTime                   @default(now())
+  updatedAt                                    DateTime                   @default(now()) @updatedAt
+  passwordResetToken                           String?
+  passwordResetIssuedAt                        DateTime?
+  passwordResetRedeemedAt                      DateTime?
+  from_OAuthToken_user                         OAuthToken[]               @relation("OAuthToken_user")
+  from_AgentIdentity_owner                     AgentIdentity[]            @relation("AgentIdentity_owner")
+  from_ApprovalDecision_decidedBy              ApprovalDecision[]         @relation("ApprovalDecision_decidedBy")
+  from_ApprovalRequest_requestedBy             ApprovalRequest[]          @relation("ApprovalRequest_requestedBy")
+  from_AuditEvent_actorUser                    AuditEvent[]               @relation("AuditEvent_actorUser")
+  from_AuditEvent_approver                     AuditEvent[]               @relation("AuditEvent_approver")
+  from_BreakGlassGrant_user                    BreakGlassGrant[]          @relation("BreakGlassGrant_user")
+  from_BreakGlassGrant_reviewedBy              BreakGlassGrant[]          @relation("BreakGlassGrant_reviewedBy")
+  from_Notification_recipient                  Notification[]             @relation("Notification_recipient")
+  from_Proposal_proposedByUser                 Proposal[]                 @relation("Proposal_proposedByUser")
+  from_Proposal_acceptedBy                     Proposal[]                 @relation("Proposal_acceptedBy")
+  from_AdvanceDirective_verifiedBy             AdvanceDirective[]         @relation("AdvanceDirective_verifiedBy")
+  from_Allergy_recordedBy                      Allergy[]                  @relation("Allergy_recordedBy")
+  from_CensusEvent_actor                       CensusEvent[]              @relation("CensusEvent_actor")
+  from_CensusSignoff_signedBy                  CensusSignoff[]            @relation("CensusSignoff_signedBy")
+  from_NoticeDelivery_deliveredBy              NoticeDelivery[]           @relation("NoticeDelivery_deliveredBy")
+  from_NoticeDelivery_witness                  NoticeDelivery[]           @relation("NoticeDelivery_witness")
+  from_Representative_authorityVerifiedBy      Representative[]           @relation("Representative_authorityVerifiedBy")
+  from_Lead_owner                              Lead[]                     @relation("Lead_owner")
+  from_PortalAccount_invitedBy                 PortalAccount[]            @relation("PortalAccount_invitedBy")
+  from_PortalScopeGrant_proposedBy             PortalScopeGrant[]         @relation("PortalScopeGrant_proposedBy")
+  from_PortalScopeGrant_grantedBy              PortalScopeGrant[]         @relation("PortalScopeGrant_grantedBy")
+  from_SalesActivity_by                        SalesActivity[]            @relation("SalesActivity_by")
+  from_TourSlot_host                           TourSlot[]                 @relation("TourSlot_host")
+  from_AdlRecord_recordedBy                    AdlRecord[]                @relation("AdlRecord_recordedBy")
+  from_Assessment_completedBy                  Assessment[]               @relation("Assessment_completedBy")
+  from_BehaviourEpisode_recordedBy             BehaviourEpisode[]         @relation("BehaviourEpisode_recordedBy")
+  from_CarePlan_signedBy                       CarePlan[]                 @relation("CarePlan_signedBy")
+  from_IntakeRecord_recordedBy                 IntakeRecord[]             @relation("IntakeRecord_recordedBy")
+  from_Order_enteredBy                         Order[]                    @relation("Order_enteredBy")
+  from_Order_prescriber                        Order[]                    @relation("Order_prescriber")
+  from_Order_countersignedBy                   Order[]                    @relation("Order_countersignedBy")
+  from_PhysicianVisit_recordedBy               PhysicianVisit[]           @relation("PhysicianVisit_recordedBy")
+  from_PocTaskSlot_doneBy                      PocTaskSlot[]              @relation("PocTaskSlot_doneBy")
+  from_ProgressNote_author                     ProgressNote[]             @relation("ProgressNote_author")
+  from_ProgressNote_signedBy                   ProgressNote[]             @relation("ProgressNote_signedBy")
+  from_Task_assignee                           Task[]                     @relation("Task_assignee")
+  from_Task_completedBy                        Task[]                     @relation("Task_completedBy")
+  from_VitalSign_recordedBy                    VitalSign[]                @relation("VitalSign_recordedBy")
+  from_WoundAssessment_assessedBy              WoundAssessment[]          @relation("WoundAssessment_assessedBy")
+  from_CountDiscrepancy_resolvedBy             CountDiscrepancy[]         @relation("CountDiscrepancy_resolvedBy")
+  from_MedicationAdministration_administeredBy MedicationAdministration[] @relation("MedicationAdministration_administeredBy")
+  from_MedicationAdministration_witness        MedicationAdministration[] @relation("MedicationAdministration_witness")
+  from_MedicationDestruction_destroyedBy       MedicationDestruction[]    @relation("MedicationDestruction_destroyedBy")
+  from_MedicationDestruction_witness           MedicationDestruction[]    @relation("MedicationDestruction_witness")
+  from_MedicationSupplyMovement_actor          MedicationSupplyMovement[] @relation("MedicationSupplyMovement_actor")
+  from_MedicationSupplyMovement_witness        MedicationSupplyMovement[] @relation("MedicationSupplyMovement_witness")
+  from_PrnFollowUp_recordedBy                  PrnFollowUp[]              @relation("PrnFollowUp_recordedBy")
+  from_ShiftCount_outgoing                     ShiftCount[]               @relation("ShiftCount_outgoing")
+  from_ShiftCount_incoming                     ShiftCount[]               @relation("ShiftCount_incoming")
+  from_ShiftCountEntry_countedBy               ShiftCountEntry[]          @relation("ShiftCountEntry_countedBy")
+  from_AntibioticCourse_timeoutBy              AntibioticCourse[]         @relation("AntibioticCourse_timeoutBy")
+  from_Immunisation_recordedBy                 Immunisation[]             @relation("Immunisation_recordedBy")
+  from_Incident_reportedBy                     Incident[]                 @relation("Incident_reportedBy")
+  from_Incident_downgradedBy                   Incident[]                 @relation("Incident_downgradedBy")
+  from_IncidentInvestigation_investigator      IncidentInvestigation[]    @relation("IncidentInvestigation_investigator")
+  from_Outbreak_declaredBy                     Outbreak[]                 @relation("Outbreak_declaredBy")
+  from_RegulatoryReport_submittedBy            RegulatoryReport[]         @relation("RegulatoryReport_submittedBy")
+  from_Finding_dismissedBy                     Finding[]                  @relation("Finding_dismissedBy")
+  from_InferenceCall_actor                     InferenceCall[]            @relation("InferenceCall_actor")
+  from_WorkflowActivation_activatedBy          WorkflowActivation[]       @relation("WorkflowActivation_activatedBy")
 
   @@index([roleId])
 }
@@ -350,60 +387,101 @@ model CommandReceipt {
 }
 
 model Community {
-  id                                  String                 @id @default(cuid())
-  name                                String                 @default("")
-  slug                                String                 @unique @default("")
-  reference                           String                 @unique @default("")
-  timeZone                            String                 @default("America/New_York")
-  addressLine1                        String                 @default("")
-  addressLine2                        String                 @default("")
-  city                                String                 @default("")
-  region                              String                 @default("")
-  postalCode                          String                 @default("")
-  country                             String                 @default("US")
-  phone                               String                 @default("")
-  settingsOffered                     Json?                  @default("[]")
-  jurisdictionPack                    JurisdictionPack?      @relation("Community_jurisdictionPack", fields: [jurisdictionPackId], references: [id])
-  jurisdictionPackId                  String?                @map("jurisdictionPack")
-  holidayCalendar                     HolidayCalendar?       @relation("Community_holidayCalendar", fields: [holidayCalendarId], references: [id])
-  holidayCalendarId                   String?                @map("holidayCalendar")
-  identifiers                         Json?                  @default("{}")
-  bedHoldPolicy                       BedHoldPolicy?         @relation("Community_bedHoldPolicy", fields: [bedHoldPolicyId], references: [id])
-  bedHoldPolicyId                     String?                @map("bedHoldPolicy")
-  buildings                           Building[]             @relation("Building_community")
-  units                               Unit[]                 @relation("Unit_community")
-  storefront                          StorefrontSite?        @relation("Community_storefront", fields: [storefrontId], references: [id])
-  storefrontId                        String?                @unique @map("storefront")
-  synthetic                           Boolean                @default(false)
-  status                              String                 @default("setup")
-  createdAt                           DateTime               @default(now())
-  updatedAt                           DateTime               @default(now()) @updatedAt
-  from_ApprovalRequest_community      ApprovalRequest[]      @relation("ApprovalRequest_community")
-  from_ComplianceClock_community      ComplianceClock[]      @relation("ComplianceClock_community")
-  from_DeviceRegistration_community   DeviceRegistration[]   @relation("DeviceRegistration_community")
-  from_Document_community             Document[]             @relation("Document_community")
-  from_StaffAssignment_community      StaffAssignment[]      @relation("StaffAssignment_community")
-  from_AgentToolGrant_communities     AgentToolGrant[]       @relation("AgentToolGrant_communities")
-  from_ApartmentType_community        ApartmentType[]        @relation("ApartmentType_community")
-  from_BedHoldPolicy_community        BedHoldPolicy[]        @relation("BedHoldPolicy_community")
-  from_PlaceReservation_community     PlaceReservation[]     @relation("PlaceReservation_community")
-  from_CensusDay_community            CensusDay[]            @relation("CensusDay_community")
-  from_CensusSignoff_community        CensusSignoff[]        @relation("CensusSignoff_community")
-  from_Contact_community              Contact[]              @relation("Contact_community")
-  from_Resident_community             Resident[]             @relation("Resident_community")
-  from_Stay_community                 Stay[]                 @relation("Stay_community")
-  from_AvailabilitySnapshot_community AvailabilitySnapshot[] @relation("AvailabilitySnapshot_community")
-  from_Inquiry_community              Inquiry[]              @relation("Inquiry_community")
-  from_JobPosting_community           JobPosting[]           @relation("JobPosting_community")
-  from_Lead_community                 Lead[]                 @relation("Lead_community")
-  from_PortalAccount_community        PortalAccount[]        @relation("PortalAccount_community")
-  from_Prospect_community             Prospect[]             @relation("Prospect_community")
-  from_PublishedPrice_community       PublishedPrice[]       @relation("PublishedPrice_community")
-  from_Referral_community             Referral[]             @relation("Referral_community")
-  from_ReferralSource_community       ReferralSource[]       @relation("ReferralSource_community")
-  from_Tour_community                 Tour[]                 @relation("Tour_community")
-  from_TourSlot_community             TourSlot[]             @relation("TourSlot_community")
-  from_WaitlistEntry_community        WaitlistEntry[]        @relation("WaitlistEntry_community")
+  id                                      String                     @id @default(cuid())
+  name                                    String                     @default("")
+  slug                                    String                     @unique @default("")
+  reference                               String                     @unique @default("")
+  timeZone                                String                     @default("America/New_York")
+  addressLine1                            String                     @default("")
+  addressLine2                            String                     @default("")
+  city                                    String                     @default("")
+  region                                  String                     @default("")
+  postalCode                              String                     @default("")
+  country                                 String                     @default("US")
+  phone                                   String                     @default("")
+  settingsOffered                         Json?                      @default("[]")
+  jurisdictionPack                        JurisdictionPack?          @relation("Community_jurisdictionPack", fields: [jurisdictionPackId], references: [id])
+  jurisdictionPackId                      String?                    @map("jurisdictionPack")
+  holidayCalendar                         HolidayCalendar?           @relation("Community_holidayCalendar", fields: [holidayCalendarId], references: [id])
+  holidayCalendarId                       String?                    @map("holidayCalendar")
+  identifiers                             Json?                      @default("{}")
+  bedHoldPolicy                           BedHoldPolicy?             @relation("Community_bedHoldPolicy", fields: [bedHoldPolicyId], references: [id])
+  bedHoldPolicyId                         String?                    @map("bedHoldPolicy")
+  buildings                               Building[]                 @relation("Building_community")
+  units                                   Unit[]                     @relation("Unit_community")
+  storefront                              StorefrontSite?            @relation("Community_storefront", fields: [storefrontId], references: [id])
+  storefrontId                            String?                    @unique @map("storefront")
+  synthetic                               Boolean                    @default(false)
+  status                                  String                     @default("setup")
+  createdAt                               DateTime                   @default(now())
+  updatedAt                               DateTime                   @default(now()) @updatedAt
+  from_ApprovalRequest_community          ApprovalRequest[]          @relation("ApprovalRequest_community")
+  from_ComplianceClock_community          ComplianceClock[]          @relation("ComplianceClock_community")
+  from_DeviceRegistration_community       DeviceRegistration[]       @relation("DeviceRegistration_community")
+  from_Document_community                 Document[]                 @relation("Document_community")
+  from_StaffAssignment_community          StaffAssignment[]          @relation("StaffAssignment_community")
+  from_AgentToolGrant_communities         AgentToolGrant[]           @relation("AgentToolGrant_communities")
+  from_ApartmentType_community            ApartmentType[]            @relation("ApartmentType_community")
+  from_BedHoldPolicy_community            BedHoldPolicy[]            @relation("BedHoldPolicy_community")
+  from_PlaceReservation_community         PlaceReservation[]         @relation("PlaceReservation_community")
+  from_CensusDay_community                CensusDay[]                @relation("CensusDay_community")
+  from_CensusSignoff_community            CensusSignoff[]            @relation("CensusSignoff_community")
+  from_Contact_community                  Contact[]                  @relation("Contact_community")
+  from_Resident_community                 Resident[]                 @relation("Resident_community")
+  from_Stay_community                     Stay[]                     @relation("Stay_community")
+  from_AvailabilitySnapshot_community     AvailabilitySnapshot[]     @relation("AvailabilitySnapshot_community")
+  from_Inquiry_community                  Inquiry[]                  @relation("Inquiry_community")
+  from_JobPosting_community               JobPosting[]               @relation("JobPosting_community")
+  from_Lead_community                     Lead[]                     @relation("Lead_community")
+  from_PortalAccount_community            PortalAccount[]            @relation("PortalAccount_community")
+  from_Prospect_community                 Prospect[]                 @relation("Prospect_community")
+  from_PublishedPrice_community           PublishedPrice[]           @relation("PublishedPrice_community")
+  from_Referral_community                 Referral[]                 @relation("Referral_community")
+  from_ReferralSource_community           ReferralSource[]           @relation("ReferralSource_community")
+  from_Tour_community                     Tour[]                     @relation("Tour_community")
+  from_TourSlot_community                 TourSlot[]                 @relation("TourSlot_community")
+  from_WaitlistEntry_community            WaitlistEntry[]            @relation("WaitlistEntry_community")
+  from_AdlRecord_community                AdlRecord[]                @relation("AdlRecord_community")
+  from_Assessment_community               Assessment[]               @relation("Assessment_community")
+  from_BehaviourEpisode_community         BehaviourEpisode[]         @relation("BehaviourEpisode_community")
+  from_CarePlan_community                 CarePlan[]                 @relation("CarePlan_community")
+  from_CarePlanItem_community             CarePlanItem[]             @relation("CarePlanItem_community")
+  from_IntakeRecord_community             IntakeRecord[]             @relation("IntakeRecord_community")
+  from_MedicationOrderDetail_community    MedicationOrderDetail[]    @relation("MedicationOrderDetail_community")
+  from_Order_community                    Order[]                    @relation("Order_community")
+  from_PhysicianVisit_community           PhysicianVisit[]           @relation("PhysicianVisit_community")
+  from_PocTaskSlot_community              PocTaskSlot[]              @relation("PocTaskSlot_community")
+  from_ProgressNote_community             ProgressNote[]             @relation("ProgressNote_community")
+  from_Task_community                     Task[]                     @relation("Task_community")
+  from_VitalSign_community                VitalSign[]                @relation("VitalSign_community")
+  from_Wound_community                    Wound[]                    @relation("Wound_community")
+  from_WoundAssessment_community          WoundAssessment[]          @relation("WoundAssessment_community")
+  from_AdministrationSlot_community       AdministrationSlot[]       @relation("AdministrationSlot_community")
+  from_CountDiscrepancy_community         CountDiscrepancy[]         @relation("CountDiscrepancy_community")
+  from_MedicationAdministration_community MedicationAdministration[] @relation("MedicationAdministration_community")
+  from_MedicationDestruction_community    MedicationDestruction[]    @relation("MedicationDestruction_community")
+  from_MedicationSupply_community         MedicationSupply[]         @relation("MedicationSupply_community")
+  from_MedicationSupplyMovement_community MedicationSupplyMovement[] @relation("MedicationSupplyMovement_community")
+  from_PharmacyRelationship_community     PharmacyRelationship[]     @relation("PharmacyRelationship_community")
+  from_PrnFollowUp_community              PrnFollowUp[]              @relation("PrnFollowUp_community")
+  from_ShiftCount_community               ShiftCount[]               @relation("ShiftCount_community")
+  from_ShiftCountEntry_community          ShiftCountEntry[]          @relation("ShiftCountEntry_community")
+  from_AntibioticCourse_community         AntibioticCourse[]         @relation("AntibioticCourse_community")
+  from_Immunisation_community             Immunisation[]             @relation("Immunisation_community")
+  from_Incident_community                 Incident[]                 @relation("Incident_community")
+  from_IncidentInvestigation_community    IncidentInvestigation[]    @relation("IncidentInvestigation_community")
+  from_IncidentParty_community            IncidentParty[]            @relation("IncidentParty_community")
+  from_InfectionCase_community            InfectionCase[]            @relation("InfectionCase_community")
+  from_Outbreak_community                 Outbreak[]                 @relation("Outbreak_community")
+  from_PrecautionOrder_community          PrecautionOrder[]          @relation("PrecautionOrder_community")
+  from_RegulatoryReport_community         RegulatoryReport[]         @relation("RegulatoryReport_community")
+  from_EvidenceRef_community              EvidenceRef[]              @relation("EvidenceRef_community")
+  from_Finding_community                  Finding[]                  @relation("Finding_community")
+  from_InferenceCall_community            InferenceCall[]            @relation("InferenceCall_community")
+  from_WorkflowActivation_community       WorkflowActivation[]       @relation("WorkflowActivation_community")
+  from_WorkflowDefinition_community       WorkflowDefinition[]       @relation("WorkflowDefinition_community")
+  from_WorkflowRun_community              WorkflowRun[]              @relation("WorkflowRun_community")
+  from_WorkflowVersion_community          WorkflowVersion[]          @relation("WorkflowVersion_community")
 
   @@index([jurisdictionPackId])
   @@index([holidayCalendarId])
@@ -812,27 +890,29 @@ model AgentToolGrant {
 }
 
 model Proposal {
-  id                String         @id @default(cuid())
-  kind              String
-  payload           Json?
-  payloadHash       String         @default("")
-  resident          Resident?      @relation("Proposal_resident", fields: [residentId], references: [id])
-  residentId        String?        @map("resident")
-  status            String         @default("proposed")
-  agentRun          AgentRun?      @relation("Proposal_agentRun", fields: [agentRunId], references: [id])
-  agentRunId        String?        @map("agentRun")
-  proposedByAgent   AgentIdentity? @relation("Proposal_proposedByAgent", fields: [proposedByAgentId], references: [id])
-  proposedByAgentId String?        @map("proposedByAgent")
-  proposedByUser    User?          @relation("Proposal_proposedByUser", fields: [proposedByUserId], references: [id])
-  proposedByUserId  String?        @map("proposedByUser")
-  acceptedBy        User?          @relation("Proposal_acceptedBy", fields: [acceptedById], references: [id])
-  acceptedById      String?        @map("acceptedBy")
-  resultRecordType  String         @default("")
-  resultRecordId    String         @default("")
-  expiresAt         DateTime?
-  version           Int            @default(0)
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @default(now()) @updatedAt
+  id                     String         @id @default(cuid())
+  kind                   String
+  payload                Json?
+  payloadHash            String         @default("")
+  resident               Resident?      @relation("Proposal_resident", fields: [residentId], references: [id])
+  residentId             String?        @map("resident")
+  status                 String         @default("proposed")
+  agentRun               AgentRun?      @relation("Proposal_agentRun", fields: [agentRunId], references: [id])
+  agentRunId             String?        @map("agentRun")
+  proposedByAgent        AgentIdentity? @relation("Proposal_proposedByAgent", fields: [proposedByAgentId], references: [id])
+  proposedByAgentId      String?        @map("proposedByAgent")
+  proposedByUser         User?          @relation("Proposal_proposedByUser", fields: [proposedByUserId], references: [id])
+  proposedByUserId       String?        @map("proposedByUser")
+  acceptedBy             User?          @relation("Proposal_acceptedBy", fields: [acceptedById], references: [id])
+  acceptedById           String?        @map("acceptedBy")
+  resultRecordType       String         @default("")
+  resultRecordId         String         @default("")
+  expiresAt              DateTime?
+  version                Int            @default(0)
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @default(now()) @updatedAt
+  from_CarePlan_proposal CarePlan[]     @relation("CarePlan_proposal")
+  from_Finding_proposal  Finding[]      @relation("Finding_proposal")
 
   @@index([residentId])
   @@index([agentRunId])
@@ -1033,25 +1113,28 @@ model Room {
 }
 
 model Unit {
-  id                           String               @id @default(cuid())
-  community                    Community?           @relation("Unit_community", fields: [communityId], references: [id])
-  communityId                  String?              @map("community")
-  building                     Building?            @relation("Unit_building", fields: [buildingId], references: [id])
-  buildingId                   String?              @map("building")
-  name                         String               @default("")
-  code                         String               @default("")
-  setting                      String               @default("nursing_facility")
-  secured                      Boolean              @default(false)
-  specialty                    String               @default("none")
-  rooms                        Room[]               @relation("Room_unit")
-  apartments                   Apartment[]          @relation("Apartment_unit")
-  status                       String               @default("active")
-  createdAt                    DateTime             @default(now())
-  updatedAt                    DateTime             @default(now()) @updatedAt
-  from_DeviceRegistration_unit DeviceRegistration[] @relation("DeviceRegistration_unit")
-  from_StaffAssignment_units   StaffAssignment[]    @relation("StaffAssignment_units")
-  from_CensusDay_unit          CensusDay[]          @relation("CensusDay_unit")
-  from_CensusSignoff_unit      CensusSignoff[]      @relation("CensusSignoff_unit")
+  id                                 String               @id @default(cuid())
+  community                          Community?           @relation("Unit_community", fields: [communityId], references: [id])
+  communityId                        String?              @map("community")
+  building                           Building?            @relation("Unit_building", fields: [buildingId], references: [id])
+  buildingId                         String?              @map("building")
+  name                               String               @default("")
+  code                               String               @default("")
+  setting                            String               @default("nursing_facility")
+  secured                            Boolean              @default(false)
+  specialty                          String               @default("none")
+  rooms                              Room[]               @relation("Room_unit")
+  apartments                         Apartment[]          @relation("Apartment_unit")
+  status                             String               @default("active")
+  createdAt                          DateTime             @default(now())
+  updatedAt                          DateTime             @default(now()) @updatedAt
+  from_DeviceRegistration_unit       DeviceRegistration[] @relation("DeviceRegistration_unit")
+  from_StaffAssignment_units         StaffAssignment[]    @relation("StaffAssignment_units")
+  from_CensusDay_unit                CensusDay[]          @relation("CensusDay_unit")
+  from_CensusSignoff_unit            CensusSignoff[]      @relation("CensusSignoff_unit")
+  from_MedicationSupply_unitLocation MedicationSupply[]   @relation("MedicationSupply_unitLocation")
+  from_ShiftCount_unit               ShiftCount[]         @relation("ShiftCount_unit")
+  from_Outbreak_unit                 Outbreak[]           @relation("Outbreak_unit")
 
   @@unique([communityId, code], map: "Unit_community_code_key")
   @@index([communityId])
@@ -1371,48 +1454,76 @@ model Representative {
 }
 
 model Resident {
-  id                               String               @id @default(cuid())
-  reference                        String               @unique @default("")
-  community                        Community?           @relation("Resident_community", fields: [communityId], references: [id])
-  communityId                      String?              @map("community")
-  firstName                        String               @default("")
-  middleName                       String               @default("")
-  lastName                         String               @default("")
-  preferredName                    String               @default("")
-  dateOfBirth                      DateTime?            @postgresql.Date
-  sex                              String?
-  genderIdentity                   String               @default("")
-  pronouns                         String               @default("")
-  primaryLanguage                  String               @default("")
-  interpreterNeeded                Boolean              @default(false)
-  maritalStatus                    String               @default("")
-  religion                         String               @default("")
-  veteran                          Boolean              @default(false)
-  codeStatus                       String?
-  capacityStatus                   String?              @default("unknown")
-  fallRisk                         String               @default("")
-  elopementRisk                    String               @default("")
-  status                           String               @default("current")
-  identifiers                      ResidentIdentifier[] @relation("ResidentIdentifier_resident")
-  representatives                  Representative[]     @relation("Representative_resident")
-  advanceDirectives                AdvanceDirective[]   @relation("AdvanceDirective_resident")
-  allergies                        Allergy[]            @relation("Allergy_resident")
-  diagnoses                        Diagnosis[]          @relation("Diagnosis_resident")
-  stays                            Stay[]               @relation("Stay_resident")
-  currentStay                      Stay?                @relation("Resident_currentStay", fields: [currentStayId], references: [id])
-  currentStayId                    String?              @map("currentStay")
-  synthetic                        Boolean              @default(false)
-  version                          Int                  @default(0)
-  createdAt                        DateTime             @default(now())
-  updatedAt                        DateTime             @default(now()) @updatedAt
-  from_BreakGlassGrant_resident    BreakGlassGrant[]    @relation("BreakGlassGrant_resident")
-  from_ComplianceClock_resident    ComplianceClock[]    @relation("ComplianceClock_resident")
-  from_Document_resident           Document[]           @relation("Document_resident")
-  from_Proposal_resident           Proposal[]           @relation("Proposal_resident")
-  from_NoticeDelivery_resident     NoticeDelivery[]     @relation("NoticeDelivery_resident")
-  from_PreAdmissionScreen_resident PreAdmissionScreen[] @relation("PreAdmissionScreen_resident")
-  from_PortalScopeGrant_resident   PortalScopeGrant[]   @relation("PortalScopeGrant_resident")
-  from_Prospect_convertedResident  Prospect[]           @relation("Prospect_convertedResident")
+  id                                     String                     @id @default(cuid())
+  reference                              String                     @unique @default("")
+  community                              Community?                 @relation("Resident_community", fields: [communityId], references: [id])
+  communityId                            String?                    @map("community")
+  firstName                              String                     @default("")
+  middleName                             String                     @default("")
+  lastName                               String                     @default("")
+  preferredName                          String                     @default("")
+  dateOfBirth                            DateTime?                  @postgresql.Date
+  sex                                    String?
+  genderIdentity                         String                     @default("")
+  pronouns                               String                     @default("")
+  primaryLanguage                        String                     @default("")
+  interpreterNeeded                      Boolean                    @default(false)
+  maritalStatus                          String                     @default("")
+  religion                               String                     @default("")
+  veteran                                Boolean                    @default(false)
+  codeStatus                             String?
+  capacityStatus                         String?                    @default("unknown")
+  fallRisk                               String                     @default("")
+  elopementRisk                          String                     @default("")
+  status                                 String                     @default("current")
+  identifiers                            ResidentIdentifier[]       @relation("ResidentIdentifier_resident")
+  representatives                        Representative[]           @relation("Representative_resident")
+  advanceDirectives                      AdvanceDirective[]         @relation("AdvanceDirective_resident")
+  allergies                              Allergy[]                  @relation("Allergy_resident")
+  diagnoses                              Diagnosis[]                @relation("Diagnosis_resident")
+  stays                                  Stay[]                     @relation("Stay_resident")
+  currentStay                            Stay?                      @relation("Resident_currentStay", fields: [currentStayId], references: [id])
+  currentStayId                          String?                    @map("currentStay")
+  synthetic                              Boolean                    @default(false)
+  version                                Int                        @default(0)
+  createdAt                              DateTime                   @default(now())
+  updatedAt                              DateTime                   @default(now()) @updatedAt
+  from_BreakGlassGrant_resident          BreakGlassGrant[]          @relation("BreakGlassGrant_resident")
+  from_ComplianceClock_resident          ComplianceClock[]          @relation("ComplianceClock_resident")
+  from_Document_resident                 Document[]                 @relation("Document_resident")
+  from_Proposal_resident                 Proposal[]                 @relation("Proposal_resident")
+  from_NoticeDelivery_resident           NoticeDelivery[]           @relation("NoticeDelivery_resident")
+  from_PreAdmissionScreen_resident       PreAdmissionScreen[]       @relation("PreAdmissionScreen_resident")
+  from_PortalScopeGrant_resident         PortalScopeGrant[]         @relation("PortalScopeGrant_resident")
+  from_Prospect_convertedResident        Prospect[]                 @relation("Prospect_convertedResident")
+  from_AdlRecord_resident                AdlRecord[]                @relation("AdlRecord_resident")
+  from_Assessment_resident               Assessment[]               @relation("Assessment_resident")
+  from_BehaviourEpisode_resident         BehaviourEpisode[]         @relation("BehaviourEpisode_resident")
+  from_CarePlan_resident                 CarePlan[]                 @relation("CarePlan_resident")
+  from_CarePlanItem_resident             CarePlanItem[]             @relation("CarePlanItem_resident")
+  from_IntakeRecord_resident             IntakeRecord[]             @relation("IntakeRecord_resident")
+  from_MedicationOrderDetail_resident    MedicationOrderDetail[]    @relation("MedicationOrderDetail_resident")
+  from_Order_resident                    Order[]                    @relation("Order_resident")
+  from_PhysicianVisit_resident           PhysicianVisit[]           @relation("PhysicianVisit_resident")
+  from_PocTaskSlot_resident              PocTaskSlot[]              @relation("PocTaskSlot_resident")
+  from_ProgressNote_resident             ProgressNote[]             @relation("ProgressNote_resident")
+  from_Task_resident                     Task[]                     @relation("Task_resident")
+  from_VitalSign_resident                VitalSign[]                @relation("VitalSign_resident")
+  from_Wound_resident                    Wound[]                    @relation("Wound_resident")
+  from_WoundAssessment_resident          WoundAssessment[]          @relation("WoundAssessment_resident")
+  from_AdministrationSlot_resident       AdministrationSlot[]       @relation("AdministrationSlot_resident")
+  from_MedicationAdministration_resident MedicationAdministration[] @relation("MedicationAdministration_resident")
+  from_MedicationSupply_resident         MedicationSupply[]         @relation("MedicationSupply_resident")
+  from_PrnFollowUp_resident              PrnFollowUp[]              @relation("PrnFollowUp_resident")
+  from_AntibioticCourse_resident         AntibioticCourse[]         @relation("AntibioticCourse_resident")
+  from_Immunisation_resident             Immunisation[]             @relation("Immunisation_resident")
+  from_Incident_resident                 Incident[]                 @relation("Incident_resident")
+  from_IncidentInvestigation_resident    IncidentInvestigation[]    @relation("IncidentInvestigation_resident")
+  from_IncidentParty_resident            IncidentParty[]            @relation("IncidentParty_resident")
+  from_InfectionCase_resident            InfectionCase[]            @relation("InfectionCase_resident")
+  from_PrecautionOrder_resident          PrecautionOrder[]          @relation("PrecautionOrder_resident")
+  from_RegulatoryReport_resident         RegulatoryReport[]         @relation("RegulatoryReport_resident")
+  from_Finding_resident                  Finding[]                  @relation("Finding_resident")
 
   @@index([communityId])
   @@index([currentStayId])
@@ -1856,6 +1967,1170 @@ model WaitlistEntry {
   @@index([leadId])
   @@index([apartmentTypeId])
   @@index([offeredReservationId])
+}
+
+model AdlRecord {
+  id            String       @id @default(cuid())
+  resident      Resident?    @relation("AdlRecord_resident", fields: [residentId], references: [id])
+  residentId    String?      @map("resident")
+  community     Community?   @relation("AdlRecord_community", fields: [communityId], references: [id])
+  communityId   String?      @map("community")
+  activity      String
+  level         String
+  at            DateTime?
+  recordedBy    User?        @relation("AdlRecord_recordedBy", fields: [recordedById], references: [id])
+  recordedById  String?      @map("recordedBy")
+  pocTaskSlot   PocTaskSlot? @relation("AdlRecord_pocTaskSlot", fields: [pocTaskSlotId], references: [id])
+  pocTaskSlotId String?      @map("pocTaskSlot")
+  version       Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @default(now()) @updatedAt
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([recordedById])
+  @@index([pocTaskSlotId])
+}
+
+model Assessment {
+  id                              String              @id @default(cuid())
+  resident                        Resident?           @relation("Assessment_resident", fields: [residentId], references: [id])
+  residentId                      String?             @map("resident")
+  community                       Community?          @relation("Assessment_community", fields: [communityId], references: [id])
+  communityId                     String?             @map("community")
+  template                        AssessmentTemplate? @relation("Assessment_template", fields: [templateId], references: [id])
+  templateId                      String?             @map("template")
+  templateCode                    String              @default("")
+  templateVersion                 Int?
+  answers                         Json?
+  band                            String              @default("")
+  score                           Int?
+  status                          String              @default("completed")
+  completedAt                     DateTime?
+  completedBy                     User?               @relation("Assessment_completedBy", fields: [completedById], references: [id])
+  completedById                   String?             @map("completedBy")
+  version                         Int                 @default(0)
+  createdAt                       DateTime            @default(now())
+  updatedAt                       DateTime            @default(now()) @updatedAt
+  from_CarePlan_basedOnAssessment CarePlan[]          @relation("CarePlan_basedOnAssessment")
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([templateId])
+  @@index([templateCode])
+  @@index([completedById])
+}
+
+model AssessmentTemplate {
+  id                       String       @id @default(cuid())
+  code                     String       @default("")
+  name                     String       @default("")
+  templateVersion          Int?         @default(1)
+  scorer                   String
+  definition               Json?
+  settings                 Json?
+  sourceNote               String       @default("")
+  verifyNote               String       @default("")
+  status                   String       @default("active")
+  version                  Int          @default(0)
+  createdAt                DateTime     @default(now())
+  updatedAt                DateTime     @default(now()) @updatedAt
+  from_Assessment_template Assessment[] @relation("Assessment_template")
+
+  @@index([code])
+}
+
+model BehaviourEpisode {
+  id              String     @id @default(cuid())
+  resident        Resident?  @relation("BehaviourEpisode_resident", fields: [residentId], references: [id])
+  residentId      String?    @map("resident")
+  community       Community? @relation("BehaviourEpisode_community", fields: [communityId], references: [id])
+  communityId     String?    @map("community")
+  kind            String
+  antecedent      String     @default("")
+  intervention    String     @default("")
+  outcome         String     @default("")
+  severity        String?    @default("mild")
+  startedAt       DateTime?
+  durationMinutes Int?
+  recordedBy      User?      @relation("BehaviourEpisode_recordedBy", fields: [recordedById], references: [id])
+  recordedById    String?    @map("recordedBy")
+  version         Int        @default(0)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @default(now()) @updatedAt
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([recordedById])
+}
+
+model CarePlan {
+  id                       String         @id @default(cuid())
+  resident                 Resident?      @relation("CarePlan_resident", fields: [residentId], references: [id])
+  residentId               String?        @map("resident")
+  community                Community?     @relation("CarePlan_community", fields: [communityId], references: [id])
+  communityId              String?        @map("community")
+  reference                String         @unique @default("")
+  kind                     String
+  status                   String         @default("draft")
+  revision                 Int?           @default(1)
+  supersedes               CarePlan?      @relation("CarePlan_supersedes", fields: [supersedesId], references: [id])
+  supersedesId             String?        @map("supersedes")
+  items                    CarePlanItem[] @relation("CarePlanItem_carePlan")
+  basedOnAssessment        Assessment?    @relation("CarePlan_basedOnAssessment", fields: [basedOnAssessmentId], references: [id])
+  basedOnAssessmentId      String?        @map("basedOnAssessment")
+  proposal                 Proposal?      @relation("CarePlan_proposal", fields: [proposalId], references: [id])
+  proposalId               String?        @map("proposal")
+  startedAt                DateTime?
+  signedBy                 User?          @relation("CarePlan_signedBy", fields: [signedById], references: [id])
+  signedById               String?        @map("signedBy")
+  signedAt                 DateTime?
+  version                  Int            @default(0)
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @default(now()) @updatedAt
+  from_CarePlan_supersedes CarePlan[]     @relation("CarePlan_supersedes")
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([supersedesId])
+  @@index([basedOnAssessmentId])
+  @@index([proposalId])
+  @@index([signedById])
+}
+
+model CarePlanItem {
+  id                       String         @id @default(cuid())
+  resident                 Resident?      @relation("CarePlanItem_resident", fields: [residentId], references: [id])
+  residentId               String?        @map("resident")
+  community                Community?     @relation("CarePlanItem_community", fields: [communityId], references: [id])
+  communityId              String?        @map("community")
+  carePlan                 CarePlan?      @relation("CarePlanItem_carePlan", fields: [carePlanId], references: [id])
+  carePlanId               String?        @map("carePlan")
+  kind                     String
+  parent                   CarePlanItem?  @relation("CarePlanItem_parent", fields: [parentId], references: [id])
+  parentId                 String?        @map("parent")
+  text                     String         @default("")
+  discipline               String?        @default("nursing")
+  frequency                String?        @default("as_needed")
+  targetDate               DateTime?      @postgresql.Date
+  status                   String         @default("active")
+  version                  Int            @default(0)
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @default(now()) @updatedAt
+  from_CarePlanItem_parent CarePlanItem[] @relation("CarePlanItem_parent")
+  from_PocTaskSlot_item    PocTaskSlot[]  @relation("PocTaskSlot_item")
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([carePlanId])
+  @@index([parentId])
+}
+
+model IntakeRecord {
+  id           String     @id @default(cuid())
+  resident     Resident?  @relation("IntakeRecord_resident", fields: [residentId], references: [id])
+  residentId   String?    @map("resident")
+  community    Community? @relation("IntakeRecord_community", fields: [communityId], references: [id])
+  communityId  String?    @map("community")
+  kind         String
+  amountMl     Decimal?   @postgresql.Decimal(12, 3)
+  percentEaten Int?
+  at           DateTime?
+  recordedBy   User?      @relation("IntakeRecord_recordedBy", fields: [recordedById], references: [id])
+  recordedById String?    @map("recordedBy")
+  version      Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @default(now()) @updatedAt
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([recordedById])
+}
+
+model MedicationOrderDetail {
+  id                                   String                     @id @default(cuid())
+  resident                             Resident?                  @relation("MedicationOrderDetail_resident", fields: [residentId], references: [id])
+  residentId                           String?                    @map("resident")
+  community                            Community?                 @relation("MedicationOrderDetail_community", fields: [communityId], references: [id])
+  communityId                          String?                    @map("community")
+  order                                Order?                     @relation("MedicationOrderDetail_order", fields: [orderId], references: [id])
+  orderId                              String?                    @unique @map("order")
+  reference                            MedicationReference?       @relation("MedicationOrderDetail_reference", fields: [referenceId], references: [id])
+  referenceId                          String?                    @map("reference")
+  drugName                             String                     @default("")
+  dose                                 Decimal                    @postgresql.Decimal(12, 3)
+  doseUnit                             String                     @default("")
+  route                                String?
+  prn                                  Boolean                    @default(false)
+  prnReason                            String                     @default("")
+  prnMinIntervalMinutes                Int?
+  prnFollowUpMinutes                   Int?                       @default(60)
+  times                                Json?
+  holdParameters                       Json?
+  controlled                           Boolean                    @default(false)
+  version                              Int                        @default(0)
+  createdAt                            DateTime                   @default(now())
+  updatedAt                            DateTime                   @default(now()) @updatedAt
+  from_AdministrationSlot_detail       AdministrationSlot[]       @relation("AdministrationSlot_detail")
+  from_MedicationAdministration_detail MedicationAdministration[] @relation("MedicationAdministration_detail")
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([referenceId])
+}
+
+model Order {
+  id                            String                 @id @default(cuid())
+  resident                      Resident?              @relation("Order_resident", fields: [residentId], references: [id])
+  residentId                    String?                @map("resident")
+  community                     Community?             @relation("Order_community", fields: [communityId], references: [id])
+  communityId                   String?                @map("community")
+  reference                     String                 @unique @default("")
+  kind                          String
+  summary                       String                 @default("")
+  instructions                  String                 @default("")
+  source                        String
+  readBack                      Boolean                @default(false)
+  status                        String                 @default("active")
+  startAt                       DateTime?
+  stopAt                        DateTime?
+  enteredBy                     User?                  @relation("Order_enteredBy", fields: [enteredById], references: [id])
+  enteredById                   String?                @map("enteredBy")
+  prescriber                    User?                  @relation("Order_prescriber", fields: [prescriberId], references: [id])
+  prescriberId                  String?                @map("prescriber")
+  prescriberName                String                 @default("")
+  needsCountersign              Boolean                @default(false)
+  countersignedBy               User?                  @relation("Order_countersignedBy", fields: [countersignedById], references: [id])
+  countersignedById             String?                @map("countersignedBy")
+  countersignedAt               DateTime?
+  discontinuedReason            String                 @default("")
+  allergyOverride               String                 @default("")
+  medication                    MedicationOrderDetail? @relation("MedicationOrderDetail_order")
+  version                       Int                    @default(0)
+  createdAt                     DateTime               @default(now())
+  updatedAt                     DateTime               @default(now()) @updatedAt
+  from_AdministrationSlot_order AdministrationSlot[]   @relation("AdministrationSlot_order")
+  from_AntibioticCourse_order   AntibioticCourse[]     @relation("AntibioticCourse_order")
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([enteredById])
+  @@index([prescriberId])
+  @@index([countersignedById])
+}
+
+model PhysicianVisit {
+  id            String        @id @default(cuid())
+  resident      Resident?     @relation("PhysicianVisit_resident", fields: [residentId], references: [id])
+  residentId    String?       @map("resident")
+  community     Community?    @relation("PhysicianVisit_community", fields: [communityId], references: [id])
+  communityId   String?       @map("community")
+  kind          String
+  physicianName String        @default("")
+  visitedAt     DateTime?
+  summary       String        @default("")
+  note          ProgressNote? @relation("PhysicianVisit_note", fields: [noteId], references: [id])
+  noteId        String?       @map("note")
+  recordedBy    User?         @relation("PhysicianVisit_recordedBy", fields: [recordedById], references: [id])
+  recordedById  String?       @map("recordedBy")
+  version       Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @default(now()) @updatedAt
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([noteId])
+  @@index([recordedById])
+}
+
+model PocTaskSlot {
+  id                         String        @id @default(cuid())
+  resident                   Resident?     @relation("PocTaskSlot_resident", fields: [residentId], references: [id])
+  residentId                 String?       @map("resident")
+  community                  Community?    @relation("PocTaskSlot_community", fields: [communityId], references: [id])
+  communityId                String?       @map("community")
+  item                       CarePlanItem? @relation("PocTaskSlot_item", fields: [itemId], references: [id])
+  itemId                     String?       @map("item")
+  label                      String        @default("")
+  dueAt                      DateTime?
+  slotKey                    String        @unique @default("")
+  status                     String        @default("pending")
+  doneAt                     DateTime?
+  doneBy                     User?         @relation("PocTaskSlot_doneBy", fields: [doneById], references: [id])
+  doneById                   String?       @map("doneBy")
+  version                    Int           @default(0)
+  createdAt                  DateTime      @default(now())
+  updatedAt                  DateTime      @default(now()) @updatedAt
+  from_AdlRecord_pocTaskSlot AdlRecord[]   @relation("AdlRecord_pocTaskSlot")
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([itemId])
+  @@index([doneById])
+}
+
+model ProgressNote {
+  id                          String           @id @default(cuid())
+  resident                    Resident?        @relation("ProgressNote_resident", fields: [residentId], references: [id])
+  residentId                  String?          @map("resident")
+  community                   Community?       @relation("ProgressNote_community", fields: [communityId], references: [id])
+  communityId                 String?          @map("community")
+  kind                        String
+  body                        String           @default("")
+  status                      String           @default("draft")
+  eventAt                     DateTime?
+  lateEntry                   Boolean          @default(false)
+  author                      User?            @relation("ProgressNote_author", fields: [authorId], references: [id])
+  authorId                    String?          @map("author")
+  signedBy                    User?            @relation("ProgressNote_signedBy", fields: [signedById], references: [id])
+  signedById                  String?          @map("signedBy")
+  signedAt                    DateTime?
+  amends                      ProgressNote?    @relation("ProgressNote_amends", fields: [amendsId], references: [id])
+  amendsId                    String?          @map("amends")
+  amendedBy                   ProgressNote?    @relation("ProgressNote_amendedBy", fields: [amendedById], references: [id])
+  amendedById                 String?          @map("amendedBy")
+  errorReason                 String           @default("")
+  version                     Int              @default(0)
+  createdAt                   DateTime         @default(now())
+  updatedAt                   DateTime         @default(now()) @updatedAt
+  from_PhysicianVisit_note    PhysicianVisit[] @relation("PhysicianVisit_note")
+  from_ProgressNote_amends    ProgressNote[]   @relation("ProgressNote_amends")
+  from_ProgressNote_amendedBy ProgressNote[]   @relation("ProgressNote_amendedBy")
+  from_Incident_sourceNote    Incident[]       @relation("Incident_sourceNote")
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([authorId])
+  @@index([signedById])
+  @@index([amendsId])
+  @@index([amendedById])
+}
+
+model Task {
+  id                  String     @id @default(cuid())
+  community           Community? @relation("Task_community", fields: [communityId], references: [id])
+  communityId         String?    @map("community")
+  resident            Resident?  @relation("Task_resident", fields: [residentId], references: [id])
+  residentId          String?    @map("resident")
+  kind                String
+  title               String     @default("")
+  detail              String     @default("")
+  dedupeKey           String     @unique @default("")
+  status              String     @default("open")
+  ownerRole           String     @default("")
+  assignee            User?      @relation("Task_assignee", fields: [assigneeId], references: [id])
+  assigneeId          String?    @map("assignee")
+  dueAt               DateTime?
+  escalateAt          DateTime?
+  escalationOwnerRole String     @default("")
+  subjectType         String     @default("")
+  subjectId           String     @default("")
+  completedBy         User?      @relation("Task_completedBy", fields: [completedById], references: [id])
+  completedById       String?    @map("completedBy")
+  completedAt         DateTime?
+  createdByWorkflow   String     @default("")
+  version             Int        @default(0)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @default(now()) @updatedAt
+  from_Finding_task   Finding[]  @relation("Finding_task")
+
+  @@index([communityId])
+  @@index([residentId])
+  @@index([assigneeId])
+  @@index([subjectId])
+  @@index([completedById])
+}
+
+model VitalSign {
+  id           String     @id @default(cuid())
+  resident     Resident?  @relation("VitalSign_resident", fields: [residentId], references: [id])
+  residentId   String?    @map("resident")
+  community    Community? @relation("VitalSign_community", fields: [communityId], references: [id])
+  communityId  String?    @map("community")
+  kind         String
+  value        Decimal?   @postgresql.Decimal(12, 3)
+  unit         String     @default("")
+  takenAt      DateTime?
+  recordedBy   User?      @relation("VitalSign_recordedBy", fields: [recordedById], references: [id])
+  recordedById String?    @map("recordedBy")
+  version      Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @default(now()) @updatedAt
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([recordedById])
+}
+
+model Wound {
+  id                     String            @id @default(cuid())
+  resident               Resident?         @relation("Wound_resident", fields: [residentId], references: [id])
+  residentId             String?           @map("resident")
+  community              Community?        @relation("Wound_community", fields: [communityId], references: [id])
+  communityId            String?           @map("community")
+  site                   String            @default("")
+  kind                   String
+  status                 String            @default("open")
+  firstNotedAt           DateTime?
+  lastAssessedAt         DateTime?
+  currentStage           String            @default("")
+  assessmentIntervalDays Int?              @default(7)
+  assessments            WoundAssessment[] @relation("WoundAssessment_wound")
+  version                Int               @default(0)
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @default(now()) @updatedAt
+
+  @@index([residentId])
+  @@index([communityId])
+}
+
+model WoundAssessment {
+  id           String     @id @default(cuid())
+  resident     Resident?  @relation("WoundAssessment_resident", fields: [residentId], references: [id])
+  residentId   String?    @map("resident")
+  community    Community? @relation("WoundAssessment_community", fields: [communityId], references: [id])
+  communityId  String?    @map("community")
+  wound        Wound?     @relation("WoundAssessment_wound", fields: [woundId], references: [id])
+  woundId      String?    @map("wound")
+  stage        String?
+  lengthCm     Decimal?   @postgresql.Decimal(12, 3)
+  widthCm      Decimal?   @postgresql.Decimal(12, 3)
+  depthCm      Decimal?   @postgresql.Decimal(12, 3)
+  description  String     @default("")
+  photos       Json?
+  assessedAt   DateTime?
+  assessedBy   User?      @relation("WoundAssessment_assessedBy", fields: [assessedById], references: [id])
+  assessedById String?    @map("assessedBy")
+  version      Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @default(now()) @updatedAt
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([woundId])
+  @@index([assessedById])
+}
+
+model AdministrationSlot {
+  id                                 String                     @id @default(cuid())
+  resident                           Resident?                  @relation("AdministrationSlot_resident", fields: [residentId], references: [id])
+  residentId                         String?                    @map("resident")
+  community                          Community?                 @relation("AdministrationSlot_community", fields: [communityId], references: [id])
+  communityId                        String?                    @map("community")
+  detail                             MedicationOrderDetail?     @relation("AdministrationSlot_detail", fields: [detailId], references: [id])
+  detailId                           String?                    @map("detail")
+  order                              Order?                     @relation("AdministrationSlot_order", fields: [orderId], references: [id])
+  orderId                            String?                    @map("order")
+  drugName                           String                     @default("")
+  slotKey                            String                     @unique @default("")
+  scheduledFor                       DateTime?
+  windowBefore                       Int?                       @default(60)
+  windowAfter                        Int?                       @default(60)
+  status                             String                     @default("scheduled")
+  settledAt                          DateTime?
+  version                            Int                        @default(0)
+  createdAt                          DateTime                   @default(now())
+  updatedAt                          DateTime                   @default(now()) @updatedAt
+  from_MedicationAdministration_slot MedicationAdministration[] @relation("MedicationAdministration_slot")
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([detailId])
+  @@index([orderId])
+}
+
+model CountDiscrepancy {
+  id              String                    @id @default(cuid())
+  community       Community?                @relation("CountDiscrepancy_community", fields: [communityId], references: [id])
+  communityId     String?                   @map("community")
+  shiftCount      ShiftCount?               @relation("CountDiscrepancy_shiftCount", fields: [shiftCountId], references: [id])
+  shiftCountId    String?                   @map("shiftCount")
+  supply          MedicationSupply?         @relation("CountDiscrepancy_supply", fields: [supplyId], references: [id])
+  supplyId        String?                   @map("supply")
+  expected        Decimal                   @postgresql.Decimal(14, 3)
+  outgoingCounted Decimal                   @postgresql.Decimal(14, 3)
+  incomingCounted Decimal                   @postgresql.Decimal(14, 3)
+  status          String                    @default("open")
+  resolution      String?
+  resolutionNote  String                    @default("")
+  resolvedBy      User?                     @relation("CountDiscrepancy_resolvedBy", fields: [resolvedById], references: [id])
+  resolvedById    String?                   @map("resolvedBy")
+  resolvedAt      DateTime?
+  adjustment      MedicationSupplyMovement? @relation("CountDiscrepancy_adjustment", fields: [adjustmentId], references: [id])
+  adjustmentId    String?                   @map("adjustment")
+  incident        Incident?                 @relation("CountDiscrepancy_incident", fields: [incidentId], references: [id])
+  incidentId      String?                   @map("incident")
+  version         Int                       @default(0)
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([shiftCountId])
+  @@index([supplyId])
+  @@index([resolvedById])
+  @@index([adjustmentId])
+  @@index([incidentId])
+}
+
+model MedicationAdministration {
+  id                                       String                     @id @default(cuid())
+  resident                                 Resident?                  @relation("MedicationAdministration_resident", fields: [residentId], references: [id])
+  residentId                               String?                    @map("resident")
+  community                                Community?                 @relation("MedicationAdministration_community", fields: [communityId], references: [id])
+  communityId                              String?                    @map("community")
+  slot                                     AdministrationSlot?        @relation("MedicationAdministration_slot", fields: [slotId], references: [id])
+  slotId                                   String?                    @map("slot")
+  detail                                   MedicationOrderDetail?     @relation("MedicationAdministration_detail", fields: [detailId], references: [id])
+  detailId                                 String?                    @map("detail")
+  drugName                                 String                     @default("")
+  outcome                                  String
+  prn                                      Boolean                    @default(false)
+  doseGiven                                Decimal?                   @postgresql.Decimal(14, 3)
+  reason                                   String                     @default("")
+  note                                     String                     @default("")
+  doseUnit                                 String                     @default("")
+  administeredAt                           DateTime?
+  recordedAt                               DateTime?
+  lateEntry                                Boolean                    @default(false)
+  timing                                   String?
+  identityCheck                            String?
+  holdVital                                Json?
+  administeredBy                           User?                      @relation("MedicationAdministration_administeredBy", fields: [administeredById], references: [id])
+  administeredById                         String?                    @map("administeredBy")
+  witness                                  User?                      @relation("MedicationAdministration_witness", fields: [witnessId], references: [id])
+  witnessId                                String?                    @map("witness")
+  supply                                   MedicationSupply?          @relation("MedicationAdministration_supply", fields: [supplyId], references: [id])
+  supplyId                                 String?                    @map("supply")
+  movement                                 MedicationSupplyMovement[] @relation("MedicationSupplyMovement_administration")
+  followUpDueAt                            DateTime?
+  followUpOf                               MedicationAdministration?  @relation("MedicationAdministration_followUpOf", fields: [followUpOfId], references: [id])
+  followUpOfId                             String?                    @map("followUpOf")
+  createdAt                                DateTime?                  @default(now())
+  from_MedicationAdministration_followUpOf MedicationAdministration[] @relation("MedicationAdministration_followUpOf")
+  from_PrnFollowUp_administration          PrnFollowUp[]              @relation("PrnFollowUp_administration")
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([slotId])
+  @@index([detailId])
+  @@index([administeredById])
+  @@index([witnessId])
+  @@index([supplyId])
+  @@index([followUpOfId])
+}
+
+model MedicationDestruction {
+  id            String                    @id @default(cuid())
+  community     Community?                @relation("MedicationDestruction_community", fields: [communityId], references: [id])
+  communityId   String?                   @map("community")
+  supply        MedicationSupply?         @relation("MedicationDestruction_supply", fields: [supplyId], references: [id])
+  supplyId      String?                   @map("supply")
+  quantity      Decimal                   @postgresql.Decimal(14, 3)
+  method        String                    @default("")
+  destroyedAt   DateTime?
+  destroyedBy   User?                     @relation("MedicationDestruction_destroyedBy", fields: [destroyedById], references: [id])
+  destroyedById String?                   @map("destroyedBy")
+  witness       User?                     @relation("MedicationDestruction_witness", fields: [witnessId], references: [id])
+  witnessId     String?                   @map("witness")
+  movement      MedicationSupplyMovement? @relation("MedicationDestruction_movement", fields: [movementId], references: [id])
+  movementId    String?                   @map("movement")
+  version       Int                       @default(0)
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([supplyId])
+  @@index([destroyedById])
+  @@index([witnessId])
+  @@index([movementId])
+}
+
+model MedicationReference {
+  id                                   String                  @id @default(cuid())
+  name                                 String                  @default("")
+  genericName                          String                  @default("")
+  strength                             String                  @default("")
+  form                                 String                  @default("")
+  ndc                                  String                  @default("")
+  schedule                             String                  @default("none")
+  highAlert                            Boolean                 @default(false)
+  status                               String                  @default("active")
+  source                               String                  @default("manual")
+  version                              Int                     @default(0)
+  createdAt                            DateTime                @default(now())
+  updatedAt                            DateTime                @default(now()) @updatedAt
+  from_MedicationOrderDetail_reference MedicationOrderDetail[] @relation("MedicationOrderDetail_reference")
+  from_MedicationSupply_reference      MedicationSupply[]      @relation("MedicationSupply_reference")
+
+  @@index([ndc])
+}
+
+model MedicationSupply {
+  id                                   String                     @id @default(cuid())
+  community                            Community?                 @relation("MedicationSupply_community", fields: [communityId], references: [id])
+  communityId                          String?                    @map("community")
+  resident                             Resident?                  @relation("MedicationSupply_resident", fields: [residentId], references: [id])
+  residentId                           String?                    @map("resident")
+  reference                            MedicationReference?       @relation("MedicationSupply_reference", fields: [referenceId], references: [id])
+  referenceId                          String?                    @map("reference")
+  unitLocation                         Unit?                      @relation("MedicationSupply_unitLocation", fields: [unitLocationId], references: [id])
+  unitLocationId                       String?                    @map("unitLocation")
+  label                                String                     @default("")
+  kind                                 String
+  lot                                  String                     @default("")
+  expiresOn                            DateTime?
+  controlled                           Boolean                    @default(false)
+  unit                                 String                     @default("")
+  balance                              Decimal                    @postgresql.Decimal(14, 3)
+  status                               String                     @default("active")
+  movements                            MedicationSupplyMovement[] @relation("MedicationSupplyMovement_supply")
+  version                              Int                        @default(0)
+  createdAt                            DateTime                   @default(now())
+  updatedAt                            DateTime                   @default(now()) @updatedAt
+  from_CountDiscrepancy_supply         CountDiscrepancy[]         @relation("CountDiscrepancy_supply")
+  from_MedicationAdministration_supply MedicationAdministration[] @relation("MedicationAdministration_supply")
+  from_MedicationDestruction_supply    MedicationDestruction[]    @relation("MedicationDestruction_supply")
+  from_ShiftCountEntry_supply          ShiftCountEntry[]          @relation("ShiftCountEntry_supply")
+
+  @@index([communityId])
+  @@index([residentId])
+  @@index([referenceId])
+  @@index([unitLocationId])
+}
+
+model MedicationSupplyMovement {
+  id                                  String                    @id @default(cuid())
+  community                           Community?                @relation("MedicationSupplyMovement_community", fields: [communityId], references: [id])
+  communityId                         String?                   @map("community")
+  supply                              MedicationSupply?         @relation("MedicationSupplyMovement_supply", fields: [supplyId], references: [id])
+  supplyId                            String?                   @map("supply")
+  seq                                 Int?
+  kind                                String
+  quantity                            Decimal                   @postgresql.Decimal(14, 3)
+  balanceAfter                        Decimal                   @postgresql.Decimal(14, 3)
+  at                                  DateTime?
+  actor                               User?                     @relation("MedicationSupplyMovement_actor", fields: [actorId], references: [id])
+  actorId                             String?                   @map("actor")
+  witness                             User?                     @relation("MedicationSupplyMovement_witness", fields: [witnessId], references: [id])
+  witnessId                           String?                   @map("witness")
+  reason                              String                    @default("")
+  administration                      MedicationAdministration? @relation("MedicationSupplyMovement_administration", fields: [administrationId], references: [id])
+  administrationId                    String?                   @map("administration")
+  createdAt                           DateTime?                 @default(now())
+  from_CountDiscrepancy_adjustment    CountDiscrepancy[]        @relation("CountDiscrepancy_adjustment")
+  from_MedicationDestruction_movement MedicationDestruction[]   @relation("MedicationDestruction_movement")
+
+  @@unique([supplyId, seq], map: "MedicationSupplyMovement_supply_seq_key")
+  @@index([communityId])
+  @@index([supplyId])
+  @@index([actorId])
+  @@index([witnessId])
+  @@index([administrationId])
+}
+
+model PharmacyRelationship {
+  id          String     @id @default(cuid())
+  community   Community? @relation("PharmacyRelationship_community", fields: [communityId], references: [id])
+  communityId String?    @map("community")
+  name        String     @default("")
+  adapter     String
+  phone       String     @default("")
+  status      String     @default("active")
+  version     Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @default(now()) @updatedAt
+
+  @@index([communityId])
+}
+
+model PrnFollowUp {
+  id               String                    @id @default(cuid())
+  resident         Resident?                 @relation("PrnFollowUp_resident", fields: [residentId], references: [id])
+  residentId       String?                   @map("resident")
+  community        Community?                @relation("PrnFollowUp_community", fields: [communityId], references: [id])
+  communityId      String?                   @map("community")
+  administration   MedicationAdministration? @relation("PrnFollowUp_administration", fields: [administrationId], references: [id])
+  administrationId String?                   @map("administration")
+  dueAt            DateTime?
+  status           String                    @default("open")
+  effect           String?
+  recordedBy       User?                     @relation("PrnFollowUp_recordedBy", fields: [recordedById], references: [id])
+  recordedById     String?                   @map("recordedBy")
+  recordedAt       DateTime?
+  version          Int                       @default(0)
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @default(now()) @updatedAt
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([administrationId])
+  @@index([recordedById])
+}
+
+model ShiftCount {
+  id                               String             @id @default(cuid())
+  community                        Community?         @relation("ShiftCount_community", fields: [communityId], references: [id])
+  communityId                      String?            @map("community")
+  unit                             Unit?              @relation("ShiftCount_unit", fields: [unitId], references: [id])
+  unitId                           String?            @map("unit")
+  reference                        String             @unique @default("")
+  shift                            String
+  status                           String             @default("open")
+  outgoing                         User?              @relation("ShiftCount_outgoing", fields: [outgoingId], references: [id])
+  outgoingId                       String?            @map("outgoing")
+  incoming                         User?              @relation("ShiftCount_incoming", fields: [incomingId], references: [id])
+  incomingId                       String?            @map("incoming")
+  startedAt                        DateTime?
+  completedAt                      DateTime?
+  entries                          ShiftCountEntry[]  @relation("ShiftCountEntry_shiftCount")
+  version                          Int                @default(0)
+  createdAt                        DateTime           @default(now())
+  updatedAt                        DateTime           @default(now()) @updatedAt
+  from_CountDiscrepancy_shiftCount CountDiscrepancy[] @relation("CountDiscrepancy_shiftCount")
+
+  @@index([communityId])
+  @@index([unitId])
+  @@index([outgoingId])
+  @@index([incomingId])
+}
+
+model ShiftCountEntry {
+  id           String            @id @default(cuid())
+  community    Community?        @relation("ShiftCountEntry_community", fields: [communityId], references: [id])
+  communityId  String?           @map("community")
+  shiftCount   ShiftCount?       @relation("ShiftCountEntry_shiftCount", fields: [shiftCountId], references: [id])
+  shiftCountId String?           @map("shiftCount")
+  supply       MedicationSupply? @relation("ShiftCountEntry_supply", fields: [supplyId], references: [id])
+  supplyId     String?           @map("supply")
+  role         String
+  counted      Decimal           @postgresql.Decimal(14, 3)
+  countedBy    User?             @relation("ShiftCountEntry_countedBy", fields: [countedById], references: [id])
+  countedById  String?           @map("countedBy")
+  at           DateTime?
+  createdAt    DateTime?         @default(now())
+
+  @@index([communityId])
+  @@index([shiftCountId])
+  @@index([supplyId])
+  @@index([countedById])
+}
+
+model AntibioticCourse {
+  id             String         @id @default(cuid())
+  resident       Resident?      @relation("AntibioticCourse_resident", fields: [residentId], references: [id])
+  residentId     String?        @map("resident")
+  community      Community?     @relation("AntibioticCourse_community", fields: [communityId], references: [id])
+  communityId    String?        @map("community")
+  drugName       String         @default("")
+  indication     String         @default("")
+  order          Order?         @relation("AntibioticCourse_order", fields: [orderId], references: [id])
+  orderId        String?        @map("order")
+  case           InfectionCase? @relation("AntibioticCourse_case", fields: [caseId], references: [id])
+  caseId         String?        @map("case")
+  startedAt      DateTime?
+  plannedDays    Int?
+  timeoutDueAt   DateTime?
+  timeoutOutcome String?
+  timeoutAt      DateTime?
+  timeoutBy      User?          @relation("AntibioticCourse_timeoutBy", fields: [timeoutById], references: [id])
+  timeoutById    String?        @map("timeoutBy")
+  status         String         @default("active")
+  version        Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @default(now()) @updatedAt
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([orderId])
+  @@index([caseId])
+  @@index([timeoutById])
+}
+
+model Immunisation {
+  id           String     @id @default(cuid())
+  resident     Resident?  @relation("Immunisation_resident", fields: [residentId], references: [id])
+  residentId   String?    @map("resident")
+  community    Community? @relation("Immunisation_community", fields: [communityId], references: [id])
+  communityId  String?    @map("community")
+  vaccine      String
+  status       String     @default("offered")
+  offeredAt    DateTime?
+  decidedAt    DateTime?
+  givenAt      DateTime?
+  lot          String     @default("")
+  recordedBy   User?      @relation("Immunisation_recordedBy", fields: [recordedById], references: [id])
+  recordedById String?    @map("recordedBy")
+  version      Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @default(now()) @updatedAt
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([recordedById])
+}
+
+model Incident {
+  id                             String                  @id @default(cuid())
+  resident                       Resident?               @relation("Incident_resident", fields: [residentId], references: [id])
+  residentId                     String?                 @map("resident")
+  community                      Community?              @relation("Incident_community", fields: [communityId], references: [id])
+  communityId                    String?                 @map("community")
+  reference                      String                  @unique @default("")
+  kind                           String
+  description                    String                  @default("")
+  location                       String                  @default("")
+  severity                       String?                 @default("no_injury")
+  status                         String                  @default("reported")
+  occurredAt                     DateTime?
+  discoveredAt                   DateTime?
+  reportedAt                     DateTime?
+  reportedBy                     User?                   @relation("Incident_reportedBy", fields: [reportedById], references: [id])
+  reportedById                   String?                 @map("reportedBy")
+  witnessed                      Boolean                 @default(false)
+  headStrike                     Boolean                 @default(false)
+  allegedAbuseOrSbi              Boolean                 @default(false)
+  allegedOther                   Boolean                 @default(false)
+  reportableDecision             String?                 @default("pending")
+  downgradedBy                   User?                   @relation("Incident_downgradedBy", fields: [downgradedById], references: [id])
+  downgradedById                 String?                 @map("downgradedBy")
+  downgradeReason                String                  @default("")
+  source                         String?                 @default("staff")
+  sourceNote                     ProgressNote?           @relation("Incident_sourceNote", fields: [sourceNoteId], references: [id])
+  sourceNoteId                   String?                 @map("sourceNote")
+  parties                        IncidentParty[]         @relation("IncidentParty_incident")
+  investigations                 IncidentInvestigation[] @relation("IncidentInvestigation_incident")
+  reports                        RegulatoryReport[]      @relation("RegulatoryReport_incident")
+  closedAt                       DateTime?
+  version                        Int                     @default(0)
+  createdAt                      DateTime                @default(now())
+  updatedAt                      DateTime                @default(now()) @updatedAt
+  from_CountDiscrepancy_incident CountDiscrepancy[]      @relation("CountDiscrepancy_incident")
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([reportedById])
+  @@index([downgradedById])
+  @@index([sourceNoteId])
+}
+
+model IncidentInvestigation {
+  id             String     @id @default(cuid())
+  resident       Resident?  @relation("IncidentInvestigation_resident", fields: [residentId], references: [id])
+  residentId     String?    @map("resident")
+  community      Community? @relation("IncidentInvestigation_community", fields: [communityId], references: [id])
+  communityId    String?    @map("community")
+  incident       Incident?  @relation("IncidentInvestigation_incident", fields: [incidentId], references: [id])
+  incidentId     String?    @map("incident")
+  findings       String     @default("")
+  rootCause      String     @default("")
+  interventions  String     @default("")
+  status         String     @default("open")
+  investigator   User?      @relation("IncidentInvestigation_investigator", fields: [investigatorId], references: [id])
+  investigatorId String?    @map("investigator")
+  startedAt      DateTime?
+  completedAt    DateTime?
+  version        Int        @default(0)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @default(now()) @updatedAt
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([incidentId])
+  @@index([investigatorId])
+}
+
+model IncidentParty {
+  id          String     @id @default(cuid())
+  resident    Resident?  @relation("IncidentParty_resident", fields: [residentId], references: [id])
+  residentId  String?    @map("resident")
+  community   Community? @relation("IncidentParty_community", fields: [communityId], references: [id])
+  communityId String?    @map("community")
+  incident    Incident?  @relation("IncidentParty_incident", fields: [incidentId], references: [id])
+  incidentId  String?    @map("incident")
+  role        String
+  name        String     @default("")
+  notifiedAt  DateTime?
+  version     Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @default(now()) @updatedAt
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([incidentId])
+}
+
+model InfectionCase {
+  id                         String             @id @default(cuid())
+  resident                   Resident?          @relation("InfectionCase_resident", fields: [residentId], references: [id])
+  residentId                 String?            @map("resident")
+  community                  Community?         @relation("InfectionCase_community", fields: [communityId], references: [id])
+  communityId                String?            @map("community")
+  syndrome                   String
+  status                     String             @default("suspected")
+  onsetAt                    DateTime?
+  criteria                   Json?
+  organism                   String             @default("")
+  criteriaMet                Boolean            @default(false)
+  criteriaSet                String             @default("")
+  cultureAt                  DateTime?
+  outbreak                   Outbreak?          @relation("InfectionCase_outbreak", fields: [outbreakId], references: [id])
+  outbreakId                 String?            @map("outbreak")
+  version                    Int                @default(0)
+  createdAt                  DateTime           @default(now())
+  updatedAt                  DateTime           @default(now()) @updatedAt
+  from_AntibioticCourse_case AntibioticCourse[] @relation("AntibioticCourse_case")
+  from_PrecautionOrder_case  PrecautionOrder[]  @relation("PrecautionOrder_case")
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([outbreakId])
+}
+
+model Outbreak {
+  id           String          @id @default(cuid())
+  community    Community?      @relation("Outbreak_community", fields: [communityId], references: [id])
+  communityId  String?         @map("community")
+  name         String          @default("")
+  organism     String          @default("")
+  unit         Unit?           @relation("Outbreak_unit", fields: [unitId], references: [id])
+  unitId       String?         @map("unit")
+  status       String          @default("declared")
+  declaredAt   DateTime?
+  declaredBy   User?           @relation("Outbreak_declaredBy", fields: [declaredById], references: [id])
+  declaredById String?         @map("declaredBy")
+  closedAt     DateTime?
+  cases        InfectionCase[] @relation("InfectionCase_outbreak")
+  version      Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([unitId])
+  @@index([declaredById])
+}
+
+model PrecautionOrder {
+  id          String         @id @default(cuid())
+  resident    Resident?      @relation("PrecautionOrder_resident", fields: [residentId], references: [id])
+  residentId  String?        @map("resident")
+  community   Community?     @relation("PrecautionOrder_community", fields: [communityId], references: [id])
+  communityId String?        @map("community")
+  kind        String
+  case        InfectionCase? @relation("PrecautionOrder_case", fields: [caseId], references: [id])
+  caseId      String?        @map("case")
+  status      String         @default("active")
+  startedAt   DateTime?
+  endedAt     DateTime?
+  reviewOn    DateTime?      @postgresql.Date
+  reason      String         @default("")
+  version     Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @default(now()) @updatedAt
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([caseId])
+}
+
+model RegulatoryReport {
+  id            String     @id @default(cuid())
+  resident      Resident?  @relation("RegulatoryReport_resident", fields: [residentId], references: [id])
+  residentId    String?    @map("resident")
+  community     Community? @relation("RegulatoryReport_community", fields: [communityId], references: [id])
+  communityId   String?    @map("community")
+  incident      Incident?  @relation("RegulatoryReport_incident", fields: [incidentId], references: [id])
+  incidentId    String?    @map("incident")
+  kind          String
+  status        String     @default("draft")
+  body          Json?
+  channel       String?
+  confirmation  String     @default("")
+  submittedAt   DateTime?
+  submittedBy   User?      @relation("RegulatoryReport_submittedBy", fields: [submittedById], references: [id])
+  submittedById String?    @map("submittedBy")
+  ruleNote      String     @default("")
+  version       Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @default(now()) @updatedAt
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([incidentId])
+  @@index([submittedById])
+}
+
+model EvidenceRef {
+  id          String     @id @default(cuid())
+  community   Community? @relation("EvidenceRef_community", fields: [communityId], references: [id])
+  communityId String?    @map("community")
+  finding     Finding?   @relation("EvidenceRef_finding", fields: [findingId], references: [id])
+  findingId   String?    @map("finding")
+  recordType  String     @default("")
+  recordId    String     @default("")
+  spanStart   Int?
+  spanEnd     Int?
+  quote       String     @default("")
+  version     Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([findingId])
+}
+
+model Finding {
+  id                String           @id @default(cuid())
+  community         Community?       @relation("Finding_community", fields: [communityId], references: [id])
+  communityId       String?          @map("community")
+  resident          Resident?        @relation("Finding_resident", fields: [residentId], references: [id])
+  residentId        String?          @map("resident")
+  workflowVersion   WorkflowVersion? @relation("Finding_workflowVersion", fields: [workflowVersionId], references: [id])
+  workflowVersionId String?          @map("workflowVersion")
+  run               WorkflowRun?     @relation("Finding_run", fields: [runId], references: [id])
+  runId             String?          @map("run")
+  workflowCode      String           @default("")
+  dedupeKey         String           @unique @default("")
+  title             String           @default("")
+  detail            String           @default("")
+  severity          String?          @default("warning")
+  status            String           @default("open")
+  evidence          EvidenceRef[]    @relation("EvidenceRef_finding")
+  task              Task?            @relation("Finding_task", fields: [taskId], references: [id])
+  taskId            String?          @map("task")
+  proposal          Proposal?        @relation("Finding_proposal", fields: [proposalId], references: [id])
+  proposalId        String?          @map("proposal")
+  resolvedAt        DateTime?
+  resolutionNote    String           @default("")
+  dismissedBy       User?            @relation("Finding_dismissedBy", fields: [dismissedById], references: [id])
+  dismissedById     String?          @map("dismissedBy")
+  version           Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([residentId])
+  @@index([workflowVersionId])
+  @@index([runId])
+  @@index([workflowCode])
+  @@index([taskId])
+  @@index([proposalId])
+  @@index([dismissedById])
+}
+
+model InferenceCall {
+  id                                      String            @id @default(cuid())
+  community                               Community?        @relation("InferenceCall_community", fields: [communityId], references: [id])
+  communityId                             String?           @map("community")
+  purpose                                 String
+  provider                                String            @default("")
+  providerClass                           String
+  model                                   String            @default("")
+  outcome                                 String
+  policyAtCall                            String            @default("")
+  inputHash                               String            @default("")
+  outputHash                              String            @default("")
+  inputTokens                             Int?
+  outputTokens                            Int?
+  reason                                  String            @default("")
+  at                                      DateTime?
+  actor                                   User?             @relation("InferenceCall_actor", fields: [actorId], references: [id])
+  actorId                                 String?           @map("actor")
+  version                                 Int               @default(0)
+  createdAt                               DateTime          @default(now())
+  updatedAt                               DateTime          @default(now()) @updatedAt
+  from_WorkflowVersion_createdByInference WorkflowVersion[] @relation("WorkflowVersion_createdByInference")
+
+  @@index([communityId])
+  @@index([actorId])
+}
+
+model WorkflowActivation {
+  id                String           @id @default(cuid())
+  community         Community?       @relation("WorkflowActivation_community", fields: [communityId], references: [id])
+  communityId       String?          @map("community")
+  workflowVersion   WorkflowVersion? @relation("WorkflowActivation_workflowVersion", fields: [workflowVersionId], references: [id])
+  workflowVersionId String?          @map("workflowVersion")
+  status            String           @default("active")
+  approvals         Json?
+  activatedAt       DateTime?
+  activatedBy       User?            @relation("WorkflowActivation_activatedBy", fields: [activatedById], references: [id])
+  activatedById     String?          @map("activatedBy")
+  version           Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([workflowVersionId])
+  @@index([activatedById])
+}
+
+model WorkflowDefinition {
+  id          String            @id @default(cuid())
+  community   Community?        @relation("WorkflowDefinition_community", fields: [communityId], references: [id])
+  communityId String?           @map("community")
+  code        String            @default("")
+  name        String            @default("")
+  description String            @default("")
+  origin      String
+  status      String            @default("active")
+  versions    WorkflowVersion[] @relation("WorkflowVersion_definition")
+  version     Int               @default(0)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([code])
+}
+
+model WorkflowRun {
+  id                String           @id @default(cuid())
+  community         Community?       @relation("WorkflowRun_community", fields: [communityId], references: [id])
+  communityId       String?          @map("community")
+  workflowVersion   WorkflowVersion? @relation("WorkflowRun_workflowVersion", fields: [workflowVersionId], references: [id])
+  workflowVersionId String?          @map("workflowVersion")
+  windowKey         String           @unique @default("")
+  trigger           String
+  status            String           @default("running")
+  startedAt         DateTime?
+  finishedAt        DateTime?
+  findingsOpened    Int?             @default(0)
+  findingsResolved  Int?             @default(0)
+  summary           Json?
+  version           Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @default(now()) @updatedAt
+  from_Finding_run  Finding[]        @relation("Finding_run")
+
+  @@index([communityId])
+  @@index([workflowVersionId])
+}
+
+model WorkflowVersion {
+  id                               String               @id @default(cuid())
+  community                        Community?           @relation("WorkflowVersion_community", fields: [communityId], references: [id])
+  communityId                      String?              @map("community")
+  definition                       WorkflowDefinition?  @relation("WorkflowVersion_definition", fields: [definitionId], references: [id])
+  definitionId                     String?              @map("definition")
+  versionNumber                    Int?
+  graph                            Json?
+  graphHash                        String               @default("")
+  policyVersion                    String               @default("")
+  policy                           Json?
+  status                           String               @default("draft")
+  dryRun                           Json?
+  createdByInference               InferenceCall?       @relation("WorkflowVersion_createdByInference", fields: [createdByInferenceId], references: [id])
+  createdByInferenceId             String?              @map("createdByInference")
+  description                      String               @default("")
+  activations                      WorkflowActivation[] @relation("WorkflowActivation_workflowVersion")
+  version                          Int                  @default(0)
+  createdAt                        DateTime             @default(now())
+  updatedAt                        DateTime             @default(now()) @updatedAt
+  from_Finding_workflowVersion     Finding[]            @relation("Finding_workflowVersion")
+  from_WorkflowRun_workflowVersion WorkflowRun[]        @relation("WorkflowRun_workflowVersion")
+
+  @@index([communityId])
+  @@index([definitionId])
+  @@index([createdByInferenceId])
 }
 
 enum UserKindType {

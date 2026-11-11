@@ -12,6 +12,7 @@ export const COMPOUND_UNIQUES: Record<string, string[]> = {
   Apartment: ['@@unique([unitId, number], map: "Apartment_unit_number_key")'],
   RegulatoryObligation: ['@@unique([packId, code], map: "RegulatoryObligation_pack_code_key")'],
   ComplianceClock: ['@@unique([obligationCode, subjectType, subjectId, occurrenceKey, supersedesId], map: "ComplianceClock_occurrence_key")'],
+  MedicationSupplyMovement: ['@@unique([supplyId, seq], map: "MedicationSupplyMovement_supply_seq_key")'],
   CensusEvent: ['@@unique([stayId, seq], map: "CensusEvent_stay_seq_key")'],
 }
 

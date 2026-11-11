@@ -7,12 +7,20 @@ import * as agents from './agents'
 import * as places from './places'
 import * as residents from './residents'
 import * as sales from './sales'
+import * as clinical from './clinical'
+import * as medications from './medications'
+import * as safety from './safety'
+import * as workflows from './workflows'
 
 const { SETTINGS: _settings, ...platformLists } = platform
 const { AGENT_SCOPES: _scopes, PHI_AGENT_SCOPES: _phiScopes, PROPOSAL_KINDS: _kinds, ...agentLists } = agents
 const { BED_STATUSES: _bed, APARTMENT_STATUSES: _apt, ...placeLists } = places
 const { CODE_STATUSES: _code, REPRESENTATIVE_ROLES: _roles, ADMISSION_SOURCES: _src, DISCHARGE_DISPOSITIONS: _disp, CENSUS_EVENT_KINDS: _cek, PAYER_KINDS: _payers, ...residentLists } = residents
 const { LEAD_STATUSES: _lead, PORTAL_SCOPES: _portal, AUTHORITY_BASES: _ab, SCOPE_AUTHORITY: _sa, MFA_SCOPES: _mfa, ...salesLists } = sales
+
+const { NOTE_KINDS: _nk, VITAL_KINDS: _vk, ORDER_KINDS: _ok, TASK_KINDS: _tk, rl: _rl, scope: _sc, stamps: _st, choice: _ch, ...clinicalLists } = clinical
+const { DRUG_SCHEDULES: _ds, SUPPLY_KINDS: _sk, MOVEMENT_KINDS: _mk, SLOT_STATUSES: _ss, ADMIN_OUTCOMES: _ao, ...medicationLists } = medications
+const { INCIDENT_KINDS: _ik, ...safetyLists } = safety
 
 export const models = {
   User,
@@ -24,6 +32,10 @@ export const models = {
   ...placeLists,
   ...residentLists,
   ...salesLists,
+  ...clinicalLists,
+  ...medicationLists,
+  ...safetyLists,
+  ...workflows,
 }
 
 export default models

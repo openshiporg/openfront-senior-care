@@ -24,16 +24,20 @@ const cookie = 'keystonejs-session=' + own
 const dr = await gql(`{residents(take:1){id} communities(take:1){id slug}}`, {}, cookie)
 if (!dr.data) { console.log('CHECK crawl id lookup: FAIL'); process.exit(1) }
 const resident = dr.data.residents[0]?.id
+const incident = (await gql(`{incidents(take:1){id}}`, {}, cookie)).data?.incidents?.[0]?.id
 const slug = dr.data.communities[0]?.slug
-const sections = ['census', 'census/midnight', 'census/residents', 'census/events', 'compliance', 'sales', 'sales/waitlist', 'sales/storefront', 'approvals', 'audit', 'privacy/break-glass']
+const sections = ['census', 'census/midnight', 'census/residents', 'census/events', 'compliance', 'sales', 'sales/waitlist', 'sales/storefront', 'approvals', 'audit', 'privacy/break-glass', 'clinical', 'emar', 'counts', 'incidents', 'ipac', 'tasks', 'findings']
 const paths = [
   ...sections.map(s => `/dashboard/platform/${s}`),
   ...sections.map(s => `/dashboard/platform/${s}?community=${slug}`),
   `/dashboard/platform/census/residents/${resident}`,
+  `/dashboard/platform/clinical/${resident}`,
+  ...['notes', 'vitals', 'assessments', 'orders', 'careplan', 'wounds'].map(t => `/dashboard/platform/clinical/${resident}?tab=${t}`),
+  ...(incident ? [`/dashboard/platform/incidents/${incident}`] : []),
   '/dashboard',
   '/dashboard/residents', '/dashboard/communities', '/dashboard/users',
 ]
-const notFound = ['/dashboard/platform/census/residents/nope123', '/dashboard/residents/nope123']
+const notFound = ['/dashboard/platform/census/residents/nope123', '/dashboard/platform/clinical/nope123', '/dashboard/platform/incidents/nope123', '/dashboard/residents/nope123']
 if (OUT) fs.writeFileSync(OUT + '-ids.json', JSON.stringify({ resident, slug }, null, 1))
 
 const b = await chromium.launch({ executablePath: process.env.HOME + '/Library/Caches/ms-playwright/chromium_headless_shell-1254/chrome-headless-shell-mac-arm64/chrome-headless-shell' })

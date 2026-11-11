@@ -9,6 +9,7 @@ import * as approvals from './approvals'
 import * as census from './census'
 import * as front from './frontOfHouse'
 import * as reads from './reads'
+import * as clinical from './clinical'
 import '../lib/operatorControls'
 import '../lib/censusCorrection'
 
@@ -40,6 +41,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         updateActiveUser(data: UserUpdateProfileInput!): User
         loadOperatorSetup(idempotencyKey: String!): JSON
         loadCensusSetup(idempotencyKey: String!): JSON
+        loadClinicalSetup(idempotencyKey: String!): JSON
         refreshTimedStates(idempotencyKey: String!): JSON
         decideApprovalRequest(requestId: ID!, decision: String!, reason: String, expectedVersion: Int!, idempotencyKey: String!): JSON
         cancelApprovalRequest(requestId: ID!, expectedVersion: Int!, reason: String, idempotencyKey: String!): JSON
@@ -92,6 +94,9 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         openBreakGlass(residentId: ID!, reason: String!, note: String!, hours: Int, idempotencyKey: String!): JSON
         endBreakGlass(grantId: ID!, idempotencyKey: String!): JSON
         reviewBreakGlass(grantId: ID!, outcome: String!, note: String!, expectedVersion: Int, idempotencyKey: String!): JSON
+
+        clinicalCommand(op: String!, input: JSON, idempotencyKey: String!): JSON
+        runWorkflowsOnLoad(communityId: ID!, idempotencyKey: String!): JSON
       }
     `,
     resolvers: {
@@ -112,6 +117,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         updateActiveUser,
         loadOperatorSetup: op(setup.loadOperatorSetup),
         loadCensusSetup: op(setup.loadCensusSetup),
+        loadClinicalSetup: op(setup.loadClinicalSetup),
         refreshTimedStates: op(front.refreshTimedStatesMutation),
         decideApprovalRequest: op(approvals.decideApprovalRequest),
         cancelApprovalRequest: op(approvals.cancelApprovalRequest),
@@ -164,6 +170,9 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         openBreakGlass: op(front.openBreakGlassMutation),
         endBreakGlass: op(front.endBreakGlassMutation),
         reviewBreakGlass: op(front.reviewBreakGlassMutation),
+
+        clinicalCommand: op(clinical.clinicalCommand),
+        runWorkflowsOnLoad: op(clinical.runWorkflowsOnLoad),
       },
     },
   })

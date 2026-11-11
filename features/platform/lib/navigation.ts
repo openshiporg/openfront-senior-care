@@ -1,5 +1,5 @@
 import {
-  Activity, BedDouble, BookOpenCheck, CalendarClock, ClipboardCheck, ClipboardList, Hourglass, KeyRound, ListChecks, LucideIcon, Moon, Settings, Store, Users,
+  Activity, AlertTriangle, BedDouble, Bell, Pill, Lock, ShieldPlus, Stethoscope, Sparkles, BookOpenCheck, CalendarClock, ClipboardCheck, ClipboardList, Hourglass, KeyRound, ListChecks, LucideIcon, Moon, Settings, Store, Users,
 } from 'lucide-react'
 
 export interface PlatformNavItem {
@@ -28,6 +28,14 @@ export const platformNavItems: PlatformNavItem[] = [
   { title: 'Census events', href: '/platform/census/events', color: 'slate', description: 'The append-only admission, transfer, leave and discharge log.', icon: ListChecks, group: 'census' },
   { title: 'Midnight census', href: '/platform/census/midnight', color: 'indigo', description: 'Daily census review and sign-off per community.', icon: Moon, group: 'census' },
 
+  { title: 'Clinical chart', href: '/platform/clinical', color: 'blue', description: 'Notes, vitals, assessments, orders, care plans and wounds.', icon: Stethoscope, group: 'clinical' },
+  { title: 'eMAR', href: '/platform/emar', color: 'emerald', description: 'Medication pass: give, hold, refuse and PRN follow-up.', icon: Pill, group: 'clinical' },
+  { title: 'Controlled counts', href: '/platform/counts', color: 'rose', description: 'Blind shift counts, differences and supply on hand.', icon: Lock, group: 'clinical' },
+  { title: 'Incidents', href: '/platform/incidents', color: 'rose', description: 'Incidents with F609 clocks, investigations and reports.', icon: AlertTriangle, group: 'clinical' },
+  { title: 'Infection control', href: '/platform/ipac', color: 'amber', description: 'Cases, precautions, antibiotic time-outs and outbreaks.', icon: ShieldPlus, group: 'clinical' },
+  { title: 'Tasks', href: '/platform/tasks', color: 'slate', description: 'Staff inbox: escalations and follow-ups.', icon: Bell, group: 'clinical' },
+  { title: 'Findings', href: '/platform/findings', color: 'indigo', description: 'Workflow findings with evidence; run on request.', icon: Sparkles, group: 'clinical' },
+
   { title: 'Pipeline', href: '/platform/sales', color: 'amber', description: 'Leads, inquiries, tours and referrals with response clocks.', icon: ClipboardList, group: 'sales' },
   { title: 'Waitlist', href: '/platform/sales/waitlist', color: 'amber', description: 'Waitlist by apartment type and setting; offers and holds.', icon: Hourglass, group: 'sales' },
   { title: 'Storefront', href: '/platform/sales/storefront', color: 'cyan', description: 'Storefront copy, starting prices, availability and tour times.', icon: Store, group: 'sales' },
@@ -44,6 +52,7 @@ export const platformNavItems: PlatformNavItem[] = [
 /** Routes that exist in this build. Others stay out of the menu until their phase ships. */
 export const SHIPPED_ROUTES = new Set<string>([
   '/platform/census', '/platform/census/residents', '/platform/census/events', '/platform/census/midnight',
+  '/platform/clinical', '/platform/emar', '/platform/counts', '/platform/incidents', '/platform/ipac', '/platform/tasks', '/platform/findings',
   '/platform/sales', '/platform/sales/waitlist', '/platform/sales/storefront',
   '/platform/approvals', '/platform/compliance', '/platform/privacy/break-glass', '/platform/audit',
 ])
@@ -54,6 +63,7 @@ export const platformStandaloneItems = shipped.filter(item => item.group === 'st
 
 export const platformNavGroups: PlatformNavGroup[] = [
   { id: 'census', title: 'Census', icon: BedDouble, items: shipped.filter(i => i.group === 'census') },
+  { id: 'clinical', title: 'Clinical', icon: Stethoscope, items: shipped.filter(i => i.group === 'clinical') },
   { id: 'sales', title: 'Sales', icon: ClipboardList, items: shipped.filter(i => i.group === 'sales') },
   { id: 'operator', title: 'Operator', icon: Settings, items: shipped.filter(i => i.group === 'operator') },
 ]

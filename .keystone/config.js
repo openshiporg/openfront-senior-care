@@ -36,7 +36,7 @@ module.exports = __toCommonJS(keystone_exports);
 
 // features/keystone/index.ts
 var import_auth = require("@keystone-6/auth");
-var import_core13 = require("@keystone-6/core");
+var import_core17 = require("@keystone-6/core");
 var import_config = require("dotenv/config");
 
 // features/keystone/models/User.ts
@@ -469,7 +469,7 @@ function isMcpAccessToken(token) {
   return typeof token === "string" && token.startsWith(MCP_ACCESS_PREFIX) && token.length > MCP_ACCESS_PREFIX.length;
 }
 function storedScopes(value) {
-  return Array.isArray(value) ? MCP_SCOPES.filter((scope) => value.includes(scope)) : [];
+  return Array.isArray(value) ? MCP_SCOPES.filter((scope2) => value.includes(scope2)) : [];
 }
 
 // features/keystone/models/OAuthApp.ts
@@ -848,9 +848,9 @@ function communityWhere(path, ids) {
   return where;
 }
 var assignedFilter = (path) => async ({ session, context }) => {
-  const scope = await assignedCommunities(session, context);
-  if (scope === "all") return true;
-  return communityWhere(path, scope);
+  const scope2 = await assignedCommunities(session, context);
+  if (scope2 === "all") return true;
+  return communityWhere(path, scope2);
 };
 var rule2 = (permission) => Array.isArray(permission) ? anyOf(...permission) : anyOf(permission);
 var sys2 = () => false;
@@ -1693,28 +1693,31 @@ function phiFields(listKey, spec) {
   return out;
 }
 
-// features/keystone/models/residents.ts
+// features/keystone/models/residentAccess.ts
 var sys3 = () => false;
 var ro = readOnly;
 var opt = (values) => ({ type: "string", options: values.map((value) => ({ label: label(value), value })) });
 var residentScope = (path, residentPath) => async ({ session, context }) => {
-  const scope = await assignedCommunities(session, context);
-  if (scope === "all") return true;
+  const scope2 = await assignedCommunities(session, context);
+  if (scope2 === "all") return true;
   const glass = [...await breakGlassResidents(session, context)];
-  const own = communityWhere(path, scope);
+  const own = communityWhere(path, scope2);
   if (!glass.length) return own;
   let glassWhere = { id: { in: glass } };
   for (const key of [...residentPath].reverse()) glassWhere = { [key]: glassWhere };
   return { OR: [own, glassWhere] };
 };
-var residentList = (path, residentPath = ["resident"]) => ({
-  operation: { query: isStaff, create: sys3, update: sys3, delete: sys3 },
+var residentList = (path, residentPath = ["resident"], read = null) => ({
+  operation: { query: read ? (args) => read.some((p) => permissions[p](args)) : isStaff, create: sys3, update: sys3, delete: sys3 },
   filter: { query: residentScope(path, residentPath) }
 });
 var phiList = (key) => {
   PHI_LISTS.add(key);
   return key;
 };
+
+// features/keystone/models/residents.ts
+var sys4 = () => false;
 var CODE_STATUSES = ["full_code", "dnr", "dnr_cc", "dnr_cca", "comfort"];
 var Resident = (0, import_core10.list)({
   access: residentList(["community"], []),
@@ -1764,9 +1767,9 @@ var ResidentIdentifier = (0, import_core10.list)({
     issuer: systemText({ required: true }),
     ...phiFields("ResidentIdentifier", {
       display: ["ident", import_fields10.text, ro],
-      valueEncrypted: ["ident", import_fields10.text, { access: { create: sys3, update: sys3 }, graphql: { omit: true }, ui: { createView: { fieldMode: "hidden" }, itemView: { fieldMode: "hidden" } } }]
+      valueEncrypted: ["ident", import_fields10.text, { access: { create: sys4, update: sys4 }, graphql: { omit: true }, ui: { createView: { fieldMode: "hidden" }, itemView: { fieldMode: "hidden" } } }]
     }),
-    valueHash: (0, import_fields10.text)({ access: { read: sys3, create: sys3, update: sys3 }, graphql: { omit: true }, ui: { createView: { fieldMode: "hidden" }, itemView: { fieldMode: "hidden" } }, validation: { isRequired: true } }),
+    valueHash: (0, import_fields10.text)({ access: { read: sys4, create: sys4, update: sys4 }, graphql: { omit: true }, ui: { createView: { fieldMode: "hidden" }, itemView: { fieldMode: "hidden" } }, validation: { isRequired: true } }),
     effectiveFrom: (0, import_fields10.calendarDay)({ ...ro }),
     effectiveTo: (0, import_fields10.calendarDay)({ ...ro }),
     ...trackingFields
@@ -1774,11 +1777,11 @@ var ResidentIdentifier = (0, import_core10.list)({
 });
 var Contact = (0, import_core10.list)({
   access: {
-    operation: { query: isStaff, create: sys3, update: sys3, delete: sys3 },
+    operation: { query: isStaff, create: sys4, update: sys4, delete: sys4 },
     filter: { query: async ({ session, context }) => {
-      const scope = await assignedCommunities(session, context);
-      if (scope === "all") return true;
-      return { OR: [{ community: { id: { in: scope } } }] };
+      const scope2 = await assignedCommunities(session, context);
+      if (scope2 === "all") return true;
+      return { OR: [{ community: { id: { in: scope2 } } }] };
     } }
   },
   ui: { labelField: "reference" },
@@ -1977,10 +1980,10 @@ var CensusDay = (0, import_core10.list)({
 phiList("CensusDay");
 var CensusSignoff = (0, import_core10.list)({
   access: {
-    operation: { query: isStaff, create: sys3, update: sys3, delete: sys3 },
+    operation: { query: isStaff, create: sys4, update: sys4, delete: sys4 },
     filter: { query: async ({ session, context }) => {
-      const scope = await assignedCommunities(session, context);
-      return scope === "all" ? true : communityWhere(["community"], scope);
+      const scope2 = await assignedCommunities(session, context);
+      return scope2 === "all" ? true : communityWhere(["community"], scope2);
     } }
   },
   ui: { listView: { initialColumns: ["date", "community", "unit", "signedBy", "signedAt"] } },
@@ -2020,7 +2023,7 @@ phiList("NoticeDelivery");
 var PAYER_KINDS = ["medicare_a", "medicare_advantage", "medicaid_ffs", "medicaid_mco", "private_pay", "commercial", "ltc_insurance", "va", "hospice_agency", "other"];
 var Payer = (0, import_core10.list)({
   access: {
-    operation: { query: isStaff, create: (a) => a.session?.data?.role?.canManageBilling === true, update: (a) => a.session?.data?.role?.canManageBilling === true, delete: sys3 }
+    operation: { query: isStaff, create: (a) => a.session?.data?.role?.canManageBilling === true, update: (a) => a.session?.data?.role?.canManageBilling === true, delete: sys4 }
   },
   ui: { labelField: "name" },
   fields: {
@@ -2085,7 +2088,7 @@ __export(sales_exports, {
 var import_core11 = require("@keystone-6/core");
 var import_fields11 = require("@keystone-6/core/fields");
 var ro2 = readOnly;
-var sys4 = () => false;
+var sys5 = () => false;
 var opt2 = (values) => ({ type: "string", options: values.map((value) => ({ label: label(value), value })) });
 var salesRead = ["canReadSales", "canManageSales"];
 var LEAD_STATUSES = ["new", "contacted", "tour_scheduled", "toured", "assessment_scheduled", "assessed", "deposit_received", "move_in_scheduled", "moved_in", "waitlisted", "nurture", "lost"];
@@ -2208,7 +2211,7 @@ var Tour = (0, import_core11.list)({
     lead: (0, import_fields11.relationship)({ ref: "Lead.tours", ...ro2 }),
     kind: fixedChoice(["in_person", "virtual"]),
     status: lifecycle(["requested", "confirmed", "completed", "no_show", "cancelled"]),
-    guestTokenHash: (0, import_fields11.text)({ access: { read: sys4, create: sys4, update: sys4 }, graphql: { omit: true }, ui: { createView: { fieldMode: "hidden" }, itemView: { fieldMode: "hidden" } } }),
+    guestTokenHash: (0, import_fields11.text)({ access: { read: sys5, create: sys5, update: sys5 }, graphql: { omit: true }, ui: { createView: { fieldMode: "hidden" }, itemView: { fieldMode: "hidden" } } }),
     holdExpiresAt: (0, import_fields11.timestamp)({ ...ro2 }),
     ...phiFields("Tour", { notes: ["dem", import_fields11.text, ro2] }),
     version: versionField(),
@@ -2247,7 +2250,7 @@ var SalesActivity = (0, import_core11.list)({
 });
 var StorefrontSite = (0, import_core11.list)({
   access: {
-    operation: { query: isStaff, create: anyOf("canManageStorefront"), update: anyOf("canManageStorefront"), delete: sys4 },
+    operation: { query: isStaff, create: anyOf("canManageStorefront"), update: anyOf("canManageStorefront"), delete: sys5 },
     filter: { query: assignedFilter(["community"]), update: assignedFilter(["community"]) }
   },
   ui: { labelField: "heroTitle" },
@@ -2290,7 +2293,7 @@ var StaffBio = (0, import_core11.list)({
 });
 var PublishedPrice = (0, import_core11.list)({
   access: {
-    operation: { query: isStaff, create: anyOf("canManageStorefront"), update: anyOf("canManageStorefront"), delete: sys4 },
+    operation: { query: isStaff, create: anyOf("canManageStorefront"), update: anyOf("canManageStorefront"), delete: sys5 },
     filter: { query: assignedFilter(["community"]), update: assignedFilter(["community"]) }
   },
   ui: { labelField: "label", listView: { initialColumns: ["label", "community", "fromMinor", "toMinor", "status"] } },
@@ -2311,7 +2314,7 @@ var PublishedPrice = (0, import_core11.list)({
   }
 });
 var AvailabilitySnapshot = (0, import_core11.list)({
-  access: { operation: { query: isStaff, create: sys4, update: sys4, delete: sys4 } },
+  access: { operation: { query: isStaff, create: sys5, update: sys5, delete: sys5 } },
   ui: { listView: { initialColumns: ["community", "apartmentType", "setting", "availableCount", "computedAt"] } },
   fields: {
     community: (0, import_fields11.relationship)({ ref: "Community", ...ro2 }),
@@ -2325,7 +2328,7 @@ var AvailabilitySnapshot = (0, import_core11.list)({
 });
 var JobPosting = (0, import_core11.list)({
   access: {
-    operation: { query: isStaff, create: anyOf("canManageStorefront", "canManagePeople"), update: anyOf("canManageStorefront", "canManagePeople"), delete: sys4 },
+    operation: { query: isStaff, create: anyOf("canManageStorefront", "canManagePeople"), update: anyOf("canManageStorefront", "canManagePeople"), delete: sys5 },
     filter: { query: assignedFilter(["community"]) }
   },
   ui: { labelField: "title" },
@@ -2357,7 +2360,7 @@ var SCOPE_AUTHORITY = {
 };
 var MFA_SCOPES = /* @__PURE__ */ new Set(["care_summary", "messages", "documents", "trust_balance", "statements", "payments"]);
 var PortalAccount = (0, import_core11.list)({
-  access: { operation: { query: anyOf("canManageRepresentatives", "canApprovePortalScopes"), create: sys4, update: sys4, delete: sys4 } },
+  access: { operation: { query: anyOf("canManageRepresentatives", "canApprovePortalScopes"), create: sys5, update: sys5, delete: sys5 } },
   ui: { labelField: "reference", listView: { initialColumns: ["reference", "contact", "status", "mfaEnrolled", "invitationExpiresAt"] } },
   fields: {
     reference: systemText({ indexed: "unique", required: true }),
@@ -2367,7 +2370,7 @@ var PortalAccount = (0, import_core11.list)({
     representatives: (0, import_fields11.relationship)({ ref: "Representative.portalAccount", many: true, ...ro2 }),
     status: lifecycle(["invited", "active", "suspended", "revoked"]),
     invitedBy: (0, import_fields11.relationship)({ ref: "User", ...ro2 }),
-    invitationTokenHash: (0, import_fields11.text)({ access: { read: sys4, create: sys4, update: sys4 }, graphql: { omit: true }, ui: { createView: { fieldMode: "hidden" }, itemView: { fieldMode: "hidden" } } }),
+    invitationTokenHash: (0, import_fields11.text)({ access: { read: sys5, create: sys5, update: sys5 }, graphql: { omit: true }, ui: { createView: { fieldMode: "hidden" }, itemView: { fieldMode: "hidden" } } }),
     invitationExpiresAt: (0, import_fields11.timestamp)({ ...ro2 }),
     acceptedAt: (0, import_fields11.timestamp)({ ...ro2 }),
     mfaEnrolled: (0, import_fields11.checkbox)({ defaultValue: false, ...ro2 }),
@@ -2378,7 +2381,7 @@ var PortalAccount = (0, import_core11.list)({
   }
 });
 var PortalScopeGrant = (0, import_core11.list)({
-  access: { operation: { query: anyOf("canManageRepresentatives", "canApprovePortalScopes"), create: sys4, update: sys4, delete: sys4 } },
+  access: { operation: { query: anyOf("canManageRepresentatives", "canApprovePortalScopes"), create: sys5, update: sys5, delete: sys5 } },
   ui: { labelField: "scope", listView: { initialColumns: ["account", "resident", "scope", "status", "grantedAt"] } },
   fields: {
     account: (0, import_fields11.relationship)({ ref: "PortalAccount.grants", ...ro2 }),
@@ -2402,12 +2405,902 @@ PHI_LISTS.add("Prospect");
 PHI_LISTS.add("Referral");
 PHI_LISTS.add("PortalScopeGrant");
 
+// features/keystone/models/clinical.ts
+var clinical_exports = {};
+__export(clinical_exports, {
+  AdlRecord: () => AdlRecord,
+  Assessment: () => Assessment,
+  AssessmentTemplate: () => AssessmentTemplate,
+  BehaviourEpisode: () => BehaviourEpisode,
+  CarePlan: () => CarePlan,
+  CarePlanItem: () => CarePlanItem,
+  IntakeRecord: () => IntakeRecord,
+  MedicationOrderDetail: () => MedicationOrderDetail,
+  NOTE_KINDS: () => NOTE_KINDS,
+  ORDER_KINDS: () => ORDER_KINDS,
+  Order: () => Order,
+  PhysicianVisit: () => PhysicianVisit,
+  PocTaskSlot: () => PocTaskSlot,
+  ProgressNote: () => ProgressNote,
+  TASK_KINDS: () => TASK_KINDS,
+  Task: () => Task,
+  VITAL_KINDS: () => VITAL_KINDS,
+  VitalSign: () => VitalSign,
+  Wound: () => Wound,
+  WoundAssessment: () => WoundAssessment,
+  choice: () => choice,
+  rl: () => rl,
+  scope: () => scope,
+  stamps: () => stamps
+});
+var import_core12 = require("@keystone-6/core");
+var import_fields12 = require("@keystone-6/core/fields");
+var CLINICAL = ["canReadClinical"];
+var rl = (read = CLINICAL) => residentList(["community"], ["resident"], read);
+var scope = () => ({
+  resident: (0, import_fields12.relationship)({ ref: "Resident", ...ro }),
+  community: (0, import_fields12.relationship)({ ref: "Community", ...ro })
+});
+var stamps = () => ({ version: versionField(), ...trackingFields });
+var when = (description) => (0, import_fields12.timestamp)({ ...ro, ...description ? { ui: { ...ro.ui, description } } : {} });
+var by = () => (0, import_fields12.relationship)({ ref: "User", ...ro });
+var textarea = { ...ro, ui: { ...ro.ui, displayMode: "textarea" } };
+var NOTE_KINDS = ["nursing", "physician", "social_services", "therapy", "dietary", "activity", "late_entry", "other"];
+var ProgressNote = (0, import_core12.list)({
+  access: rl(),
+  ui: { labelField: "kind", listView: { initialColumns: ["kind", "resident", "status", "eventAt", "author"] } },
+  fields: {
+    ...scope(),
+    kind: fixedChoice(NOTE_KINDS),
+    ...phiFields("ProgressNote", { body: ["clin", import_fields12.text, textarea] }),
+    status: lifecycle(["draft", "signed", "amended", "entered_in_error"]),
+    eventAt: when("When the thing happened (a late entry differs from the time it was written)."),
+    lateEntry: (0, import_fields12.checkbox)({ defaultValue: false, ...ro }),
+    author: by(),
+    signedBy: by(),
+    signedAt: when(),
+    amends: (0, import_fields12.relationship)({ ref: "ProgressNote", ...ro }),
+    amendedBy: (0, import_fields12.relationship)({ ref: "ProgressNote", ...ro }),
+    errorReason: systemText(),
+    ...stamps()
+  }
+});
+phiList("ProgressNote");
+var VITAL_KINDS = ["temperature", "pulse", "respirations", "systolic_bp", "diastolic_bp", "spo2", "weight", "pain", "blood_glucose"];
+var VitalSign = (0, import_core12.list)({
+  access: rl(["canReadClinical", "canChartPointOfCare"]),
+  ui: { labelField: "kind", listView: { initialColumns: ["kind", "value", "unit", "resident", "takenAt"] } },
+  fields: {
+    ...scope(),
+    kind: fixedChoice(VITAL_KINDS),
+    ...phiFields("VitalSign", { value: ["clin", measurement, { ...ro, validation: { isRequired: true } }] }),
+    unit: systemText({ required: true }),
+    takenAt: when(),
+    recordedBy: by(),
+    ...stamps()
+  }
+});
+phiList("VitalSign");
+var IntakeRecord = (0, import_core12.list)({
+  access: rl(["canReadClinical", "canChartPointOfCare"]),
+  ui: { labelField: "kind", listView: { initialColumns: ["kind", "amountMl", "percentEaten", "resident", "at"] } },
+  fields: {
+    ...scope(),
+    kind: fixedChoice(["fluid", "meal", "supplement", "tube_feed"]),
+    ...phiFields("IntakeRecord", { amountMl: ["clin", measurement, ro], percentEaten: ["clin", import_fields12.integer, ro] }),
+    at: when(),
+    recordedBy: by(),
+    ...stamps()
+  }
+});
+phiList("IntakeRecord");
+var AdlRecord = (0, import_core12.list)({
+  access: rl(["canReadClinical", "canChartPointOfCare"]),
+  ui: { labelField: "activity", listView: { initialColumns: ["activity", "level", "resident", "at"] } },
+  fields: {
+    ...scope(),
+    activity: fixedChoice(["bed_mobility", "transfer", "walking", "dressing", "eating", "toileting", "bathing", "hygiene", "continence"]),
+    level: (0, import_fields12.select)({ ...opt(["independent", "supervision", "limited_assist", "extensive_assist", "total_dependence", "did_not_occur"]), validation: { isRequired: true }, ...ro }),
+    at: when(),
+    recordedBy: by(),
+    pocTaskSlot: (0, import_fields12.relationship)({ ref: "PocTaskSlot", ...ro }),
+    ...stamps()
+  }
+});
+phiList("AdlRecord");
+var Wound = (0, import_core12.list)({
+  access: rl(),
+  ui: { labelField: "site", listView: { initialColumns: ["site", "kind", "status", "resident", "firstNotedAt"] } },
+  fields: {
+    ...scope(),
+    ...phiFields("Wound", { site: ["clin", import_fields12.text, { ...ro, validation: { isRequired: true } }] }),
+    kind: fixedChoice(["pressure_injury", "skin_tear", "venous", "arterial", "diabetic", "surgical", "other"]),
+    status: lifecycle(["open", "healing", "healed", "entered_in_error"]),
+    firstNotedAt: when(),
+    lastAssessedAt: when(),
+    currentStage: systemText(),
+    assessmentIntervalDays: (0, import_fields12.integer)({ defaultValue: 7, ...ro }),
+    assessments: (0, import_fields12.relationship)({ ref: "WoundAssessment.wound", many: true, ...ro }),
+    ...stamps()
+  }
+});
+phiList("Wound");
+var WoundAssessment = (0, import_core12.list)({
+  access: rl(),
+  ui: { labelField: "stage", listView: { initialColumns: ["wound", "stage", "lengthCm", "widthCm", "assessedAt"] } },
+  fields: {
+    ...scope(),
+    wound: (0, import_fields12.relationship)({ ref: "Wound.assessments", ...ro }),
+    stage: (0, import_fields12.select)({ ...opt(["1", "2", "3", "4", "unstageable", "deep_tissue", "not_applicable"]), ...ro }),
+    ...phiFields("WoundAssessment", {
+      lengthCm: ["clin", measurement, ro],
+      widthCm: ["clin", measurement, ro],
+      depthCm: ["clin", measurement, ro],
+      description: ["clin", import_fields12.text, textarea]
+    }),
+    photos: (0, import_fields12.json)({ ...ro, ui: { ...ro.ui, description: "Document ids of wound photos." } }),
+    assessedAt: when(),
+    assessedBy: by(),
+    ...stamps()
+  }
+});
+phiList("WoundAssessment");
+var BehaviourEpisode = (0, import_core12.list)({
+  access: rl(["canReadSensitiveClinical"]),
+  ui: { labelField: "kind", listView: { initialColumns: ["kind", "resident", "startedAt", "severity"] } },
+  fields: {
+    ...scope(),
+    kind: fixedChoice(["wandering", "verbal", "physical", "resistance_to_care", "sundowning", "self_injury", "other"]),
+    ...phiFields("BehaviourEpisode", { antecedent: ["sens", import_fields12.text, textarea], intervention: ["sens", import_fields12.text, textarea], outcome: ["sens", import_fields12.text, textarea] }),
+    severity: (0, import_fields12.select)({ ...opt(["mild", "moderate", "severe"]), defaultValue: "mild", ...ro }),
+    startedAt: when(),
+    durationMinutes: (0, import_fields12.integer)({ ...ro }),
+    recordedBy: by(),
+    ...stamps()
+  }
+});
+phiList("BehaviourEpisode");
+var PhysicianVisit = (0, import_core12.list)({
+  access: rl(),
+  ui: { labelField: "kind", listView: { initialColumns: ["kind", "resident", "visitedAt", "physicianName"] } },
+  fields: {
+    ...scope(),
+    kind: fixedChoice(["physician", "nurse_practitioner", "physician_assistant", "telehealth"]),
+    physicianName: systemText({ required: true }),
+    visitedAt: when(),
+    ...phiFields("PhysicianVisit", { summary: ["clin", import_fields12.text, textarea] }),
+    note: (0, import_fields12.relationship)({ ref: "ProgressNote", ...ro }),
+    recordedBy: by(),
+    ...stamps()
+  }
+});
+phiList("PhysicianVisit");
+var AssessmentTemplate = (0, import_core12.list)({
+  access: scopedlessRead(),
+  ui: { labelField: "name", listView: { initialColumns: ["code", "name", "templateVersion", "scorer", "status"] } },
+  fields: {
+    code: systemText({ indexed: true, required: true }),
+    name: systemText({ required: true }),
+    templateVersion: (0, import_fields12.integer)({ defaultValue: 1, ...ro }),
+    scorer: fixedChoice(["sum"]),
+    definition: (0, import_fields12.json)({ ...ro, ui: { ...ro.ui, description: "Items with options and points, score bands and the source note. Validated by the template meta-schema before it is stored." } }),
+    settings: (0, import_fields12.json)({ ...ro }),
+    sourceNote: systemText(),
+    verifyNote: systemText(),
+    status: lifecycle(["active", "retired"], "active"),
+    ...stamps()
+  }
+});
+function scopedlessRead() {
+  return { operation: { query: ({ session }) => Boolean(session?.data?.role?.canAccessDashboard), create: () => false, update: () => false, delete: () => false } };
+}
+var Assessment = (0, import_core12.list)({
+  access: rl(["canReadClinical", "canManageAssessments"]),
+  ui: { labelField: "templateCode", listView: { initialColumns: ["templateCode", "resident", "score", "band", "status", "completedAt"] } },
+  fields: {
+    ...scope(),
+    template: (0, import_fields12.relationship)({ ref: "AssessmentTemplate", ...ro }),
+    templateCode: systemText({ indexed: true, required: true }),
+    templateVersion: (0, import_fields12.integer)({ ...ro }),
+    ...phiFields("Assessment", { answers: ["clin", import_fields12.json, ro], band: ["clin", import_fields12.text, ro], score: ["clin", import_fields12.integer, ro] }),
+    status: lifecycle(["in_progress", "completed", "entered_in_error"], "completed"),
+    completedAt: when(),
+    completedBy: by(),
+    ...stamps()
+  }
+});
+phiList("Assessment");
+var CarePlan = (0, import_core12.list)({
+  access: rl(["canReadClinical", "canManageCarePlans"]),
+  ui: { labelField: "reference", listView: { initialColumns: ["reference", "kind", "status", "resident", "revision", "signedAt"] } },
+  fields: {
+    ...scope(),
+    reference: systemText({ indexed: "unique", required: true }),
+    kind: fixedChoice(["baseline", "comprehensive", "service_plan"]),
+    status: lifecycle(["draft", "active", "superseded", "entered_in_error"]),
+    revision: (0, import_fields12.integer)({ defaultValue: 1, ...ro }),
+    supersedes: (0, import_fields12.relationship)({ ref: "CarePlan", ...ro }),
+    items: (0, import_fields12.relationship)({ ref: "CarePlanItem.carePlan", many: true, ...ro }),
+    basedOnAssessment: (0, import_fields12.relationship)({ ref: "Assessment", ...ro }),
+    proposal: (0, import_fields12.relationship)({ ref: "Proposal", ...ro }),
+    startedAt: when(),
+    signedBy: by(),
+    signedAt: when(),
+    ...stamps()
+  }
+});
+phiList("CarePlan");
+var CarePlanItem = (0, import_core12.list)({
+  access: rl(["canReadClinical", "canManageCarePlans"]),
+  ui: { labelField: "text", listView: { initialColumns: ["kind", "text", "frequency", "resident"] } },
+  fields: {
+    ...scope(),
+    carePlan: (0, import_fields12.relationship)({ ref: "CarePlan.items", ...ro }),
+    kind: fixedChoice(["focus", "goal", "intervention"]),
+    parent: (0, import_fields12.relationship)({ ref: "CarePlanItem", ...ro }),
+    ...phiFields("CarePlanItem", { text: ["clin", import_fields12.text, { ...textarea, validation: { isRequired: true } }] }),
+    discipline: (0, import_fields12.select)({ ...opt(["nursing", "cna", "dietary", "therapy", "social_services", "activities"]), defaultValue: "nursing", ...ro }),
+    frequency: (0, import_fields12.select)({ ...opt(["once", "every_shift", "daily", "twice_daily", "weekly", "as_needed"]), defaultValue: "as_needed", ...ro }),
+    targetDate: (0, import_fields12.calendarDay)({ ...ro }),
+    status: lifecycle(["active", "met", "discontinued"], "active"),
+    ...stamps()
+  }
+});
+phiList("CarePlanItem");
+var PocTaskSlot = (0, import_core12.list)({
+  access: rl(["canReadClinical", "canChartPointOfCare"]),
+  ui: { labelField: "label", listView: { initialColumns: ["label", "resident", "dueAt", "status"] } },
+  fields: {
+    ...scope(),
+    item: (0, import_fields12.relationship)({ ref: "CarePlanItem", ...ro }),
+    label: systemText({ required: true }),
+    dueAt: when(),
+    slotKey: systemText({ indexed: "unique", required: true }),
+    status: lifecycle(["pending", "done", "not_done"]),
+    doneAt: when(),
+    doneBy: by(),
+    ...stamps()
+  }
+});
+phiList("PocTaskSlot");
+var ORDER_KINDS = ["medication", "treatment", "diet", "lab", "therapy", "code_status", "activity", "monitoring", "other"];
+var Order = (0, import_core12.list)({
+  access: rl(["canReadClinical", "canEnterOrders", "canAdministerMeds"]),
+  ui: { labelField: "summary", listView: { initialColumns: ["kind", "summary", "resident", "status", "source", "startAt"] } },
+  fields: {
+    ...scope(),
+    reference: systemText({ indexed: "unique", required: true }),
+    kind: fixedChoice(ORDER_KINDS),
+    ...phiFields("Order", { summary: ["clin", import_fields12.text, { ...ro, validation: { isRequired: true } }], instructions: ["clin", import_fields12.text, textarea] }),
+    source: fixedChoice(["written", "electronic", "verbal", "telephone"]),
+    readBack: (0, import_fields12.checkbox)({ defaultValue: false, ...ro }),
+    status: lifecycle(["active", "discontinued", "completed", "entered_in_error"], "active"),
+    startAt: when(),
+    stopAt: when(),
+    enteredBy: by(),
+    prescriber: by(),
+    prescriberName: systemText(),
+    needsCountersign: (0, import_fields12.checkbox)({ defaultValue: false, ...ro }),
+    countersignedBy: by(),
+    countersignedAt: when(),
+    discontinuedReason: systemText(),
+    allergyOverride: systemText(),
+    medication: (0, import_fields12.relationship)({ ref: "MedicationOrderDetail.order", ...ro }),
+    ...stamps()
+  }
+});
+phiList("Order");
+var MedicationOrderDetail = (0, import_core12.list)({
+  access: rl(["canReadClinical", "canEnterOrders", "canAdministerMeds"]),
+  ui: { labelField: "drugName", listView: { initialColumns: ["drugName", "dose", "route", "resident", "prn"] } },
+  fields: {
+    ...scope(),
+    order: (0, import_fields12.relationship)({ ref: "Order.medication", ...ro }),
+    reference: (0, import_fields12.relationship)({ ref: "MedicationReference", ...ro }),
+    drugName: systemText({ required: true }),
+    dose: measurement({ required: true }),
+    doseUnit: systemText({ required: true }),
+    route: (0, import_fields12.select)({ ...opt(["oral", "sublingual", "topical", "subcutaneous", "intramuscular", "inhaled", "ophthalmic", "rectal", "transdermal"]), ...ro }),
+    prn: (0, import_fields12.checkbox)({ defaultValue: false, ...ro }),
+    prnReason: systemText(),
+    prnMinIntervalMinutes: (0, import_fields12.integer)({ ...ro }),
+    prnFollowUpMinutes: (0, import_fields12.integer)({ defaultValue: 60, ...ro }),
+    times: (0, import_fields12.json)({ ...ro, ui: { ...ro.ui, description: 'Local administration times, e.g. ["08:00","20:00"].' } }),
+    holdParameters: (0, import_fields12.json)({ ...ro, ui: { ...ro.ui, description: 'e.g. { "vital": "systolic_bp", "op": "lt", "value": 100 }. Hold the dose when the latest value trips it.' } }),
+    controlled: (0, import_fields12.checkbox)({ defaultValue: false, ...ro }),
+    ...stamps()
+  }
+});
+phiList("MedicationOrderDetail");
+var TASK_KINDS = ["general", "post_fall_huddle", "neuro_checks", "hydration", "wound_assessment", "infection_review", "prn_followup", "incident_form", "countersign", "incident_follow_up", "count_discrepancy", "escalation", "care_plan_review"];
+var Task = (0, import_core12.list)({
+  access: scopedGoverned("canAccessDashboard", ["community"]),
+  ui: { labelField: "title", listView: { initialColumns: ["title", "kind", "status", "ownerRole", "assignee", "dueAt"] } },
+  fields: {
+    community: (0, import_fields12.relationship)({ ref: "Community", ...ro }),
+    resident: (0, import_fields12.relationship)({ ref: "Resident", ...ro }),
+    kind: fixedChoice(TASK_KINDS),
+    title: systemText({ required: true }),
+    detail: systemText(),
+    dedupeKey: systemText({ indexed: "unique" }),
+    status: lifecycle(["open", "in_progress", "done", "cancelled"]),
+    ownerRole: systemText(),
+    assignee: (0, import_fields12.relationship)({ ref: "User", ...ro }),
+    dueAt: when(),
+    escalateAt: when("Past this time the task shows as escalated to the role above."),
+    escalationOwnerRole: systemText(),
+    subjectType: systemText(),
+    subjectId: systemText({ indexed: true }),
+    completedBy: by(),
+    completedAt: when(),
+    createdByWorkflow: systemText(),
+    ...stamps()
+  }
+});
+
+// features/keystone/models/medications.ts
+var medications_exports = {};
+__export(medications_exports, {
+  ADMIN_OUTCOMES: () => ADMIN_OUTCOMES,
+  AdministrationSlot: () => AdministrationSlot,
+  CountDiscrepancy: () => CountDiscrepancy,
+  DRUG_SCHEDULES: () => DRUG_SCHEDULES,
+  MOVEMENT_KINDS: () => MOVEMENT_KINDS,
+  MedicationAdministration: () => MedicationAdministration,
+  MedicationDestruction: () => MedicationDestruction,
+  MedicationReference: () => MedicationReference,
+  MedicationSupply: () => MedicationSupply,
+  MedicationSupplyMovement: () => MedicationSupplyMovement,
+  PharmacyRelationship: () => PharmacyRelationship,
+  PrnFollowUp: () => PrnFollowUp,
+  SLOT_STATUSES: () => SLOT_STATUSES,
+  SUPPLY_KINDS: () => SUPPLY_KINDS,
+  ShiftCount: () => ShiftCount,
+  ShiftCountEntry: () => ShiftCountEntry
+});
+var import_core13 = require("@keystone-6/core");
+var import_fields13 = require("@keystone-6/core/fields");
+var MEDS = ["canAdministerMeds", "canManagePharmacy", "canResolveCountDiscrepancy", "canReadClinical"];
+var when2 = () => (0, import_fields13.timestamp)({ ...ro });
+var by2 = () => (0, import_fields13.relationship)({ ref: "User", ...ro });
+var DRUG_SCHEDULES = ["none", "ii", "iii", "iv", "v"];
+var MedicationReference = (0, import_core13.list)({
+  access: {
+    operation: { query: ({ session }) => Boolean(session?.data?.role?.canAccessDashboard), create: ({ session }) => Boolean(session?.data?.role?.canManagePharmacy), update: ({ session }) => Boolean(session?.data?.role?.canManagePharmacy), delete: () => false }
+  },
+  ui: { labelField: "name", listView: { initialColumns: ["name", "strength", "form", "schedule", "status"] } },
+  fields: {
+    name: (0, import_fields13.text)({ validation: { isRequired: true } }),
+    genericName: (0, import_fields13.text)(),
+    strength: (0, import_fields13.text)(),
+    form: (0, import_fields13.text)(),
+    ndc: (0, import_fields13.text)({ isIndexed: true }),
+    schedule: (0, import_fields13.select)({ ...opt(DRUG_SCHEDULES), defaultValue: "none", validation: { isRequired: true } }),
+    highAlert: (0, import_fields13.checkbox)({ defaultValue: false }),
+    status: (0, import_fields13.select)({ ...opt(["active", "retired"]), defaultValue: "active", validation: { isRequired: true } }),
+    source: (0, import_fields13.select)({ ...opt(["manual", "pharmacy_feed"]), defaultValue: "manual", validation: { isRequired: true } }),
+    ...stamps()
+  }
+});
+var PharmacyRelationship = (0, import_core13.list)({
+  access: scopedGoverned(["canManagePharmacy", "canAdministerMeds"], ["community"]),
+  ui: { labelField: "name", listView: { initialColumns: ["name", "adapter", "phone", "status"] } },
+  fields: {
+    community: (0, import_fields13.relationship)({ ref: "Community", ...ro }),
+    name: systemText({ required: true }),
+    adapter: fixedChoice(["manual"]),
+    phone: systemText(),
+    status: lifecycle(["active", "ended"], "active"),
+    ...stamps()
+  }
+});
+var SUPPLY_KINDS = ["resident", "house_stock", "ekit"];
+var MedicationSupply = (0, import_core13.list)({
+  access: scopedGoverned(MEDS, ["community"]),
+  ui: { labelField: "label", listView: { initialColumns: ["label", "kind", "balance", "unit", "controlled", "status"] } },
+  fields: {
+    community: (0, import_fields13.relationship)({ ref: "Community", ...ro }),
+    resident: (0, import_fields13.relationship)({ ref: "Resident", ...ro }),
+    reference: (0, import_fields13.relationship)({ ref: "MedicationReference", ...ro }),
+    unitLocation: (0, import_fields13.relationship)({ ref: "Unit", ...ro }),
+    label: systemText({ required: true }),
+    kind: fixedChoice(SUPPLY_KINDS),
+    lot: systemText(),
+    expiresOn: (0, import_fields13.timestamp)({ ...ro }),
+    controlled: (0, import_fields13.checkbox)({ defaultValue: false, ...ro }),
+    unit: systemText({ required: true }),
+    balance: medQty({ required: true }),
+    status: lifecycle(["active", "quarantined", "destroyed", "empty"], "active"),
+    movements: (0, import_fields13.relationship)({ ref: "MedicationSupplyMovement.supply", many: true, ...ro }),
+    ...stamps()
+  }
+});
+var MOVEMENT_KINDS = ["receive", "administer", "waste", "transfer_out", "transfer_in", "destroy", "adjust", "count_adjust", "return_to_pharmacy"];
+var MedicationSupplyMovement = (0, import_core13.list)({
+  access: scopedGoverned(MEDS, ["community"]),
+  ui: { labelField: "kind", listView: { initialColumns: ["kind", "quantity", "balanceAfter", "supply", "at"] } },
+  fields: {
+    community: (0, import_fields13.relationship)({ ref: "Community", ...ro }),
+    supply: (0, import_fields13.relationship)({ ref: "MedicationSupply.movements", ...ro }),
+    seq: (0, import_fields13.integer)({ ...ro }),
+    kind: fixedChoice(MOVEMENT_KINDS),
+    quantity: medQty({ required: true, description: "Signed: negative takes stock out." }),
+    balanceAfter: medQty({ required: true }),
+    at: when2(),
+    actor: by2(),
+    witness: by2(),
+    reason: systemText(),
+    administration: (0, import_fields13.relationship)({ ref: "MedicationAdministration.movement", ...ro }),
+    createdAt: (0, import_fields13.timestamp)({ defaultValue: { kind: "now" }, ...ro })
+  }
+});
+var MedicationDestruction = (0, import_core13.list)({
+  access: scopedGoverned(MEDS, ["community"]),
+  ui: { labelField: "method", listView: { initialColumns: ["supply", "quantity", "method", "destroyedAt"] } },
+  fields: {
+    community: (0, import_fields13.relationship)({ ref: "Community", ...ro }),
+    supply: (0, import_fields13.relationship)({ ref: "MedicationSupply", ...ro }),
+    quantity: medQty({ required: true }),
+    method: systemText({ required: true }),
+    destroyedAt: when2(),
+    destroyedBy: by2(),
+    witness: by2(),
+    movement: (0, import_fields13.relationship)({ ref: "MedicationSupplyMovement", ...ro }),
+    ...stamps()
+  }
+});
+var SLOT_STATUSES = ["scheduled", "given", "held", "refused", "missed", "not_given"];
+var AdministrationSlot = (0, import_core13.list)({
+  access: rl(["canAdministerMeds", "canReadClinical"]),
+  ui: { labelField: "drugName", listView: { initialColumns: ["drugName", "resident", "scheduledFor", "status"] } },
+  fields: {
+    ...scope(),
+    detail: (0, import_fields13.relationship)({ ref: "MedicationOrderDetail", ...ro }),
+    order: (0, import_fields13.relationship)({ ref: "Order", ...ro }),
+    drugName: systemText({ required: true }),
+    slotKey: systemText({ indexed: "unique", required: true }),
+    scheduledFor: when2(),
+    windowBefore: (0, import_fields13.integer)({ defaultValue: 60, ...ro }),
+    windowAfter: (0, import_fields13.integer)({ defaultValue: 60, ...ro }),
+    status: lifecycle(SLOT_STATUSES),
+    settledAt: when2(),
+    ...stamps()
+  }
+});
+phiList("AdministrationSlot");
+var ADMIN_OUTCOMES = ["given", "held", "refused", "missed", "not_given"];
+var MedicationAdministration = (0, import_core13.list)({
+  access: rl(["canAdministerMeds", "canReadClinical"]),
+  ui: { labelField: "outcome", listView: { initialColumns: ["outcome", "drugName", "resident", "administeredAt", "timing"] } },
+  fields: {
+    ...scope(),
+    slot: (0, import_fields13.relationship)({ ref: "AdministrationSlot", ...ro }),
+    detail: (0, import_fields13.relationship)({ ref: "MedicationOrderDetail", ...ro }),
+    drugName: systemText({ required: true }),
+    outcome: fixedChoice(ADMIN_OUTCOMES),
+    prn: (0, import_fields13.checkbox)({ defaultValue: false, ...ro }),
+    ...phiFields("MedicationAdministration", {
+      doseGiven: ["clin", medQty, ro],
+      reason: ["clin", import_fields13.text, ro],
+      note: ["clin", import_fields13.text, ro]
+    }),
+    doseUnit: systemText(),
+    administeredAt: when2(),
+    recordedAt: when2(),
+    lateEntry: (0, import_fields13.checkbox)({ defaultValue: false, ...ro }),
+    timing: (0, import_fields13.select)({ ...opt(["on_time", "early", "late", "not_scheduled"]), ...ro }),
+    identityCheck: (0, import_fields13.select)({ ...opt(["barcode", "photo", "two_identifiers"]), ...ro }),
+    holdVital: (0, import_fields13.json)({ ...ro }),
+    administeredBy: by2(),
+    witness: by2(),
+    supply: (0, import_fields13.relationship)({ ref: "MedicationSupply", ...ro }),
+    movement: (0, import_fields13.relationship)({ ref: "MedicationSupplyMovement.administration", many: true, ...ro }),
+    followUpDueAt: when2(),
+    followUpOf: (0, import_fields13.relationship)({ ref: "MedicationAdministration", ...ro }),
+    createdAt: (0, import_fields13.timestamp)({ defaultValue: { kind: "now" }, ...ro })
+  }
+});
+phiList("MedicationAdministration");
+var PrnFollowUp = (0, import_core13.list)({
+  access: rl(["canAdministerMeds", "canReadClinical"]),
+  ui: { labelField: "status", listView: { initialColumns: ["resident", "dueAt", "status", "effect"] } },
+  fields: {
+    ...scope(),
+    administration: (0, import_fields13.relationship)({ ref: "MedicationAdministration", ...ro }),
+    dueAt: when2(),
+    status: lifecycle(["open", "done", "missed"]),
+    effect: (0, import_fields13.select)({ ...opt(["effective", "partly_effective", "not_effective", "adverse_reaction"]), ...ro }),
+    recordedBy: by2(),
+    recordedAt: when2(),
+    ...stamps()
+  }
+});
+phiList("PrnFollowUp");
+var ShiftCount = (0, import_core13.list)({
+  access: scopedGoverned(["canAdministerMeds", "canResolveCountDiscrepancy"], ["community"]),
+  ui: { labelField: "reference", listView: { initialColumns: ["reference", "unit", "status", "startedAt"] } },
+  fields: {
+    community: (0, import_fields13.relationship)({ ref: "Community", ...ro }),
+    unit: (0, import_fields13.relationship)({ ref: "Unit", ...ro }),
+    reference: systemText({ indexed: "unique", required: true }),
+    shift: fixedChoice(["day", "evening", "night"]),
+    status: lifecycle(["open", "matched", "discrepancy", "resolved"]),
+    outgoing: by2(),
+    incoming: by2(),
+    startedAt: when2(),
+    completedAt: when2(),
+    entries: (0, import_fields13.relationship)({ ref: "ShiftCountEntry.shiftCount", many: true, ...ro }),
+    ...stamps()
+  }
+});
+var ShiftCountEntry = (0, import_core13.list)({
+  access: scopedGoverned(["canAdministerMeds", "canResolveCountDiscrepancy"], ["community"]),
+  ui: { labelField: "role", listView: { initialColumns: ["shiftCount", "supply", "role", "counted", "countedBy"] } },
+  fields: {
+    community: (0, import_fields13.relationship)({ ref: "Community", ...ro }),
+    shiftCount: (0, import_fields13.relationship)({ ref: "ShiftCount.entries", ...ro }),
+    supply: (0, import_fields13.relationship)({ ref: "MedicationSupply", ...ro }),
+    role: fixedChoice(["outgoing", "incoming"]),
+    counted: medQty({ required: true }),
+    countedBy: by2(),
+    at: when2(),
+    createdAt: (0, import_fields13.timestamp)({ defaultValue: { kind: "now" }, ...ro })
+  }
+});
+var CountDiscrepancy = (0, import_core13.list)({
+  access: scopedGoverned("canResolveCountDiscrepancy", ["community"]),
+  ui: { labelField: "status", listView: { initialColumns: ["supply", "expected", "outgoingCounted", "incomingCounted", "status"] } },
+  fields: {
+    community: (0, import_fields13.relationship)({ ref: "Community", ...ro }),
+    shiftCount: (0, import_fields13.relationship)({ ref: "ShiftCount", ...ro }),
+    supply: (0, import_fields13.relationship)({ ref: "MedicationSupply", ...ro }),
+    expected: medQty({ required: true }),
+    outgoingCounted: medQty({ required: true }),
+    incomingCounted: medQty({ required: true }),
+    status: lifecycle(["open", "resolved"]),
+    resolution: fixedChoiceText2(),
+    resolutionNote: systemText(),
+    resolvedBy: by2(),
+    resolvedAt: when2(),
+    adjustment: (0, import_fields13.relationship)({ ref: "MedicationSupplyMovement", ...ro }),
+    incident: (0, import_fields13.relationship)({ ref: "Incident", ...ro }),
+    ...stamps()
+  }
+});
+function fixedChoiceText2() {
+  return (0, import_fields13.select)({ ...opt(["recount_matched", "documentation_error", "loss_suspected", "found"]), ...ro });
+}
+
+// features/keystone/models/safety.ts
+var safety_exports = {};
+__export(safety_exports, {
+  AntibioticCourse: () => AntibioticCourse,
+  INCIDENT_KINDS: () => INCIDENT_KINDS,
+  Immunisation: () => Immunisation,
+  Incident: () => Incident,
+  IncidentInvestigation: () => IncidentInvestigation,
+  IncidentParty: () => IncidentParty,
+  InfectionCase: () => InfectionCase,
+  Outbreak: () => Outbreak,
+  PrecautionOrder: () => PrecautionOrder,
+  RegulatoryReport: () => RegulatoryReport
+});
+var import_core14 = require("@keystone-6/core");
+var import_fields14 = require("@keystone-6/core/fields");
+var when3 = () => (0, import_fields14.timestamp)({ ...ro });
+var by3 = () => (0, import_fields14.relationship)({ ref: "User", ...ro });
+var textarea2 = { ...ro, ui: { ...ro.ui, displayMode: "textarea" } };
+var INCIDENT_KINDS = ["fall", "medication_error", "elopement", "injury_unknown_source", "alleged_abuse", "alleged_neglect", "misappropriation", "resident_to_resident", "skin", "choking", "infection", "controlled_substance_discrepancy", "other"];
+var Incident = (0, import_core14.list)({
+  access: rl(["canReportIncident", "canReadIncidents", "canInvestigateIncidents"]),
+  ui: { labelField: "reference", listView: { initialColumns: ["reference", "kind", "status", "severity", "resident", "occurredAt"] } },
+  fields: {
+    ...scope(),
+    reference: systemText({ indexed: "unique", required: true }),
+    kind: fixedChoice(INCIDENT_KINDS),
+    ...phiFields("Incident", { description: ["clin", import_fields14.text, textarea2], location: ["clin", import_fields14.text, ro] }),
+    severity: (0, import_fields14.select)({ ...opt(["no_injury", "minor", "moderate", "major", "death"]), defaultValue: "no_injury", ...ro }),
+    status: lifecycle(["reported", "under_investigation", "closed", "entered_in_error"]),
+    occurredAt: when3(),
+    discoveredAt: when3(),
+    reportedAt: when3(),
+    reportedBy: by3(),
+    witnessed: (0, import_fields14.checkbox)({ defaultValue: false, ...ro }),
+    headStrike: (0, import_fields14.checkbox)({ defaultValue: false, ...ro }),
+    allegedAbuseOrSbi: (0, import_fields14.checkbox)({ defaultValue: false, ...ro }),
+    allegedOther: (0, import_fields14.checkbox)({ defaultValue: false, ...ro }),
+    reportableDecision: (0, import_fields14.select)({ ...opt(["reportable", "not_reportable", "pending"]), defaultValue: "pending", ...ro }),
+    downgradedBy: by3(),
+    downgradeReason: systemText(),
+    source: (0, import_fields14.select)({ ...opt(["staff", "workflow"]), defaultValue: "staff", ...ro }),
+    sourceNote: (0, import_fields14.relationship)({ ref: "ProgressNote", ...ro }),
+    parties: (0, import_fields14.relationship)({ ref: "IncidentParty.incident", many: true, ...ro }),
+    investigations: (0, import_fields14.relationship)({ ref: "IncidentInvestigation.incident", many: true, ...ro }),
+    reports: (0, import_fields14.relationship)({ ref: "RegulatoryReport.incident", many: true, ...ro }),
+    closedAt: when3(),
+    ...stamps()
+  }
+});
+phiList("Incident");
+var IncidentParty = (0, import_core14.list)({
+  access: rl(["canReportIncident", "canReadIncidents", "canInvestigateIncidents"]),
+  ui: { labelField: "role", listView: { initialColumns: ["role", "name", "incident"] } },
+  fields: {
+    ...scope(),
+    incident: (0, import_fields14.relationship)({ ref: "Incident.parties", ...ro }),
+    role: fixedChoice(["involved_resident", "witness", "staff_involved", "alleged_perpetrator", "family_notified", "physician_notified"]),
+    name: systemText({ required: true }),
+    resident: (0, import_fields14.relationship)({ ref: "Resident", ...ro }),
+    notifiedAt: when3(),
+    ...stamps()
+  }
+});
+phiList("IncidentParty");
+var IncidentInvestigation = (0, import_core14.list)({
+  access: rl(["canInvestigateIncidents", "canReadIncidents"]),
+  ui: { labelField: "status", listView: { initialColumns: ["incident", "status", "investigator", "startedAt"] } },
+  fields: {
+    ...scope(),
+    incident: (0, import_fields14.relationship)({ ref: "Incident.investigations", ...ro }),
+    ...phiFields("IncidentInvestigation", { findings: ["clin", import_fields14.text, textarea2], rootCause: ["clin", import_fields14.text, textarea2], interventions: ["clin", import_fields14.text, textarea2] }),
+    status: lifecycle(["open", "completed"]),
+    investigator: by3(),
+    startedAt: when3(),
+    completedAt: when3(),
+    ...stamps()
+  }
+});
+phiList("IncidentInvestigation");
+var RegulatoryReport = (0, import_core14.list)({
+  access: rl(["canReadIncidents", "canInvestigateIncidents", "canSubmitRegulatory"]),
+  ui: { labelField: "kind", listView: { initialColumns: ["kind", "incident", "status", "submittedAt"] } },
+  fields: {
+    ...scope(),
+    incident: (0, import_fields14.relationship)({ ref: "Incident.reports", ...ro }),
+    kind: fixedChoice(["f609_initial", "f609_followup", "state_self_report"]),
+    status: lifecycle(["draft", "submitted"]),
+    body: (0, import_fields14.json)({ ...ro }),
+    channel: (0, import_fields14.select)({ ...opt(["state_portal", "phone", "fax", "other"]), ...ro }),
+    confirmation: systemText(),
+    submittedAt: when3(),
+    submittedBy: by3(),
+    ruleNote: systemText(),
+    ...stamps()
+  }
+});
+phiList("RegulatoryReport");
+var InfectionCase = (0, import_core14.list)({
+  access: rl(["canManageInfectionControl", "canReadClinical"]),
+  ui: { labelField: "syndrome", listView: { initialColumns: ["syndrome", "resident", "status", "onsetAt", "criteriaMet"] } },
+  fields: {
+    ...scope(),
+    syndrome: fixedChoice(["uti", "respiratory", "skin_soft_tissue", "gastroenteritis", "covid19", "influenza", "cdiff", "other"]),
+    status: lifecycle(["suspected", "confirmed", "ruled_out", "resolved"]),
+    onsetAt: when3(),
+    ...phiFields("InfectionCase", { criteria: ["clin", import_fields14.json, ro], organism: ["clin", import_fields14.text, ro] }),
+    criteriaMet: (0, import_fields14.checkbox)({ defaultValue: false, ...ro }),
+    criteriaSet: systemText(),
+    cultureAt: when3(),
+    outbreak: (0, import_fields14.relationship)({ ref: "Outbreak.cases", ...ro }),
+    ...stamps()
+  }
+});
+phiList("InfectionCase");
+var PrecautionOrder = (0, import_core14.list)({
+  access: rl(["canManageInfectionControl", "canReadClinical"]),
+  ui: { labelField: "kind", listView: { initialColumns: ["kind", "resident", "status", "startedAt", "reviewOn"] } },
+  fields: {
+    ...scope(),
+    kind: fixedChoice(["standard", "contact", "droplet", "airborne", "enhanced_barrier"]),
+    case: (0, import_fields14.relationship)({ ref: "InfectionCase", ...ro }),
+    status: lifecycle(["active", "ended"]),
+    startedAt: when3(),
+    endedAt: when3(),
+    reviewOn: (0, import_fields14.calendarDay)({ ...ro }),
+    reason: systemText(),
+    ...stamps()
+  }
+});
+phiList("PrecautionOrder");
+var AntibioticCourse = (0, import_core14.list)({
+  access: rl(["canManageInfectionControl", "canReadClinical"]),
+  ui: { labelField: "drugName", listView: { initialColumns: ["drugName", "resident", "status", "startedAt", "timeoutDueAt"] } },
+  fields: {
+    ...scope(),
+    drugName: systemText({ required: true }),
+    indication: systemText(),
+    order: (0, import_fields14.relationship)({ ref: "Order", ...ro }),
+    case: (0, import_fields14.relationship)({ ref: "InfectionCase", ...ro }),
+    startedAt: when3(),
+    plannedDays: (0, import_fields14.integer)({ ...ro }),
+    timeoutDueAt: when3(),
+    timeoutOutcome: (0, import_fields14.select)({ ...opt(["continue", "narrow", "stop", "change"]), ...ro }),
+    timeoutAt: when3(),
+    timeoutBy: by3(),
+    status: lifecycle(["active", "completed", "stopped"]),
+    ...stamps()
+  }
+});
+phiList("AntibioticCourse");
+var Outbreak = (0, import_core14.list)({
+  access: scopedGoverned(["canManageInfectionControl", "canDeclareOutbreak"], ["community"]),
+  ui: { labelField: "name", listView: { initialColumns: ["name", "status", "declaredAt", "organism"] } },
+  fields: {
+    community: (0, import_fields14.relationship)({ ref: "Community", ...ro }),
+    name: systemText({ required: true }),
+    organism: systemText(),
+    unit: (0, import_fields14.relationship)({ ref: "Unit", ...ro }),
+    status: lifecycle(["declared", "contained", "closed"], "declared"),
+    declaredAt: when3(),
+    declaredBy: by3(),
+    closedAt: when3(),
+    cases: (0, import_fields14.relationship)({ ref: "InfectionCase.outbreak", many: true, ...ro }),
+    ...stamps()
+  }
+});
+var Immunisation = (0, import_core14.list)({
+  access: rl(["canManageInfectionControl", "canReadClinical"]),
+  ui: { labelField: "vaccine", listView: { initialColumns: ["vaccine", "resident", "status", "givenAt"] } },
+  fields: {
+    ...scope(),
+    vaccine: fixedChoice(["influenza", "covid19", "pneumococcal", "rsv", "tdap", "hepatitis_b", "other"]),
+    status: lifecycle(["offered", "accepted", "declined", "given", "contraindicated"]),
+    offeredAt: when3(),
+    decidedAt: when3(),
+    givenAt: when3(),
+    lot: systemText(),
+    recordedBy: by3(),
+    ...stamps()
+  }
+});
+phiList("Immunisation");
+
+// features/keystone/models/workflows.ts
+var workflows_exports = {};
+__export(workflows_exports, {
+  EvidenceRef: () => EvidenceRef,
+  Finding: () => Finding,
+  InferenceCall: () => InferenceCall,
+  WorkflowActivation: () => WorkflowActivation,
+  WorkflowDefinition: () => WorkflowDefinition,
+  WorkflowRun: () => WorkflowRun,
+  WorkflowVersion: () => WorkflowVersion
+});
+var import_core15 = require("@keystone-6/core");
+var import_fields15 = require("@keystone-6/core/fields");
+var when4 = () => (0, import_fields15.timestamp)({ ...ro });
+var by4 = () => (0, import_fields15.relationship)({ ref: "User", ...ro });
+var WorkflowDefinition = (0, import_core15.list)({
+  access: scopedGoverned(["canReadFindings", "canManageWorkflows"], ["community"]),
+  ui: { labelField: "name", listView: { initialColumns: ["name", "code", "origin", "status"] } },
+  fields: {
+    community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
+    code: systemText({ indexed: true, required: true }),
+    name: systemText({ required: true }),
+    description: systemText(),
+    origin: fixedChoice(["library", "staff_described"]),
+    status: lifecycle(["active", "archived"], "active"),
+    versions: (0, import_fields15.relationship)({ ref: "WorkflowVersion.definition", many: true, ...ro }),
+    ...stamps()
+  }
+});
+var WorkflowVersion = (0, import_core15.list)({
+  access: scopedGoverned(["canReadFindings", "canManageWorkflows"], ["community"]),
+  ui: { labelField: "versionNumber", listView: { initialColumns: ["definition", "versionNumber", "status", "policyVersion"] } },
+  fields: {
+    community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
+    definition: (0, import_fields15.relationship)({ ref: "WorkflowDefinition.versions", ...ro }),
+    versionNumber: (0, import_fields15.integer)({ ...ro }),
+    graph: (0, import_fields15.json)({ ...ro, ui: { ...ro.ui, description: "Nodes drawn only from the block catalogue (lib/workflows/blocks.ts)." } }),
+    graphHash: systemText({ required: true }),
+    policyVersion: systemText({ required: true }),
+    policy: (0, import_fields15.json)({ ...ro, ui: { ...ro.ui, description: "Operator-tunable parameters, such as the daily fluid threshold." } }),
+    status: lifecycle(["draft", "dry_run_ok", "pending_activation", "active", "retired"]),
+    dryRun: (0, import_fields15.json)({ ...ro }),
+    createdByInference: (0, import_fields15.relationship)({ ref: "InferenceCall", ...ro }),
+    description: systemText(),
+    activations: (0, import_fields15.relationship)({ ref: "WorkflowActivation.workflowVersion", many: true, ...ro }),
+    ...stamps()
+  }
+});
+var WorkflowActivation = (0, import_core15.list)({
+  access: scopedGoverned(["canReadFindings", "canManageWorkflows"], ["community"]),
+  ui: { labelField: "status", listView: { initialColumns: ["workflowVersion", "status", "activatedAt"] } },
+  fields: {
+    community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
+    workflowVersion: (0, import_fields15.relationship)({ ref: "WorkflowVersion.activations", ...ro }),
+    status: lifecycle(["active", "paused", "ended"]),
+    approvals: (0, import_fields15.json)({ ...ro }),
+    activatedAt: when4(),
+    activatedBy: by4(),
+    ...stamps()
+  }
+});
+var WorkflowRun = (0, import_core15.list)({
+  access: scopedGoverned(["canReadFindings", "canManageWorkflows"], ["community"]),
+  ui: { labelField: "windowKey", listView: { initialColumns: ["windowKey", "trigger", "status", "findingsOpened", "startedAt"] } },
+  fields: {
+    community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
+    workflowVersion: (0, import_fields15.relationship)({ ref: "WorkflowVersion", ...ro }),
+    windowKey: systemText({ indexed: "unique", required: true }),
+    trigger: fixedChoice(["page_load", "run_now", "source_change", "dry_run"]),
+    status: lifecycle(["running", "succeeded", "failed"], "running"),
+    startedAt: when4(),
+    finishedAt: when4(),
+    findingsOpened: (0, import_fields15.integer)({ defaultValue: 0, ...ro }),
+    findingsResolved: (0, import_fields15.integer)({ defaultValue: 0, ...ro }),
+    summary: (0, import_fields15.json)({ ...ro }),
+    ...stamps()
+  }
+});
+var Finding = (0, import_core15.list)({
+  access: scopedGoverned(["canReadFindings"], ["community"]),
+  ui: { labelField: "title", listView: { initialColumns: ["title", "status", "severity", "resident", "createdAt"] } },
+  fields: {
+    community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
+    resident: (0, import_fields15.relationship)({ ref: "Resident", ...ro }),
+    workflowVersion: (0, import_fields15.relationship)({ ref: "WorkflowVersion", ...ro }),
+    run: (0, import_fields15.relationship)({ ref: "WorkflowRun", ...ro }),
+    workflowCode: systemText({ indexed: true, required: true }),
+    dedupeKey: systemText({ indexed: "unique", required: true }),
+    title: systemText({ required: true }),
+    detail: systemText(),
+    severity: (0, import_fields15.select)({ ...opt(["info", "warning", "urgent"]), defaultValue: "warning", ...ro }),
+    status: lifecycle(["open", "resolved", "dismissed"]),
+    evidence: (0, import_fields15.relationship)({ ref: "EvidenceRef.finding", many: true, ...ro }),
+    task: (0, import_fields15.relationship)({ ref: "Task", ...ro }),
+    proposal: (0, import_fields15.relationship)({ ref: "Proposal", ...ro }),
+    resolvedAt: when4(),
+    resolutionNote: systemText(),
+    dismissedBy: by4(),
+    ...stamps()
+  }
+});
+var EvidenceRef = (0, import_core15.list)({
+  access: scopedGoverned(["canReadFindings"], ["community"]),
+  ui: { labelField: "recordType", listView: { initialColumns: ["finding", "recordType", "recordId", "quote"] } },
+  fields: {
+    community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
+    finding: (0, import_fields15.relationship)({ ref: "Finding.evidence", ...ro }),
+    recordType: systemText({ required: true }),
+    recordId: systemText({ required: true }),
+    spanStart: (0, import_fields15.integer)({ ...ro }),
+    spanEnd: (0, import_fields15.integer)({ ...ro }),
+    quote: (0, import_fields15.text)({ ...ro }),
+    ...stamps()
+  }
+});
+var InferenceCall = (0, import_core15.list)({
+  access: scopedGoverned(["canManageWorkflows", "canReadFindings"], ["community"]),
+  ui: { labelField: "purpose", listView: { initialColumns: ["purpose", "provider", "outcome", "at"] } },
+  fields: {
+    community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
+    purpose: fixedChoice(["workflow_build", "workflow_step", "summarise", "classify"]),
+    provider: systemText({ required: true }),
+    providerClass: fixedChoice(["sandbox_fixture", "self_hosted", "baa_hosted", "other"]),
+    model: systemText(),
+    outcome: fixedChoice(["ok", "refused_policy", "error"]),
+    policyAtCall: systemText(),
+    inputHash: systemText({ required: true }),
+    outputHash: systemText(),
+    inputTokens: (0, import_fields15.integer)({ ...ro }),
+    outputTokens: (0, import_fields15.integer)({ ...ro }),
+    reason: systemText(),
+    at: when4(),
+    actor: by4(),
+    ...stamps()
+  }
+});
+
 // features/keystone/models/index.ts
 var { SETTINGS: _settings, ...platformLists } = platform_exports;
 var { AGENT_SCOPES: _scopes, PHI_AGENT_SCOPES: _phiScopes, PROPOSAL_KINDS: _kinds, ...agentLists } = agents_exports;
 var { BED_STATUSES: _bed, APARTMENT_STATUSES: _apt, ...placeLists } = places_exports;
 var { CODE_STATUSES: _code, REPRESENTATIVE_ROLES: _roles, ADMISSION_SOURCES: _src, DISCHARGE_DISPOSITIONS: _disp, CENSUS_EVENT_KINDS: _cek, PAYER_KINDS: _payers, ...residentLists } = residents_exports;
 var { LEAD_STATUSES: _lead, PORTAL_SCOPES: _portal, AUTHORITY_BASES: _ab, SCOPE_AUTHORITY: _sa, MFA_SCOPES: _mfa, ...salesLists } = sales_exports;
+var { NOTE_KINDS: _nk, VITAL_KINDS: _vk, ORDER_KINDS: _ok, TASK_KINDS: _tk, rl: _rl, scope: _sc, stamps: _st, choice: _ch, ...clinicalLists } = clinical_exports;
+var { DRUG_SCHEDULES: _ds, SUPPLY_KINDS: _sk, MOVEMENT_KINDS: _mk, SLOT_STATUSES: _ss, ADMIN_OUTCOMES: _ao, ...medicationLists } = medications_exports;
+var { INCIDENT_KINDS: _ik, ...safetyLists } = safety_exports;
 var models = {
   User,
   Role,
@@ -2417,7 +3310,11 @@ var models = {
   ...agentLists,
   ...placeLists,
   ...residentLists,
-  ...salesLists
+  ...salesLists,
+  ...clinicalLists,
+  ...medicationLists,
+  ...safetyLists,
+  ...workflows_exports
 };
 
 // features/keystone/index.ts
@@ -2519,9 +3416,9 @@ function requirePermission(actor, ...anyOf2) {
     throw new DomainError(Codes.NOT_AUTHORIZED, `This needs the ${anyOf2.join(" or ")} permission.`);
   }
 }
-function requireScope(actor, scope) {
+function requireScope(actor, scope2) {
   if (actor.kind !== "agent") return;
-  if (!actor.scopes.has(scope)) throw new DomainError(Codes.NOT_AUTHORIZED, `The agent has no active ${scope} grant.`);
+  if (!actor.scopes.has(scope2)) throw new DomainError(Codes.NOT_AUTHORIZED, `The agent has no active ${scope2} grant.`);
 }
 var principalKey = (actor) => actor.kind === "user" ? `user:${actor.userId}` : actor.kind === "agent" ? `agent:${actor.agentId}` : `system:${actor.name}`;
 var actorUserId = (actor) => actor.kind === "user" ? actor.userId : null;
@@ -2546,9 +3443,9 @@ function dec(value) {
     if (!Number.isSafeInteger(value)) throw new Error(`Refusing float ${value}: pass the exact decimal as a string`);
     return new Decimal(value);
   }
-  const text10 = String(value).trim();
-  if (!DECIMAL_TEXT.test(text10)) throw new Error(`Not a decimal number: ${JSON.stringify(text10).slice(0, 40)}`);
-  return new Decimal(text10);
+  const text14 = String(value).trim();
+  if (!DECIMAL_TEXT.test(text14)) throw new Error(`Not a decimal number: ${JSON.stringify(text14).slice(0, 40)}`);
+  return new Decimal(text14);
 }
 var plain = (value) => dec(value).toFixed();
 var ZERO = new Decimal(0);
@@ -2576,7 +3473,7 @@ function canonicalize(value) {
   throw new Error(`Canonical JSON cannot hold a ${typeof value}`);
 }
 var canonicalJson = (value) => JSON.stringify(canonicalize(value));
-var sha256 = (text10) => (0, import_node_crypto2.createHash)("sha256").update(text10).digest("hex");
+var sha256 = (text14) => (0, import_node_crypto2.createHash)("sha256").update(text14).digest("hex");
 var payloadHash = (value) => sha256(canonicalJson(value));
 var toJsonValue = (value) => canonicalize(value);
 
@@ -3464,78 +4361,78 @@ function openLeaveMedicaidDays(timeZone, leave, asOf) {
   const end = leave.holdEndedAt ? new Date(leave.holdEndedAt) : asOf;
   return leaveDaysByYear(timeZone, new Date(leave.startedAt), end);
 }
-function applyCensusEvent(state, event, timeZone) {
-  if (event.seq !== state.lastSeq + 1) fail("Census events must be applied in order.", { reason: "sequence" });
+function applyCensusEvent(state2, event, timeZone) {
+  if (event.seq !== state2.lastSeq + 1) fail("Census events must be applied in order.", { reason: "sequence" });
   const at = event.effectiveAt.toISOString();
-  if (state.lastEffectiveAt && event.effectiveAt.getTime() < new Date(state.lastEffectiveAt).getTime()) {
+  if (state2.lastEffectiveAt && event.effectiveAt.getTime() < new Date(state2.lastEffectiveAt).getTime()) {
     fail("This event is dated before the stay's latest census event. Record it as a correction.", { reason: "out_of_order" });
   }
-  const next = { ...state, lastSeq: event.seq, lastEffectiveAt: at };
-  const terminal = state.status === "discharged" || state.status === "deceased";
+  const next = { ...state2, lastSeq: event.seq, lastEffectiveAt: at };
+  const terminal = state2.status === "discharged" || state2.status === "deceased";
   switch (event.kind) {
     case "admission":
     case "readmission": {
-      if (state.status !== "pre_admit") fail("The stay is already admitted.", { currentStatus: state.status });
+      if (state2.status !== "pre_admit") fail("The stay is already admitted.", { currentStatus: state2.status });
       if (!event.toBedId === !event.toApartmentId) fail("An admission needs exactly one bed or apartment.");
       return { ...next, status: "admitted", presence: "in_house", currentBedId: event.toBedId ?? null, currentApartmentId: event.toApartmentId ?? null, admittedAt: at };
     }
     case "room_change": {
-      if (state.status !== "admitted" || state.presence !== "in_house") fail("A room change needs the resident in house.", { currentStatus: state.presence });
+      if (state2.status !== "admitted" || state2.presence !== "in_house") fail("A room change needs the resident in house.", { currentStatus: state2.presence });
       if (!event.toBedId === !event.toApartmentId) fail("A room change needs exactly one target bed or apartment.");
-      if (event.toBedId && event.toBedId === state.currentBedId || event.toApartmentId && event.toApartmentId === state.currentApartmentId) fail("The resident is already there.");
+      if (event.toBedId && event.toBedId === state2.currentBedId || event.toApartmentId && event.toApartmentId === state2.currentApartmentId) fail("The resident is already there.");
       return { ...next, currentBedId: event.toBedId ?? null, currentApartmentId: event.toApartmentId ?? null };
     }
     case "leave_start": {
-      if (state.status !== "admitted" || state.presence !== "in_house") fail("A leave can start only while the resident is in house.", { currentStatus: state.presence });
+      if (state2.status !== "admitted" || state2.presence !== "in_house") fail("A leave can start only while the resident is in house.", { currentStatus: state2.presence });
       const holdElected = Boolean(event.holdElected);
-      const apartment = Boolean(state.currentApartmentId);
+      const apartment = Boolean(state2.currentApartmentId);
       const keepsPlace = holdElected || apartment;
-      const leave = { startedAt: at, kind: event.leaveKind ?? "other", holdElected: keepsPlace, holdPaidBy: keepsPlace ? event.holdPaidBy ?? (apartment ? "private" : "none") : "none", holdEndedAt: null, bedId: state.currentBedId, apartmentId: state.currentApartmentId };
+      const leave = { startedAt: at, kind: event.leaveKind ?? "other", holdElected: keepsPlace, holdPaidBy: keepsPlace ? event.holdPaidBy ?? (apartment ? "private" : "none") : "none", holdEndedAt: null, bedId: state2.currentBedId, apartmentId: state2.currentApartmentId };
       return {
         ...next,
         presence: keepsPlace ? "on_leave_hold" : "on_leave_no_hold",
-        heldBedId: holdElected && state.currentBedId ? state.currentBedId : null,
-        currentBedId: keepsPlace ? state.currentBedId : null,
-        currentApartmentId: state.currentApartmentId,
+        heldBedId: holdElected && state2.currentBedId ? state2.currentBedId : null,
+        currentBedId: keepsPlace ? state2.currentBedId : null,
+        currentApartmentId: state2.currentApartmentId,
         openLeave: leave,
-        leaveCount: state.leaveCount + 1
+        leaveCount: state2.leaveCount + 1
       };
     }
     case "hold_release": {
-      if (state.presence !== "on_leave_hold" || !state.openLeave || !state.heldBedId) fail("There is no bed hold to release.", { currentStatus: state.presence });
-      const used = openLeaveMedicaidDays(timeZone, state.openLeave, event.effectiveAt);
+      if (state2.presence !== "on_leave_hold" || !state2.openLeave || !state2.heldBedId) fail("There is no bed hold to release.", { currentStatus: state2.presence });
+      const used = openLeaveMedicaidDays(timeZone, state2.openLeave, event.effectiveAt);
       return {
         ...next,
         presence: "on_leave_no_hold",
         heldBedId: null,
         currentBedId: null,
-        medicaidHoldDaysByYear: addDaysByYear(state.medicaidHoldDaysByYear, used),
-        openLeave: { ...state.openLeave, holdElected: false, holdPaidBy: "none", holdEndedAt: at }
+        medicaidHoldDaysByYear: addDaysByYear(state2.medicaidHoldDaysByYear, used),
+        openLeave: { ...state2.openLeave, holdElected: false, holdPaidBy: "none", holdEndedAt: at }
       };
     }
     case "leave_end": {
-      if (state.status !== "admitted" || !state.openLeave) fail("There is no open leave to end.", { currentStatus: state.presence });
-      const leave = state.openLeave;
+      if (state2.status !== "admitted" || !state2.openLeave) fail("There is no open leave to end.", { currentStatus: state2.presence });
+      const leave = state2.openLeave;
       const used = leave.holdEndedAt ? {} : openLeaveMedicaidDays(timeZone, leave, event.effectiveAt);
-      let bedId2 = state.currentBedId;
-      let apartmentId = state.currentApartmentId;
-      if (state.presence === "on_leave_no_hold") {
+      let bedId2 = state2.currentBedId;
+      let apartmentId = state2.currentApartmentId;
+      if (state2.presence === "on_leave_no_hold") {
         if (!event.toBedId === !event.toApartmentId) fail("The resident returns without a held bed: choose an available bed or apartment.");
         bedId2 = event.toBedId ?? null;
         apartmentId = event.toApartmentId ?? null;
       } else if (event.toBedId || event.toApartmentId) {
         fail("The resident returns to the held place; use a room change afterwards to move them.");
       }
-      return { ...next, presence: "in_house", heldBedId: null, currentBedId: bedId2, currentApartmentId: apartmentId, openLeave: null, medicaidHoldDaysByYear: addDaysByYear(state.medicaidHoldDaysByYear, used) };
+      return { ...next, presence: "in_house", heldBedId: null, currentBedId: bedId2, currentApartmentId: apartmentId, openLeave: null, medicaidHoldDaysByYear: addDaysByYear(state2.medicaidHoldDaysByYear, used) };
     }
     case "coverage_change": {
-      if (state.status !== "admitted") fail("Coverage changes need an admitted stay.", { currentStatus: state.status });
+      if (state2.status !== "admitted") fail("Coverage changes need an admitted stay.", { currentStatus: state2.status });
       return next;
     }
     case "discharge":
     case "death": {
-      if (terminal || state.status !== "admitted") fail("Only an admitted stay can end.", { currentStatus: state.status });
-      const used = state.openLeave && !state.openLeave.holdEndedAt ? openLeaveMedicaidDays(timeZone, state.openLeave, event.effectiveAt) : {};
+      if (terminal || state2.status !== "admitted") fail("Only an admitted stay can end.", { currentStatus: state2.status });
+      const used = state2.openLeave && !state2.openLeave.holdEndedAt ? openLeaveMedicaidDays(timeZone, state2.openLeave, event.effectiveAt) : {};
       return {
         ...next,
         status: event.kind === "death" ? "deceased" : "discharged",
@@ -3546,7 +4443,7 @@ function applyCensusEvent(state, event, timeZone) {
         openLeave: null,
         endedAt: at,
         dischargeDisposition: event.kind === "death" ? "deceased" : event.dischargeDisposition ?? "other",
-        medicaidHoldDaysByYear: addDaysByYear(state.medicaidHoldDaysByYear, used)
+        medicaidHoldDaysByYear: addDaysByYear(state2.medicaidHoldDaysByYear, used)
       };
     }
     case "correction":
@@ -3554,7 +4451,7 @@ function applyCensusEvent(state, event, timeZone) {
   }
 }
 function foldCensus(events, timeZone) {
-  return [...events].sort((a, b) => a.seq - b.seq).reduce((state, event) => applyCensusEvent(state, event, timeZone), EMPTY_PROJECTION);
+  return [...events].sort((a, b) => a.seq - b.seq).reduce((state2, event) => applyCensusEvent(state2, event, timeZone), EMPTY_PROJECTION);
 }
 var projectionHash = (projection) => sha256(canonicalJson(projection));
 function presenceAt(events, timeZone, date2) {
@@ -4175,9 +5072,9 @@ async function deriveCensusDay(tx, communityId, date2) {
   const eventsByStay = /* @__PURE__ */ new Map();
   for (const row of eventRows) {
     if (voided.has(row.id) || !row.stayId) continue;
-    const list10 = eventsByStay.get(row.stayId) ?? [];
-    list10.push({ seq: list10.length + 1, kind: row.kind, effectiveAt: row.effectiveAt, toBedId: row.toBedId, toApartmentId: row.toApartmentId, leaveKind: row.leaveKind, holdElected: row.holdElected, holdPaidBy: row.holdPaidBy, dischargeDisposition: row.dischargeDisposition });
-    eventsByStay.set(row.stayId, list10);
+    const list14 = eventsByStay.get(row.stayId) ?? [];
+    list14.push({ seq: list14.length + 1, kind: row.kind, effectiveAt: row.effectiveAt, toBedId: row.toBedId, toApartmentId: row.toApartmentId, leaveKind: row.leaveKind, holdElected: row.holdElected, holdPaidBy: row.holdPaidBy, dischargeDisposition: row.dischargeDisposition });
+    eventsByStay.set(row.stayId, list14);
   }
   const coverageByStay = /* @__PURE__ */ new Map();
   for (const row of coverages) if (row.stayId && !coverageByStay.has(row.stayId)) coverageByStay.set(row.stayId, { id: row.id, payerKind: row.payer?.kind ?? "uncovered" });
@@ -4313,6 +5210,11 @@ async function endReservation(uow, actor, input) {
   if (place.row.status === "reserved") await casUpdate(uow, { model: place.model, id: place.id, version: place.row.version, from: ["reserved"], to: "available", actor, eventType: `${place.model.toLowerCase()}.reservation_ended`, metadata: { reservationId: reservation.id } });
   return { reservationId: reservation.id, status: input.to };
 }
+async function expireReservations(uow, actor) {
+  const due = await uow.tx.placeReservation.findMany({ where: { status: "active", expiresAt: { lt: uow.now } }, select: { id: true }, take: 200, orderBy: { expiresAt: "asc" } });
+  for (const row of due) await endReservation(uow, actor, { reservationId: row.id, to: "expired", reason: "expired" });
+  return { expired: due.length };
+}
 async function markPlaceReady(uow, actor, input) {
   const place = await lockPlace(uow.tx, input);
   if (input.expectedVersion != null && input.expectedVersion !== place.row.version) throw new DomainError(Codes.STALE_STATE, `${place.name} changed since you loaded it.`, { currentStatus: place.row.status, currentVersion: place.row.version });
@@ -4403,8 +5305,8 @@ function publicTokenMatches(token, storedHash) {
 
 // features/keystone/lib/portal.ts
 var INVITE_DAYS = 7;
-function authorityFor(roles, scope) {
-  const allowed = SCOPE_AUTHORITY[scope];
+function authorityFor(roles, scope2) {
+  const allowed = SCOPE_AUTHORITY[scope2];
   for (const basis of allowed) if (roles.includes(basis)) return basis;
   return null;
 }
@@ -4516,6 +5418,11 @@ async function endBreakGlass(uow, actor, input) {
   if (actor.kind === "user" && grant.userId !== actor.userId) throw new DomainError(Codes.NOT_AUTHORIZED, "Only the holder can end this grant.");
   await casUpdate(uow, { model: "BreakGlassGrant", id: grant.id, version: grant.version, from: ["active"], to: "ended", actor, eventType: "break_glass.ended", data: { endedAt: uow.now } });
   return { grantId: grant.id, status: "ended" };
+}
+async function expireBreakGlass(uow, actor) {
+  const due = await uow.tx.breakGlassGrant.findMany({ where: { status: "active", expiresAt: { lte: uow.now } }, select: { id: true, version: true, expiresAt: true }, take: 500 });
+  for (const grant of due) await casUpdate(uow, { model: "BreakGlassGrant", id: grant.id, version: grant.version, from: ["active"], to: "ended", actor, eventType: "break_glass.expired", data: { endedAt: grant.expiresAt } });
+  return { ended: due.length };
 }
 async function reviewBreakGlass(uow, actor, input) {
   if (actor.kind !== "user") throw new DomainError(Codes.NOT_AUTHORIZED, "Only a person can review break-glass.");
@@ -4773,6 +5680,28 @@ async function resolveWaitlistOffer(uow, actor, input) {
   await casUpdate(uow, { model: "WaitlistEntry", id: entry.id, version: input.expectedVersion, from: ["offered"], to: input.to, actor, eventType: `waitlist.${input.to}` });
   return { waitlistEntryId: entry.id, status: input.to };
 }
+async function expireWaitlistOffers(uow, actor) {
+  const due = await uow.tx.waitlistEntry.findMany({ where: { status: "offered", offerExpiresAt: { lt: uow.now } }, select: { id: true }, take: 200, orderBy: { offerExpiresAt: "asc" } });
+  let expired = 0;
+  for (const row of due) {
+    const entry = await lockRow(uow.tx, "WaitlistEntry", row.id);
+    if (entry.status !== "offered") continue;
+    await resolveWaitlistOffer(uow, actor, { waitlistEntryId: entry.id, to: "expired", expectedVersion: entry.version });
+    expired += 1;
+  }
+  return { expired };
+}
+async function expireTourHolds(uow, actor) {
+  const due = await uow.tx.tour.findMany({ where: { status: "requested", holdExpiresAt: { lt: uow.now } }, select: { id: true }, take: 200, orderBy: { holdExpiresAt: "asc" } });
+  let cancelled = 0;
+  for (const row of due) {
+    const tour = await lockRow(uow.tx, "Tour", row.id);
+    if (tour.status !== "requested") continue;
+    await casUpdate(uow, { model: "Tour", id: tour.id, version: tour.version, from: ["requested"], to: "cancelled", actor, eventType: "tour.hold_expired", reason: "Not confirmed before the hold ran out", data: { holdExpiresAt: null } });
+    cancelled += 1;
+  }
+  return { cancelled };
+}
 
 // features/keystone/lib/storefront.ts
 var clean2 = (value, max) => typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -5019,11 +5948,11 @@ function buildCensusPlan(options) {
   const steps = [];
   const acts = [];
   let seq = 0;
-  const schedule = (when, run) => acts.push({ at: when, seq: seq++, run });
+  const schedule = (when5, run) => acts.push({ at: when5, seq: seq++, run });
   const key = (kind, id) => `${prefix}:${kind}:${id}`;
-  const emit = (kind, id, actor, when, input) => {
+  const emit = (kind, id, actor, when5, input) => {
     const k = key(kind, id);
-    steps.push({ key: k, kind, actor, at: when.toISOString(), input });
+    steps.push({ key: k, kind, actor, at: when5.toISOString(), input });
     return k;
   };
   const ref = (stepKey, field) => ({ $ref: stepKey, field });
@@ -5111,38 +6040,38 @@ function buildCensusPlan(options) {
       schedule(plus(effective, 20 * 60), () => emit("agreement", r.code, PATEL, plus(effective, 20 * 60), { stay: ref(key("admit", r.code), "stayId"), resident: ref(key("admit", r.code), "residentId"), signedAt: plus(effective, 20 * 60).toISOString(), note: "Signed by the representative at the care conference." }));
     }
   }));
-  const readyLater = (placeId, when, unit, apartment = false) => schedule(when, () => {
+  const readyLater = (placeId, when5, unit, apartment = false) => schedule(when5, () => {
     if (apartment) {
       const apt = places.apt(placeId);
       if (apt.status !== "turnover") return;
       apt.status = "available";
-      emit("place_ready", placeId + "_" + when.getTime(), LINDQVIST, when, { apartmentId: placeId, note: "Apartment turned over: deep clean, paint touch-up and safety check done." });
+      emit("place_ready", placeId + "_" + when5.getTime(), LINDQVIST, when5, { apartmentId: placeId, note: "Apartment turned over: deep clean, paint touch-up and safety check done." });
     } else {
       const bed = places.bed(placeId);
       if (bed.status !== "cleaning") return;
       bed.status = "available";
-      emit("place_ready", placeId + "_" + when.getTime(), nurseFor(unit), when, { bedId: placeId, note: "Terminal clean done; bed made up." });
+      emit("place_ready", placeId + "_" + when5.getTime(), nurseFor(unit), when5, { bedId: placeId, note: "Terminal clean done; bed made up." });
     }
   });
-  const discharge = (code, when, input) => schedule(when, () => {
+  const discharge = (code, when5, input) => schedule(when5, () => {
     const place = places.release(code);
     const unit = places.beds.get(place)?.unit;
-    emit("discharge", code, PATEL, when, { stay: ref(key("admit", code), "stayId"), disposition: input.disposition, initiatedBy: input.facility ? "facility" : "resident", effectiveAt: when.toISOString(), noticeException: input.noticeException ?? null });
-    if (!input.keepDirty) readyLater(place, plus(when, unit ? 180 : 3 * 1440), unit ?? "", !unit);
+    emit("discharge", code, PATEL, when5, { stay: ref(key("admit", code), "stayId"), disposition: input.disposition, initiatedBy: input.facility ? "facility" : "resident", effectiveAt: when5.toISOString(), noticeException: input.noticeException ?? null });
+    if (!input.keepDirty) readyLater(place, plus(when5, unit ? 180 : 3 * 1440), unit ?? "", !unit);
   });
-  const death = (code, when, pronouncedBy) => schedule(when, () => {
+  const death = (code, when5, pronouncedBy) => schedule(when5, () => {
     const place = places.release(code);
     const unit = places.beds.get(place)?.unit ?? "";
-    emit("death", code, RAMOS, when, { stay: ref(key("admit", code), "stayId"), effectiveAt: when.toISOString(), pronouncedBy });
-    readyLater(place, plus(when, 7 * 60), unit);
+    emit("death", code, RAMOS, when5, { stay: ref(key("admit", code), "stayId"), effectiveAt: when5.toISOString(), pronouncedBy });
+    readyLater(place, plus(when5, 7 * 60), unit);
   });
-  const roomNotice = (code, when, note) => emit("notice", `room_change_${code}_${when.getTime()}`, BROOKS, when, { stay: ref(key("admit", code), "stayId"), kind: "room_change", method: "in_person", deliveredAt: when.toISOString(), acknowledgement: "signed", note });
+  const roomNotice = (code, when5, note) => emit("notice", `room_change_${code}_${when5.getTime()}`, BROOKS, when5, { stay: ref(key("admit", code), "stayId"), kind: "room_change", method: "in_person", deliveredAt: when5.toISOString(), acknowledgement: "signed", note });
   const movedFrom = /* @__PURE__ */ new Map();
-  const moveRoom = (id, when, pick2, reason) => schedule(plus(when, -18 * 60), () => {
+  const moveRoom = (id, when5, pick2, reason) => schedule(plus(when5, -18 * 60), () => {
     const { code, units, prefer } = pick2();
     used.add(code);
-    roomNotice(code, plus(when, -18 * 60), `Room change discussed with the resident and representative: ${reason.toLowerCase()}`);
-    schedule(when, () => {
+    roomNotice(code, plus(when5, -18 * 60), `Room change discussed with the resident and representative: ${reason.toLowerCase()}`);
+    schedule(when5, () => {
       const from = places.where.get(code);
       const to = places.freeBed(units, places.sex.get(code) ?? null, { prefer });
       const fromBed = places.bed(from.bed);
@@ -5150,8 +6079,8 @@ function buildCensusPlan(options) {
       fromBed.occupant = null;
       places.where.delete(code);
       places.occupyBed(code, to);
-      emit("room_change", id, nurseFor(fromBed.unit), when, { stay: ref(key("admit", code), "stayId"), toBedId: to, effectiveAt: when.toISOString(), reason });
-      readyLater(fromBed.id, plus(when, 150), fromBed.unit);
+      emit("room_change", id, nurseFor(fromBed.unit), when5, { stay: ref(key("admit", code), "stayId"), toBedId: to, effectiveAt: when5.toISOString(), reason });
+      readyLater(fromBed.id, plus(when5, 150), fromBed.unit);
       movedFrom.set(id, fromBed.id);
     });
   });
@@ -5178,8 +6107,8 @@ function buildCensusPlan(options) {
       noticeAtTransfer: { method: "phone_then_mail", deliveredAt: plan.start.toISOString(), acknowledgement: "not_required", note: plan.hold === "none" ? "Bed-hold notice given; the representative declined the hold." : "Bed-hold notice explained by phone; written copy mailed to the representative." }
     });
     if (plan.ombudsmanCopy) {
-      const when = plus(plan.start, 2 * 1440 + 120);
-      schedule(when, () => emit("notice", `ombudsman_${id}`, BROOKS, when, { stay: ref(key("admit", plan.code), "stayId"), censusEvent: ref(startKey, "eventId"), kind: "other", method: "email", deliveredAt: when.toISOString(), copyToOmbudsmanAt: when.toISOString(), note: "Transfer notice copy sent to the regional Long-Term Care Ombudsman." }));
+      const when5 = plus(plan.start, 2 * 1440 + 120);
+      schedule(when5, () => emit("notice", `ombudsman_${id}`, BROOKS, when5, { stay: ref(key("admit", plan.code), "stayId"), censusEvent: ref(startKey, "eventId"), kind: "other", method: "email", deliveredAt: when5.toISOString(), copyToOmbudsmanAt: when5.toISOString(), note: "Transfer notice copy sent to the regional Long-Term Care Ombudsman." }));
     }
     if (plan.end) {
       const end = plan.end;
@@ -5235,9 +6164,9 @@ function buildCensusPlan(options) {
     b.reps = a.reps;
     if (a.sex === b.sex) b.sex = a.sex === "female" ? "male" : "female";
     places.sex.set(b.code, b.sex);
-    const when = at(-(300 + c * 140), "11:00");
-    admit({ r: a, when, place: { aptUnit: "MEA", aptType: "seed_apt_companion" }, source: "community_home", agreement: "same" });
-    admit({ r: b, when: plus(when, 5), place: { companionOf: a.code }, source: "community_home", agreement: "same" });
+    const when5 = at(-(300 + c * 140), "11:00");
+    admit({ r: a, when: when5, place: { aptUnit: "MEA", aptType: "seed_apt_companion" }, source: "community_home", agreement: "same" });
+    admit({ r: b, when: plus(when5, 5), place: { companionOf: a.code }, source: "community_home", agreement: "same" });
     al.push(a, b);
   }
   for (let i = 0; i < P.alSingles; i += 1) {
@@ -5358,21 +6287,21 @@ function buildCensusPlan(options) {
   mc.push(mcNew);
   admit({ r: mcNew, when: at(-15, "10:40"), place: { aptUnit: "HAR" }, source: "assisted_living", agreement: "later" });
   const slot = (id, startsAt, openedAt) => schedule(openedAt, () => emit("tour_slots", id, PATEL, openedAt, { slots: [{ startsAt: startsAt.toISOString(), minutes: 45, capacity: 2, kind: "either" }] }));
-  const phoneLead = (id, when, input) => {
+  const phoneLead = (id, when5, input) => {
     const [first, ...rest] = input.contactName.split(" ");
-    schedule(when, () => emit("inquiry_phone", id, PATEL, when, { contactName: input.contactName, contactEmail: familyEmail(first, rest.join(""), input.n), contactPhone: familyPhone(input.n), relationship: input.relationship, message: input.message, forWhomFirstName: input.forWhom[0], forWhomLastName: input.forWhom[1], desiredSetting: input.setting, consentToContact: true, source: input.source ?? "phone", referralSourceId: input.referralSourceId ?? null }));
+    schedule(when5, () => emit("inquiry_phone", id, PATEL, when5, { contactName: input.contactName, contactEmail: familyEmail(first, rest.join(""), input.n), contactPhone: familyPhone(input.n), relationship: input.relationship, message: input.message, forWhomFirstName: input.forWhom[0], forWhomLastName: input.forWhom[1], desiredSetting: input.setting, consentToContact: true, source: input.source ?? "phone", referralSourceId: input.referralSourceId ?? null }));
     return key("inquiry_phone", id);
   };
-  const activity = (id, lead, when, kind, summary) => schedule(when, () => emit("activity", id, PATEL, when, { lead: ref(lead, "leadId"), kind, summary, at: when.toISOString() }));
+  const activity = (id, lead, when5, kind, summary) => schedule(when5, () => emit("activity", id, PATEL, when5, { lead: ref(lead, "leadId"), kind, summary, at: when5.toISOString() }));
   const tour = (id, lead, startsAt, bookedAt, outcome) => {
     slot(`slot_${id}`, startsAt, plus(bookedAt, -30));
     schedule(bookedAt, () => emit("tour_schedule", id, PATEL, bookedAt, { lead: ref(lead, "leadId"), slotStartsAt: startsAt.toISOString(), kind: "in_person", notes: "Booked by phone." }));
     if (outcome) {
-      const when = outcome === "cancelled" ? plus(startsAt, -1440) : plus(startsAt, 75);
-      schedule(when, () => emit("tour_move", id, PATEL, when, { tour: ref(key("tour_schedule", id), "tourId"), to: outcome, reason: outcome === "cancelled" ? "Family rescheduling after a hospital stay." : null }));
+      const when5 = outcome === "cancelled" ? plus(startsAt, -1440) : plus(startsAt, 75);
+      schedule(when5, () => emit("tour_move", id, PATEL, when5, { tour: ref(key("tour_schedule", id), "tourId"), to: outcome, reason: outcome === "cancelled" ? "Family rescheduling after a hospital stay." : null }));
     }
   };
-  const leadMove = (id, lead, when, to, lostReason = null, note = null) => schedule(when, () => emit("lead_move", id, PATEL, when, { lead: ref(lead, "leadId"), to, lostReason, note }));
+  const leadMove = (id, lead, when5, to, lostReason = null, note = null) => schedule(when5, () => emit("lead_move", id, PATEL, when5, { lead: ref(lead, "leadId"), to, lostReason, note }));
   const agnesLead = phoneLead("agnes", at(-40, "10:15"), { contactName: "Janet Whitfield", relationship: "Daughter", forWhom: ["Agnes", "Whitfield"], setting: "assisted_living", message: "Mother is 86 and no longer safe living alone after a fall; wants a one-bedroom.", n: 61 });
   activity("agnes_call", agnesLead, at(-40, "10:40"), "call", "Discussed care needs, pricing and the one-bedroom waitlist. Tour booked.");
   tour("agnes", agnesLead, at(-35, "14:00"), at(-38, "09:00"), "completed");
@@ -5397,7 +6326,7 @@ function buildCensusPlan(options) {
   const eleanorRef = key("referral", "eleanor");
   const refAt = at(-10, "13:20");
   schedule(refAt, () => emit("referral", "eleanor", PATEL, refAt, { sourceId: "seed_referral_source_scioto_ridge", firstName: "Eleanor", lastName: "Whitcombe", dateOfBirth: "1938-09-21", desiredSetting: "nursing_facility", expectedPayer: "medicare_a", clinicalSummary: "Right hip fracture after a fall at home; ORIF on hospital day 1. Weight bearing as tolerated. Needs PT/OT five days a week, pain management and wound checks.", pasrrLevel1: { completedAt: at(-11, "16:00").toISOString(), result: "Level I negative: Level II not required." }, responseHours: 4, receivedAt: refAt.toISOString() }));
-  const referralMove = (id, refKey, when, to, extra = {}) => schedule(when, () => emit("referral_move", id, PATEL, when, { referral: ref(refKey, "referralId"), to, ...extra }));
+  const referralMove = (id, refKey, when5, to, extra = {}) => schedule(when5, () => emit("referral_move", id, PATEL, when5, { referral: ref(refKey, "referralId"), to, ...extra }));
   referralMove("eleanor_review", eleanorRef, at(-10, "13:50"), "clinical_review");
   referralMove("eleanor_payer", eleanorRef, at(-10, "14:30"), "payer_check");
   const eleanorAccept = at(-10, "15:10");
@@ -5452,9 +6381,9 @@ function buildCensusPlan(options) {
       { id: "web_4", day: -1, time: "12:05", name: "Douglas Pellegrino", forWhom: ["Ethel", "Pellegrino"], setting: "memory_care", message: "Mom has dementia and is getting lost. What does memory care cost?" }
     ];
     web.forEach((w, i) => {
-      const when = at(w.day, w.time);
+      const when5 = at(w.day, w.time);
       const [first, ...rest] = w.name.split(" ");
-      schedule(when, () => emit("inquiry_web", w.id, PUBLIC, when, { communitySlug: COMMUNITY.slug, contactName: w.name, contactEmail: familyEmail(first, rest.join(""), 70 + i), contactPhone: familyPhone(70 + i), relationship: "Family", message: w.message, forWhomFirstName: w.forWhom[0], forWhomLastName: w.forWhom[1], desiredSetting: w.setting, consentToContact: true, website: "" }));
+      schedule(when5, () => emit("inquiry_web", w.id, PUBLIC, when5, { communitySlug: COMMUNITY.slug, contactName: w.name, contactEmail: familyEmail(first, rest.join(""), 70 + i), contactPhone: familyPhone(70 + i), relationship: "Family", message: w.message, forWhomFirstName: w.forWhom[0], forWhomLastName: w.forWhom[1], desiredSetting: w.setting, consentToContact: true, website: "" }));
     });
     const contacted = [
       ["call_1", -12, "Karen Zielinski", ["Doris", "Zielinski"], "assisted_living", "Asked about respite stays while the family travels."],
@@ -5556,8 +6485,8 @@ function buildCensusPlan(options) {
     schedule(endAt, () => emit("break_glass_end", "rapid_response", LINDQVIST, endAt, { grant: ref(key("break_glass_open", "rapid_response"), "grantId") }));
   });
   for (let d = -(P.signOffDays + 1); d <= -2; d += 1) {
-    const when = at(d + 1, "09:30");
-    schedule(when, () => emit("sign_off", date2(d), LINDQVIST, when, { date: date2(d), note: d === -9 ? "Reconciled with the Birch hospital transfer log." : null }));
+    const when5 = at(d + 1, "09:30");
+    schedule(when5, () => emit("sign_off", date2(d), LINDQVIST, when5, { date: date2(d), note: d === -9 ? "Reconciled with the Birch hospital transfer log." : null }));
   }
   schedule(T, () => emit("snapshot", date2(-1), SCHEDULER, T, { date: date2(-1) }));
   schedule(T, () => emit("clock_sweep", "anchor", SCHEDULER, T, {}));
@@ -5826,8 +6755,8 @@ async function execute(uow, actor, step, results) {
     case "scope_propose": {
       const representativeId = await representativeOf(uow, str(i.resident), i.priority);
       const grantIds = [];
-      for (const scope of i.scopes) {
-        const proposed = await proposePortalScope(uow, actor, { representativeId, scope });
+      for (const scope2 of i.scopes) {
+        const proposed = await proposePortalScope(uow, actor, { representativeId, scope: scope2 });
         if (proposed.status === "proposed") grantIds.push(proposed.grantId);
       }
       return { grantIds };
@@ -6230,6 +7159,122 @@ async function actorFor(context) {
   return { kind: "agent", agentId: agent.id, ownerUserId: agent.ownerId, name: agent.name, scopes: new Set(agent.grants.map((g) => g.scope)) };
 }
 
+// features/keystone/lib/jobs.ts
+var import_node_crypto8 = require("node:crypto");
+
+// features/keystone/lib/lease.ts
+async function acquireLease(db, key, owner, ttlMs, now = /* @__PURE__ */ new Date()) {
+  const expiresAt = new Date(now.getTime() + ttlMs);
+  const rows = await db.$queryRaw`
+    INSERT INTO "Lease" (id, key, owner, "fencingToken", "expiresAt", "createdAt", "updatedAt")
+    VALUES (gen_random_uuid()::text, ${key}, ${owner}, 1, (${expiresAt}::timestamptz AT TIME ZONE 'UTC'), (${now}::timestamptz AT TIME ZONE 'UTC'), (${now}::timestamptz AT TIME ZONE 'UTC'))
+    ON CONFLICT (key) DO UPDATE SET
+      owner = EXCLUDED.owner,
+      "fencingToken" = CASE WHEN "Lease".owner = EXCLUDED.owner AND "Lease"."expiresAt" > (${now}::timestamptz AT TIME ZONE 'UTC') THEN "Lease"."fencingToken" ELSE "Lease"."fencingToken" + 1 END,
+      "expiresAt" = EXCLUDED."expiresAt",
+      "updatedAt" = EXCLUDED."updatedAt"
+    WHERE "Lease"."expiresAt" <= (${now}::timestamptz AT TIME ZONE 'UTC') OR "Lease".owner = EXCLUDED.owner
+    RETURNING key, owner, "fencingToken", "expiresAt"`;
+  const row = rows[0];
+  return row ? { key: row.key, owner: row.owner, fencingToken: Number(row.fencingToken), expiresAt: row.expiresAt } : null;
+}
+async function releaseLease(db, grant, now = /* @__PURE__ */ new Date()) {
+  await db.lease.updateMany({ where: { key: grant.key, owner: grant.owner, fencingToken: grant.fencingToken }, data: { expiresAt: now } });
+}
+async function assertFence(tx, grant, now = /* @__PURE__ */ new Date()) {
+  const rows = await tx.$queryRaw`
+    SELECT owner, "fencingToken", "expiresAt" FROM "Lease" WHERE key = ${grant.key} FOR UPDATE`;
+  const row = rows[0];
+  if (!row || Number(row.fencingToken) !== grant.fencingToken || row.owner !== grant.owner) {
+    throw new DomainError(Codes.STALE_FENCING_TOKEN, "Another worker took over this lease.", { key: grant.key, token: grant.fencingToken, current: row ? Number(row.fencingToken) : null });
+  }
+  if (row.expiresAt.getTime() <= now.getTime()) throw new DomainError(Codes.LEASE_LOST, "The lease expired before the write.", { key: grant.key });
+}
+
+// features/keystone/lib/jobs.ts
+var LEASE_MS = 5 * 6e4;
+async function runLeasedJob(db, kind, scopeKey, work, now = /* @__PURE__ */ new Date()) {
+  const owner = `${process.env.RAILWAY_REPLICA_ID ?? "local"}:${(0, import_node_crypto8.randomUUID)()}`;
+  const grant = await acquireLease(db, `job:${kind}:${scopeKey}`, owner, LEASE_MS, now);
+  if (!grant) return { skipped: true };
+  const run = await db.jobRun.create({ data: { kind, scopeKey, status: "running", startedAt: now, fencingToken: grant.fencingToken } });
+  try {
+    const summary = await runInTransaction(db, async (uow) => {
+      await assertFence(uow.tx, grant, uow.now);
+      return work(uow, run.id);
+    }, { now });
+    await db.jobRun.update({ where: { id: run.id }, data: { status: "succeeded", finishedAt: /* @__PURE__ */ new Date(), summary } });
+    return { skipped: false, runId: run.id, summary };
+  } catch (error) {
+    await db.jobRun.update({ where: { id: run.id }, data: { status: "failed", finishedAt: /* @__PURE__ */ new Date(), summary: { error: error instanceof Error ? error.message.slice(0, 500) : "failed" } } });
+    throw error;
+  } finally {
+    await releaseLease(db, grant).catch(() => void 0);
+  }
+}
+async function guarded(run) {
+  try {
+    return await run();
+  } catch (error) {
+    return { skipped: false, error: error instanceof Error ? error.message.slice(0, 300) : "failed" };
+  }
+}
+async function runDueJobs(db, now = /* @__PURE__ */ new Date()) {
+  const actor = systemActor("scheduler");
+  const results = {};
+  const [clocks, reservations, offers, holds, grants, communities] = await Promise.all([
+    db.complianceClock.count({ where: { current: true, status: "open", dueAt: { lt: now } } }),
+    db.placeReservation.count({ where: { status: "active", expiresAt: { lt: now } } }),
+    db.waitlistEntry.count({ where: { status: "offered", offerExpiresAt: { lt: now } } }),
+    db.tour.count({ where: { status: "requested", holdExpiresAt: { lt: now } } }),
+    db.breakGlassGrant.count({ where: { status: "active", expiresAt: { lte: now } } }),
+    db.community.findMany({ where: { status: "active" }, select: { id: true, timeZone: true } })
+  ]);
+  if (clocks) results.clocks = await guarded(() => runLeasedJob(db, "clock_sweep", "all", (uow) => sweepClocks(uow, actor), now));
+  if (reservations) results.reservations = await guarded(() => runLeasedJob(db, "reservation_expiry", "all", (uow) => expireReservations(uow, actor), now));
+  if (offers) results.waitlistOffers = await guarded(() => runLeasedJob(db, "waitlist_offer_expiry", "all", (uow) => expireWaitlistOffers(uow, actor), now));
+  if (holds) results.tourHolds = await guarded(() => runLeasedJob(db, "tour_hold_expiry", "all", (uow) => expireTourHolds(uow, actor), now));
+  if (grants) results.breakGlass = await guarded(() => runLeasedJob(db, "break_glass_expiry", "all", (uow) => expireBreakGlass(uow, actor), now));
+  const census2 = {};
+  for (const community of communities) {
+    const yesterday = addDays(localDate(community.timeZone, now), -1);
+    const done = await db.jobRun.count({ where: { kind: "midnight_census", scopeKey: `${community.id}:${yesterday}`, status: "succeeded" } });
+    if (done) continue;
+    const signed = await db.censusSignoff.count({ where: { communityId: community.id, unitId: null, date: { gte: /* @__PURE__ */ new Date(`${yesterday}T00:00:00Z`) } } });
+    if (signed) continue;
+    census2[community.id] = await guarded(() => runLeasedJob(db, "midnight_census", `${community.id}:${yesterday}`, (uow, runId) => snapshotCensusDay(uow, actor, { communityId: community.id, date: yesterday, runId }), now));
+  }
+  results.census = census2;
+  const all = [...Object.values(results).filter((value) => value !== census2), ...Object.values(census2)];
+  results.errors = all.filter((value) => value && typeof value === "object" && "error" in value).length;
+  return results;
+}
+
+// features/keystone/lib/maintenance.ts
+var MIN_GAP_MS = 5e3;
+var state = globalThis;
+async function advanceTimedStates(db, options = {}) {
+  const s = state.seniorCareAdvance ??= { at: 0, running: null };
+  if (s.running) {
+    await s.running.catch(() => void 0);
+    if (!options.force) return null;
+  }
+  if (!options.force && Date.now() - s.at < MIN_GAP_MS) return null;
+  const run = runDueJobs(db);
+  s.running = run;
+  try {
+    const result = await run;
+    s.at = Date.now();
+    if (Number(result.errors) > 0) console.error(JSON.stringify({ component: "timed-states", errors: result.errors }));
+    return result;
+  } catch (error) {
+    console.error(JSON.stringify({ component: "timed-states", status: "failed", error: error instanceof Error ? error.message.slice(0, 300) : "unknown error" }));
+    return null;
+  } finally {
+    s.running = null;
+  }
+}
+
 // features/keystone/mutations/run.ts
 async function assertCommunityAccess(tx, actor, communityId) {
   if (actor.kind === "system") return;
@@ -6263,6 +7308,7 @@ async function runDomain(context, args, spec, work) {
   const actor = await actorFor(context);
   assertHuman(context, actor, spec.humanOnly);
   requirePermission(actor, ...spec.permissions);
+  await advanceTimedStates(context.prisma);
   const { idempotencyKey, ...params } = args;
   const result = await command(context.prisma, { name: spec.name, actor, idempotencyKey: requireKey(idempotencyKey), params, serializable: spec.serializable }, async (uow) => {
     if (spec.community) await assertCommunityAccess(uow.tx, actor, await spec.community(uow.tx));
@@ -6335,21 +7381,21 @@ async function verifyStay(_root, args, context) {
 }
 
 // features/keystone/lib/portalReads.ts
-var import_node_crypto9 = require("node:crypto");
+var import_node_crypto10 = require("node:crypto");
 
 // features/keystone/security/phiReadAudit.ts
-var import_node_crypto8 = require("node:crypto");
+var import_node_crypto9 = require("node:crypto");
 var import_graphql2 = require("graphql");
 function referenceToken(secret2, resourceType, id) {
   if (!secret2 || secret2.length < 32) throw new Error("A strong PHI audit reference secret is required");
-  return (0, import_node_crypto8.createHmac)("sha256", secret2).update(`${resourceType}\0${id}`).digest("hex");
+  return (0, import_node_crypto9.createHmac)("sha256", secret2).update(`${resourceType}\0${id}`).digest("hex");
 }
 function phiReferenceSecret() {
   const configured = process.env.PHI_AUDIT_SECRET?.trim();
   if (configured) return configured;
   const session = process.env.SESSION_SECRET?.trim() ?? "";
   if (!session) return "";
-  return (0, import_node_crypto8.createHmac)("sha256", session).update("openfront-senior-care:phi-audit").digest("hex");
+  return (0, import_node_crypto9.createHmac)("sha256", session).update("openfront-senior-care:phi-audit").digest("hex");
 }
 
 // features/keystone/lib/portalReads.ts
@@ -6372,11 +7418,11 @@ async function portalResidents(tx, principal) {
   for (const residentId of byResident.keys()) await auditPortalRead(tx, principal, "portalMe", residentId, ["Resident.firstName", "Resident.community"], 1);
   return { mfaEnrolled: account.mfaEnrolled, residents: [...byResident.values()] };
 }
-async function requireScope2(tx, principal, residentId, scope) {
+async function requireScope2(tx, principal, residentId, scope2) {
   const account = await portalAccountFor(tx, principal);
-  const grant = await tx.portalScopeGrant.findFirst({ where: { accountId: account.id, residentId, scope, status: "granted" }, select: { id: true } });
+  const grant = await tx.portalScopeGrant.findFirst({ where: { accountId: account.id, residentId, scope: scope2, status: "granted" }, select: { id: true } });
   if (!grant) throw new DomainError(Codes.NOT_FOUND, "Not found.");
-  if (MFA_SCOPES.has(scope) && !account.mfaEnrolled) throw new DomainError(Codes.GUARD_FAILED, "Turn on two-step sign-in to see this.", { reason: "mfa_required" });
+  if (MFA_SCOPES.has(scope2) && !account.mfaEnrolled) throw new DomainError(Codes.GUARD_FAILED, "Turn on two-step sign-in to see this.", { reason: "mfa_required" });
   return account;
 }
 async function auditPortalRead(tx, principal, operationName, residentId, fields, count) {
@@ -6392,8 +7438,8 @@ async function auditPortalRead(tx, principal, operationName, residentId, fields,
       operationName,
       rootFields: [operationName],
       selectedFields: fields,
-      selectionDigest: (0, import_node_crypto9.createHash)("sha256").update(`${operationName}:${fields.join(",")}`).digest("hex"),
-      resultReferenceDigest: (0, import_node_crypto9.createHash)("sha256").update(reference).digest("hex"),
+      selectionDigest: (0, import_node_crypto10.createHash)("sha256").update(`${operationName}:${fields.join(",")}`).digest("hex"),
+      resultReferenceDigest: (0, import_node_crypto10.createHash)("sha256").update(reference).digest("hex"),
       resourceReferences: [reference],
       purpose: "family_access",
       breakGlass: false,
@@ -6438,26 +7484,26 @@ async function portalDocuments(tx, principal, residentId) {
 }
 
 // features/keystone/lib/publicRateLimit.ts
-var import_node_crypto11 = require("node:crypto");
+var import_node_crypto12 = require("node:crypto");
 
 // features/keystone/security/internalIdentity.ts
-var import_node_crypto10 = require("node:crypto");
+var import_node_crypto11 = require("node:crypto");
 var INTERNAL_IDENTITY_MAX_AGE_MS = 9e4;
 function safeEqual(left, right) {
   const leftBuffer = Buffer.from(left);
   const rightBuffer = Buffer.from(right);
-  return leftBuffer.length === rightBuffer.length && (0, import_node_crypto10.timingSafeEqual)(leftBuffer, rightBuffer);
+  return leftBuffer.length === rightBuffer.length && (0, import_node_crypto11.timingSafeEqual)(leftBuffer, rightBuffer);
 }
 function verifiedInternalIdentity(headers, socketAddress, secret2, now) {
   const loopback = /^(?:127\.|::1$|::ffff:127\.)/.test(String(socketAddress || ""));
   if (!loopback || secret2.length < 32) return null;
   const identity = String(headers["x-openfront-client-identity"] || "");
-  const timestamp9 = String(headers["x-openfront-client-timestamp"] || "");
+  const timestamp13 = String(headers["x-openfront-client-timestamp"] || "");
   const signature = String(headers["x-openfront-client-signature"] || "");
-  if (!/^[a-f0-9]{64}$/.test(identity) || !/^\d{10}$/.test(timestamp9) || !/^[a-f0-9]{64}$/.test(signature)) return null;
-  const age = Math.abs(now - Number(timestamp9) * 1e3);
+  if (!/^[a-f0-9]{64}$/.test(identity) || !/^\d{10}$/.test(timestamp13) || !/^[a-f0-9]{64}$/.test(signature)) return null;
+  const age = Math.abs(now - Number(timestamp13) * 1e3);
   if (!Number.isFinite(age) || age > INTERNAL_IDENTITY_MAX_AGE_MS) return null;
-  const expected = (0, import_node_crypto10.createHmac)("sha256", secret2).update(`${timestamp9}:${identity}`).digest("hex");
+  const expected = (0, import_node_crypto11.createHmac)("sha256", secret2).update(`${timestamp13}:${identity}`).digest("hex");
   return safeEqual(signature, expected) ? `forwarded:${identity}` : null;
 }
 
@@ -6485,8 +7531,8 @@ async function consumeRateLimit(prisma, input) {
   const now = input.now ?? /* @__PURE__ */ new Date();
   const windowMs = Math.max(6e4, Math.min(24 * 36e5, Math.floor(input.windowMs)));
   const windowStartMs = Math.floor(now.getTime() / windowMs) * windowMs;
-  const identity = (0, import_node_crypto11.createHmac)("sha256", signingSecret()).update(normalized(input.address)).digest("hex");
-  const bucketKey = (0, import_node_crypto11.createHmac)("sha256", signingSecret()).update(`${input.operation}:${windowStartMs}:${identity}`).digest("hex");
+  const identity = (0, import_node_crypto12.createHmac)("sha256", signingSecret()).update(normalized(input.address)).digest("hex");
+  const bucketKey = (0, import_node_crypto12.createHmac)("sha256", signingSecret()).update(`${input.operation}:${windowStartMs}:${identity}`).digest("hex");
   const row = await prisma.requestRateLimitBucket.upsert({
     where: { bucketKey },
     create: { bucketKey, count: 1, windowStartsAt: new Date(windowStartMs), expiresAt: new Date(windowStartMs + windowMs + 36e5) },
@@ -6507,6 +7553,11 @@ var releaseReservation = (_, args, context) => runDomain(context, args, { name: 
 var markPlaceReadyMutation = (_, args, context) => runDomain(context, args, { name: "place.ready", permissions: ["canManagePlaces", "canRecordCensus"], community: (tx) => communityOf.place(tx, args) }, (uow, actor) => markPlaceReady(uow, actor, args));
 var setPlaceServiceMutation = (_, args, context) => runDomain(context, args, { name: "place.service", permissions: ["canManagePlaces"], community: (tx) => communityOf.place(tx, args) }, (uow, actor) => setPlaceService(uow, actor, args));
 var recomputeAvailabilityMutation = (_, args, context) => runDomain(context, args, { name: "place.availability", permissions: ["canManageStorefront", "canManagePlaces"], community: async () => args.communityId }, (uow) => recomputeAvailability(uow, args.communityId).then((snapshots) => ({ snapshots })));
+var refreshTimedStatesMutation = async (_, _args, context) => {
+  await actorFor(context);
+  const result = await advanceTimedStates(context.prisma, { force: true });
+  return { refreshed: result !== null, errors: result ? Number(result.errors) : 0 };
+};
 async function publicCall(context, bucket, limit, work) {
   await enforceRateLimit(context, bucket, limit, 60 * 6e4);
   return runInTransaction(context.prisma, work);
@@ -6516,6 +7567,7 @@ var requestTourMutation = (_, args, context) => publicCall(context, `tour:${args
 var joinWaitlistMutation = (_, args, context) => publicCall(context, `waitlist:${args.input?.communitySlug ?? ""}`, 6, (uow) => joinWaitlist(uow, args.input));
 var storefrontCommunityQuery = async (_, args, context) => {
   await enforceRateLimit(context, "storefront-read", 300, 60 * 6e4);
+  await advanceTimedStates(context.prisma);
   return storefrontCommunity(context.prisma, args.slug);
 };
 var cancelTourByToken = (_, args, context) => publicCall(context, "tour-manage", 20, (uow) => cancelTourWithToken(uow, args));
@@ -6558,7 +7610,7 @@ var portalCalendarQuery = (_, args, context) => portalRead(context, (tx) => port
 var portalDocumentsQuery = (_, args, context) => portalRead(context, (tx) => portalDocuments(tx, portalPrincipal(context), args.residentId));
 
 // features/keystone/mutations/reads.ts
-var import_node_crypto12 = require("node:crypto");
+var import_node_crypto13 = require("node:crypto");
 async function reader(context, permissions2) {
   const actor = await actorFor(context);
   if (actor.kind === "agent") requireScope(actor, "census.read");
@@ -6580,8 +7632,8 @@ async function auditRead(context, actor, operationName, residentIds) {
       operationName,
       rootFields: [operationName],
       selectedFields: ["Resident.firstName", "Resident.lastName"],
-      selectionDigest: (0, import_node_crypto12.createHash)("sha256").update(`${operationName}:names`).digest("hex"),
-      resultReferenceDigest: (0, import_node_crypto12.createHash)("sha256").update(references.join(",")).digest("hex"),
+      selectionDigest: (0, import_node_crypto13.createHash)("sha256").update(`${operationName}:names`).digest("hex"),
+      resultReferenceDigest: (0, import_node_crypto13.createHash)("sha256").update(references.join(",")).digest("hex"),
       resourceReferences: references,
       purpose: mcpSessionMarker(context.session) || actor.kind === "agent" ? "operations" : "treatment_operations",
       breakGlass: false,
@@ -6719,6 +7771,7 @@ function extendGraphqlSchema(baseSchema) {
         updateActiveUser(data: UserUpdateProfileInput!): User
         loadOperatorSetup(idempotencyKey: String!): JSON
         loadCensusSetup(idempotencyKey: String!): JSON
+        refreshTimedStates(idempotencyKey: String!): JSON
         decideApprovalRequest(requestId: ID!, decision: String!, reason: String, expectedVersion: Int!, idempotencyKey: String!): JSON
         cancelApprovalRequest(requestId: ID!, expectedVersion: Int!, reason: String, idempotencyKey: String!): JSON
         requestOperatorControls(changes: JSON!, reason: String!, idempotencyKey: String!): JSON
@@ -6790,6 +7843,7 @@ function extendGraphqlSchema(baseSchema) {
         updateActiveUser: updateActiveUser_default,
         loadOperatorSetup: op(loadOperatorSetup),
         loadCensusSetup: op(loadCensusSetup),
+        refreshTimedStates: op(refreshTimedStatesMutation),
         decideApprovalRequest: op(decideApprovalRequest),
         cancelApprovalRequest: op(cancelApprovalRequest),
         requestOperatorControls: op(requestOperatorControls),
@@ -6918,6 +7972,7 @@ var COMPOUND_UNIQUES = {
   Apartment: ['@@unique([unitId, number], map: "Apartment_unit_number_key")'],
   RegulatoryObligation: ['@@unique([packId, code], map: "RegulatoryObligation_pack_code_key")'],
   ComplianceClock: ['@@unique([obligationCode, subjectType, subjectId, occurrenceKey, supersedesId], map: "ComplianceClock_occurrence_key")'],
+  MedicationSupplyMovement: ['@@unique([supplyId, seq], map: "MedicationSupplyMovement_supply_seq_key")'],
   CensusEvent: ['@@unique([stayId, seq], map: "CensusEvent_stay_seq_key")']
 };
 function addDatabaseConstraints(schema) {
@@ -7042,7 +8097,7 @@ var { withAuth } = (0, import_auth.createAuth)({
   `
 });
 var keystone_default = withAuth(
-  (0, import_core13.config)({
+  (0, import_core17.config)({
     db: {
       provider: "postgresql",
       url: databaseURL,

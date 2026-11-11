@@ -7810,6 +7810,4582 @@ input PlaceReservationRelateToOneForCreateInput {
   connect: PlaceReservationWhereUniqueInput
 }
 
+type AdlRecord {
+  id: ID!
+  resident: Resident
+  community: Community
+  activity: String
+  level: String
+  at: DateTime
+  recordedBy: User
+  pocTaskSlot: PocTaskSlot
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AdlRecordWhereUniqueInput {
+  id: ID
+}
+
+input AdlRecordWhereInput {
+  AND: [AdlRecordWhereInput!]
+  OR: [AdlRecordWhereInput!]
+  NOT: [AdlRecordWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  activity: StringFilter
+  level: StringFilter
+  at: DateTimeNullableFilter
+  recordedBy: UserWhereInput
+  pocTaskSlot: PocTaskSlotWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input AdlRecordOrderByInput {
+  id: OrderDirection
+  activity: OrderDirection
+  level: OrderDirection
+  at: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input AdlRecordUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  activity: String
+  level: String
+  at: DateTime
+  recordedBy: UserRelateToOneForUpdateInput
+  pocTaskSlot: PocTaskSlotRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PocTaskSlotRelateToOneForUpdateInput {
+  create: PocTaskSlotCreateInput
+  connect: PocTaskSlotWhereUniqueInput
+  disconnect: Boolean
+}
+
+input AdlRecordUpdateArgs {
+  where: AdlRecordWhereUniqueInput!
+  data: AdlRecordUpdateInput!
+}
+
+input AdlRecordCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  activity: String
+  level: String
+  at: DateTime
+  recordedBy: UserRelateToOneForCreateInput
+  pocTaskSlot: PocTaskSlotRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PocTaskSlotRelateToOneForCreateInput {
+  create: PocTaskSlotCreateInput
+  connect: PocTaskSlotWhereUniqueInput
+}
+
+type Assessment {
+  id: ID!
+  resident: Resident
+  community: Community
+  template: AssessmentTemplate
+  templateCode: String
+  templateVersion: Int
+  answers: JSON
+  band: String
+  score: Int
+  status: String
+  completedAt: DateTime
+  completedBy: User
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AssessmentWhereUniqueInput {
+  id: ID
+}
+
+input AssessmentWhereInput {
+  AND: [AssessmentWhereInput!]
+  OR: [AssessmentWhereInput!]
+  NOT: [AssessmentWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  template: AssessmentTemplateWhereInput
+  templateCode: StringFilter
+  templateVersion: IntNullableFilter
+  band: StringFilter
+  score: IntNullableFilter
+  status: StringFilter
+  completedAt: DateTimeNullableFilter
+  completedBy: UserWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input AssessmentOrderByInput {
+  id: OrderDirection
+  templateCode: OrderDirection
+  templateVersion: OrderDirection
+  band: OrderDirection
+  score: OrderDirection
+  status: OrderDirection
+  completedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input AssessmentUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  template: AssessmentTemplateRelateToOneForUpdateInput
+  templateCode: String
+  templateVersion: Int
+  answers: JSON
+  band: String
+  score: Int
+  status: String
+  completedAt: DateTime
+  completedBy: UserRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AssessmentTemplateRelateToOneForUpdateInput {
+  create: AssessmentTemplateCreateInput
+  connect: AssessmentTemplateWhereUniqueInput
+  disconnect: Boolean
+}
+
+input AssessmentUpdateArgs {
+  where: AssessmentWhereUniqueInput!
+  data: AssessmentUpdateInput!
+}
+
+input AssessmentCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  template: AssessmentTemplateRelateToOneForCreateInput
+  templateCode: String
+  templateVersion: Int
+  answers: JSON
+  band: String
+  score: Int
+  status: String
+  completedAt: DateTime
+  completedBy: UserRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AssessmentTemplateRelateToOneForCreateInput {
+  create: AssessmentTemplateCreateInput
+  connect: AssessmentTemplateWhereUniqueInput
+}
+
+type AssessmentTemplate {
+  id: ID!
+  code: String
+  name: String
+  templateVersion: Int
+  scorer: String
+  definition: JSON
+  settings: JSON
+  sourceNote: String
+  verifyNote: String
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AssessmentTemplateWhereUniqueInput {
+  id: ID
+}
+
+input AssessmentTemplateWhereInput {
+  AND: [AssessmentTemplateWhereInput!]
+  OR: [AssessmentTemplateWhereInput!]
+  NOT: [AssessmentTemplateWhereInput!]
+  id: IDFilter
+  code: StringFilter
+  name: StringFilter
+  templateVersion: IntNullableFilter
+  scorer: StringFilter
+  sourceNote: StringFilter
+  verifyNote: StringFilter
+  status: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input AssessmentTemplateOrderByInput {
+  id: OrderDirection
+  code: OrderDirection
+  name: OrderDirection
+  templateVersion: OrderDirection
+  scorer: OrderDirection
+  sourceNote: OrderDirection
+  verifyNote: OrderDirection
+  status: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input AssessmentTemplateUpdateInput {
+  code: String
+  name: String
+  templateVersion: Int
+  scorer: String
+  definition: JSON
+  settings: JSON
+  sourceNote: String
+  verifyNote: String
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AssessmentTemplateUpdateArgs {
+  where: AssessmentTemplateWhereUniqueInput!
+  data: AssessmentTemplateUpdateInput!
+}
+
+input AssessmentTemplateCreateInput {
+  code: String
+  name: String
+  templateVersion: Int
+  scorer: String
+  definition: JSON
+  settings: JSON
+  sourceNote: String
+  verifyNote: String
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type BehaviourEpisode {
+  id: ID!
+  resident: Resident
+  community: Community
+  kind: String
+  antecedent: String
+  intervention: String
+  outcome: String
+  severity: String
+  startedAt: DateTime
+  durationMinutes: Int
+  recordedBy: User
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input BehaviourEpisodeWhereUniqueInput {
+  id: ID
+}
+
+input BehaviourEpisodeWhereInput {
+  AND: [BehaviourEpisodeWhereInput!]
+  OR: [BehaviourEpisodeWhereInput!]
+  NOT: [BehaviourEpisodeWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  kind: StringFilter
+  antecedent: StringFilter
+  intervention: StringFilter
+  outcome: StringFilter
+  severity: StringNullableFilter
+  startedAt: DateTimeNullableFilter
+  durationMinutes: IntNullableFilter
+  recordedBy: UserWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input BehaviourEpisodeOrderByInput {
+  id: OrderDirection
+  kind: OrderDirection
+  antecedent: OrderDirection
+  intervention: OrderDirection
+  outcome: OrderDirection
+  severity: OrderDirection
+  startedAt: OrderDirection
+  durationMinutes: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input BehaviourEpisodeUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  kind: String
+  antecedent: String
+  intervention: String
+  outcome: String
+  severity: String
+  startedAt: DateTime
+  durationMinutes: Int
+  recordedBy: UserRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input BehaviourEpisodeUpdateArgs {
+  where: BehaviourEpisodeWhereUniqueInput!
+  data: BehaviourEpisodeUpdateInput!
+}
+
+input BehaviourEpisodeCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  kind: String
+  antecedent: String
+  intervention: String
+  outcome: String
+  severity: String
+  startedAt: DateTime
+  durationMinutes: Int
+  recordedBy: UserRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type CarePlan {
+  id: ID!
+  resident: Resident
+  community: Community
+  reference: String
+  kind: String
+  status: String
+  revision: Int
+  supersedes: CarePlan
+  items(where: CarePlanItemWhereInput! = {}, orderBy: [CarePlanItemOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CarePlanItemWhereUniqueInput): [CarePlanItem!]
+  itemsCount(where: CarePlanItemWhereInput! = {}): Int
+  basedOnAssessment: Assessment
+  proposal: Proposal
+  startedAt: DateTime
+  signedBy: User
+  signedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input CarePlanWhereUniqueInput {
+  id: ID
+  reference: String
+}
+
+input CarePlanWhereInput {
+  AND: [CarePlanWhereInput!]
+  OR: [CarePlanWhereInput!]
+  NOT: [CarePlanWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  reference: StringFilter
+  kind: StringFilter
+  status: StringFilter
+  revision: IntNullableFilter
+  supersedes: CarePlanWhereInput
+  items: CarePlanItemManyRelationFilter
+  basedOnAssessment: AssessmentWhereInput
+  proposal: ProposalWhereInput
+  startedAt: DateTimeNullableFilter
+  signedBy: UserWhereInput
+  signedAt: DateTimeNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input CarePlanItemManyRelationFilter {
+  every: CarePlanItemWhereInput
+  some: CarePlanItemWhereInput
+  none: CarePlanItemWhereInput
+}
+
+input CarePlanOrderByInput {
+  id: OrderDirection
+  reference: OrderDirection
+  kind: OrderDirection
+  status: OrderDirection
+  revision: OrderDirection
+  startedAt: OrderDirection
+  signedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input CarePlanUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  reference: String
+  kind: String
+  status: String
+  revision: Int
+  supersedes: CarePlanRelateToOneForUpdateInput
+  items: CarePlanItemRelateToManyForUpdateInput
+  basedOnAssessment: AssessmentRelateToOneForUpdateInput
+  proposal: ProposalRelateToOneForUpdateInput
+  startedAt: DateTime
+  signedBy: UserRelateToOneForUpdateInput
+  signedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input CarePlanRelateToOneForUpdateInput {
+  create: CarePlanCreateInput
+  connect: CarePlanWhereUniqueInput
+  disconnect: Boolean
+}
+
+input CarePlanItemRelateToManyForUpdateInput {
+  disconnect: [CarePlanItemWhereUniqueInput!]
+  set: [CarePlanItemWhereUniqueInput!]
+  create: [CarePlanItemCreateInput!]
+  connect: [CarePlanItemWhereUniqueInput!]
+}
+
+input AssessmentRelateToOneForUpdateInput {
+  create: AssessmentCreateInput
+  connect: AssessmentWhereUniqueInput
+  disconnect: Boolean
+}
+
+input ProposalRelateToOneForUpdateInput {
+  create: ProposalCreateInput
+  connect: ProposalWhereUniqueInput
+  disconnect: Boolean
+}
+
+input CarePlanUpdateArgs {
+  where: CarePlanWhereUniqueInput!
+  data: CarePlanUpdateInput!
+}
+
+input CarePlanCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  reference: String
+  kind: String
+  status: String
+  revision: Int
+  supersedes: CarePlanRelateToOneForCreateInput
+  items: CarePlanItemRelateToManyForCreateInput
+  basedOnAssessment: AssessmentRelateToOneForCreateInput
+  proposal: ProposalRelateToOneForCreateInput
+  startedAt: DateTime
+  signedBy: UserRelateToOneForCreateInput
+  signedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input CarePlanRelateToOneForCreateInput {
+  create: CarePlanCreateInput
+  connect: CarePlanWhereUniqueInput
+}
+
+input CarePlanItemRelateToManyForCreateInput {
+  create: [CarePlanItemCreateInput!]
+  connect: [CarePlanItemWhereUniqueInput!]
+}
+
+input AssessmentRelateToOneForCreateInput {
+  create: AssessmentCreateInput
+  connect: AssessmentWhereUniqueInput
+}
+
+input ProposalRelateToOneForCreateInput {
+  create: ProposalCreateInput
+  connect: ProposalWhereUniqueInput
+}
+
+type CarePlanItem {
+  id: ID!
+  resident: Resident
+  community: Community
+  carePlan: CarePlan
+  kind: String
+  parent: CarePlanItem
+  text: String
+  discipline: String
+  frequency: String
+  targetDate: CalendarDay
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input CarePlanItemWhereUniqueInput {
+  id: ID
+}
+
+input CarePlanItemWhereInput {
+  AND: [CarePlanItemWhereInput!]
+  OR: [CarePlanItemWhereInput!]
+  NOT: [CarePlanItemWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  carePlan: CarePlanWhereInput
+  kind: StringFilter
+  parent: CarePlanItemWhereInput
+  text: StringFilter
+  discipline: StringNullableFilter
+  frequency: StringNullableFilter
+  targetDate: CalendarDayNullableFilter
+  status: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input CarePlanItemOrderByInput {
+  id: OrderDirection
+  kind: OrderDirection
+  text: OrderDirection
+  discipline: OrderDirection
+  frequency: OrderDirection
+  targetDate: OrderDirection
+  status: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input CarePlanItemUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  carePlan: CarePlanRelateToOneForUpdateInput
+  kind: String
+  parent: CarePlanItemRelateToOneForUpdateInput
+  text: String
+  discipline: String
+  frequency: String
+  targetDate: CalendarDay
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input CarePlanItemRelateToOneForUpdateInput {
+  create: CarePlanItemCreateInput
+  connect: CarePlanItemWhereUniqueInput
+  disconnect: Boolean
+}
+
+input CarePlanItemUpdateArgs {
+  where: CarePlanItemWhereUniqueInput!
+  data: CarePlanItemUpdateInput!
+}
+
+input CarePlanItemCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  carePlan: CarePlanRelateToOneForCreateInput
+  kind: String
+  parent: CarePlanItemRelateToOneForCreateInput
+  text: String
+  discipline: String
+  frequency: String
+  targetDate: CalendarDay
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input CarePlanItemRelateToOneForCreateInput {
+  create: CarePlanItemCreateInput
+  connect: CarePlanItemWhereUniqueInput
+}
+
+type IntakeRecord {
+  id: ID!
+  resident: Resident
+  community: Community
+  kind: String
+  amountMl: Decimal
+  percentEaten: Int
+  at: DateTime
+  recordedBy: User
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+scalar Decimal
+
+input IntakeRecordWhereUniqueInput {
+  id: ID
+}
+
+input IntakeRecordWhereInput {
+  AND: [IntakeRecordWhereInput!]
+  OR: [IntakeRecordWhereInput!]
+  NOT: [IntakeRecordWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  kind: StringFilter
+  amountMl: DecimalNullableFilter
+  percentEaten: IntNullableFilter
+  at: DateTimeNullableFilter
+  recordedBy: UserWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input DecimalNullableFilter {
+  equals: Decimal
+  in: [Decimal!]
+  notIn: [Decimal!]
+  lt: Decimal
+  lte: Decimal
+  gt: Decimal
+  gte: Decimal
+  not: DecimalNullableFilter
+}
+
+input IntakeRecordOrderByInput {
+  id: OrderDirection
+  kind: OrderDirection
+  amountMl: OrderDirection
+  percentEaten: OrderDirection
+  at: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input IntakeRecordUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  kind: String
+  amountMl: Decimal
+  percentEaten: Int
+  at: DateTime
+  recordedBy: UserRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input IntakeRecordUpdateArgs {
+  where: IntakeRecordWhereUniqueInput!
+  data: IntakeRecordUpdateInput!
+}
+
+input IntakeRecordCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  kind: String
+  amountMl: Decimal
+  percentEaten: Int
+  at: DateTime
+  recordedBy: UserRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type MedicationOrderDetail {
+  id: ID!
+  resident: Resident
+  community: Community
+  order: Order
+  reference: MedicationReference
+  drugName: String
+  dose: Decimal
+  doseUnit: String
+  route: String
+  prn: Boolean
+  prnReason: String
+  prnMinIntervalMinutes: Int
+  prnFollowUpMinutes: Int
+  times: JSON
+  holdParameters: JSON
+  controlled: Boolean
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MedicationOrderDetailWhereUniqueInput {
+  id: ID
+  order: OrderWhereUniqueInput
+}
+
+input MedicationOrderDetailWhereInput {
+  AND: [MedicationOrderDetailWhereInput!]
+  OR: [MedicationOrderDetailWhereInput!]
+  NOT: [MedicationOrderDetailWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  order: OrderWhereInput
+  reference: MedicationReferenceWhereInput
+  drugName: StringFilter
+  dose: DecimalFilter
+  doseUnit: StringFilter
+  route: StringNullableFilter
+  prn: BooleanFilter
+  prnReason: StringFilter
+  prnMinIntervalMinutes: IntNullableFilter
+  prnFollowUpMinutes: IntNullableFilter
+  controlled: BooleanFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input DecimalFilter {
+  equals: Decimal
+  in: [Decimal!]
+  notIn: [Decimal!]
+  lt: Decimal
+  lte: Decimal
+  gt: Decimal
+  gte: Decimal
+  not: DecimalFilter
+}
+
+input MedicationOrderDetailOrderByInput {
+  id: OrderDirection
+  drugName: OrderDirection
+  dose: OrderDirection
+  doseUnit: OrderDirection
+  route: OrderDirection
+  prn: OrderDirection
+  prnReason: OrderDirection
+  prnMinIntervalMinutes: OrderDirection
+  prnFollowUpMinutes: OrderDirection
+  controlled: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input MedicationOrderDetailUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  order: OrderRelateToOneForUpdateInput
+  reference: MedicationReferenceRelateToOneForUpdateInput
+  drugName: String
+  dose: Decimal
+  doseUnit: String
+  route: String
+  prn: Boolean
+  prnReason: String
+  prnMinIntervalMinutes: Int
+  prnFollowUpMinutes: Int
+  times: JSON
+  holdParameters: JSON
+  controlled: Boolean
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input OrderRelateToOneForUpdateInput {
+  create: OrderCreateInput
+  connect: OrderWhereUniqueInput
+  disconnect: Boolean
+}
+
+input MedicationReferenceRelateToOneForUpdateInput {
+  create: MedicationReferenceCreateInput
+  connect: MedicationReferenceWhereUniqueInput
+  disconnect: Boolean
+}
+
+input MedicationOrderDetailUpdateArgs {
+  where: MedicationOrderDetailWhereUniqueInput!
+  data: MedicationOrderDetailUpdateInput!
+}
+
+input MedicationOrderDetailCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  order: OrderRelateToOneForCreateInput
+  reference: MedicationReferenceRelateToOneForCreateInput
+  drugName: String
+  dose: Decimal
+  doseUnit: String
+  route: String
+  prn: Boolean
+  prnReason: String
+  prnMinIntervalMinutes: Int
+  prnFollowUpMinutes: Int
+  times: JSON
+  holdParameters: JSON
+  controlled: Boolean
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input OrderRelateToOneForCreateInput {
+  create: OrderCreateInput
+  connect: OrderWhereUniqueInput
+}
+
+input MedicationReferenceRelateToOneForCreateInput {
+  create: MedicationReferenceCreateInput
+  connect: MedicationReferenceWhereUniqueInput
+}
+
+type Order {
+  id: ID!
+  resident: Resident
+  community: Community
+  reference: String
+  kind: String
+  summary: String
+  instructions: String
+  source: String
+  readBack: Boolean
+  status: String
+  startAt: DateTime
+  stopAt: DateTime
+  enteredBy: User
+  prescriber: User
+  prescriberName: String
+  needsCountersign: Boolean
+  countersignedBy: User
+  countersignedAt: DateTime
+  discontinuedReason: String
+  allergyOverride: String
+  medication: MedicationOrderDetail
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input OrderWhereUniqueInput {
+  id: ID
+  reference: String
+  medication: MedicationOrderDetailWhereUniqueInput
+}
+
+input OrderWhereInput {
+  AND: [OrderWhereInput!]
+  OR: [OrderWhereInput!]
+  NOT: [OrderWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  reference: StringFilter
+  kind: StringFilter
+  summary: StringFilter
+  instructions: StringFilter
+  source: StringFilter
+  readBack: BooleanFilter
+  status: StringFilter
+  startAt: DateTimeNullableFilter
+  stopAt: DateTimeNullableFilter
+  enteredBy: UserWhereInput
+  prescriber: UserWhereInput
+  prescriberName: StringFilter
+  needsCountersign: BooleanFilter
+  countersignedBy: UserWhereInput
+  countersignedAt: DateTimeNullableFilter
+  discontinuedReason: StringFilter
+  allergyOverride: StringFilter
+  medication: MedicationOrderDetailWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input OrderOrderByInput {
+  id: OrderDirection
+  reference: OrderDirection
+  kind: OrderDirection
+  summary: OrderDirection
+  instructions: OrderDirection
+  source: OrderDirection
+  readBack: OrderDirection
+  status: OrderDirection
+  startAt: OrderDirection
+  stopAt: OrderDirection
+  prescriberName: OrderDirection
+  needsCountersign: OrderDirection
+  countersignedAt: OrderDirection
+  discontinuedReason: OrderDirection
+  allergyOverride: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input OrderUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  reference: String
+  kind: String
+  summary: String
+  instructions: String
+  source: String
+  readBack: Boolean
+  status: String
+  startAt: DateTime
+  stopAt: DateTime
+  enteredBy: UserRelateToOneForUpdateInput
+  prescriber: UserRelateToOneForUpdateInput
+  prescriberName: String
+  needsCountersign: Boolean
+  countersignedBy: UserRelateToOneForUpdateInput
+  countersignedAt: DateTime
+  discontinuedReason: String
+  allergyOverride: String
+  medication: MedicationOrderDetailRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MedicationOrderDetailRelateToOneForUpdateInput {
+  create: MedicationOrderDetailCreateInput
+  connect: MedicationOrderDetailWhereUniqueInput
+  disconnect: Boolean
+}
+
+input OrderUpdateArgs {
+  where: OrderWhereUniqueInput!
+  data: OrderUpdateInput!
+}
+
+input OrderCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  reference: String
+  kind: String
+  summary: String
+  instructions: String
+  source: String
+  readBack: Boolean
+  status: String
+  startAt: DateTime
+  stopAt: DateTime
+  enteredBy: UserRelateToOneForCreateInput
+  prescriber: UserRelateToOneForCreateInput
+  prescriberName: String
+  needsCountersign: Boolean
+  countersignedBy: UserRelateToOneForCreateInput
+  countersignedAt: DateTime
+  discontinuedReason: String
+  allergyOverride: String
+  medication: MedicationOrderDetailRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MedicationOrderDetailRelateToOneForCreateInput {
+  create: MedicationOrderDetailCreateInput
+  connect: MedicationOrderDetailWhereUniqueInput
+}
+
+type PhysicianVisit {
+  id: ID!
+  resident: Resident
+  community: Community
+  kind: String
+  physicianName: String
+  visitedAt: DateTime
+  summary: String
+  note: ProgressNote
+  recordedBy: User
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PhysicianVisitWhereUniqueInput {
+  id: ID
+}
+
+input PhysicianVisitWhereInput {
+  AND: [PhysicianVisitWhereInput!]
+  OR: [PhysicianVisitWhereInput!]
+  NOT: [PhysicianVisitWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  kind: StringFilter
+  physicianName: StringFilter
+  visitedAt: DateTimeNullableFilter
+  summary: StringFilter
+  note: ProgressNoteWhereInput
+  recordedBy: UserWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input PhysicianVisitOrderByInput {
+  id: OrderDirection
+  kind: OrderDirection
+  physicianName: OrderDirection
+  visitedAt: OrderDirection
+  summary: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input PhysicianVisitUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  kind: String
+  physicianName: String
+  visitedAt: DateTime
+  summary: String
+  note: ProgressNoteRelateToOneForUpdateInput
+  recordedBy: UserRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ProgressNoteRelateToOneForUpdateInput {
+  create: ProgressNoteCreateInput
+  connect: ProgressNoteWhereUniqueInput
+  disconnect: Boolean
+}
+
+input PhysicianVisitUpdateArgs {
+  where: PhysicianVisitWhereUniqueInput!
+  data: PhysicianVisitUpdateInput!
+}
+
+input PhysicianVisitCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  kind: String
+  physicianName: String
+  visitedAt: DateTime
+  summary: String
+  note: ProgressNoteRelateToOneForCreateInput
+  recordedBy: UserRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ProgressNoteRelateToOneForCreateInput {
+  create: ProgressNoteCreateInput
+  connect: ProgressNoteWhereUniqueInput
+}
+
+type PocTaskSlot {
+  id: ID!
+  resident: Resident
+  community: Community
+  item: CarePlanItem
+  label: String
+  dueAt: DateTime
+  slotKey: String
+  status: String
+  doneAt: DateTime
+  doneBy: User
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PocTaskSlotWhereUniqueInput {
+  id: ID
+  slotKey: String
+}
+
+input PocTaskSlotWhereInput {
+  AND: [PocTaskSlotWhereInput!]
+  OR: [PocTaskSlotWhereInput!]
+  NOT: [PocTaskSlotWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  item: CarePlanItemWhereInput
+  label: StringFilter
+  dueAt: DateTimeNullableFilter
+  slotKey: StringFilter
+  status: StringFilter
+  doneAt: DateTimeNullableFilter
+  doneBy: UserWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input PocTaskSlotOrderByInput {
+  id: OrderDirection
+  label: OrderDirection
+  dueAt: OrderDirection
+  slotKey: OrderDirection
+  status: OrderDirection
+  doneAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input PocTaskSlotUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  item: CarePlanItemRelateToOneForUpdateInput
+  label: String
+  dueAt: DateTime
+  slotKey: String
+  status: String
+  doneAt: DateTime
+  doneBy: UserRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PocTaskSlotUpdateArgs {
+  where: PocTaskSlotWhereUniqueInput!
+  data: PocTaskSlotUpdateInput!
+}
+
+input PocTaskSlotCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  item: CarePlanItemRelateToOneForCreateInput
+  label: String
+  dueAt: DateTime
+  slotKey: String
+  status: String
+  doneAt: DateTime
+  doneBy: UserRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type ProgressNote {
+  id: ID!
+  resident: Resident
+  community: Community
+  kind: String
+  body: String
+  status: String
+  eventAt: DateTime
+  lateEntry: Boolean
+  author: User
+  signedBy: User
+  signedAt: DateTime
+  amends: ProgressNote
+  amendedBy: ProgressNote
+  errorReason: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ProgressNoteWhereUniqueInput {
+  id: ID
+}
+
+input ProgressNoteWhereInput {
+  AND: [ProgressNoteWhereInput!]
+  OR: [ProgressNoteWhereInput!]
+  NOT: [ProgressNoteWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  kind: StringFilter
+  body: StringFilter
+  status: StringFilter
+  eventAt: DateTimeNullableFilter
+  lateEntry: BooleanFilter
+  author: UserWhereInput
+  signedBy: UserWhereInput
+  signedAt: DateTimeNullableFilter
+  amends: ProgressNoteWhereInput
+  amendedBy: ProgressNoteWhereInput
+  errorReason: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input ProgressNoteOrderByInput {
+  id: OrderDirection
+  kind: OrderDirection
+  body: OrderDirection
+  status: OrderDirection
+  eventAt: OrderDirection
+  lateEntry: OrderDirection
+  signedAt: OrderDirection
+  errorReason: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input ProgressNoteUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  kind: String
+  body: String
+  status: String
+  eventAt: DateTime
+  lateEntry: Boolean
+  author: UserRelateToOneForUpdateInput
+  signedBy: UserRelateToOneForUpdateInput
+  signedAt: DateTime
+  amends: ProgressNoteRelateToOneForUpdateInput
+  amendedBy: ProgressNoteRelateToOneForUpdateInput
+  errorReason: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ProgressNoteUpdateArgs {
+  where: ProgressNoteWhereUniqueInput!
+  data: ProgressNoteUpdateInput!
+}
+
+input ProgressNoteCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  kind: String
+  body: String
+  status: String
+  eventAt: DateTime
+  lateEntry: Boolean
+  author: UserRelateToOneForCreateInput
+  signedBy: UserRelateToOneForCreateInput
+  signedAt: DateTime
+  amends: ProgressNoteRelateToOneForCreateInput
+  amendedBy: ProgressNoteRelateToOneForCreateInput
+  errorReason: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type Task {
+  id: ID!
+  community: Community
+  resident: Resident
+  kind: String
+  title: String
+  detail: String
+  dedupeKey: String
+  status: String
+  ownerRole: String
+  assignee: User
+  dueAt: DateTime
+  escalateAt: DateTime
+  escalationOwnerRole: String
+  subjectType: String
+  subjectId: String
+  completedBy: User
+  completedAt: DateTime
+  createdByWorkflow: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input TaskWhereUniqueInput {
+  id: ID
+  dedupeKey: String
+}
+
+input TaskWhereInput {
+  AND: [TaskWhereInput!]
+  OR: [TaskWhereInput!]
+  NOT: [TaskWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  kind: StringFilter
+  title: StringFilter
+  detail: StringFilter
+  dedupeKey: StringFilter
+  status: StringFilter
+  ownerRole: StringFilter
+  assignee: UserWhereInput
+  dueAt: DateTimeNullableFilter
+  escalateAt: DateTimeNullableFilter
+  escalationOwnerRole: StringFilter
+  subjectType: StringFilter
+  subjectId: StringFilter
+  completedBy: UserWhereInput
+  completedAt: DateTimeNullableFilter
+  createdByWorkflow: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input TaskOrderByInput {
+  id: OrderDirection
+  kind: OrderDirection
+  title: OrderDirection
+  detail: OrderDirection
+  dedupeKey: OrderDirection
+  status: OrderDirection
+  ownerRole: OrderDirection
+  dueAt: OrderDirection
+  escalateAt: OrderDirection
+  escalationOwnerRole: OrderDirection
+  subjectType: OrderDirection
+  subjectId: OrderDirection
+  completedAt: OrderDirection
+  createdByWorkflow: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input TaskUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  kind: String
+  title: String
+  detail: String
+  dedupeKey: String
+  status: String
+  ownerRole: String
+  assignee: UserRelateToOneForUpdateInput
+  dueAt: DateTime
+  escalateAt: DateTime
+  escalationOwnerRole: String
+  subjectType: String
+  subjectId: String
+  completedBy: UserRelateToOneForUpdateInput
+  completedAt: DateTime
+  createdByWorkflow: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input TaskUpdateArgs {
+  where: TaskWhereUniqueInput!
+  data: TaskUpdateInput!
+}
+
+input TaskCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  kind: String
+  title: String
+  detail: String
+  dedupeKey: String
+  status: String
+  ownerRole: String
+  assignee: UserRelateToOneForCreateInput
+  dueAt: DateTime
+  escalateAt: DateTime
+  escalationOwnerRole: String
+  subjectType: String
+  subjectId: String
+  completedBy: UserRelateToOneForCreateInput
+  completedAt: DateTime
+  createdByWorkflow: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type VitalSign {
+  id: ID!
+  resident: Resident
+  community: Community
+  kind: String
+  value: Decimal
+  unit: String
+  takenAt: DateTime
+  recordedBy: User
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input VitalSignWhereUniqueInput {
+  id: ID
+}
+
+input VitalSignWhereInput {
+  AND: [VitalSignWhereInput!]
+  OR: [VitalSignWhereInput!]
+  NOT: [VitalSignWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  kind: StringFilter
+  value: DecimalNullableFilter
+  unit: StringFilter
+  takenAt: DateTimeNullableFilter
+  recordedBy: UserWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input VitalSignOrderByInput {
+  id: OrderDirection
+  kind: OrderDirection
+  value: OrderDirection
+  unit: OrderDirection
+  takenAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input VitalSignUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  kind: String
+  value: Decimal
+  unit: String
+  takenAt: DateTime
+  recordedBy: UserRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input VitalSignUpdateArgs {
+  where: VitalSignWhereUniqueInput!
+  data: VitalSignUpdateInput!
+}
+
+input VitalSignCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  kind: String
+  value: Decimal
+  unit: String
+  takenAt: DateTime
+  recordedBy: UserRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type Wound {
+  id: ID!
+  resident: Resident
+  community: Community
+  site: String
+  kind: String
+  status: String
+  firstNotedAt: DateTime
+  lastAssessedAt: DateTime
+  currentStage: String
+  assessmentIntervalDays: Int
+  assessments(where: WoundAssessmentWhereInput! = {}, orderBy: [WoundAssessmentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: WoundAssessmentWhereUniqueInput): [WoundAssessment!]
+  assessmentsCount(where: WoundAssessmentWhereInput! = {}): Int
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input WoundWhereUniqueInput {
+  id: ID
+}
+
+input WoundWhereInput {
+  AND: [WoundWhereInput!]
+  OR: [WoundWhereInput!]
+  NOT: [WoundWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  site: StringFilter
+  kind: StringFilter
+  status: StringFilter
+  firstNotedAt: DateTimeNullableFilter
+  lastAssessedAt: DateTimeNullableFilter
+  currentStage: StringFilter
+  assessmentIntervalDays: IntNullableFilter
+  assessments: WoundAssessmentManyRelationFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input WoundAssessmentManyRelationFilter {
+  every: WoundAssessmentWhereInput
+  some: WoundAssessmentWhereInput
+  none: WoundAssessmentWhereInput
+}
+
+input WoundOrderByInput {
+  id: OrderDirection
+  site: OrderDirection
+  kind: OrderDirection
+  status: OrderDirection
+  firstNotedAt: OrderDirection
+  lastAssessedAt: OrderDirection
+  currentStage: OrderDirection
+  assessmentIntervalDays: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input WoundUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  site: String
+  kind: String
+  status: String
+  firstNotedAt: DateTime
+  lastAssessedAt: DateTime
+  currentStage: String
+  assessmentIntervalDays: Int
+  assessments: WoundAssessmentRelateToManyForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input WoundAssessmentRelateToManyForUpdateInput {
+  disconnect: [WoundAssessmentWhereUniqueInput!]
+  set: [WoundAssessmentWhereUniqueInput!]
+  create: [WoundAssessmentCreateInput!]
+  connect: [WoundAssessmentWhereUniqueInput!]
+}
+
+input WoundUpdateArgs {
+  where: WoundWhereUniqueInput!
+  data: WoundUpdateInput!
+}
+
+input WoundCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  site: String
+  kind: String
+  status: String
+  firstNotedAt: DateTime
+  lastAssessedAt: DateTime
+  currentStage: String
+  assessmentIntervalDays: Int
+  assessments: WoundAssessmentRelateToManyForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input WoundAssessmentRelateToManyForCreateInput {
+  create: [WoundAssessmentCreateInput!]
+  connect: [WoundAssessmentWhereUniqueInput!]
+}
+
+type WoundAssessment {
+  id: ID!
+  resident: Resident
+  community: Community
+  wound: Wound
+  stage: String
+  lengthCm: Decimal
+  widthCm: Decimal
+  depthCm: Decimal
+  description: String
+  photos: JSON
+  assessedAt: DateTime
+  assessedBy: User
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input WoundAssessmentWhereUniqueInput {
+  id: ID
+}
+
+input WoundAssessmentWhereInput {
+  AND: [WoundAssessmentWhereInput!]
+  OR: [WoundAssessmentWhereInput!]
+  NOT: [WoundAssessmentWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  wound: WoundWhereInput
+  stage: StringNullableFilter
+  lengthCm: DecimalNullableFilter
+  widthCm: DecimalNullableFilter
+  depthCm: DecimalNullableFilter
+  description: StringFilter
+  assessedAt: DateTimeNullableFilter
+  assessedBy: UserWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input WoundAssessmentOrderByInput {
+  id: OrderDirection
+  stage: OrderDirection
+  lengthCm: OrderDirection
+  widthCm: OrderDirection
+  depthCm: OrderDirection
+  description: OrderDirection
+  assessedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input WoundAssessmentUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  wound: WoundRelateToOneForUpdateInput
+  stage: String
+  lengthCm: Decimal
+  widthCm: Decimal
+  depthCm: Decimal
+  description: String
+  photos: JSON
+  assessedAt: DateTime
+  assessedBy: UserRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input WoundRelateToOneForUpdateInput {
+  create: WoundCreateInput
+  connect: WoundWhereUniqueInput
+  disconnect: Boolean
+}
+
+input WoundAssessmentUpdateArgs {
+  where: WoundAssessmentWhereUniqueInput!
+  data: WoundAssessmentUpdateInput!
+}
+
+input WoundAssessmentCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  wound: WoundRelateToOneForCreateInput
+  stage: String
+  lengthCm: Decimal
+  widthCm: Decimal
+  depthCm: Decimal
+  description: String
+  photos: JSON
+  assessedAt: DateTime
+  assessedBy: UserRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input WoundRelateToOneForCreateInput {
+  create: WoundCreateInput
+  connect: WoundWhereUniqueInput
+}
+
+type AdministrationSlot {
+  id: ID!
+  resident: Resident
+  community: Community
+  detail: MedicationOrderDetail
+  order: Order
+  drugName: String
+  slotKey: String
+  scheduledFor: DateTime
+  windowBefore: Int
+  windowAfter: Int
+  status: String
+  settledAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AdministrationSlotWhereUniqueInput {
+  id: ID
+  slotKey: String
+}
+
+input AdministrationSlotWhereInput {
+  AND: [AdministrationSlotWhereInput!]
+  OR: [AdministrationSlotWhereInput!]
+  NOT: [AdministrationSlotWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  detail: MedicationOrderDetailWhereInput
+  order: OrderWhereInput
+  drugName: StringFilter
+  slotKey: StringFilter
+  scheduledFor: DateTimeNullableFilter
+  windowBefore: IntNullableFilter
+  windowAfter: IntNullableFilter
+  status: StringFilter
+  settledAt: DateTimeNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input AdministrationSlotOrderByInput {
+  id: OrderDirection
+  drugName: OrderDirection
+  slotKey: OrderDirection
+  scheduledFor: OrderDirection
+  windowBefore: OrderDirection
+  windowAfter: OrderDirection
+  status: OrderDirection
+  settledAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input AdministrationSlotUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  detail: MedicationOrderDetailRelateToOneForUpdateInput
+  order: OrderRelateToOneForUpdateInput
+  drugName: String
+  slotKey: String
+  scheduledFor: DateTime
+  windowBefore: Int
+  windowAfter: Int
+  status: String
+  settledAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AdministrationSlotUpdateArgs {
+  where: AdministrationSlotWhereUniqueInput!
+  data: AdministrationSlotUpdateInput!
+}
+
+input AdministrationSlotCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  detail: MedicationOrderDetailRelateToOneForCreateInput
+  order: OrderRelateToOneForCreateInput
+  drugName: String
+  slotKey: String
+  scheduledFor: DateTime
+  windowBefore: Int
+  windowAfter: Int
+  status: String
+  settledAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type CountDiscrepancy {
+  id: ID!
+  community: Community
+  shiftCount: ShiftCount
+  supply: MedicationSupply
+  expected: Decimal
+  outgoingCounted: Decimal
+  incomingCounted: Decimal
+  status: String
+  resolution: String
+  resolutionNote: String
+  resolvedBy: User
+  resolvedAt: DateTime
+  adjustment: MedicationSupplyMovement
+  incident: Incident
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input CountDiscrepancyWhereUniqueInput {
+  id: ID
+}
+
+input CountDiscrepancyWhereInput {
+  AND: [CountDiscrepancyWhereInput!]
+  OR: [CountDiscrepancyWhereInput!]
+  NOT: [CountDiscrepancyWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  shiftCount: ShiftCountWhereInput
+  supply: MedicationSupplyWhereInput
+  expected: DecimalFilter
+  outgoingCounted: DecimalFilter
+  incomingCounted: DecimalFilter
+  status: StringFilter
+  resolution: StringNullableFilter
+  resolutionNote: StringFilter
+  resolvedBy: UserWhereInput
+  resolvedAt: DateTimeNullableFilter
+  adjustment: MedicationSupplyMovementWhereInput
+  incident: IncidentWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input CountDiscrepancyOrderByInput {
+  id: OrderDirection
+  expected: OrderDirection
+  outgoingCounted: OrderDirection
+  incomingCounted: OrderDirection
+  status: OrderDirection
+  resolution: OrderDirection
+  resolutionNote: OrderDirection
+  resolvedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input CountDiscrepancyUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  shiftCount: ShiftCountRelateToOneForUpdateInput
+  supply: MedicationSupplyRelateToOneForUpdateInput
+  expected: Decimal
+  outgoingCounted: Decimal
+  incomingCounted: Decimal
+  status: String
+  resolution: String
+  resolutionNote: String
+  resolvedBy: UserRelateToOneForUpdateInput
+  resolvedAt: DateTime
+  adjustment: MedicationSupplyMovementRelateToOneForUpdateInput
+  incident: IncidentRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ShiftCountRelateToOneForUpdateInput {
+  create: ShiftCountCreateInput
+  connect: ShiftCountWhereUniqueInput
+  disconnect: Boolean
+}
+
+input MedicationSupplyRelateToOneForUpdateInput {
+  create: MedicationSupplyCreateInput
+  connect: MedicationSupplyWhereUniqueInput
+  disconnect: Boolean
+}
+
+input MedicationSupplyMovementRelateToOneForUpdateInput {
+  create: MedicationSupplyMovementCreateInput
+  connect: MedicationSupplyMovementWhereUniqueInput
+  disconnect: Boolean
+}
+
+input IncidentRelateToOneForUpdateInput {
+  create: IncidentCreateInput
+  connect: IncidentWhereUniqueInput
+  disconnect: Boolean
+}
+
+input CountDiscrepancyUpdateArgs {
+  where: CountDiscrepancyWhereUniqueInput!
+  data: CountDiscrepancyUpdateInput!
+}
+
+input CountDiscrepancyCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  shiftCount: ShiftCountRelateToOneForCreateInput
+  supply: MedicationSupplyRelateToOneForCreateInput
+  expected: Decimal
+  outgoingCounted: Decimal
+  incomingCounted: Decimal
+  status: String
+  resolution: String
+  resolutionNote: String
+  resolvedBy: UserRelateToOneForCreateInput
+  resolvedAt: DateTime
+  adjustment: MedicationSupplyMovementRelateToOneForCreateInput
+  incident: IncidentRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ShiftCountRelateToOneForCreateInput {
+  create: ShiftCountCreateInput
+  connect: ShiftCountWhereUniqueInput
+}
+
+input MedicationSupplyRelateToOneForCreateInput {
+  create: MedicationSupplyCreateInput
+  connect: MedicationSupplyWhereUniqueInput
+}
+
+input MedicationSupplyMovementRelateToOneForCreateInput {
+  create: MedicationSupplyMovementCreateInput
+  connect: MedicationSupplyMovementWhereUniqueInput
+}
+
+input IncidentRelateToOneForCreateInput {
+  create: IncidentCreateInput
+  connect: IncidentWhereUniqueInput
+}
+
+type MedicationAdministration {
+  id: ID!
+  resident: Resident
+  community: Community
+  slot: AdministrationSlot
+  detail: MedicationOrderDetail
+  drugName: String
+  outcome: String
+  prn: Boolean
+  doseGiven: Decimal
+  reason: String
+  note: String
+  doseUnit: String
+  administeredAt: DateTime
+  recordedAt: DateTime
+  lateEntry: Boolean
+  timing: String
+  identityCheck: String
+  holdVital: JSON
+  administeredBy: User
+  witness: User
+  supply: MedicationSupply
+  movement(where: MedicationSupplyMovementWhereInput! = {}, orderBy: [MedicationSupplyMovementOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MedicationSupplyMovementWhereUniqueInput): [MedicationSupplyMovement!]
+  movementCount(where: MedicationSupplyMovementWhereInput! = {}): Int
+  followUpDueAt: DateTime
+  followUpOf: MedicationAdministration
+  createdAt: DateTime
+}
+
+input MedicationAdministrationWhereUniqueInput {
+  id: ID
+}
+
+input MedicationAdministrationWhereInput {
+  AND: [MedicationAdministrationWhereInput!]
+  OR: [MedicationAdministrationWhereInput!]
+  NOT: [MedicationAdministrationWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  slot: AdministrationSlotWhereInput
+  detail: MedicationOrderDetailWhereInput
+  drugName: StringFilter
+  outcome: StringFilter
+  prn: BooleanFilter
+  doseGiven: DecimalNullableFilter
+  reason: StringFilter
+  note: StringFilter
+  doseUnit: StringFilter
+  administeredAt: DateTimeNullableFilter
+  recordedAt: DateTimeNullableFilter
+  lateEntry: BooleanFilter
+  timing: StringNullableFilter
+  identityCheck: StringNullableFilter
+  administeredBy: UserWhereInput
+  witness: UserWhereInput
+  supply: MedicationSupplyWhereInput
+  movement: MedicationSupplyMovementManyRelationFilter
+  followUpDueAt: DateTimeNullableFilter
+  followUpOf: MedicationAdministrationWhereInput
+  createdAt: DateTimeNullableFilter
+}
+
+input MedicationSupplyMovementManyRelationFilter {
+  every: MedicationSupplyMovementWhereInput
+  some: MedicationSupplyMovementWhereInput
+  none: MedicationSupplyMovementWhereInput
+}
+
+input MedicationAdministrationOrderByInput {
+  id: OrderDirection
+  drugName: OrderDirection
+  outcome: OrderDirection
+  prn: OrderDirection
+  doseGiven: OrderDirection
+  reason: OrderDirection
+  note: OrderDirection
+  doseUnit: OrderDirection
+  administeredAt: OrderDirection
+  recordedAt: OrderDirection
+  lateEntry: OrderDirection
+  timing: OrderDirection
+  identityCheck: OrderDirection
+  followUpDueAt: OrderDirection
+  createdAt: OrderDirection
+}
+
+input MedicationAdministrationUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  slot: AdministrationSlotRelateToOneForUpdateInput
+  detail: MedicationOrderDetailRelateToOneForUpdateInput
+  drugName: String
+  outcome: String
+  prn: Boolean
+  doseGiven: Decimal
+  reason: String
+  note: String
+  doseUnit: String
+  administeredAt: DateTime
+  recordedAt: DateTime
+  lateEntry: Boolean
+  timing: String
+  identityCheck: String
+  holdVital: JSON
+  administeredBy: UserRelateToOneForUpdateInput
+  witness: UserRelateToOneForUpdateInput
+  supply: MedicationSupplyRelateToOneForUpdateInput
+  movement: MedicationSupplyMovementRelateToManyForUpdateInput
+  followUpDueAt: DateTime
+  followUpOf: MedicationAdministrationRelateToOneForUpdateInput
+  createdAt: DateTime
+}
+
+input AdministrationSlotRelateToOneForUpdateInput {
+  create: AdministrationSlotCreateInput
+  connect: AdministrationSlotWhereUniqueInput
+  disconnect: Boolean
+}
+
+input MedicationSupplyMovementRelateToManyForUpdateInput {
+  disconnect: [MedicationSupplyMovementWhereUniqueInput!]
+  set: [MedicationSupplyMovementWhereUniqueInput!]
+  create: [MedicationSupplyMovementCreateInput!]
+  connect: [MedicationSupplyMovementWhereUniqueInput!]
+}
+
+input MedicationAdministrationRelateToOneForUpdateInput {
+  create: MedicationAdministrationCreateInput
+  connect: MedicationAdministrationWhereUniqueInput
+  disconnect: Boolean
+}
+
+input MedicationAdministrationUpdateArgs {
+  where: MedicationAdministrationWhereUniqueInput!
+  data: MedicationAdministrationUpdateInput!
+}
+
+input MedicationAdministrationCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  slot: AdministrationSlotRelateToOneForCreateInput
+  detail: MedicationOrderDetailRelateToOneForCreateInput
+  drugName: String
+  outcome: String
+  prn: Boolean
+  doseGiven: Decimal
+  reason: String
+  note: String
+  doseUnit: String
+  administeredAt: DateTime
+  recordedAt: DateTime
+  lateEntry: Boolean
+  timing: String
+  identityCheck: String
+  holdVital: JSON
+  administeredBy: UserRelateToOneForCreateInput
+  witness: UserRelateToOneForCreateInput
+  supply: MedicationSupplyRelateToOneForCreateInput
+  movement: MedicationSupplyMovementRelateToManyForCreateInput
+  followUpDueAt: DateTime
+  followUpOf: MedicationAdministrationRelateToOneForCreateInput
+  createdAt: DateTime
+}
+
+input AdministrationSlotRelateToOneForCreateInput {
+  create: AdministrationSlotCreateInput
+  connect: AdministrationSlotWhereUniqueInput
+}
+
+input MedicationSupplyMovementRelateToManyForCreateInput {
+  create: [MedicationSupplyMovementCreateInput!]
+  connect: [MedicationSupplyMovementWhereUniqueInput!]
+}
+
+input MedicationAdministrationRelateToOneForCreateInput {
+  create: MedicationAdministrationCreateInput
+  connect: MedicationAdministrationWhereUniqueInput
+}
+
+type MedicationDestruction {
+  id: ID!
+  community: Community
+  supply: MedicationSupply
+  quantity: Decimal
+  method: String
+  destroyedAt: DateTime
+  destroyedBy: User
+  witness: User
+  movement: MedicationSupplyMovement
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MedicationDestructionWhereUniqueInput {
+  id: ID
+}
+
+input MedicationDestructionWhereInput {
+  AND: [MedicationDestructionWhereInput!]
+  OR: [MedicationDestructionWhereInput!]
+  NOT: [MedicationDestructionWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  supply: MedicationSupplyWhereInput
+  quantity: DecimalFilter
+  method: StringFilter
+  destroyedAt: DateTimeNullableFilter
+  destroyedBy: UserWhereInput
+  witness: UserWhereInput
+  movement: MedicationSupplyMovementWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input MedicationDestructionOrderByInput {
+  id: OrderDirection
+  quantity: OrderDirection
+  method: OrderDirection
+  destroyedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input MedicationDestructionUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  supply: MedicationSupplyRelateToOneForUpdateInput
+  quantity: Decimal
+  method: String
+  destroyedAt: DateTime
+  destroyedBy: UserRelateToOneForUpdateInput
+  witness: UserRelateToOneForUpdateInput
+  movement: MedicationSupplyMovementRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MedicationDestructionUpdateArgs {
+  where: MedicationDestructionWhereUniqueInput!
+  data: MedicationDestructionUpdateInput!
+}
+
+input MedicationDestructionCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  supply: MedicationSupplyRelateToOneForCreateInput
+  quantity: Decimal
+  method: String
+  destroyedAt: DateTime
+  destroyedBy: UserRelateToOneForCreateInput
+  witness: UserRelateToOneForCreateInput
+  movement: MedicationSupplyMovementRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type MedicationReference {
+  id: ID!
+  name: String
+  genericName: String
+  strength: String
+  form: String
+  ndc: String
+  schedule: String
+  highAlert: Boolean
+  status: String
+  source: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MedicationReferenceWhereUniqueInput {
+  id: ID
+}
+
+input MedicationReferenceWhereInput {
+  AND: [MedicationReferenceWhereInput!]
+  OR: [MedicationReferenceWhereInput!]
+  NOT: [MedicationReferenceWhereInput!]
+  id: IDFilter
+  name: StringFilter
+  genericName: StringFilter
+  strength: StringFilter
+  form: StringFilter
+  ndc: StringFilter
+  schedule: StringFilter
+  highAlert: BooleanFilter
+  status: StringFilter
+  source: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input MedicationReferenceOrderByInput {
+  id: OrderDirection
+  name: OrderDirection
+  genericName: OrderDirection
+  strength: OrderDirection
+  form: OrderDirection
+  ndc: OrderDirection
+  schedule: OrderDirection
+  highAlert: OrderDirection
+  status: OrderDirection
+  source: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input MedicationReferenceUpdateInput {
+  name: String
+  genericName: String
+  strength: String
+  form: String
+  ndc: String
+  schedule: String
+  highAlert: Boolean
+  status: String
+  source: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MedicationReferenceUpdateArgs {
+  where: MedicationReferenceWhereUniqueInput!
+  data: MedicationReferenceUpdateInput!
+}
+
+input MedicationReferenceCreateInput {
+  name: String
+  genericName: String
+  strength: String
+  form: String
+  ndc: String
+  schedule: String
+  highAlert: Boolean
+  status: String
+  source: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type MedicationSupply {
+  id: ID!
+  community: Community
+  resident: Resident
+  reference: MedicationReference
+  unitLocation: Unit
+  label: String
+  kind: String
+  lot: String
+  expiresOn: DateTime
+  controlled: Boolean
+  unit: String
+  balance: Decimal
+  status: String
+  movements(where: MedicationSupplyMovementWhereInput! = {}, orderBy: [MedicationSupplyMovementOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MedicationSupplyMovementWhereUniqueInput): [MedicationSupplyMovement!]
+  movementsCount(where: MedicationSupplyMovementWhereInput! = {}): Int
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MedicationSupplyWhereUniqueInput {
+  id: ID
+}
+
+input MedicationSupplyWhereInput {
+  AND: [MedicationSupplyWhereInput!]
+  OR: [MedicationSupplyWhereInput!]
+  NOT: [MedicationSupplyWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  reference: MedicationReferenceWhereInput
+  unitLocation: UnitWhereInput
+  label: StringFilter
+  kind: StringFilter
+  lot: StringFilter
+  expiresOn: DateTimeNullableFilter
+  controlled: BooleanFilter
+  unit: StringFilter
+  balance: DecimalFilter
+  status: StringFilter
+  movements: MedicationSupplyMovementManyRelationFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input MedicationSupplyOrderByInput {
+  id: OrderDirection
+  label: OrderDirection
+  kind: OrderDirection
+  lot: OrderDirection
+  expiresOn: OrderDirection
+  controlled: OrderDirection
+  unit: OrderDirection
+  balance: OrderDirection
+  status: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input MedicationSupplyUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  reference: MedicationReferenceRelateToOneForUpdateInput
+  unitLocation: UnitRelateToOneForUpdateInput
+  label: String
+  kind: String
+  lot: String
+  expiresOn: DateTime
+  controlled: Boolean
+  unit: String
+  balance: Decimal
+  status: String
+  movements: MedicationSupplyMovementRelateToManyForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MedicationSupplyUpdateArgs {
+  where: MedicationSupplyWhereUniqueInput!
+  data: MedicationSupplyUpdateInput!
+}
+
+input MedicationSupplyCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  reference: MedicationReferenceRelateToOneForCreateInput
+  unitLocation: UnitRelateToOneForCreateInput
+  label: String
+  kind: String
+  lot: String
+  expiresOn: DateTime
+  controlled: Boolean
+  unit: String
+  balance: Decimal
+  status: String
+  movements: MedicationSupplyMovementRelateToManyForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type MedicationSupplyMovement {
+  id: ID!
+  community: Community
+  supply: MedicationSupply
+  seq: Int
+  kind: String
+  quantity: Decimal
+  balanceAfter: Decimal
+  at: DateTime
+  actor: User
+  witness: User
+  reason: String
+  administration: MedicationAdministration
+  createdAt: DateTime
+}
+
+input MedicationSupplyMovementWhereUniqueInput {
+  id: ID
+}
+
+input MedicationSupplyMovementWhereInput {
+  AND: [MedicationSupplyMovementWhereInput!]
+  OR: [MedicationSupplyMovementWhereInput!]
+  NOT: [MedicationSupplyMovementWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  supply: MedicationSupplyWhereInput
+  seq: IntNullableFilter
+  kind: StringFilter
+  quantity: DecimalFilter
+  balanceAfter: DecimalFilter
+  at: DateTimeNullableFilter
+  actor: UserWhereInput
+  witness: UserWhereInput
+  reason: StringFilter
+  administration: MedicationAdministrationWhereInput
+  createdAt: DateTimeNullableFilter
+}
+
+input MedicationSupplyMovementOrderByInput {
+  id: OrderDirection
+  seq: OrderDirection
+  kind: OrderDirection
+  quantity: OrderDirection
+  balanceAfter: OrderDirection
+  at: OrderDirection
+  reason: OrderDirection
+  createdAt: OrderDirection
+}
+
+input MedicationSupplyMovementUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  supply: MedicationSupplyRelateToOneForUpdateInput
+  seq: Int
+  kind: String
+  quantity: Decimal
+  balanceAfter: Decimal
+  at: DateTime
+  actor: UserRelateToOneForUpdateInput
+  witness: UserRelateToOneForUpdateInput
+  reason: String
+  administration: MedicationAdministrationRelateToOneForUpdateInput
+  createdAt: DateTime
+}
+
+input MedicationSupplyMovementUpdateArgs {
+  where: MedicationSupplyMovementWhereUniqueInput!
+  data: MedicationSupplyMovementUpdateInput!
+}
+
+input MedicationSupplyMovementCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  supply: MedicationSupplyRelateToOneForCreateInput
+  seq: Int
+  kind: String
+  quantity: Decimal
+  balanceAfter: Decimal
+  at: DateTime
+  actor: UserRelateToOneForCreateInput
+  witness: UserRelateToOneForCreateInput
+  reason: String
+  administration: MedicationAdministrationRelateToOneForCreateInput
+  createdAt: DateTime
+}
+
+type PharmacyRelationship {
+  id: ID!
+  community: Community
+  name: String
+  adapter: String
+  phone: String
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PharmacyRelationshipWhereUniqueInput {
+  id: ID
+}
+
+input PharmacyRelationshipWhereInput {
+  AND: [PharmacyRelationshipWhereInput!]
+  OR: [PharmacyRelationshipWhereInput!]
+  NOT: [PharmacyRelationshipWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  name: StringFilter
+  adapter: StringFilter
+  phone: StringFilter
+  status: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input PharmacyRelationshipOrderByInput {
+  id: OrderDirection
+  name: OrderDirection
+  adapter: OrderDirection
+  phone: OrderDirection
+  status: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input PharmacyRelationshipUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  name: String
+  adapter: String
+  phone: String
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PharmacyRelationshipUpdateArgs {
+  where: PharmacyRelationshipWhereUniqueInput!
+  data: PharmacyRelationshipUpdateInput!
+}
+
+input PharmacyRelationshipCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  name: String
+  adapter: String
+  phone: String
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type PrnFollowUp {
+  id: ID!
+  resident: Resident
+  community: Community
+  administration: MedicationAdministration
+  dueAt: DateTime
+  status: String
+  effect: String
+  recordedBy: User
+  recordedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PrnFollowUpWhereUniqueInput {
+  id: ID
+}
+
+input PrnFollowUpWhereInput {
+  AND: [PrnFollowUpWhereInput!]
+  OR: [PrnFollowUpWhereInput!]
+  NOT: [PrnFollowUpWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  administration: MedicationAdministrationWhereInput
+  dueAt: DateTimeNullableFilter
+  status: StringFilter
+  effect: StringNullableFilter
+  recordedBy: UserWhereInput
+  recordedAt: DateTimeNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input PrnFollowUpOrderByInput {
+  id: OrderDirection
+  dueAt: OrderDirection
+  status: OrderDirection
+  effect: OrderDirection
+  recordedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input PrnFollowUpUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  administration: MedicationAdministrationRelateToOneForUpdateInput
+  dueAt: DateTime
+  status: String
+  effect: String
+  recordedBy: UserRelateToOneForUpdateInput
+  recordedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PrnFollowUpUpdateArgs {
+  where: PrnFollowUpWhereUniqueInput!
+  data: PrnFollowUpUpdateInput!
+}
+
+input PrnFollowUpCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  administration: MedicationAdministrationRelateToOneForCreateInput
+  dueAt: DateTime
+  status: String
+  effect: String
+  recordedBy: UserRelateToOneForCreateInput
+  recordedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type ShiftCount {
+  id: ID!
+  community: Community
+  unit: Unit
+  reference: String
+  shift: String
+  status: String
+  outgoing: User
+  incoming: User
+  startedAt: DateTime
+  completedAt: DateTime
+  entries(where: ShiftCountEntryWhereInput! = {}, orderBy: [ShiftCountEntryOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ShiftCountEntryWhereUniqueInput): [ShiftCountEntry!]
+  entriesCount(where: ShiftCountEntryWhereInput! = {}): Int
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ShiftCountWhereUniqueInput {
+  id: ID
+  reference: String
+}
+
+input ShiftCountWhereInput {
+  AND: [ShiftCountWhereInput!]
+  OR: [ShiftCountWhereInput!]
+  NOT: [ShiftCountWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  unit: UnitWhereInput
+  reference: StringFilter
+  shift: StringFilter
+  status: StringFilter
+  outgoing: UserWhereInput
+  incoming: UserWhereInput
+  startedAt: DateTimeNullableFilter
+  completedAt: DateTimeNullableFilter
+  entries: ShiftCountEntryManyRelationFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input ShiftCountEntryManyRelationFilter {
+  every: ShiftCountEntryWhereInput
+  some: ShiftCountEntryWhereInput
+  none: ShiftCountEntryWhereInput
+}
+
+input ShiftCountOrderByInput {
+  id: OrderDirection
+  reference: OrderDirection
+  shift: OrderDirection
+  status: OrderDirection
+  startedAt: OrderDirection
+  completedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input ShiftCountUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  unit: UnitRelateToOneForUpdateInput
+  reference: String
+  shift: String
+  status: String
+  outgoing: UserRelateToOneForUpdateInput
+  incoming: UserRelateToOneForUpdateInput
+  startedAt: DateTime
+  completedAt: DateTime
+  entries: ShiftCountEntryRelateToManyForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ShiftCountEntryRelateToManyForUpdateInput {
+  disconnect: [ShiftCountEntryWhereUniqueInput!]
+  set: [ShiftCountEntryWhereUniqueInput!]
+  create: [ShiftCountEntryCreateInput!]
+  connect: [ShiftCountEntryWhereUniqueInput!]
+}
+
+input ShiftCountUpdateArgs {
+  where: ShiftCountWhereUniqueInput!
+  data: ShiftCountUpdateInput!
+}
+
+input ShiftCountCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  unit: UnitRelateToOneForCreateInput
+  reference: String
+  shift: String
+  status: String
+  outgoing: UserRelateToOneForCreateInput
+  incoming: UserRelateToOneForCreateInput
+  startedAt: DateTime
+  completedAt: DateTime
+  entries: ShiftCountEntryRelateToManyForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ShiftCountEntryRelateToManyForCreateInput {
+  create: [ShiftCountEntryCreateInput!]
+  connect: [ShiftCountEntryWhereUniqueInput!]
+}
+
+type ShiftCountEntry {
+  id: ID!
+  community: Community
+  shiftCount: ShiftCount
+  supply: MedicationSupply
+  role: String
+  counted: Decimal
+  countedBy: User
+  at: DateTime
+  createdAt: DateTime
+}
+
+input ShiftCountEntryWhereUniqueInput {
+  id: ID
+}
+
+input ShiftCountEntryWhereInput {
+  AND: [ShiftCountEntryWhereInput!]
+  OR: [ShiftCountEntryWhereInput!]
+  NOT: [ShiftCountEntryWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  shiftCount: ShiftCountWhereInput
+  supply: MedicationSupplyWhereInput
+  role: StringFilter
+  counted: DecimalFilter
+  countedBy: UserWhereInput
+  at: DateTimeNullableFilter
+  createdAt: DateTimeNullableFilter
+}
+
+input ShiftCountEntryOrderByInput {
+  id: OrderDirection
+  role: OrderDirection
+  counted: OrderDirection
+  at: OrderDirection
+  createdAt: OrderDirection
+}
+
+input ShiftCountEntryUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  shiftCount: ShiftCountRelateToOneForUpdateInput
+  supply: MedicationSupplyRelateToOneForUpdateInput
+  role: String
+  counted: Decimal
+  countedBy: UserRelateToOneForUpdateInput
+  at: DateTime
+  createdAt: DateTime
+}
+
+input ShiftCountEntryUpdateArgs {
+  where: ShiftCountEntryWhereUniqueInput!
+  data: ShiftCountEntryUpdateInput!
+}
+
+input ShiftCountEntryCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  shiftCount: ShiftCountRelateToOneForCreateInput
+  supply: MedicationSupplyRelateToOneForCreateInput
+  role: String
+  counted: Decimal
+  countedBy: UserRelateToOneForCreateInput
+  at: DateTime
+  createdAt: DateTime
+}
+
+type AntibioticCourse {
+  id: ID!
+  resident: Resident
+  community: Community
+  drugName: String
+  indication: String
+  order: Order
+  case: InfectionCase
+  startedAt: DateTime
+  plannedDays: Int
+  timeoutDueAt: DateTime
+  timeoutOutcome: String
+  timeoutAt: DateTime
+  timeoutBy: User
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AntibioticCourseWhereUniqueInput {
+  id: ID
+}
+
+input AntibioticCourseWhereInput {
+  AND: [AntibioticCourseWhereInput!]
+  OR: [AntibioticCourseWhereInput!]
+  NOT: [AntibioticCourseWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  drugName: StringFilter
+  indication: StringFilter
+  order: OrderWhereInput
+  case: InfectionCaseWhereInput
+  startedAt: DateTimeNullableFilter
+  plannedDays: IntNullableFilter
+  timeoutDueAt: DateTimeNullableFilter
+  timeoutOutcome: StringNullableFilter
+  timeoutAt: DateTimeNullableFilter
+  timeoutBy: UserWhereInput
+  status: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input AntibioticCourseOrderByInput {
+  id: OrderDirection
+  drugName: OrderDirection
+  indication: OrderDirection
+  startedAt: OrderDirection
+  plannedDays: OrderDirection
+  timeoutDueAt: OrderDirection
+  timeoutOutcome: OrderDirection
+  timeoutAt: OrderDirection
+  status: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input AntibioticCourseUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  drugName: String
+  indication: String
+  order: OrderRelateToOneForUpdateInput
+  case: InfectionCaseRelateToOneForUpdateInput
+  startedAt: DateTime
+  plannedDays: Int
+  timeoutDueAt: DateTime
+  timeoutOutcome: String
+  timeoutAt: DateTime
+  timeoutBy: UserRelateToOneForUpdateInput
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input InfectionCaseRelateToOneForUpdateInput {
+  create: InfectionCaseCreateInput
+  connect: InfectionCaseWhereUniqueInput
+  disconnect: Boolean
+}
+
+input AntibioticCourseUpdateArgs {
+  where: AntibioticCourseWhereUniqueInput!
+  data: AntibioticCourseUpdateInput!
+}
+
+input AntibioticCourseCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  drugName: String
+  indication: String
+  order: OrderRelateToOneForCreateInput
+  case: InfectionCaseRelateToOneForCreateInput
+  startedAt: DateTime
+  plannedDays: Int
+  timeoutDueAt: DateTime
+  timeoutOutcome: String
+  timeoutAt: DateTime
+  timeoutBy: UserRelateToOneForCreateInput
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input InfectionCaseRelateToOneForCreateInput {
+  create: InfectionCaseCreateInput
+  connect: InfectionCaseWhereUniqueInput
+}
+
+type Immunisation {
+  id: ID!
+  resident: Resident
+  community: Community
+  vaccine: String
+  status: String
+  offeredAt: DateTime
+  decidedAt: DateTime
+  givenAt: DateTime
+  lot: String
+  recordedBy: User
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ImmunisationWhereUniqueInput {
+  id: ID
+}
+
+input ImmunisationWhereInput {
+  AND: [ImmunisationWhereInput!]
+  OR: [ImmunisationWhereInput!]
+  NOT: [ImmunisationWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  vaccine: StringFilter
+  status: StringFilter
+  offeredAt: DateTimeNullableFilter
+  decidedAt: DateTimeNullableFilter
+  givenAt: DateTimeNullableFilter
+  lot: StringFilter
+  recordedBy: UserWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input ImmunisationOrderByInput {
+  id: OrderDirection
+  vaccine: OrderDirection
+  status: OrderDirection
+  offeredAt: OrderDirection
+  decidedAt: OrderDirection
+  givenAt: OrderDirection
+  lot: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input ImmunisationUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  vaccine: String
+  status: String
+  offeredAt: DateTime
+  decidedAt: DateTime
+  givenAt: DateTime
+  lot: String
+  recordedBy: UserRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ImmunisationUpdateArgs {
+  where: ImmunisationWhereUniqueInput!
+  data: ImmunisationUpdateInput!
+}
+
+input ImmunisationCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  vaccine: String
+  status: String
+  offeredAt: DateTime
+  decidedAt: DateTime
+  givenAt: DateTime
+  lot: String
+  recordedBy: UserRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type Incident {
+  id: ID!
+  resident: Resident
+  community: Community
+  reference: String
+  kind: String
+  description: String
+  location: String
+  severity: String
+  status: String
+  occurredAt: DateTime
+  discoveredAt: DateTime
+  reportedAt: DateTime
+  reportedBy: User
+  witnessed: Boolean
+  headStrike: Boolean
+  allegedAbuseOrSbi: Boolean
+  allegedOther: Boolean
+  reportableDecision: String
+  downgradedBy: User
+  downgradeReason: String
+  source: String
+  sourceNote: ProgressNote
+  parties(where: IncidentPartyWhereInput! = {}, orderBy: [IncidentPartyOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: IncidentPartyWhereUniqueInput): [IncidentParty!]
+  partiesCount(where: IncidentPartyWhereInput! = {}): Int
+  investigations(where: IncidentInvestigationWhereInput! = {}, orderBy: [IncidentInvestigationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: IncidentInvestigationWhereUniqueInput): [IncidentInvestigation!]
+  investigationsCount(where: IncidentInvestigationWhereInput! = {}): Int
+  reports(where: RegulatoryReportWhereInput! = {}, orderBy: [RegulatoryReportOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RegulatoryReportWhereUniqueInput): [RegulatoryReport!]
+  reportsCount(where: RegulatoryReportWhereInput! = {}): Int
+  closedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input IncidentWhereUniqueInput {
+  id: ID
+  reference: String
+}
+
+input IncidentWhereInput {
+  AND: [IncidentWhereInput!]
+  OR: [IncidentWhereInput!]
+  NOT: [IncidentWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  reference: StringFilter
+  kind: StringFilter
+  description: StringFilter
+  location: StringFilter
+  severity: StringNullableFilter
+  status: StringFilter
+  occurredAt: DateTimeNullableFilter
+  discoveredAt: DateTimeNullableFilter
+  reportedAt: DateTimeNullableFilter
+  reportedBy: UserWhereInput
+  witnessed: BooleanFilter
+  headStrike: BooleanFilter
+  allegedAbuseOrSbi: BooleanFilter
+  allegedOther: BooleanFilter
+  reportableDecision: StringNullableFilter
+  downgradedBy: UserWhereInput
+  downgradeReason: StringFilter
+  source: StringNullableFilter
+  sourceNote: ProgressNoteWhereInput
+  parties: IncidentPartyManyRelationFilter
+  investigations: IncidentInvestigationManyRelationFilter
+  reports: RegulatoryReportManyRelationFilter
+  closedAt: DateTimeNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input IncidentPartyManyRelationFilter {
+  every: IncidentPartyWhereInput
+  some: IncidentPartyWhereInput
+  none: IncidentPartyWhereInput
+}
+
+input IncidentInvestigationManyRelationFilter {
+  every: IncidentInvestigationWhereInput
+  some: IncidentInvestigationWhereInput
+  none: IncidentInvestigationWhereInput
+}
+
+input RegulatoryReportManyRelationFilter {
+  every: RegulatoryReportWhereInput
+  some: RegulatoryReportWhereInput
+  none: RegulatoryReportWhereInput
+}
+
+input IncidentOrderByInput {
+  id: OrderDirection
+  reference: OrderDirection
+  kind: OrderDirection
+  description: OrderDirection
+  location: OrderDirection
+  severity: OrderDirection
+  status: OrderDirection
+  occurredAt: OrderDirection
+  discoveredAt: OrderDirection
+  reportedAt: OrderDirection
+  witnessed: OrderDirection
+  headStrike: OrderDirection
+  allegedAbuseOrSbi: OrderDirection
+  allegedOther: OrderDirection
+  reportableDecision: OrderDirection
+  downgradeReason: OrderDirection
+  source: OrderDirection
+  closedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input IncidentUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  reference: String
+  kind: String
+  description: String
+  location: String
+  severity: String
+  status: String
+  occurredAt: DateTime
+  discoveredAt: DateTime
+  reportedAt: DateTime
+  reportedBy: UserRelateToOneForUpdateInput
+  witnessed: Boolean
+  headStrike: Boolean
+  allegedAbuseOrSbi: Boolean
+  allegedOther: Boolean
+  reportableDecision: String
+  downgradedBy: UserRelateToOneForUpdateInput
+  downgradeReason: String
+  source: String
+  sourceNote: ProgressNoteRelateToOneForUpdateInput
+  parties: IncidentPartyRelateToManyForUpdateInput
+  investigations: IncidentInvestigationRelateToManyForUpdateInput
+  reports: RegulatoryReportRelateToManyForUpdateInput
+  closedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input IncidentPartyRelateToManyForUpdateInput {
+  disconnect: [IncidentPartyWhereUniqueInput!]
+  set: [IncidentPartyWhereUniqueInput!]
+  create: [IncidentPartyCreateInput!]
+  connect: [IncidentPartyWhereUniqueInput!]
+}
+
+input IncidentInvestigationRelateToManyForUpdateInput {
+  disconnect: [IncidentInvestigationWhereUniqueInput!]
+  set: [IncidentInvestigationWhereUniqueInput!]
+  create: [IncidentInvestigationCreateInput!]
+  connect: [IncidentInvestigationWhereUniqueInput!]
+}
+
+input RegulatoryReportRelateToManyForUpdateInput {
+  disconnect: [RegulatoryReportWhereUniqueInput!]
+  set: [RegulatoryReportWhereUniqueInput!]
+  create: [RegulatoryReportCreateInput!]
+  connect: [RegulatoryReportWhereUniqueInput!]
+}
+
+input IncidentUpdateArgs {
+  where: IncidentWhereUniqueInput!
+  data: IncidentUpdateInput!
+}
+
+input IncidentCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  reference: String
+  kind: String
+  description: String
+  location: String
+  severity: String
+  status: String
+  occurredAt: DateTime
+  discoveredAt: DateTime
+  reportedAt: DateTime
+  reportedBy: UserRelateToOneForCreateInput
+  witnessed: Boolean
+  headStrike: Boolean
+  allegedAbuseOrSbi: Boolean
+  allegedOther: Boolean
+  reportableDecision: String
+  downgradedBy: UserRelateToOneForCreateInput
+  downgradeReason: String
+  source: String
+  sourceNote: ProgressNoteRelateToOneForCreateInput
+  parties: IncidentPartyRelateToManyForCreateInput
+  investigations: IncidentInvestigationRelateToManyForCreateInput
+  reports: RegulatoryReportRelateToManyForCreateInput
+  closedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input IncidentPartyRelateToManyForCreateInput {
+  create: [IncidentPartyCreateInput!]
+  connect: [IncidentPartyWhereUniqueInput!]
+}
+
+input IncidentInvestigationRelateToManyForCreateInput {
+  create: [IncidentInvestigationCreateInput!]
+  connect: [IncidentInvestigationWhereUniqueInput!]
+}
+
+input RegulatoryReportRelateToManyForCreateInput {
+  create: [RegulatoryReportCreateInput!]
+  connect: [RegulatoryReportWhereUniqueInput!]
+}
+
+type IncidentInvestigation {
+  id: ID!
+  resident: Resident
+  community: Community
+  incident: Incident
+  findings: String
+  rootCause: String
+  interventions: String
+  status: String
+  investigator: User
+  startedAt: DateTime
+  completedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input IncidentInvestigationWhereUniqueInput {
+  id: ID
+}
+
+input IncidentInvestigationWhereInput {
+  AND: [IncidentInvestigationWhereInput!]
+  OR: [IncidentInvestigationWhereInput!]
+  NOT: [IncidentInvestigationWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  incident: IncidentWhereInput
+  findings: StringFilter
+  rootCause: StringFilter
+  interventions: StringFilter
+  status: StringFilter
+  investigator: UserWhereInput
+  startedAt: DateTimeNullableFilter
+  completedAt: DateTimeNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input IncidentInvestigationOrderByInput {
+  id: OrderDirection
+  findings: OrderDirection
+  rootCause: OrderDirection
+  interventions: OrderDirection
+  status: OrderDirection
+  startedAt: OrderDirection
+  completedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input IncidentInvestigationUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  incident: IncidentRelateToOneForUpdateInput
+  findings: String
+  rootCause: String
+  interventions: String
+  status: String
+  investigator: UserRelateToOneForUpdateInput
+  startedAt: DateTime
+  completedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input IncidentInvestigationUpdateArgs {
+  where: IncidentInvestigationWhereUniqueInput!
+  data: IncidentInvestigationUpdateInput!
+}
+
+input IncidentInvestigationCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  incident: IncidentRelateToOneForCreateInput
+  findings: String
+  rootCause: String
+  interventions: String
+  status: String
+  investigator: UserRelateToOneForCreateInput
+  startedAt: DateTime
+  completedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type IncidentParty {
+  id: ID!
+  resident: Resident
+  community: Community
+  incident: Incident
+  role: String
+  name: String
+  notifiedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input IncidentPartyWhereUniqueInput {
+  id: ID
+}
+
+input IncidentPartyWhereInput {
+  AND: [IncidentPartyWhereInput!]
+  OR: [IncidentPartyWhereInput!]
+  NOT: [IncidentPartyWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  incident: IncidentWhereInput
+  role: StringFilter
+  name: StringFilter
+  notifiedAt: DateTimeNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input IncidentPartyOrderByInput {
+  id: OrderDirection
+  role: OrderDirection
+  name: OrderDirection
+  notifiedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input IncidentPartyUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  incident: IncidentRelateToOneForUpdateInput
+  role: String
+  name: String
+  notifiedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input IncidentPartyUpdateArgs {
+  where: IncidentPartyWhereUniqueInput!
+  data: IncidentPartyUpdateInput!
+}
+
+input IncidentPartyCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  incident: IncidentRelateToOneForCreateInput
+  role: String
+  name: String
+  notifiedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type InfectionCase {
+  id: ID!
+  resident: Resident
+  community: Community
+  syndrome: String
+  status: String
+  onsetAt: DateTime
+  criteria: JSON
+  organism: String
+  criteriaMet: Boolean
+  criteriaSet: String
+  cultureAt: DateTime
+  outbreak: Outbreak
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input InfectionCaseWhereUniqueInput {
+  id: ID
+}
+
+input InfectionCaseWhereInput {
+  AND: [InfectionCaseWhereInput!]
+  OR: [InfectionCaseWhereInput!]
+  NOT: [InfectionCaseWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  syndrome: StringFilter
+  status: StringFilter
+  onsetAt: DateTimeNullableFilter
+  organism: StringFilter
+  criteriaMet: BooleanFilter
+  criteriaSet: StringFilter
+  cultureAt: DateTimeNullableFilter
+  outbreak: OutbreakWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input InfectionCaseOrderByInput {
+  id: OrderDirection
+  syndrome: OrderDirection
+  status: OrderDirection
+  onsetAt: OrderDirection
+  organism: OrderDirection
+  criteriaMet: OrderDirection
+  criteriaSet: OrderDirection
+  cultureAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input InfectionCaseUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  syndrome: String
+  status: String
+  onsetAt: DateTime
+  criteria: JSON
+  organism: String
+  criteriaMet: Boolean
+  criteriaSet: String
+  cultureAt: DateTime
+  outbreak: OutbreakRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input OutbreakRelateToOneForUpdateInput {
+  create: OutbreakCreateInput
+  connect: OutbreakWhereUniqueInput
+  disconnect: Boolean
+}
+
+input InfectionCaseUpdateArgs {
+  where: InfectionCaseWhereUniqueInput!
+  data: InfectionCaseUpdateInput!
+}
+
+input InfectionCaseCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  syndrome: String
+  status: String
+  onsetAt: DateTime
+  criteria: JSON
+  organism: String
+  criteriaMet: Boolean
+  criteriaSet: String
+  cultureAt: DateTime
+  outbreak: OutbreakRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input OutbreakRelateToOneForCreateInput {
+  create: OutbreakCreateInput
+  connect: OutbreakWhereUniqueInput
+}
+
+type Outbreak {
+  id: ID!
+  community: Community
+  name: String
+  organism: String
+  unit: Unit
+  status: String
+  declaredAt: DateTime
+  declaredBy: User
+  closedAt: DateTime
+  cases(where: InfectionCaseWhereInput! = {}, orderBy: [InfectionCaseOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: InfectionCaseWhereUniqueInput): [InfectionCase!]
+  casesCount(where: InfectionCaseWhereInput! = {}): Int
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input OutbreakWhereUniqueInput {
+  id: ID
+}
+
+input OutbreakWhereInput {
+  AND: [OutbreakWhereInput!]
+  OR: [OutbreakWhereInput!]
+  NOT: [OutbreakWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  name: StringFilter
+  organism: StringFilter
+  unit: UnitWhereInput
+  status: StringFilter
+  declaredAt: DateTimeNullableFilter
+  declaredBy: UserWhereInput
+  closedAt: DateTimeNullableFilter
+  cases: InfectionCaseManyRelationFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input InfectionCaseManyRelationFilter {
+  every: InfectionCaseWhereInput
+  some: InfectionCaseWhereInput
+  none: InfectionCaseWhereInput
+}
+
+input OutbreakOrderByInput {
+  id: OrderDirection
+  name: OrderDirection
+  organism: OrderDirection
+  status: OrderDirection
+  declaredAt: OrderDirection
+  closedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input OutbreakUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  name: String
+  organism: String
+  unit: UnitRelateToOneForUpdateInput
+  status: String
+  declaredAt: DateTime
+  declaredBy: UserRelateToOneForUpdateInput
+  closedAt: DateTime
+  cases: InfectionCaseRelateToManyForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input InfectionCaseRelateToManyForUpdateInput {
+  disconnect: [InfectionCaseWhereUniqueInput!]
+  set: [InfectionCaseWhereUniqueInput!]
+  create: [InfectionCaseCreateInput!]
+  connect: [InfectionCaseWhereUniqueInput!]
+}
+
+input OutbreakUpdateArgs {
+  where: OutbreakWhereUniqueInput!
+  data: OutbreakUpdateInput!
+}
+
+input OutbreakCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  name: String
+  organism: String
+  unit: UnitRelateToOneForCreateInput
+  status: String
+  declaredAt: DateTime
+  declaredBy: UserRelateToOneForCreateInput
+  closedAt: DateTime
+  cases: InfectionCaseRelateToManyForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input InfectionCaseRelateToManyForCreateInput {
+  create: [InfectionCaseCreateInput!]
+  connect: [InfectionCaseWhereUniqueInput!]
+}
+
+type PrecautionOrder {
+  id: ID!
+  resident: Resident
+  community: Community
+  kind: String
+  case: InfectionCase
+  status: String
+  startedAt: DateTime
+  endedAt: DateTime
+  reviewOn: CalendarDay
+  reason: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PrecautionOrderWhereUniqueInput {
+  id: ID
+}
+
+input PrecautionOrderWhereInput {
+  AND: [PrecautionOrderWhereInput!]
+  OR: [PrecautionOrderWhereInput!]
+  NOT: [PrecautionOrderWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  kind: StringFilter
+  case: InfectionCaseWhereInput
+  status: StringFilter
+  startedAt: DateTimeNullableFilter
+  endedAt: DateTimeNullableFilter
+  reviewOn: CalendarDayNullableFilter
+  reason: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input PrecautionOrderOrderByInput {
+  id: OrderDirection
+  kind: OrderDirection
+  status: OrderDirection
+  startedAt: OrderDirection
+  endedAt: OrderDirection
+  reviewOn: OrderDirection
+  reason: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input PrecautionOrderUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  kind: String
+  case: InfectionCaseRelateToOneForUpdateInput
+  status: String
+  startedAt: DateTime
+  endedAt: DateTime
+  reviewOn: CalendarDay
+  reason: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PrecautionOrderUpdateArgs {
+  where: PrecautionOrderWhereUniqueInput!
+  data: PrecautionOrderUpdateInput!
+}
+
+input PrecautionOrderCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  kind: String
+  case: InfectionCaseRelateToOneForCreateInput
+  status: String
+  startedAt: DateTime
+  endedAt: DateTime
+  reviewOn: CalendarDay
+  reason: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type RegulatoryReport {
+  id: ID!
+  resident: Resident
+  community: Community
+  incident: Incident
+  kind: String
+  status: String
+  body: JSON
+  channel: String
+  confirmation: String
+  submittedAt: DateTime
+  submittedBy: User
+  ruleNote: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input RegulatoryReportWhereUniqueInput {
+  id: ID
+}
+
+input RegulatoryReportWhereInput {
+  AND: [RegulatoryReportWhereInput!]
+  OR: [RegulatoryReportWhereInput!]
+  NOT: [RegulatoryReportWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  incident: IncidentWhereInput
+  kind: StringFilter
+  status: StringFilter
+  channel: StringNullableFilter
+  confirmation: StringFilter
+  submittedAt: DateTimeNullableFilter
+  submittedBy: UserWhereInput
+  ruleNote: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input RegulatoryReportOrderByInput {
+  id: OrderDirection
+  kind: OrderDirection
+  status: OrderDirection
+  channel: OrderDirection
+  confirmation: OrderDirection
+  submittedAt: OrderDirection
+  ruleNote: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input RegulatoryReportUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  incident: IncidentRelateToOneForUpdateInput
+  kind: String
+  status: String
+  body: JSON
+  channel: String
+  confirmation: String
+  submittedAt: DateTime
+  submittedBy: UserRelateToOneForUpdateInput
+  ruleNote: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input RegulatoryReportUpdateArgs {
+  where: RegulatoryReportWhereUniqueInput!
+  data: RegulatoryReportUpdateInput!
+}
+
+input RegulatoryReportCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  incident: IncidentRelateToOneForCreateInput
+  kind: String
+  status: String
+  body: JSON
+  channel: String
+  confirmation: String
+  submittedAt: DateTime
+  submittedBy: UserRelateToOneForCreateInput
+  ruleNote: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type EvidenceRef {
+  id: ID!
+  community: Community
+  finding: Finding
+  recordType: String
+  recordId: String
+  spanStart: Int
+  spanEnd: Int
+  quote: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input EvidenceRefWhereUniqueInput {
+  id: ID
+}
+
+input EvidenceRefWhereInput {
+  AND: [EvidenceRefWhereInput!]
+  OR: [EvidenceRefWhereInput!]
+  NOT: [EvidenceRefWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  finding: FindingWhereInput
+  recordType: StringFilter
+  recordId: StringFilter
+  spanStart: IntNullableFilter
+  spanEnd: IntNullableFilter
+  quote: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input EvidenceRefOrderByInput {
+  id: OrderDirection
+  recordType: OrderDirection
+  recordId: OrderDirection
+  spanStart: OrderDirection
+  spanEnd: OrderDirection
+  quote: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input EvidenceRefUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  finding: FindingRelateToOneForUpdateInput
+  recordType: String
+  recordId: String
+  spanStart: Int
+  spanEnd: Int
+  quote: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input FindingRelateToOneForUpdateInput {
+  create: FindingCreateInput
+  connect: FindingWhereUniqueInput
+  disconnect: Boolean
+}
+
+input EvidenceRefUpdateArgs {
+  where: EvidenceRefWhereUniqueInput!
+  data: EvidenceRefUpdateInput!
+}
+
+input EvidenceRefCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  finding: FindingRelateToOneForCreateInput
+  recordType: String
+  recordId: String
+  spanStart: Int
+  spanEnd: Int
+  quote: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input FindingRelateToOneForCreateInput {
+  create: FindingCreateInput
+  connect: FindingWhereUniqueInput
+}
+
+type Finding {
+  id: ID!
+  community: Community
+  resident: Resident
+  workflowVersion: WorkflowVersion
+  run: WorkflowRun
+  workflowCode: String
+  dedupeKey: String
+  title: String
+  detail: String
+  severity: String
+  status: String
+  evidence(where: EvidenceRefWhereInput! = {}, orderBy: [EvidenceRefOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: EvidenceRefWhereUniqueInput): [EvidenceRef!]
+  evidenceCount(where: EvidenceRefWhereInput! = {}): Int
+  task: Task
+  proposal: Proposal
+  resolvedAt: DateTime
+  resolutionNote: String
+  dismissedBy: User
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input FindingWhereUniqueInput {
+  id: ID
+  dedupeKey: String
+}
+
+input FindingWhereInput {
+  AND: [FindingWhereInput!]
+  OR: [FindingWhereInput!]
+  NOT: [FindingWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  workflowVersion: WorkflowVersionWhereInput
+  run: WorkflowRunWhereInput
+  workflowCode: StringFilter
+  dedupeKey: StringFilter
+  title: StringFilter
+  detail: StringFilter
+  severity: StringNullableFilter
+  status: StringFilter
+  evidence: EvidenceRefManyRelationFilter
+  task: TaskWhereInput
+  proposal: ProposalWhereInput
+  resolvedAt: DateTimeNullableFilter
+  resolutionNote: StringFilter
+  dismissedBy: UserWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input EvidenceRefManyRelationFilter {
+  every: EvidenceRefWhereInput
+  some: EvidenceRefWhereInput
+  none: EvidenceRefWhereInput
+}
+
+input FindingOrderByInput {
+  id: OrderDirection
+  workflowCode: OrderDirection
+  dedupeKey: OrderDirection
+  title: OrderDirection
+  detail: OrderDirection
+  severity: OrderDirection
+  status: OrderDirection
+  resolvedAt: OrderDirection
+  resolutionNote: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input FindingUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  workflowVersion: WorkflowVersionRelateToOneForUpdateInput
+  run: WorkflowRunRelateToOneForUpdateInput
+  workflowCode: String
+  dedupeKey: String
+  title: String
+  detail: String
+  severity: String
+  status: String
+  evidence: EvidenceRefRelateToManyForUpdateInput
+  task: TaskRelateToOneForUpdateInput
+  proposal: ProposalRelateToOneForUpdateInput
+  resolvedAt: DateTime
+  resolutionNote: String
+  dismissedBy: UserRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input WorkflowVersionRelateToOneForUpdateInput {
+  create: WorkflowVersionCreateInput
+  connect: WorkflowVersionWhereUniqueInput
+  disconnect: Boolean
+}
+
+input WorkflowRunRelateToOneForUpdateInput {
+  create: WorkflowRunCreateInput
+  connect: WorkflowRunWhereUniqueInput
+  disconnect: Boolean
+}
+
+input EvidenceRefRelateToManyForUpdateInput {
+  disconnect: [EvidenceRefWhereUniqueInput!]
+  set: [EvidenceRefWhereUniqueInput!]
+  create: [EvidenceRefCreateInput!]
+  connect: [EvidenceRefWhereUniqueInput!]
+}
+
+input TaskRelateToOneForUpdateInput {
+  create: TaskCreateInput
+  connect: TaskWhereUniqueInput
+  disconnect: Boolean
+}
+
+input FindingUpdateArgs {
+  where: FindingWhereUniqueInput!
+  data: FindingUpdateInput!
+}
+
+input FindingCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  workflowVersion: WorkflowVersionRelateToOneForCreateInput
+  run: WorkflowRunRelateToOneForCreateInput
+  workflowCode: String
+  dedupeKey: String
+  title: String
+  detail: String
+  severity: String
+  status: String
+  evidence: EvidenceRefRelateToManyForCreateInput
+  task: TaskRelateToOneForCreateInput
+  proposal: ProposalRelateToOneForCreateInput
+  resolvedAt: DateTime
+  resolutionNote: String
+  dismissedBy: UserRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input WorkflowVersionRelateToOneForCreateInput {
+  create: WorkflowVersionCreateInput
+  connect: WorkflowVersionWhereUniqueInput
+}
+
+input WorkflowRunRelateToOneForCreateInput {
+  create: WorkflowRunCreateInput
+  connect: WorkflowRunWhereUniqueInput
+}
+
+input EvidenceRefRelateToManyForCreateInput {
+  create: [EvidenceRefCreateInput!]
+  connect: [EvidenceRefWhereUniqueInput!]
+}
+
+input TaskRelateToOneForCreateInput {
+  create: TaskCreateInput
+  connect: TaskWhereUniqueInput
+}
+
+type InferenceCall {
+  id: ID!
+  community: Community
+  purpose: String
+  provider: String
+  providerClass: String
+  model: String
+  outcome: String
+  policyAtCall: String
+  inputHash: String
+  outputHash: String
+  inputTokens: Int
+  outputTokens: Int
+  reason: String
+  at: DateTime
+  actor: User
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input InferenceCallWhereUniqueInput {
+  id: ID
+}
+
+input InferenceCallWhereInput {
+  AND: [InferenceCallWhereInput!]
+  OR: [InferenceCallWhereInput!]
+  NOT: [InferenceCallWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  purpose: StringFilter
+  provider: StringFilter
+  providerClass: StringFilter
+  model: StringFilter
+  outcome: StringFilter
+  policyAtCall: StringFilter
+  inputHash: StringFilter
+  outputHash: StringFilter
+  inputTokens: IntNullableFilter
+  outputTokens: IntNullableFilter
+  reason: StringFilter
+  at: DateTimeNullableFilter
+  actor: UserWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input InferenceCallOrderByInput {
+  id: OrderDirection
+  purpose: OrderDirection
+  provider: OrderDirection
+  providerClass: OrderDirection
+  model: OrderDirection
+  outcome: OrderDirection
+  policyAtCall: OrderDirection
+  inputHash: OrderDirection
+  outputHash: OrderDirection
+  inputTokens: OrderDirection
+  outputTokens: OrderDirection
+  reason: OrderDirection
+  at: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input InferenceCallUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  purpose: String
+  provider: String
+  providerClass: String
+  model: String
+  outcome: String
+  policyAtCall: String
+  inputHash: String
+  outputHash: String
+  inputTokens: Int
+  outputTokens: Int
+  reason: String
+  at: DateTime
+  actor: UserRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input InferenceCallUpdateArgs {
+  where: InferenceCallWhereUniqueInput!
+  data: InferenceCallUpdateInput!
+}
+
+input InferenceCallCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  purpose: String
+  provider: String
+  providerClass: String
+  model: String
+  outcome: String
+  policyAtCall: String
+  inputHash: String
+  outputHash: String
+  inputTokens: Int
+  outputTokens: Int
+  reason: String
+  at: DateTime
+  actor: UserRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type WorkflowActivation {
+  id: ID!
+  community: Community
+  workflowVersion: WorkflowVersion
+  status: String
+  approvals: JSON
+  activatedAt: DateTime
+  activatedBy: User
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input WorkflowActivationWhereUniqueInput {
+  id: ID
+}
+
+input WorkflowActivationWhereInput {
+  AND: [WorkflowActivationWhereInput!]
+  OR: [WorkflowActivationWhereInput!]
+  NOT: [WorkflowActivationWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  workflowVersion: WorkflowVersionWhereInput
+  status: StringFilter
+  activatedAt: DateTimeNullableFilter
+  activatedBy: UserWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input WorkflowActivationOrderByInput {
+  id: OrderDirection
+  status: OrderDirection
+  activatedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input WorkflowActivationUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  workflowVersion: WorkflowVersionRelateToOneForUpdateInput
+  status: String
+  approvals: JSON
+  activatedAt: DateTime
+  activatedBy: UserRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input WorkflowActivationUpdateArgs {
+  where: WorkflowActivationWhereUniqueInput!
+  data: WorkflowActivationUpdateInput!
+}
+
+input WorkflowActivationCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  workflowVersion: WorkflowVersionRelateToOneForCreateInput
+  status: String
+  approvals: JSON
+  activatedAt: DateTime
+  activatedBy: UserRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type WorkflowDefinition {
+  id: ID!
+  community: Community
+  code: String
+  name: String
+  description: String
+  origin: String
+  status: String
+  versions(where: WorkflowVersionWhereInput! = {}, orderBy: [WorkflowVersionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: WorkflowVersionWhereUniqueInput): [WorkflowVersion!]
+  versionsCount(where: WorkflowVersionWhereInput! = {}): Int
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input WorkflowDefinitionWhereUniqueInput {
+  id: ID
+}
+
+input WorkflowDefinitionWhereInput {
+  AND: [WorkflowDefinitionWhereInput!]
+  OR: [WorkflowDefinitionWhereInput!]
+  NOT: [WorkflowDefinitionWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  code: StringFilter
+  name: StringFilter
+  description: StringFilter
+  origin: StringFilter
+  status: StringFilter
+  versions: WorkflowVersionManyRelationFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input WorkflowVersionManyRelationFilter {
+  every: WorkflowVersionWhereInput
+  some: WorkflowVersionWhereInput
+  none: WorkflowVersionWhereInput
+}
+
+input WorkflowDefinitionOrderByInput {
+  id: OrderDirection
+  code: OrderDirection
+  name: OrderDirection
+  description: OrderDirection
+  origin: OrderDirection
+  status: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input WorkflowDefinitionUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  code: String
+  name: String
+  description: String
+  origin: String
+  status: String
+  versions: WorkflowVersionRelateToManyForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input WorkflowVersionRelateToManyForUpdateInput {
+  disconnect: [WorkflowVersionWhereUniqueInput!]
+  set: [WorkflowVersionWhereUniqueInput!]
+  create: [WorkflowVersionCreateInput!]
+  connect: [WorkflowVersionWhereUniqueInput!]
+}
+
+input WorkflowDefinitionUpdateArgs {
+  where: WorkflowDefinitionWhereUniqueInput!
+  data: WorkflowDefinitionUpdateInput!
+}
+
+input WorkflowDefinitionCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  code: String
+  name: String
+  description: String
+  origin: String
+  status: String
+  versions: WorkflowVersionRelateToManyForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input WorkflowVersionRelateToManyForCreateInput {
+  create: [WorkflowVersionCreateInput!]
+  connect: [WorkflowVersionWhereUniqueInput!]
+}
+
+type WorkflowRun {
+  id: ID!
+  community: Community
+  workflowVersion: WorkflowVersion
+  windowKey: String
+  trigger: String
+  status: String
+  startedAt: DateTime
+  finishedAt: DateTime
+  findingsOpened: Int
+  findingsResolved: Int
+  summary: JSON
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input WorkflowRunWhereUniqueInput {
+  id: ID
+  windowKey: String
+}
+
+input WorkflowRunWhereInput {
+  AND: [WorkflowRunWhereInput!]
+  OR: [WorkflowRunWhereInput!]
+  NOT: [WorkflowRunWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  workflowVersion: WorkflowVersionWhereInput
+  windowKey: StringFilter
+  trigger: StringFilter
+  status: StringFilter
+  startedAt: DateTimeNullableFilter
+  finishedAt: DateTimeNullableFilter
+  findingsOpened: IntNullableFilter
+  findingsResolved: IntNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input WorkflowRunOrderByInput {
+  id: OrderDirection
+  windowKey: OrderDirection
+  trigger: OrderDirection
+  status: OrderDirection
+  startedAt: OrderDirection
+  finishedAt: OrderDirection
+  findingsOpened: OrderDirection
+  findingsResolved: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input WorkflowRunUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  workflowVersion: WorkflowVersionRelateToOneForUpdateInput
+  windowKey: String
+  trigger: String
+  status: String
+  startedAt: DateTime
+  finishedAt: DateTime
+  findingsOpened: Int
+  findingsResolved: Int
+  summary: JSON
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input WorkflowRunUpdateArgs {
+  where: WorkflowRunWhereUniqueInput!
+  data: WorkflowRunUpdateInput!
+}
+
+input WorkflowRunCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  workflowVersion: WorkflowVersionRelateToOneForCreateInput
+  windowKey: String
+  trigger: String
+  status: String
+  startedAt: DateTime
+  finishedAt: DateTime
+  findingsOpened: Int
+  findingsResolved: Int
+  summary: JSON
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type WorkflowVersion {
+  id: ID!
+  community: Community
+  definition: WorkflowDefinition
+  versionNumber: Int
+  graph: JSON
+  graphHash: String
+  policyVersion: String
+  policy: JSON
+  status: String
+  dryRun: JSON
+  createdByInference: InferenceCall
+  description: String
+  activations(where: WorkflowActivationWhereInput! = {}, orderBy: [WorkflowActivationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: WorkflowActivationWhereUniqueInput): [WorkflowActivation!]
+  activationsCount(where: WorkflowActivationWhereInput! = {}): Int
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input WorkflowVersionWhereUniqueInput {
+  id: ID
+}
+
+input WorkflowVersionWhereInput {
+  AND: [WorkflowVersionWhereInput!]
+  OR: [WorkflowVersionWhereInput!]
+  NOT: [WorkflowVersionWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  definition: WorkflowDefinitionWhereInput
+  versionNumber: IntNullableFilter
+  graphHash: StringFilter
+  policyVersion: StringFilter
+  status: StringFilter
+  createdByInference: InferenceCallWhereInput
+  description: StringFilter
+  activations: WorkflowActivationManyRelationFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input WorkflowActivationManyRelationFilter {
+  every: WorkflowActivationWhereInput
+  some: WorkflowActivationWhereInput
+  none: WorkflowActivationWhereInput
+}
+
+input WorkflowVersionOrderByInput {
+  id: OrderDirection
+  versionNumber: OrderDirection
+  graphHash: OrderDirection
+  policyVersion: OrderDirection
+  status: OrderDirection
+  description: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input WorkflowVersionUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  definition: WorkflowDefinitionRelateToOneForUpdateInput
+  versionNumber: Int
+  graph: JSON
+  graphHash: String
+  policyVersion: String
+  policy: JSON
+  status: String
+  dryRun: JSON
+  createdByInference: InferenceCallRelateToOneForUpdateInput
+  description: String
+  activations: WorkflowActivationRelateToManyForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input WorkflowDefinitionRelateToOneForUpdateInput {
+  create: WorkflowDefinitionCreateInput
+  connect: WorkflowDefinitionWhereUniqueInput
+  disconnect: Boolean
+}
+
+input InferenceCallRelateToOneForUpdateInput {
+  create: InferenceCallCreateInput
+  connect: InferenceCallWhereUniqueInput
+  disconnect: Boolean
+}
+
+input WorkflowActivationRelateToManyForUpdateInput {
+  disconnect: [WorkflowActivationWhereUniqueInput!]
+  set: [WorkflowActivationWhereUniqueInput!]
+  create: [WorkflowActivationCreateInput!]
+  connect: [WorkflowActivationWhereUniqueInput!]
+}
+
+input WorkflowVersionUpdateArgs {
+  where: WorkflowVersionWhereUniqueInput!
+  data: WorkflowVersionUpdateInput!
+}
+
+input WorkflowVersionCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  definition: WorkflowDefinitionRelateToOneForCreateInput
+  versionNumber: Int
+  graph: JSON
+  graphHash: String
+  policyVersion: String
+  policy: JSON
+  status: String
+  dryRun: JSON
+  createdByInference: InferenceCallRelateToOneForCreateInput
+  description: String
+  activations: WorkflowActivationRelateToManyForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input WorkflowDefinitionRelateToOneForCreateInput {
+  create: WorkflowDefinitionCreateInput
+  connect: WorkflowDefinitionWhereUniqueInput
+}
+
+input InferenceCallRelateToOneForCreateInput {
+  create: InferenceCallCreateInput
+  connect: InferenceCallWhereUniqueInput
+}
+
+input WorkflowActivationRelateToManyForCreateInput {
+  create: [WorkflowActivationCreateInput!]
+  connect: [WorkflowActivationWhereUniqueInput!]
+}
+
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -8236,6 +12812,264 @@ type Mutation {
   updateWaitlistEntries(data: [WaitlistEntryUpdateArgs!]!): [WaitlistEntry]
   deleteWaitlistEntry(where: WaitlistEntryWhereUniqueInput!): WaitlistEntry
   deleteWaitlistEntries(where: [WaitlistEntryWhereUniqueInput!]!): [WaitlistEntry]
+  createAdlRecord(data: AdlRecordCreateInput!): AdlRecord
+  createAdlRecords(data: [AdlRecordCreateInput!]!): [AdlRecord]
+  updateAdlRecord(where: AdlRecordWhereUniqueInput!, data: AdlRecordUpdateInput!): AdlRecord
+  updateAdlRecords(data: [AdlRecordUpdateArgs!]!): [AdlRecord]
+  deleteAdlRecord(where: AdlRecordWhereUniqueInput!): AdlRecord
+  deleteAdlRecords(where: [AdlRecordWhereUniqueInput!]!): [AdlRecord]
+  createAssessment(data: AssessmentCreateInput!): Assessment
+  createAssessments(data: [AssessmentCreateInput!]!): [Assessment]
+  updateAssessment(where: AssessmentWhereUniqueInput!, data: AssessmentUpdateInput!): Assessment
+  updateAssessments(data: [AssessmentUpdateArgs!]!): [Assessment]
+  deleteAssessment(where: AssessmentWhereUniqueInput!): Assessment
+  deleteAssessments(where: [AssessmentWhereUniqueInput!]!): [Assessment]
+  createAssessmentTemplate(data: AssessmentTemplateCreateInput!): AssessmentTemplate
+  createAssessmentTemplates(data: [AssessmentTemplateCreateInput!]!): [AssessmentTemplate]
+  updateAssessmentTemplate(where: AssessmentTemplateWhereUniqueInput!, data: AssessmentTemplateUpdateInput!): AssessmentTemplate
+  updateAssessmentTemplates(data: [AssessmentTemplateUpdateArgs!]!): [AssessmentTemplate]
+  deleteAssessmentTemplate(where: AssessmentTemplateWhereUniqueInput!): AssessmentTemplate
+  deleteAssessmentTemplates(where: [AssessmentTemplateWhereUniqueInput!]!): [AssessmentTemplate]
+  createBehaviourEpisode(data: BehaviourEpisodeCreateInput!): BehaviourEpisode
+  createBehaviourEpisodes(data: [BehaviourEpisodeCreateInput!]!): [BehaviourEpisode]
+  updateBehaviourEpisode(where: BehaviourEpisodeWhereUniqueInput!, data: BehaviourEpisodeUpdateInput!): BehaviourEpisode
+  updateBehaviourEpisodes(data: [BehaviourEpisodeUpdateArgs!]!): [BehaviourEpisode]
+  deleteBehaviourEpisode(where: BehaviourEpisodeWhereUniqueInput!): BehaviourEpisode
+  deleteBehaviourEpisodes(where: [BehaviourEpisodeWhereUniqueInput!]!): [BehaviourEpisode]
+  createCarePlan(data: CarePlanCreateInput!): CarePlan
+  createCarePlans(data: [CarePlanCreateInput!]!): [CarePlan]
+  updateCarePlan(where: CarePlanWhereUniqueInput!, data: CarePlanUpdateInput!): CarePlan
+  updateCarePlans(data: [CarePlanUpdateArgs!]!): [CarePlan]
+  deleteCarePlan(where: CarePlanWhereUniqueInput!): CarePlan
+  deleteCarePlans(where: [CarePlanWhereUniqueInput!]!): [CarePlan]
+  createCarePlanItem(data: CarePlanItemCreateInput!): CarePlanItem
+  createCarePlanItems(data: [CarePlanItemCreateInput!]!): [CarePlanItem]
+  updateCarePlanItem(where: CarePlanItemWhereUniqueInput!, data: CarePlanItemUpdateInput!): CarePlanItem
+  updateCarePlanItems(data: [CarePlanItemUpdateArgs!]!): [CarePlanItem]
+  deleteCarePlanItem(where: CarePlanItemWhereUniqueInput!): CarePlanItem
+  deleteCarePlanItems(where: [CarePlanItemWhereUniqueInput!]!): [CarePlanItem]
+  createIntakeRecord(data: IntakeRecordCreateInput!): IntakeRecord
+  createIntakeRecords(data: [IntakeRecordCreateInput!]!): [IntakeRecord]
+  updateIntakeRecord(where: IntakeRecordWhereUniqueInput!, data: IntakeRecordUpdateInput!): IntakeRecord
+  updateIntakeRecords(data: [IntakeRecordUpdateArgs!]!): [IntakeRecord]
+  deleteIntakeRecord(where: IntakeRecordWhereUniqueInput!): IntakeRecord
+  deleteIntakeRecords(where: [IntakeRecordWhereUniqueInput!]!): [IntakeRecord]
+  createMedicationOrderDetail(data: MedicationOrderDetailCreateInput!): MedicationOrderDetail
+  createMedicationOrderDetails(data: [MedicationOrderDetailCreateInput!]!): [MedicationOrderDetail]
+  updateMedicationOrderDetail(where: MedicationOrderDetailWhereUniqueInput!, data: MedicationOrderDetailUpdateInput!): MedicationOrderDetail
+  updateMedicationOrderDetails(data: [MedicationOrderDetailUpdateArgs!]!): [MedicationOrderDetail]
+  deleteMedicationOrderDetail(where: MedicationOrderDetailWhereUniqueInput!): MedicationOrderDetail
+  deleteMedicationOrderDetails(where: [MedicationOrderDetailWhereUniqueInput!]!): [MedicationOrderDetail]
+  createOrder(data: OrderCreateInput!): Order
+  createOrders(data: [OrderCreateInput!]!): [Order]
+  updateOrder(where: OrderWhereUniqueInput!, data: OrderUpdateInput!): Order
+  updateOrders(data: [OrderUpdateArgs!]!): [Order]
+  deleteOrder(where: OrderWhereUniqueInput!): Order
+  deleteOrders(where: [OrderWhereUniqueInput!]!): [Order]
+  createPhysicianVisit(data: PhysicianVisitCreateInput!): PhysicianVisit
+  createPhysicianVisits(data: [PhysicianVisitCreateInput!]!): [PhysicianVisit]
+  updatePhysicianVisit(where: PhysicianVisitWhereUniqueInput!, data: PhysicianVisitUpdateInput!): PhysicianVisit
+  updatePhysicianVisits(data: [PhysicianVisitUpdateArgs!]!): [PhysicianVisit]
+  deletePhysicianVisit(where: PhysicianVisitWhereUniqueInput!): PhysicianVisit
+  deletePhysicianVisits(where: [PhysicianVisitWhereUniqueInput!]!): [PhysicianVisit]
+  createPocTaskSlot(data: PocTaskSlotCreateInput!): PocTaskSlot
+  createPocTaskSlots(data: [PocTaskSlotCreateInput!]!): [PocTaskSlot]
+  updatePocTaskSlot(where: PocTaskSlotWhereUniqueInput!, data: PocTaskSlotUpdateInput!): PocTaskSlot
+  updatePocTaskSlots(data: [PocTaskSlotUpdateArgs!]!): [PocTaskSlot]
+  deletePocTaskSlot(where: PocTaskSlotWhereUniqueInput!): PocTaskSlot
+  deletePocTaskSlots(where: [PocTaskSlotWhereUniqueInput!]!): [PocTaskSlot]
+  createProgressNote(data: ProgressNoteCreateInput!): ProgressNote
+  createProgressNotes(data: [ProgressNoteCreateInput!]!): [ProgressNote]
+  updateProgressNote(where: ProgressNoteWhereUniqueInput!, data: ProgressNoteUpdateInput!): ProgressNote
+  updateProgressNotes(data: [ProgressNoteUpdateArgs!]!): [ProgressNote]
+  deleteProgressNote(where: ProgressNoteWhereUniqueInput!): ProgressNote
+  deleteProgressNotes(where: [ProgressNoteWhereUniqueInput!]!): [ProgressNote]
+  createTask(data: TaskCreateInput!): Task
+  createTasks(data: [TaskCreateInput!]!): [Task]
+  updateTask(where: TaskWhereUniqueInput!, data: TaskUpdateInput!): Task
+  updateTasks(data: [TaskUpdateArgs!]!): [Task]
+  deleteTask(where: TaskWhereUniqueInput!): Task
+  deleteTasks(where: [TaskWhereUniqueInput!]!): [Task]
+  createVitalSign(data: VitalSignCreateInput!): VitalSign
+  createVitalSigns(data: [VitalSignCreateInput!]!): [VitalSign]
+  updateVitalSign(where: VitalSignWhereUniqueInput!, data: VitalSignUpdateInput!): VitalSign
+  updateVitalSigns(data: [VitalSignUpdateArgs!]!): [VitalSign]
+  deleteVitalSign(where: VitalSignWhereUniqueInput!): VitalSign
+  deleteVitalSigns(where: [VitalSignWhereUniqueInput!]!): [VitalSign]
+  createWound(data: WoundCreateInput!): Wound
+  createWounds(data: [WoundCreateInput!]!): [Wound]
+  updateWound(where: WoundWhereUniqueInput!, data: WoundUpdateInput!): Wound
+  updateWounds(data: [WoundUpdateArgs!]!): [Wound]
+  deleteWound(where: WoundWhereUniqueInput!): Wound
+  deleteWounds(where: [WoundWhereUniqueInput!]!): [Wound]
+  createWoundAssessment(data: WoundAssessmentCreateInput!): WoundAssessment
+  createWoundAssessments(data: [WoundAssessmentCreateInput!]!): [WoundAssessment]
+  updateWoundAssessment(where: WoundAssessmentWhereUniqueInput!, data: WoundAssessmentUpdateInput!): WoundAssessment
+  updateWoundAssessments(data: [WoundAssessmentUpdateArgs!]!): [WoundAssessment]
+  deleteWoundAssessment(where: WoundAssessmentWhereUniqueInput!): WoundAssessment
+  deleteWoundAssessments(where: [WoundAssessmentWhereUniqueInput!]!): [WoundAssessment]
+  createAdministrationSlot(data: AdministrationSlotCreateInput!): AdministrationSlot
+  createAdministrationSlots(data: [AdministrationSlotCreateInput!]!): [AdministrationSlot]
+  updateAdministrationSlot(where: AdministrationSlotWhereUniqueInput!, data: AdministrationSlotUpdateInput!): AdministrationSlot
+  updateAdministrationSlots(data: [AdministrationSlotUpdateArgs!]!): [AdministrationSlot]
+  deleteAdministrationSlot(where: AdministrationSlotWhereUniqueInput!): AdministrationSlot
+  deleteAdministrationSlots(where: [AdministrationSlotWhereUniqueInput!]!): [AdministrationSlot]
+  createCountDiscrepancy(data: CountDiscrepancyCreateInput!): CountDiscrepancy
+  createCountDiscrepancies(data: [CountDiscrepancyCreateInput!]!): [CountDiscrepancy]
+  updateCountDiscrepancy(where: CountDiscrepancyWhereUniqueInput!, data: CountDiscrepancyUpdateInput!): CountDiscrepancy
+  updateCountDiscrepancies(data: [CountDiscrepancyUpdateArgs!]!): [CountDiscrepancy]
+  deleteCountDiscrepancy(where: CountDiscrepancyWhereUniqueInput!): CountDiscrepancy
+  deleteCountDiscrepancies(where: [CountDiscrepancyWhereUniqueInput!]!): [CountDiscrepancy]
+  createMedicationAdministration(data: MedicationAdministrationCreateInput!): MedicationAdministration
+  createMedicationAdministrations(data: [MedicationAdministrationCreateInput!]!): [MedicationAdministration]
+  updateMedicationAdministration(where: MedicationAdministrationWhereUniqueInput!, data: MedicationAdministrationUpdateInput!): MedicationAdministration
+  updateMedicationAdministrations(data: [MedicationAdministrationUpdateArgs!]!): [MedicationAdministration]
+  deleteMedicationAdministration(where: MedicationAdministrationWhereUniqueInput!): MedicationAdministration
+  deleteMedicationAdministrations(where: [MedicationAdministrationWhereUniqueInput!]!): [MedicationAdministration]
+  createMedicationDestruction(data: MedicationDestructionCreateInput!): MedicationDestruction
+  createMedicationDestructions(data: [MedicationDestructionCreateInput!]!): [MedicationDestruction]
+  updateMedicationDestruction(where: MedicationDestructionWhereUniqueInput!, data: MedicationDestructionUpdateInput!): MedicationDestruction
+  updateMedicationDestructions(data: [MedicationDestructionUpdateArgs!]!): [MedicationDestruction]
+  deleteMedicationDestruction(where: MedicationDestructionWhereUniqueInput!): MedicationDestruction
+  deleteMedicationDestructions(where: [MedicationDestructionWhereUniqueInput!]!): [MedicationDestruction]
+  createMedicationReference(data: MedicationReferenceCreateInput!): MedicationReference
+  createMedicationReferences(data: [MedicationReferenceCreateInput!]!): [MedicationReference]
+  updateMedicationReference(where: MedicationReferenceWhereUniqueInput!, data: MedicationReferenceUpdateInput!): MedicationReference
+  updateMedicationReferences(data: [MedicationReferenceUpdateArgs!]!): [MedicationReference]
+  deleteMedicationReference(where: MedicationReferenceWhereUniqueInput!): MedicationReference
+  deleteMedicationReferences(where: [MedicationReferenceWhereUniqueInput!]!): [MedicationReference]
+  createMedicationSupply(data: MedicationSupplyCreateInput!): MedicationSupply
+  createMedicationSupplies(data: [MedicationSupplyCreateInput!]!): [MedicationSupply]
+  updateMedicationSupply(where: MedicationSupplyWhereUniqueInput!, data: MedicationSupplyUpdateInput!): MedicationSupply
+  updateMedicationSupplies(data: [MedicationSupplyUpdateArgs!]!): [MedicationSupply]
+  deleteMedicationSupply(where: MedicationSupplyWhereUniqueInput!): MedicationSupply
+  deleteMedicationSupplies(where: [MedicationSupplyWhereUniqueInput!]!): [MedicationSupply]
+  createMedicationSupplyMovement(data: MedicationSupplyMovementCreateInput!): MedicationSupplyMovement
+  createMedicationSupplyMovements(data: [MedicationSupplyMovementCreateInput!]!): [MedicationSupplyMovement]
+  updateMedicationSupplyMovement(where: MedicationSupplyMovementWhereUniqueInput!, data: MedicationSupplyMovementUpdateInput!): MedicationSupplyMovement
+  updateMedicationSupplyMovements(data: [MedicationSupplyMovementUpdateArgs!]!): [MedicationSupplyMovement]
+  deleteMedicationSupplyMovement(where: MedicationSupplyMovementWhereUniqueInput!): MedicationSupplyMovement
+  deleteMedicationSupplyMovements(where: [MedicationSupplyMovementWhereUniqueInput!]!): [MedicationSupplyMovement]
+  createPharmacyRelationship(data: PharmacyRelationshipCreateInput!): PharmacyRelationship
+  createPharmacyRelationships(data: [PharmacyRelationshipCreateInput!]!): [PharmacyRelationship]
+  updatePharmacyRelationship(where: PharmacyRelationshipWhereUniqueInput!, data: PharmacyRelationshipUpdateInput!): PharmacyRelationship
+  updatePharmacyRelationships(data: [PharmacyRelationshipUpdateArgs!]!): [PharmacyRelationship]
+  deletePharmacyRelationship(where: PharmacyRelationshipWhereUniqueInput!): PharmacyRelationship
+  deletePharmacyRelationships(where: [PharmacyRelationshipWhereUniqueInput!]!): [PharmacyRelationship]
+  createPrnFollowUp(data: PrnFollowUpCreateInput!): PrnFollowUp
+  createPrnFollowUps(data: [PrnFollowUpCreateInput!]!): [PrnFollowUp]
+  updatePrnFollowUp(where: PrnFollowUpWhereUniqueInput!, data: PrnFollowUpUpdateInput!): PrnFollowUp
+  updatePrnFollowUps(data: [PrnFollowUpUpdateArgs!]!): [PrnFollowUp]
+  deletePrnFollowUp(where: PrnFollowUpWhereUniqueInput!): PrnFollowUp
+  deletePrnFollowUps(where: [PrnFollowUpWhereUniqueInput!]!): [PrnFollowUp]
+  createShiftCount(data: ShiftCountCreateInput!): ShiftCount
+  createShiftCounts(data: [ShiftCountCreateInput!]!): [ShiftCount]
+  updateShiftCount(where: ShiftCountWhereUniqueInput!, data: ShiftCountUpdateInput!): ShiftCount
+  updateShiftCounts(data: [ShiftCountUpdateArgs!]!): [ShiftCount]
+  deleteShiftCount(where: ShiftCountWhereUniqueInput!): ShiftCount
+  deleteShiftCounts(where: [ShiftCountWhereUniqueInput!]!): [ShiftCount]
+  createShiftCountEntry(data: ShiftCountEntryCreateInput!): ShiftCountEntry
+  createShiftCountEntries(data: [ShiftCountEntryCreateInput!]!): [ShiftCountEntry]
+  updateShiftCountEntry(where: ShiftCountEntryWhereUniqueInput!, data: ShiftCountEntryUpdateInput!): ShiftCountEntry
+  updateShiftCountEntries(data: [ShiftCountEntryUpdateArgs!]!): [ShiftCountEntry]
+  deleteShiftCountEntry(where: ShiftCountEntryWhereUniqueInput!): ShiftCountEntry
+  deleteShiftCountEntries(where: [ShiftCountEntryWhereUniqueInput!]!): [ShiftCountEntry]
+  createAntibioticCourse(data: AntibioticCourseCreateInput!): AntibioticCourse
+  createAntibioticCourses(data: [AntibioticCourseCreateInput!]!): [AntibioticCourse]
+  updateAntibioticCourse(where: AntibioticCourseWhereUniqueInput!, data: AntibioticCourseUpdateInput!): AntibioticCourse
+  updateAntibioticCourses(data: [AntibioticCourseUpdateArgs!]!): [AntibioticCourse]
+  deleteAntibioticCourse(where: AntibioticCourseWhereUniqueInput!): AntibioticCourse
+  deleteAntibioticCourses(where: [AntibioticCourseWhereUniqueInput!]!): [AntibioticCourse]
+  createImmunisation(data: ImmunisationCreateInput!): Immunisation
+  createImmunisations(data: [ImmunisationCreateInput!]!): [Immunisation]
+  updateImmunisation(where: ImmunisationWhereUniqueInput!, data: ImmunisationUpdateInput!): Immunisation
+  updateImmunisations(data: [ImmunisationUpdateArgs!]!): [Immunisation]
+  deleteImmunisation(where: ImmunisationWhereUniqueInput!): Immunisation
+  deleteImmunisations(where: [ImmunisationWhereUniqueInput!]!): [Immunisation]
+  createIncident(data: IncidentCreateInput!): Incident
+  createIncidents(data: [IncidentCreateInput!]!): [Incident]
+  updateIncident(where: IncidentWhereUniqueInput!, data: IncidentUpdateInput!): Incident
+  updateIncidents(data: [IncidentUpdateArgs!]!): [Incident]
+  deleteIncident(where: IncidentWhereUniqueInput!): Incident
+  deleteIncidents(where: [IncidentWhereUniqueInput!]!): [Incident]
+  createIncidentInvestigation(data: IncidentInvestigationCreateInput!): IncidentInvestigation
+  createIncidentInvestigations(data: [IncidentInvestigationCreateInput!]!): [IncidentInvestigation]
+  updateIncidentInvestigation(where: IncidentInvestigationWhereUniqueInput!, data: IncidentInvestigationUpdateInput!): IncidentInvestigation
+  updateIncidentInvestigations(data: [IncidentInvestigationUpdateArgs!]!): [IncidentInvestigation]
+  deleteIncidentInvestigation(where: IncidentInvestigationWhereUniqueInput!): IncidentInvestigation
+  deleteIncidentInvestigations(where: [IncidentInvestigationWhereUniqueInput!]!): [IncidentInvestigation]
+  createIncidentParty(data: IncidentPartyCreateInput!): IncidentParty
+  createIncidentParties(data: [IncidentPartyCreateInput!]!): [IncidentParty]
+  updateIncidentParty(where: IncidentPartyWhereUniqueInput!, data: IncidentPartyUpdateInput!): IncidentParty
+  updateIncidentParties(data: [IncidentPartyUpdateArgs!]!): [IncidentParty]
+  deleteIncidentParty(where: IncidentPartyWhereUniqueInput!): IncidentParty
+  deleteIncidentParties(where: [IncidentPartyWhereUniqueInput!]!): [IncidentParty]
+  createInfectionCase(data: InfectionCaseCreateInput!): InfectionCase
+  createInfectionCases(data: [InfectionCaseCreateInput!]!): [InfectionCase]
+  updateInfectionCase(where: InfectionCaseWhereUniqueInput!, data: InfectionCaseUpdateInput!): InfectionCase
+  updateInfectionCases(data: [InfectionCaseUpdateArgs!]!): [InfectionCase]
+  deleteInfectionCase(where: InfectionCaseWhereUniqueInput!): InfectionCase
+  deleteInfectionCases(where: [InfectionCaseWhereUniqueInput!]!): [InfectionCase]
+  createOutbreak(data: OutbreakCreateInput!): Outbreak
+  createOutbreaks(data: [OutbreakCreateInput!]!): [Outbreak]
+  updateOutbreak(where: OutbreakWhereUniqueInput!, data: OutbreakUpdateInput!): Outbreak
+  updateOutbreaks(data: [OutbreakUpdateArgs!]!): [Outbreak]
+  deleteOutbreak(where: OutbreakWhereUniqueInput!): Outbreak
+  deleteOutbreaks(where: [OutbreakWhereUniqueInput!]!): [Outbreak]
+  createPrecautionOrder(data: PrecautionOrderCreateInput!): PrecautionOrder
+  createPrecautionOrders(data: [PrecautionOrderCreateInput!]!): [PrecautionOrder]
+  updatePrecautionOrder(where: PrecautionOrderWhereUniqueInput!, data: PrecautionOrderUpdateInput!): PrecautionOrder
+  updatePrecautionOrders(data: [PrecautionOrderUpdateArgs!]!): [PrecautionOrder]
+  deletePrecautionOrder(where: PrecautionOrderWhereUniqueInput!): PrecautionOrder
+  deletePrecautionOrders(where: [PrecautionOrderWhereUniqueInput!]!): [PrecautionOrder]
+  createRegulatoryReport(data: RegulatoryReportCreateInput!): RegulatoryReport
+  createRegulatoryReports(data: [RegulatoryReportCreateInput!]!): [RegulatoryReport]
+  updateRegulatoryReport(where: RegulatoryReportWhereUniqueInput!, data: RegulatoryReportUpdateInput!): RegulatoryReport
+  updateRegulatoryReports(data: [RegulatoryReportUpdateArgs!]!): [RegulatoryReport]
+  deleteRegulatoryReport(where: RegulatoryReportWhereUniqueInput!): RegulatoryReport
+  deleteRegulatoryReports(where: [RegulatoryReportWhereUniqueInput!]!): [RegulatoryReport]
+  createEvidenceRef(data: EvidenceRefCreateInput!): EvidenceRef
+  createEvidenceRefs(data: [EvidenceRefCreateInput!]!): [EvidenceRef]
+  updateEvidenceRef(where: EvidenceRefWhereUniqueInput!, data: EvidenceRefUpdateInput!): EvidenceRef
+  updateEvidenceRefs(data: [EvidenceRefUpdateArgs!]!): [EvidenceRef]
+  deleteEvidenceRef(where: EvidenceRefWhereUniqueInput!): EvidenceRef
+  deleteEvidenceRefs(where: [EvidenceRefWhereUniqueInput!]!): [EvidenceRef]
+  createFinding(data: FindingCreateInput!): Finding
+  createFindings(data: [FindingCreateInput!]!): [Finding]
+  updateFinding(where: FindingWhereUniqueInput!, data: FindingUpdateInput!): Finding
+  updateFindings(data: [FindingUpdateArgs!]!): [Finding]
+  deleteFinding(where: FindingWhereUniqueInput!): Finding
+  deleteFindings(where: [FindingWhereUniqueInput!]!): [Finding]
+  createInferenceCall(data: InferenceCallCreateInput!): InferenceCall
+  createInferenceCalls(data: [InferenceCallCreateInput!]!): [InferenceCall]
+  updateInferenceCall(where: InferenceCallWhereUniqueInput!, data: InferenceCallUpdateInput!): InferenceCall
+  updateInferenceCalls(data: [InferenceCallUpdateArgs!]!): [InferenceCall]
+  deleteInferenceCall(where: InferenceCallWhereUniqueInput!): InferenceCall
+  deleteInferenceCalls(where: [InferenceCallWhereUniqueInput!]!): [InferenceCall]
+  createWorkflowActivation(data: WorkflowActivationCreateInput!): WorkflowActivation
+  createWorkflowActivations(data: [WorkflowActivationCreateInput!]!): [WorkflowActivation]
+  updateWorkflowActivation(where: WorkflowActivationWhereUniqueInput!, data: WorkflowActivationUpdateInput!): WorkflowActivation
+  updateWorkflowActivations(data: [WorkflowActivationUpdateArgs!]!): [WorkflowActivation]
+  deleteWorkflowActivation(where: WorkflowActivationWhereUniqueInput!): WorkflowActivation
+  deleteWorkflowActivations(where: [WorkflowActivationWhereUniqueInput!]!): [WorkflowActivation]
+  createWorkflowDefinition(data: WorkflowDefinitionCreateInput!): WorkflowDefinition
+  createWorkflowDefinitions(data: [WorkflowDefinitionCreateInput!]!): [WorkflowDefinition]
+  updateWorkflowDefinition(where: WorkflowDefinitionWhereUniqueInput!, data: WorkflowDefinitionUpdateInput!): WorkflowDefinition
+  updateWorkflowDefinitions(data: [WorkflowDefinitionUpdateArgs!]!): [WorkflowDefinition]
+  deleteWorkflowDefinition(where: WorkflowDefinitionWhereUniqueInput!): WorkflowDefinition
+  deleteWorkflowDefinitions(where: [WorkflowDefinitionWhereUniqueInput!]!): [WorkflowDefinition]
+  createWorkflowRun(data: WorkflowRunCreateInput!): WorkflowRun
+  createWorkflowRuns(data: [WorkflowRunCreateInput!]!): [WorkflowRun]
+  updateWorkflowRun(where: WorkflowRunWhereUniqueInput!, data: WorkflowRunUpdateInput!): WorkflowRun
+  updateWorkflowRuns(data: [WorkflowRunUpdateArgs!]!): [WorkflowRun]
+  deleteWorkflowRun(where: WorkflowRunWhereUniqueInput!): WorkflowRun
+  deleteWorkflowRuns(where: [WorkflowRunWhereUniqueInput!]!): [WorkflowRun]
+  createWorkflowVersion(data: WorkflowVersionCreateInput!): WorkflowVersion
+  createWorkflowVersions(data: [WorkflowVersionCreateInput!]!): [WorkflowVersion]
+  updateWorkflowVersion(where: WorkflowVersionWhereUniqueInput!, data: WorkflowVersionUpdateInput!): WorkflowVersion
+  updateWorkflowVersions(data: [WorkflowVersionUpdateArgs!]!): [WorkflowVersion]
+  deleteWorkflowVersion(where: WorkflowVersionWhereUniqueInput!): WorkflowVersion
+  deleteWorkflowVersions(where: [WorkflowVersionWhereUniqueInput!]!): [WorkflowVersion]
   endSession: Boolean!
   authenticateUserWithPassword(email: String!, password: String!): UserAuthenticationWithPasswordResult
   createInitialUser(data: CreateInitialUserInput!): UserAuthenticationWithPasswordSuccess!
@@ -8532,6 +13366,135 @@ type Query {
   waitlistEntry(where: WaitlistEntryWhereUniqueInput!): WaitlistEntry
   waitlistEntries(where: WaitlistEntryWhereInput! = {}, orderBy: [WaitlistEntryOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: WaitlistEntryWhereUniqueInput): [WaitlistEntry!]
   waitlistEntriesCount(where: WaitlistEntryWhereInput! = {}): Int
+  adlRecord(where: AdlRecordWhereUniqueInput!): AdlRecord
+  adlRecords(where: AdlRecordWhereInput! = {}, orderBy: [AdlRecordOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AdlRecordWhereUniqueInput): [AdlRecord!]
+  adlRecordsCount(where: AdlRecordWhereInput! = {}): Int
+  assessment(where: AssessmentWhereUniqueInput!): Assessment
+  assessments(where: AssessmentWhereInput! = {}, orderBy: [AssessmentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AssessmentWhereUniqueInput): [Assessment!]
+  assessmentsCount(where: AssessmentWhereInput! = {}): Int
+  assessmentTemplate(where: AssessmentTemplateWhereUniqueInput!): AssessmentTemplate
+  assessmentTemplates(where: AssessmentTemplateWhereInput! = {}, orderBy: [AssessmentTemplateOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AssessmentTemplateWhereUniqueInput): [AssessmentTemplate!]
+  assessmentTemplatesCount(where: AssessmentTemplateWhereInput! = {}): Int
+  behaviourEpisode(where: BehaviourEpisodeWhereUniqueInput!): BehaviourEpisode
+  behaviourEpisodes(where: BehaviourEpisodeWhereInput! = {}, orderBy: [BehaviourEpisodeOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: BehaviourEpisodeWhereUniqueInput): [BehaviourEpisode!]
+  behaviourEpisodesCount(where: BehaviourEpisodeWhereInput! = {}): Int
+  carePlan(where: CarePlanWhereUniqueInput!): CarePlan
+  carePlans(where: CarePlanWhereInput! = {}, orderBy: [CarePlanOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CarePlanWhereUniqueInput): [CarePlan!]
+  carePlansCount(where: CarePlanWhereInput! = {}): Int
+  carePlanItem(where: CarePlanItemWhereUniqueInput!): CarePlanItem
+  carePlanItems(where: CarePlanItemWhereInput! = {}, orderBy: [CarePlanItemOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CarePlanItemWhereUniqueInput): [CarePlanItem!]
+  carePlanItemsCount(where: CarePlanItemWhereInput! = {}): Int
+  intakeRecord(where: IntakeRecordWhereUniqueInput!): IntakeRecord
+  intakeRecords(where: IntakeRecordWhereInput! = {}, orderBy: [IntakeRecordOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: IntakeRecordWhereUniqueInput): [IntakeRecord!]
+  intakeRecordsCount(where: IntakeRecordWhereInput! = {}): Int
+  medicationOrderDetail(where: MedicationOrderDetailWhereUniqueInput!): MedicationOrderDetail
+  medicationOrderDetails(where: MedicationOrderDetailWhereInput! = {}, orderBy: [MedicationOrderDetailOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MedicationOrderDetailWhereUniqueInput): [MedicationOrderDetail!]
+  medicationOrderDetailsCount(where: MedicationOrderDetailWhereInput! = {}): Int
+  order(where: OrderWhereUniqueInput!): Order
+  orders(where: OrderWhereInput! = {}, orderBy: [OrderOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: OrderWhereUniqueInput): [Order!]
+  ordersCount(where: OrderWhereInput! = {}): Int
+  physicianVisit(where: PhysicianVisitWhereUniqueInput!): PhysicianVisit
+  physicianVisits(where: PhysicianVisitWhereInput! = {}, orderBy: [PhysicianVisitOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PhysicianVisitWhereUniqueInput): [PhysicianVisit!]
+  physicianVisitsCount(where: PhysicianVisitWhereInput! = {}): Int
+  pocTaskSlot(where: PocTaskSlotWhereUniqueInput!): PocTaskSlot
+  pocTaskSlots(where: PocTaskSlotWhereInput! = {}, orderBy: [PocTaskSlotOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PocTaskSlotWhereUniqueInput): [PocTaskSlot!]
+  pocTaskSlotsCount(where: PocTaskSlotWhereInput! = {}): Int
+  progressNote(where: ProgressNoteWhereUniqueInput!): ProgressNote
+  progressNotes(where: ProgressNoteWhereInput! = {}, orderBy: [ProgressNoteOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ProgressNoteWhereUniqueInput): [ProgressNote!]
+  progressNotesCount(where: ProgressNoteWhereInput! = {}): Int
+  task(where: TaskWhereUniqueInput!): Task
+  tasks(where: TaskWhereInput! = {}, orderBy: [TaskOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TaskWhereUniqueInput): [Task!]
+  tasksCount(where: TaskWhereInput! = {}): Int
+  vitalSign(where: VitalSignWhereUniqueInput!): VitalSign
+  vitalSigns(where: VitalSignWhereInput! = {}, orderBy: [VitalSignOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: VitalSignWhereUniqueInput): [VitalSign!]
+  vitalSignsCount(where: VitalSignWhereInput! = {}): Int
+  wound(where: WoundWhereUniqueInput!): Wound
+  wounds(where: WoundWhereInput! = {}, orderBy: [WoundOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: WoundWhereUniqueInput): [Wound!]
+  woundsCount(where: WoundWhereInput! = {}): Int
+  woundAssessment(where: WoundAssessmentWhereUniqueInput!): WoundAssessment
+  woundAssessments(where: WoundAssessmentWhereInput! = {}, orderBy: [WoundAssessmentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: WoundAssessmentWhereUniqueInput): [WoundAssessment!]
+  woundAssessmentsCount(where: WoundAssessmentWhereInput! = {}): Int
+  administrationSlot(where: AdministrationSlotWhereUniqueInput!): AdministrationSlot
+  administrationSlots(where: AdministrationSlotWhereInput! = {}, orderBy: [AdministrationSlotOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AdministrationSlotWhereUniqueInput): [AdministrationSlot!]
+  administrationSlotsCount(where: AdministrationSlotWhereInput! = {}): Int
+  countDiscrepancy(where: CountDiscrepancyWhereUniqueInput!): CountDiscrepancy
+  countDiscrepancies(where: CountDiscrepancyWhereInput! = {}, orderBy: [CountDiscrepancyOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CountDiscrepancyWhereUniqueInput): [CountDiscrepancy!]
+  countDiscrepanciesCount(where: CountDiscrepancyWhereInput! = {}): Int
+  medicationAdministration(where: MedicationAdministrationWhereUniqueInput!): MedicationAdministration
+  medicationAdministrations(where: MedicationAdministrationWhereInput! = {}, orderBy: [MedicationAdministrationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MedicationAdministrationWhereUniqueInput): [MedicationAdministration!]
+  medicationAdministrationsCount(where: MedicationAdministrationWhereInput! = {}): Int
+  medicationDestruction(where: MedicationDestructionWhereUniqueInput!): MedicationDestruction
+  medicationDestructions(where: MedicationDestructionWhereInput! = {}, orderBy: [MedicationDestructionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MedicationDestructionWhereUniqueInput): [MedicationDestruction!]
+  medicationDestructionsCount(where: MedicationDestructionWhereInput! = {}): Int
+  medicationReference(where: MedicationReferenceWhereUniqueInput!): MedicationReference
+  medicationReferences(where: MedicationReferenceWhereInput! = {}, orderBy: [MedicationReferenceOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MedicationReferenceWhereUniqueInput): [MedicationReference!]
+  medicationReferencesCount(where: MedicationReferenceWhereInput! = {}): Int
+  medicationSupply(where: MedicationSupplyWhereUniqueInput!): MedicationSupply
+  medicationSupplies(where: MedicationSupplyWhereInput! = {}, orderBy: [MedicationSupplyOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MedicationSupplyWhereUniqueInput): [MedicationSupply!]
+  medicationSuppliesCount(where: MedicationSupplyWhereInput! = {}): Int
+  medicationSupplyMovement(where: MedicationSupplyMovementWhereUniqueInput!): MedicationSupplyMovement
+  medicationSupplyMovements(where: MedicationSupplyMovementWhereInput! = {}, orderBy: [MedicationSupplyMovementOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MedicationSupplyMovementWhereUniqueInput): [MedicationSupplyMovement!]
+  medicationSupplyMovementsCount(where: MedicationSupplyMovementWhereInput! = {}): Int
+  pharmacyRelationship(where: PharmacyRelationshipWhereUniqueInput!): PharmacyRelationship
+  pharmacyRelationships(where: PharmacyRelationshipWhereInput! = {}, orderBy: [PharmacyRelationshipOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PharmacyRelationshipWhereUniqueInput): [PharmacyRelationship!]
+  pharmacyRelationshipsCount(where: PharmacyRelationshipWhereInput! = {}): Int
+  prnFollowUp(where: PrnFollowUpWhereUniqueInput!): PrnFollowUp
+  prnFollowUps(where: PrnFollowUpWhereInput! = {}, orderBy: [PrnFollowUpOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PrnFollowUpWhereUniqueInput): [PrnFollowUp!]
+  prnFollowUpsCount(where: PrnFollowUpWhereInput! = {}): Int
+  shiftCount(where: ShiftCountWhereUniqueInput!): ShiftCount
+  shiftCounts(where: ShiftCountWhereInput! = {}, orderBy: [ShiftCountOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ShiftCountWhereUniqueInput): [ShiftCount!]
+  shiftCountsCount(where: ShiftCountWhereInput! = {}): Int
+  shiftCountEntry(where: ShiftCountEntryWhereUniqueInput!): ShiftCountEntry
+  shiftCountEntries(where: ShiftCountEntryWhereInput! = {}, orderBy: [ShiftCountEntryOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ShiftCountEntryWhereUniqueInput): [ShiftCountEntry!]
+  shiftCountEntriesCount(where: ShiftCountEntryWhereInput! = {}): Int
+  antibioticCourse(where: AntibioticCourseWhereUniqueInput!): AntibioticCourse
+  antibioticCourses(where: AntibioticCourseWhereInput! = {}, orderBy: [AntibioticCourseOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AntibioticCourseWhereUniqueInput): [AntibioticCourse!]
+  antibioticCoursesCount(where: AntibioticCourseWhereInput! = {}): Int
+  immunisation(where: ImmunisationWhereUniqueInput!): Immunisation
+  immunisations(where: ImmunisationWhereInput! = {}, orderBy: [ImmunisationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ImmunisationWhereUniqueInput): [Immunisation!]
+  immunisationsCount(where: ImmunisationWhereInput! = {}): Int
+  incident(where: IncidentWhereUniqueInput!): Incident
+  incidents(where: IncidentWhereInput! = {}, orderBy: [IncidentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: IncidentWhereUniqueInput): [Incident!]
+  incidentsCount(where: IncidentWhereInput! = {}): Int
+  incidentInvestigation(where: IncidentInvestigationWhereUniqueInput!): IncidentInvestigation
+  incidentInvestigations(where: IncidentInvestigationWhereInput! = {}, orderBy: [IncidentInvestigationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: IncidentInvestigationWhereUniqueInput): [IncidentInvestigation!]
+  incidentInvestigationsCount(where: IncidentInvestigationWhereInput! = {}): Int
+  incidentParty(where: IncidentPartyWhereUniqueInput!): IncidentParty
+  incidentParties(where: IncidentPartyWhereInput! = {}, orderBy: [IncidentPartyOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: IncidentPartyWhereUniqueInput): [IncidentParty!]
+  incidentPartiesCount(where: IncidentPartyWhereInput! = {}): Int
+  infectionCase(where: InfectionCaseWhereUniqueInput!): InfectionCase
+  infectionCases(where: InfectionCaseWhereInput! = {}, orderBy: [InfectionCaseOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: InfectionCaseWhereUniqueInput): [InfectionCase!]
+  infectionCasesCount(where: InfectionCaseWhereInput! = {}): Int
+  outbreak(where: OutbreakWhereUniqueInput!): Outbreak
+  outbreaks(where: OutbreakWhereInput! = {}, orderBy: [OutbreakOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: OutbreakWhereUniqueInput): [Outbreak!]
+  outbreaksCount(where: OutbreakWhereInput! = {}): Int
+  precautionOrder(where: PrecautionOrderWhereUniqueInput!): PrecautionOrder
+  precautionOrders(where: PrecautionOrderWhereInput! = {}, orderBy: [PrecautionOrderOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PrecautionOrderWhereUniqueInput): [PrecautionOrder!]
+  precautionOrdersCount(where: PrecautionOrderWhereInput! = {}): Int
+  regulatoryReport(where: RegulatoryReportWhereUniqueInput!): RegulatoryReport
+  regulatoryReports(where: RegulatoryReportWhereInput! = {}, orderBy: [RegulatoryReportOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RegulatoryReportWhereUniqueInput): [RegulatoryReport!]
+  regulatoryReportsCount(where: RegulatoryReportWhereInput! = {}): Int
+  evidenceRef(where: EvidenceRefWhereUniqueInput!): EvidenceRef
+  evidenceRefs(where: EvidenceRefWhereInput! = {}, orderBy: [EvidenceRefOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: EvidenceRefWhereUniqueInput): [EvidenceRef!]
+  evidenceRefsCount(where: EvidenceRefWhereInput! = {}): Int
+  finding(where: FindingWhereUniqueInput!): Finding
+  findings(where: FindingWhereInput! = {}, orderBy: [FindingOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: FindingWhereUniqueInput): [Finding!]
+  findingsCount(where: FindingWhereInput! = {}): Int
+  inferenceCall(where: InferenceCallWhereUniqueInput!): InferenceCall
+  inferenceCalls(where: InferenceCallWhereInput! = {}, orderBy: [InferenceCallOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: InferenceCallWhereUniqueInput): [InferenceCall!]
+  inferenceCallsCount(where: InferenceCallWhereInput! = {}): Int
+  workflowActivation(where: WorkflowActivationWhereUniqueInput!): WorkflowActivation
+  workflowActivations(where: WorkflowActivationWhereInput! = {}, orderBy: [WorkflowActivationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: WorkflowActivationWhereUniqueInput): [WorkflowActivation!]
+  workflowActivationsCount(where: WorkflowActivationWhereInput! = {}): Int
+  workflowDefinition(where: WorkflowDefinitionWhereUniqueInput!): WorkflowDefinition
+  workflowDefinitions(where: WorkflowDefinitionWhereInput! = {}, orderBy: [WorkflowDefinitionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: WorkflowDefinitionWhereUniqueInput): [WorkflowDefinition!]
+  workflowDefinitionsCount(where: WorkflowDefinitionWhereInput! = {}): Int
+  workflowRun(where: WorkflowRunWhereUniqueInput!): WorkflowRun
+  workflowRuns(where: WorkflowRunWhereInput! = {}, orderBy: [WorkflowRunOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: WorkflowRunWhereUniqueInput): [WorkflowRun!]
+  workflowRunsCount(where: WorkflowRunWhereInput! = {}): Int
+  workflowVersion(where: WorkflowVersionWhereUniqueInput!): WorkflowVersion
+  workflowVersions(where: WorkflowVersionWhereInput! = {}, orderBy: [WorkflowVersionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: WorkflowVersionWhereUniqueInput): [WorkflowVersion!]
+  workflowVersionsCount(where: WorkflowVersionWhereInput! = {}): Int
   keystone: KeystoneMeta!
   authenticatedItem: AuthenticatedItem
   validateUserPasswordResetToken(email: String!, token: String!): ValidateUserPasswordResetTokenResult

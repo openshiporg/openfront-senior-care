@@ -2,40 +2,16 @@ import { list } from '@keystone-6/core'
 import { calendarDay, checkbox, integer, json, relationship, select, text, timestamp } from '@keystone-6/core/fields'
 import { isStaff, type Session } from '../access'
 import { choice, fixedChoice, lifecycle, readOnly, systemText, versionField } from './domainFields'
-import { breakGlassResidents, PHI_LISTS, phiFields } from './phi'
-import { SETTINGS } from './platform'
+import { phiFields } from './phi'
 import { assignedCommunities, communityWhere } from './scope'
+import { opt, phiList, residentList, ro } from './residentAccess'
+import { SETTINGS } from './platform'
 import { trackingFields } from './trackingFields'
 import { label } from '../../../lib/labels'
 
 /* Residents & census (SCHEMA §4). Rows are created and changed by census commands only. */
 
 const sys = () => false
-const ro = readOnly
-const opt = (values: readonly string[]) => ({ type: 'string' as const, options: values.map(value => ({ label: label(value), value })) })
-
-/** Rows of residents in the caller's assigned communities, plus residents under an active break-glass grant. */
-const residentScope = (path: readonly string[], residentPath: readonly string[]) => async ({ session, context }: { session?: Session; context: any }) => {
-  const scope = await assignedCommunities(session, context)
-  if (scope === 'all') return true
-  const glass = [...(await breakGlassResidents(session, context))]
-  const own = communityWhere(path, scope)
-  if (!glass.length) return own
-  let glassWhere: Record<string, unknown> = { id: { in: glass } }
-  for (const key of [...residentPath].reverse()) glassWhere = { [key]: glassWhere }
-  return { OR: [own, glassWhere] }
-}
-
-/** `path` reaches Community; `residentPath` reaches Resident (empty for the Resident list itself). */
-const residentList = (path: readonly string[], residentPath: readonly string[] = ['resident']) => ({
-  operation: { query: isStaff, create: sys, update: sys, delete: sys },
-  filter: { query: residentScope(path, residentPath) },
-})
-
-const phiList = (key: string) => {
-  PHI_LISTS.add(key)
-  return key
-}
 
 export const CODE_STATUSES = ['full_code', 'dnr', 'dnr_cc', 'dnr_cca', 'comfort'] as const
 
