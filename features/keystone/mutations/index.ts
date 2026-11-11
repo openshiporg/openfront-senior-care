@@ -40,6 +40,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         updateActiveUser(data: UserUpdateProfileInput!): User
         loadOperatorSetup(idempotencyKey: String!): JSON
         loadCensusSetup(idempotencyKey: String!): JSON
+        refreshTimedStates(idempotencyKey: String!): JSON
         decideApprovalRequest(requestId: ID!, decision: String!, reason: String, expectedVersion: Int!, idempotencyKey: String!): JSON
         cancelApprovalRequest(requestId: ID!, expectedVersion: Int!, reason: String, idempotencyKey: String!): JSON
         requestOperatorControls(changes: JSON!, reason: String!, idempotencyKey: String!): JSON
@@ -111,6 +112,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         updateActiveUser,
         loadOperatorSetup: op(setup.loadOperatorSetup),
         loadCensusSetup: op(setup.loadCensusSetup),
+        refreshTimedStates: op(front.refreshTimedStatesMutation),
         decideApprovalRequest: op(approvals.decideApprovalRequest),
         cancelApprovalRequest: op(approvals.cancelApprovalRequest),
         requestOperatorControls: op(approvals.requestOperatorControls),

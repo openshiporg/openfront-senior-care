@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { q, currentCommunity } from '../../lib/server';
 import { label, when } from '../../lib/format';
 import { Page, Section, Row, Empty, Meta, Title, Stat } from '../../components/ui';
@@ -60,7 +61,7 @@ export default async function ResidentPage({ params, searchParams }: { params: P
     complianceClocks(where: { resident: { id: { equals: $id } }, current: { equals: true } }, orderBy: { dueAt: desc }, take: 40) { id obligationCode status dueAt satisfiedAt ruleRef verifyNote }
   }`, { id });
   const r = data.resident;
-  if (!r) return <Page title="Resident"><Empty>This resident isn&apos;t in a community assigned to you, or doesn&apos;t exist.</Empty></Page>;
+  if (!r) notFound();
   const name = `${r.preferredName || r.firstName} ${r.lastName}`;
   const stay = r.stays[0];
   const place = stay?.currentBed?.label ?? (stay?.currentApartment ? `Apt ${stay.currentApartment.number}` : stay?.heldBed ? `${stay.heldBed.label} (held)` : '—');

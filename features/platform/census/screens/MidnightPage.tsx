@@ -18,7 +18,8 @@ export default async function MidnightPage({ searchParams }: { searchParams?: Pr
   const { community, communities } = await currentCommunity((await searchParams)?.community);
   if (!community) return <Page title="Midnight census"><Empty>No community is assigned to you yet.</Empty></Page>;
   const tz = community.timeZone;
-  const today = await q<{ censusSummary: Summary }>(`query S($id: ID!) { censusSummary(communityId: $id) }`, { id: community.id });
+  const today = await q<{ censusSummary: Summary }>(`query S($id: ID!) { censusSummary(communityId: $id) }`, { id: community.id }).catch(() => null);
+  if (!today) return <Page title="Midnight census"><Empty>Your role doesn&apos;t include the midnight census. Use the menu for the screens you can open.</Empty></Page>;
   const yesterday = addDays(today.censusSummary.date, -1);
   const data = await q<{ y: Summary; censusSignoffs: Signoff[] }>(`query M($id: ID!, $date: String!) {
     y: censusSummary(communityId: $id, date: $date)

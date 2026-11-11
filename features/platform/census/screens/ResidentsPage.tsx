@@ -20,7 +20,9 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: P
   const { community, communities } = await currentCommunity(params.community);
   if (!community) return <Page title="Residents"><Empty>No community is assigned to you yet.</Empty></Page>;
   const view = VIEWS.some(v => v.key === params.view) ? params.view! : 'admitted';
-  const { residentRoster: roster } = await q<{ residentRoster: Rostered[] }>(`query Roster($id: ID!, $status: String) { residentRoster(communityId: $id, status: $status) }`, { id: community.id, status: view });
+  const loaded = await q<{ residentRoster: Rostered[] }>(`query Roster($id: ID!, $status: String) { residentRoster(communityId: $id, status: $status) }`, { id: community.id, status: view }).catch(() => null);
+  if (!loaded) return <Page title="Residents"><Empty>Your role doesn&apos;t include the resident roster. Use the menu for the screens you can open.</Empty></Page>;
+  const roster = loaded.residentRoster;
   const ORDER = ['nursing_facility', 'assisted_living', 'memory_care', 'independent_living'];
   const present = ORDER.filter(st => roster.some(r => r.setting === st));
   const setting = present.includes(params.setting ?? '') ? params.setting! : 'all';

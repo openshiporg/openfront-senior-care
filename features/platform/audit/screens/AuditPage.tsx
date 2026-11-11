@@ -14,14 +14,16 @@ export default async function AuditPage({ searchParams }: { searchParams?: Promi
   const before = /^\d+$/.test(params.before ?? '') ? Number.parseInt(params.before!, 10) : null;
   const entity = (params.entity ?? '').replace(/[^A-Za-z0-9_:-]/g, '').slice(0, 120);
   const where = { AND: [...(before ? [{ seq: { lt: before } }] : []), ...(entity ? [{ OR: [{ entityId: { equals: entity } }, { entityType: { equals: entity } }] }] : [])] };
-  const [data, tz] = await Promise.all([
+  const loaded = await Promise.all([
     q<{ auditEvents: Event[]; auditEventsCount: number; verifyAuditChain: Verify }>(`query Audit($where: AuditEventWhereInput!, $take: Int!) {
       auditEvents(where: $where, orderBy: { seq: desc }, take: $take) { id seq at eventType entityType entityId reason hash prevHash actorUser { name } actorAgent { name } approver { name } }
       auditEventsCount
       verifyAuditChain
     }`, { where, take: PAGE }),
     operatorTimeZone(),
-  ]);
+  ]).catch(() => null);
+  if (!loaded) return <Page title="Audit log"><Empty>Your role doesn&apos;t include the audit log.</Empty></Page>;
+  const [data, tz] = loaded;
   const v = data.verifyAuditChain;
   const last = data.auditEvents.at(-1);
   return (

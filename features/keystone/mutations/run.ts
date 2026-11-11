@@ -6,6 +6,7 @@ import { DomainError, Codes } from '../lib/errors'
 import type { UnitOfWork } from '../lib/unitOfWork'
 import { actorFor } from './actorFor'
 import { requireKey } from './op'
+import { advanceTimedStates } from '../lib/maintenance'
 import { mcpSessionMarker } from '../mcp-oauth/session'
 
 /**
@@ -61,6 +62,7 @@ export async function runDomain<T>(context: { session: unknown; prisma: any }, a
   const actor = await actorFor(context)
   assertHuman(context, actor, spec.humanOnly)
   requirePermission(actor, ...spec.permissions)
+  await advanceTimedStates(context.prisma)
   const { idempotencyKey, ...params } = args
   const result = await command(context.prisma, { name: spec.name, actor, idempotencyKey: requireKey(idempotencyKey), params, serializable: spec.serializable }, async uow => {
     if (spec.community) await assertCommunityAccess(uow.tx, actor, await spec.community(uow.tx))

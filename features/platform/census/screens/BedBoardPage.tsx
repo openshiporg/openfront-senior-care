@@ -19,7 +19,8 @@ export default async function BedBoardPage({ searchParams }: { searchParams?: Pr
   const params = (await searchParams) ?? {};
   const { community, communities } = await currentCommunity(params.community);
   if (!community) return <Page title="Bed board"><Empty>No community is assigned to you yet. Load the operator setup from the dashboard home, or ask an administrator to assign you.</Empty></Page>;
-  const data = await q<{ bedBoard: Unit[]; censusSummary: Summary }>(`query Board($id: ID!) { bedBoard(communityId: $id) censusSummary(communityId: $id) }`, { id: community.id });
+  const data = await q<{ bedBoard: Unit[]; censusSummary: Summary }>(`query Board($id: ID!) { bedBoard(communityId: $id) censusSummary(communityId: $id) }`, { id: community.id }).catch(() => null);
+  if (!data) return <Page title="Bed board" crumbs={[{ label: 'Census' }]}><Empty>Your role doesn&apos;t include the bed board. Use the menu for the screens you can open.</Empty></Page>;
   const units = data.bedBoard;
   const s = data.censusSummary;
   const unitCode = params.unit && units.some(u => u.code === params.unit) ? params.unit : 'all';

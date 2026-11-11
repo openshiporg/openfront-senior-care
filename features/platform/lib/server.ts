@@ -1,7 +1,12 @@
 import { keystoneClient } from '@/features/dashboard/lib/keystoneClient'
+import { keystoneContext } from '@/features/keystone/context'
+import { advanceTimedStates } from '@/features/keystone/advance'
 
 /** Staff reads go through the signed-in session, so list access rules still apply. */
 export async function q<T = any>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
+  // Clocks, reservations, offers, holds and the midnight census that have come due are brought up to date
+  // by the request that reads them (no background timer exists).
+  await advanceTimedStates(keystoneContext.prisma as never)
   const r = await keystoneClient<T>(query, variables)
   if (!r.success) throw new Error(r.error)
   return r.data as T

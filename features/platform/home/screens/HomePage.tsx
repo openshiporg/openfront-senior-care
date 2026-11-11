@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { q, currentCommunity } from '../../lib/server';
 import { label, when } from '../../lib/format';
+import { ActionButton } from '../../components/ActionButton';
 import { Page, Section, Row, Empty, Meta, Title, CommunityTabs } from '../../components/ui';
 
 type Summary = { date: string; totals: { present: number; inHouse: number; onLeaveHold: number; bySetting: Record<string, number>; byPayer: Record<string, number> }; beds: Record<string, number>; apartments: Record<string, number>; closedThrough: string | null };
@@ -104,6 +105,10 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
             </Row>
           )) : <Empty>No census changes in the last 3 days.</Empty>}
         </Section>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Meta>Updated {when(new Date().toISOString(), tz, 'time')}</Meta>
+        <ActionButton op="refreshTimedStates" vars={{}} paths={['/dashboard']}>Refresh deadlines, holds and offers</ActionButton>
       </div>
     </Page>
   );

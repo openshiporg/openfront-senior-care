@@ -9,6 +9,8 @@ import { enforceRateLimit } from '../lib/publicRateLimit'
 import { runInTransaction } from '../lib/unitOfWork'
 import { DomainError, Codes } from '../lib/errors'
 import { communityOf, runDomain } from './run'
+import { actorFor } from './actorFor'
+import { advanceTimedStates } from '../lib/maintenance'
 
 type Ctx = { session: any; prisma: any; req?: any }
 
@@ -28,6 +30,13 @@ export const setPlaceServiceMutation = (_: unknown, args: { bedId?: string | nul
 
 export const recomputeAvailabilityMutation = (_: unknown, args: { communityId: string; idempotencyKey: string }, context: Ctx) =>
   runDomain(context, args, { name: 'place.availability', permissions: ['canManageStorefront', 'canManagePlaces'], community: async () => args.communityId }, uow => recomputeAvailability(uow, args.communityId).then(snapshots => ({ snapshots })))
+
+/** The staff Refresh button: settles every clock, hold, offer and census day that has come due. */
+export const refreshTimedStatesMutation = async (_: unknown, _args: { idempotencyKey?: string }, context: Ctx) => {
+  await actorFor(context)
+  const result = await advanceTimedStates(context.prisma, { force: true })
+  return { refreshed: result !== null, errors: result ? Number(result.errors) : 0 }
+}
 
 /* ----------------------------------------------------------------- sales */
 
@@ -49,6 +58,7 @@ export const joinWaitlistMutation = (_: unknown, args: { input: Parameters<typeo
 /** Public read: the community's published storefront. Rate limited like the writes. */
 export const storefrontCommunityQuery = async (_: unknown, args: { slug: string }, context: Ctx) => {
   await enforceRateLimit(context, 'storefront-read', 300, 60 * 60_000)
+  await advanceTimedStates(context.prisma)
   return storefrontCommunity(context.prisma, args.slug)
 }
 

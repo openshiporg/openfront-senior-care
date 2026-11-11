@@ -42,6 +42,8 @@ export async function ItemPage({ params }: ItemPageParams) {
   let fetchedItem: Record<string, unknown> = {}
 
   if (response.success) {
+    // An id that matches nothing, or a record this role cannot read, is a 404 rather than a broken page.
+    if (!response.data.item) notFound()
     fetchedItem = response.data.item as Record<string, unknown>
   } else {
     console.error('Error fetching item:', PUBLIC_REQUEST_ERROR)
