@@ -1,5 +1,5 @@
 import type { Permission } from '../access'
-import { requirePermission, type Actor } from '../lib/actor'
+import { requirePermission, requireScope, type Actor } from '../lib/actor'
 import { command } from '../lib/command'
 import { type Tx } from '../lib/db'
 import { DomainError, Codes } from '../lib/errors'
@@ -56,12 +56,24 @@ export type RunSpec = {
   community?: (tx: Tx) => Promise<string | null>
   /** Human-only commands refuse agents outright (INTEGRATIONS §7.2). */
   humanOnly?: boolean
+  /** The tool grant an agent needs for this command. Without one, agents are refused. */
+  agentScope?: string
+}
+
+/** People need one of the permissions; agents need the command's grant (never their owner's permissions). */
+export function authorize(actor: Actor, spec: Pick<RunSpec, 'permissions' | 'agentScope'>) {
+  if (actor.kind === 'agent') {
+    if (!spec.agentScope) throw new DomainError(Codes.NOT_AUTHORIZED, 'Agents act only through their tool grants.')
+    requireScope(actor, spec.agentScope)
+    return
+  }
+  requirePermission(actor, ...spec.permissions)
 }
 
 export async function runDomain<T>(context: { session: unknown; prisma: any }, args: { idempotencyKey?: string | null } & Record<string, unknown>, spec: RunSpec, work: (uow: UnitOfWork, actor: Actor) => Promise<T>) {
   const actor = await actorFor(context)
   assertHuman(context, actor, spec.humanOnly)
-  requirePermission(actor, ...spec.permissions)
+  authorize(actor, spec)
   await advanceTimedStates(context.prisma)
   const { idempotencyKey, ...params } = args
   const result = await command(context.prisma, { name: spec.name, actor, idempotencyKey: requireKey(idempotencyKey), params, serializable: spec.serializable }, async uow => {

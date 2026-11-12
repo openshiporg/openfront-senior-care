@@ -89,6 +89,22 @@ export default async function ChartPage({ params, searchParams }: { params: Prom
           )) : <Empty>No orders.</Empty>}
         </Section>
       ) : null}
+      {body && tab === 'careplan' && body.proposals?.length ? (
+        <Section title="Proposed updates" aside={<Meta>Drafted by the assistant. Nothing changes until a nurse accepts it and signs the plan.</Meta>}>
+          {body.proposals.map((p: any) => (
+            <Row key={p.id}>
+              <div className="min-w-0 flex-1 basis-60 space-y-0.5">
+                <Title status={p.status}>{p.payload?.summary ?? 'Care-plan update'}</Title>
+                <Meta>{p.sourceFinding ? `From the finding "${p.sourceFinding.title}" · ` : ''}drafted {when(p.createdAt, tz)} for {p.proposedByAgent?.name ?? p.proposedByUser?.name ?? 'staff'}</Meta>
+                {(p.payload?.items ?? []).map((it: any, i: number) => <Meta key={i}>{label(it.kind)}: {it.text}{it.frequency ? ` (${label(it.frequency)})` : ''}</Meta>)}
+                {p.status === 'accepted' ? <Meta>Accepted: the draft plan below is waiting for a signature.</Meta> : null}
+              </div>
+              {p.status === 'proposed' ? <ClinicalAction op="proposal.accept" input={{ proposalId: p.id }} confirm="Create a draft care plan from this proposal? You sign it next.">Accept as draft plan</ClinicalAction> : null}
+              <ClinicalAction op="proposal.reject" input={{ proposalId: p.id }} fields={[{ name: 'reason', label: 'Why reject it?', required: true }]}>Reject</ClinicalAction>
+            </Row>
+          ))}
+        </Section>
+      ) : null}
       {body && tab === 'careplan' ? (
         <Section title="Care plans">
           {body.carePlans.length ? body.carePlans.map((p: any) => (
@@ -120,6 +136,6 @@ const BODY: Record<string, string> = {
   vitals: `query B($id: ID!) { vitalSigns(where: { resident: { id: { equals: $id } } }, orderBy: { takenAt: desc }, take: 40) { id kind value unit takenAt } intakeRecords(where: { resident: { id: { equals: $id } } }, orderBy: { at: desc }, take: 30) { id kind amountMl percentEaten at } }`,
   assessments: `query B($id: ID!) { assessments(where: { resident: { id: { equals: $id } } }, orderBy: { completedAt: desc }, take: 30) { id templateCode score band status completedAt } }`,
   orders: `query B($id: ID!) { orders(where: { resident: { id: { equals: $id } } }, orderBy: { createdAt: desc }, take: 60) { id summary status source needsCountersign countersignedAt allergyOverride } }`,
-  careplan: `query B($id: ID!) { carePlans(where: { resident: { id: { equals: $id } } }, orderBy: { createdAt: desc }, take: 5) { id reference kind status items(orderBy: { createdAt: asc }) { id kind text frequency } } }`,
+  careplan: `query B($id: ID!) { carePlans(where: { resident: { id: { equals: $id } } }, orderBy: { createdAt: desc }, take: 5) { id reference kind status proposal { id } items(orderBy: { createdAt: asc }) { id kind text frequency } } proposals(where: { resident: { id: { equals: $id } }, kind: { equals: "care_plan_update" }, status: { in: ["proposed", "accepted"] } }, orderBy: { createdAt: desc }, take: 10) { id status payload createdAt resultRecordId proposedByAgent { name } proposedByUser { name } sourceFinding { title } } }`,
   wounds: `query B($id: ID!) { wounds(where: { resident: { id: { equals: $id } } }, orderBy: { createdAt: desc }, take: 30) { id site kind status currentStage lastAssessedAt } }`,
 };

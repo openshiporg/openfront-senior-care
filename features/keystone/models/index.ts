@@ -19,7 +19,7 @@ const { CODE_STATUSES: _code, REPRESENTATIVE_ROLES: _roles, ADMISSION_SOURCES: _
 const { LEAD_STATUSES: _lead, PORTAL_SCOPES: _portal, AUTHORITY_BASES: _ab, SCOPE_AUTHORITY: _sa, MFA_SCOPES: _mfa, ...salesLists } = sales
 
 const { NOTE_KINDS: _nk, VITAL_KINDS: _vk, ORDER_KINDS: _ok, TASK_KINDS: _tk, rl: _rl, scope: _sc, stamps: _st, choice: _ch, ...clinicalLists } = clinical
-const { DRUG_SCHEDULES: _ds, SUPPLY_KINDS: _sk, MOVEMENT_KINDS: _mk, SLOT_STATUSES: _ss, ADMIN_OUTCOMES: _ao, ...medicationLists } = medications
+const { DRUG_SCHEDULES: _ds, SUPPLY_KINDS: _sk, MOVEMENT_KINDS: _mk, SLOT_STATUSES: _ss, ADMIN_OUTCOMES: _ao, BALANCE_READERS: _br, ...medicationLists } = medications
 const { INCIDENT_KINDS: _ik, ...safetyLists } = safety
 
 export const models = {

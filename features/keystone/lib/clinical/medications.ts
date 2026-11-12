@@ -61,6 +61,15 @@ export type AdministerInput = {
   identityCheck?: 'barcode' | 'photo' | 'two_identifiers' | null; supplyId?: string | null; witnessId?: string | null
   /** When it actually happened, for a late entry. */
   administeredAt?: string | null
+  /** SM §9.5: a supply with an open count discrepancy is frozen for routine doses. An emergency dose needs a reason, is logged and tells the DON. */
+  emergency?: boolean | null; emergencyReason?: string | null
+}
+
+export type Emergency = { reason: string } | null
+/** Validates the emergency override fields; returns null for a routine dose. */
+export function emergencyOf(input: { emergency?: boolean | null; emergencyReason?: string | null }): Emergency {
+  if (!input.emergency) return null
+  return { reason: text(input.emergencyReason ?? '', 'Why this is an emergency', { min: 10 }) }
 }
 
 /**
@@ -105,7 +114,7 @@ export async function administerDose(uow: UnitOfWork, actor: Actor, input: Admin
     if (detail.controlled && !input.witnessId) invalid('A controlled drug needs a witness.', 'witnessId')
     if (input.witnessId && input.witnessId === userOf(actor)) invalid('The witness must be a different person.', 'witnessId')
     if (input.supplyId) {
-      await postMovement(uow, actor, { supplyId: input.supplyId, kind: 'administer', quantity: dose!.negated(), reason: `Dose for ${slot.drugName}`, witnessId: input.witnessId ?? null, residentId: slot.residentId })
+      await postMovement(uow, actor, { supplyId: input.supplyId, kind: 'administer', quantity: dose!.negated(), reason: `Dose for ${slot.drugName}`, witnessId: input.witnessId ?? null, residentId: slot.residentId, emergency: emergencyOf(input) })
       supplyId = input.supplyId
     } else if (detail.controlled) {
       invalid('Choose the supply the controlled dose came from.', 'supplyId')
@@ -143,7 +152,7 @@ export async function settleMissedDoses(uow: UnitOfWork, actor: Actor, community
 }
 
 /** A PRN dose: the order's minimum interval is enforced, a reason is required, and a follow-up is due after the order's follow-up minutes. */
-export async function administerPrn(uow: UnitOfWork, actor: Actor, input: { detailId: string; reason: string; doseGiven?: string | number | null; supplyId?: string | null; witnessId?: string | null; identityCheck?: 'barcode' | 'photo' | 'two_identifiers' | null; administeredAt?: string | null }) {
+export async function administerPrn(uow: UnitOfWork, actor: Actor, input: { detailId: string; reason: string; doseGiven?: string | number | null; supplyId?: string | null; witnessId?: string | null; identityCheck?: 'barcode' | 'photo' | 'two_identifiers' | null; administeredAt?: string | null; emergency?: boolean | null; emergencyReason?: string | null }) {
   const detail = await uow.tx.medicationOrderDetail.findUnique({ where: { id: input.detailId } })
   if (!detail || !detail.prn || !detail.orderId) return notFound('PRN order')
   const order = await lockRow<{ id: string; status: string }>(uow.tx, 'Order', detail.orderId)
@@ -159,7 +168,7 @@ export async function administerPrn(uow: UnitOfWork, actor: Actor, input: { deta
   const dose = qty(input.doseGiven ?? detail.dose, 'Dose given')
   if (detail.controlled && (!input.witnessId || input.witnessId === userOf(actor))) invalid('A controlled drug needs a different person as witness.', 'witnessId')
   if (detail.controlled && !input.supplyId) invalid('Choose the supply the controlled dose came from.', 'supplyId')
-  if (input.supplyId) await postMovement(uow, actor, { supplyId: input.supplyId, kind: 'administer', quantity: dose.negated(), reason: `PRN ${detail.drugName}`, witnessId: input.witnessId ?? null, residentId: detail.residentId })
+  if (input.supplyId) await postMovement(uow, actor, { supplyId: input.supplyId, kind: 'administer', quantity: dose.negated(), reason: `PRN ${detail.drugName}`, witnessId: input.witnessId ?? null, residentId: detail.residentId, emergency: emergencyOf(input) })
   const followUpAt = new Date(actual.getTime() + (detail.prnFollowUpMinutes ?? 60) * 60_000)
   const row = await uow.tx.medicationAdministration.create({
     data: {
@@ -216,9 +225,18 @@ export async function receiveSupply(uow: UnitOfWork, actor: Actor, input: { comm
  * The only way a balance changes. Locks the supply, takes the next seq, refuses a negative balance, writes an immutable movement row
  * and moves the balance with the supply's version in one statement. A movement can never be edited; a correction is another movement.
  */
-export async function postMovement(uow: UnitOfWork, actor: Actor, input: { supplyId: string; kind: (typeof MOVEMENT_KINDS)[number]; quantity: Decimal | string | number; reason?: string; witnessId?: string | null; residentId?: string | null }) {
-  const supply = await lockRow<{ id: string; version: number; communityId: string; balance: { toString(): string }; controlled: boolean; status: string }>(uow.tx, 'MedicationSupply', input.supplyId)
+export async function postMovement(uow: UnitOfWork, actor: Actor, input: { supplyId: string; kind: (typeof MOVEMENT_KINDS)[number]; quantity: Decimal | string | number; reason?: string; witnessId?: string | null; residentId?: string | null; emergency?: Emergency }) {
+  const supply = await lockRow<{ id: string; version: number; communityId: string; label: string; balance: { toString(): string }; controlled: boolean; status: string }>(uow.tx, 'MedicationSupply', input.supplyId)
   if (supply.status !== 'active' && input.kind !== 'destroy' && input.kind !== 'count_adjust') throw new DomainError(Codes.GUARD_FAILED, `This supply is ${supply.status}.`)
+  // SM §9.5: an open count discrepancy freezes routine doses from this supply until the DON resolves it. The supply row is locked above
+  // and a discrepancy is only opened under the same lock order, so the check can't race a count. The database trigger repeats it.
+  const emergency = input.kind === 'administer' ? input.emergency ?? null : null
+  let frozenBy: string | null = null
+  if (input.kind === 'administer') {
+    const open = await uow.tx.countDiscrepancy.findFirst({ where: { supplyId: supply.id, status: 'open' }, select: { id: true } })
+    if (open && !emergency) throw new DomainError(Codes.GUARD_FAILED, 'This supply has an open count discrepancy. Use another supply, or record an emergency dose with a reason; the DON is told.', { field: 'supplyId', discrepancyId: open.id })
+    frozenBy = open?.id ?? null
+  }
   const q = qty(input.quantity instanceof Decimal ? input.quantity.toString() : input.quantity, 'Quantity')
   if (q.isZero()) invalid('Quantity cannot be zero.', 'quantity')
   const witnessKinds = ['waste', 'destroy', 'adjust', 'count_adjust', 'transfer_out', 'return_to_pharmacy']
@@ -227,10 +245,14 @@ export async function postMovement(uow: UnitOfWork, actor: Actor, input: { suppl
   if (next.lt(0)) throw new DomainError(Codes.GUARD_FAILED, 'That would take the balance below zero.', { field: 'quantity' })
   const last = await uow.tx.medicationSupplyMovement.findFirst({ where: { supplyId: supply.id }, orderBy: { seq: 'desc' }, select: { seq: true } })
   const movement = await uow.tx.medicationSupplyMovement.create({
-    data: { communityId: supply.communityId, supplyId: supply.id, seq: (last?.seq ?? 0) + 1, kind: input.kind, quantity: q.toString(), balanceAfter: next.toString(), at: uow.now, actorId: userOf(actor), witnessId: input.witnessId ?? null, reason: input.reason ?? '' },
+    data: { communityId: supply.communityId, supplyId: supply.id, seq: (last?.seq ?? 0) + 1, kind: input.kind, quantity: q.toString(), balanceAfter: next.toString(), at: uow.now, actorId: userOf(actor), witnessId: input.witnessId ?? null, reason: input.reason ?? '', emergency: Boolean(emergency), emergencyReason: emergency?.reason ?? '' },
   })
   const moved = await uow.tx.medicationSupply.updateMany({ where: { id: supply.id, version: supply.version }, data: { balance: next.toString(), status: next.isZero() && input.kind !== 'destroy' ? 'empty' : undefined, version: { increment: 1 } } })
   if (moved.count !== 1) throw new DomainError(Codes.STALE_STATE, 'The supply changed. Reload and try again.')
+  if (frozenBy && emergency) {
+    uow.audit({ eventType: 'supply.emergency_override', entityType: 'CountDiscrepancy', entityId: frozenBy, actorUserId: userOf(actor), approverId: input.witnessId ?? null, reason: emergency.reason, after: { supplyId: supply.id, movementId: movement.id, residentId: input.residentId ?? null } })
+    await createTask(uow, actor, { communityId: supply.communityId, residentId: input.residentId ?? null, kind: 'count_discrepancy', title: `Emergency dose from a supply under count discrepancy: ${supply.label}`, detail: emergency.reason, ownerRole: ROLE_NAMES.don, dedupeKey: `emergency-dose:${movement.id}`, subjectType: 'MedicationSupplyMovement', subjectId: movement.id, dueAt: new Date(uow.now.getTime() + 4 * 3_600_000) })
+  }
   uow.audit({ eventType: `supply.${input.kind}`, entityType: 'MedicationSupply', entityId: supply.id, actorUserId: userOf(actor), approverId: input.witnessId ?? null, after: { movementId: movement.id, quantity: q.toString(), balanceAfter: next.toString() }, reason: input.reason ?? null })
   return { movementId: movement.id, balance: next.toString() }
 }
@@ -261,14 +283,14 @@ export async function destroySupply(uow: UnitOfWork, actor: Actor, input: { supp
 }
 
 /** E-kit: an emergency supply opened by a nurse for a specific resident and reason; the draw is a normal movement. */
-export async function drawFromEkit(uow: UnitOfWork, actor: Actor, input: { supplyId: string; residentId: string; quantity: string | number; reason: string; witnessId?: string | null }) {
+export async function drawFromEkit(uow: UnitOfWork, actor: Actor, input: { supplyId: string; residentId: string; quantity: string | number; reason: string; witnessId?: string | null; emergency?: boolean | null; emergencyReason?: string | null }) {
   const supply = await uow.tx.medicationSupply.findUnique({ where: { id: input.supplyId } })
   if (!supply || supply.kind !== 'ekit') return notFound('E-kit')
   const resident = await residentFor(uow.tx, input.residentId)
   if (supply.communityId !== resident.communityId) return notFound('E-kit')
   const q = qty(input.quantity, 'Quantity')
   if (q.lte(0)) invalid('Quantity must be more than zero.', 'quantity')
-  const posted = await postMovement(uow, actor, { supplyId: supply.id, kind: 'administer', quantity: q.negated(), reason: `E-kit for resident: ${text(input.reason, 'Reason')}`, witnessId: input.witnessId ?? null, residentId: resident.id })
+  const posted = await postMovement(uow, actor, { supplyId: supply.id, kind: 'administer', quantity: q.negated(), reason: `E-kit for resident: ${text(input.reason, 'Reason')}`, witnessId: input.witnessId ?? null, residentId: resident.id, emergency: emergencyOf(input) })
   await createTask(uow, actor, { communityId: supply.communityId!, residentId: resident.id, kind: 'general', title: `E-kit used: restock and pharmacy verification for ${supply.label}`, ownerRole: ROLE_NAMES.charge, dedupeKey: `ekit:${posted.movementId}`, subjectType: 'MedicationSupply', subjectId: supply.id })
   return posted
 }

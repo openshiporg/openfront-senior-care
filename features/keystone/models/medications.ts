@@ -1,5 +1,5 @@
 import { list } from '@keystone-6/core'
-import { checkbox, integer, json, relationship, select, text, timestamp } from '@keystone-6/core/fields'
+import { checkbox, decimal, integer, json, relationship, select, text, timestamp } from '@keystone-6/core/fields'
 import type { Permission } from '../access'
 import { scopedGoverned } from './scope'
 import { fixedChoice, lifecycle, medQty, systemText } from './domainFields'
@@ -10,6 +10,25 @@ import { rl, scope, stamps } from './clinical'
 /* Medications (SCHEMA §7). Quantities are numeric(14,3). Movement, administration and count rows are append-only (database triggers). */
 
 const MEDS: Permission[] = ['canAdministerMeds', 'canManagePharmacy', 'canResolveCountDiscrepancy', 'canReadClinical']
+
+/**
+ * Blind count (STATE-MACHINES §9.5): the people who count controlled stock (canAdministerMeds) must never see the expected balance.
+ * Only the roles that resolve differences (the DON, canResolveCountDiscrepancy) and the pharmacy (canManagePharmacy) read balances,
+ * the ledger and a discrepancy's expected number. Neither role can enter a count (count.entry needs canAdministerMeds and a named slot).
+ */
+export const BALANCE_READERS: Permission[] = ['canResolveCountDiscrepancy', 'canManagePharmacy']
+const seesBalance = ({ session }: { session?: any }) => BALANCE_READERS.some(p => session?.data?.role?.[p] === true)
+/** A quantity that reveals the expected count: unreadable, unfilterable and unsortable for anyone else (no inference through `where`). */
+const hiddenQty = (options: { required?: boolean; description?: string } = {}) =>
+  decimal({
+    precision: 14,
+    scale: 3,
+    validation: { isRequired: options.required ?? false },
+    access: { read: seesBalance, create: () => false, update: () => false },
+    isFilterable: seesBalance,
+    isOrderable: seesBalance,
+    ui: { ...ro.ui, ...(options.description ? { description: options.description } : {}) },
+  })
 const when = () => timestamp({ ...ro })
 const by = () => relationship({ ref: 'User', ...ro })
 
@@ -64,7 +83,7 @@ export const MedicationSupply = list({
     expiresOn: timestamp({ ...ro }),
     controlled: checkbox({ defaultValue: false, ...ro }),
     unit: systemText({ required: true }),
-    balance: medQty({ required: true }),
+    balance: hiddenQty({ required: true, description: 'Hidden from counting nurses (blind count). DON and pharmacy only.' }),
     status: lifecycle(['active', 'quarantined', 'destroyed', 'empty'], 'active'),
     movements: relationship({ ref: 'MedicationSupplyMovement.supply', many: true, ...ro }),
     ...stamps(),
@@ -74,7 +93,8 @@ export const MedicationSupply = list({
 export const MOVEMENT_KINDS = ['receive', 'administer', 'waste', 'transfer_out', 'transfer_in', 'destroy', 'adjust', 'count_adjust', 'return_to_pharmacy'] as const
 /** The ledger. A balance is the sum of these rows; a correction is another row. */
 export const MedicationSupplyMovement = list({
-  access: scopedGoverned(MEDS, ['community']),
+  // The ledger adds up to the balance, so it is closed to counters as a whole, not just balanceAfter.
+  access: scopedGoverned(BALANCE_READERS, ['community']),
   ui: { labelField: 'kind', listView: { initialColumns: ['kind', 'quantity', 'balanceAfter', 'supply', 'at'] } },
   fields: {
     community: relationship({ ref: 'Community', ...ro }),
@@ -82,7 +102,10 @@ export const MedicationSupplyMovement = list({
     seq: integer({ ...ro }),
     kind: fixedChoice(MOVEMENT_KINDS),
     quantity: medQty({ required: true, description: 'Signed: negative takes stock out.' }),
-    balanceAfter: medQty({ required: true }),
+    balanceAfter: hiddenQty({ required: true }),
+    /** An administer from a supply under an open count discrepancy (SM §9.5). The DB refuses one without this flag. */
+    emergency: checkbox({ defaultValue: false, ...ro }),
+    emergencyReason: systemText(),
     at: when(),
     actor: by(),
     witness: by(),
@@ -201,7 +224,21 @@ export const ShiftCount = list({
 
 /** Append-only: what one person counted. The expected balance is never shown to the counters. */
 export const ShiftCountEntry = list({
-  access: scopedGoverned(['canAdministerMeds', 'canResolveCountDiscrepancy'], ['community']),
+  // A counter sees only their own entries, so neither nurse can read the other's number before both submit.
+  access: (() => {
+    const base = scopedGoverned(['canAdministerMeds', 'canResolveCountDiscrepancy'], ['community'])
+    return {
+      ...base,
+      filter: {
+        query: async (args: any) => {
+          const scoped = await base.filter.query(args)
+          if (seesBalance(args)) return scoped
+          const own = { countedBy: { id: { equals: args.session?.itemId ?? '' } } }
+          return scoped === true ? own : { AND: [scoped, own] }
+        },
+      },
+    }
+  })(),
   ui: { labelField: 'role', listView: { initialColumns: ['shiftCount', 'supply', 'role', 'counted', 'countedBy'] } },
   fields: {
     community: relationship({ ref: 'Community', ...ro }),
@@ -216,13 +253,13 @@ export const ShiftCountEntry = list({
 })
 
 export const CountDiscrepancy = list({
-  access: scopedGoverned('canResolveCountDiscrepancy', ['community']),
+  access: scopedGoverned(BALANCE_READERS, ['community']),
   ui: { labelField: 'status', listView: { initialColumns: ['supply', 'expected', 'outgoingCounted', 'incomingCounted', 'status'] } },
   fields: {
     community: relationship({ ref: 'Community', ...ro }),
     shiftCount: relationship({ ref: 'ShiftCount', ...ro }),
     supply: relationship({ ref: 'MedicationSupply', ...ro }),
-    expected: medQty({ required: true }),
+    expected: hiddenQty({ required: true }),
     outgoingCounted: medQty({ required: true }),
     incomingCounted: medQty({ required: true }),
     status: lifecycle(['open', 'resolved']),

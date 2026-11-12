@@ -1,11 +1,12 @@
 import { list } from '@keystone-6/core'
-import { integer, json, relationship, select, text, timestamp } from '@keystone-6/core/fields'
+import { checkbox, integer, json, relationship, select, text, timestamp } from '@keystone-6/core/fields'
 import { scopedGoverned } from './scope'
+import { governed } from './listAccess'
 import { fixedChoice, lifecycle, systemText } from './domainFields'
 import { opt, ro } from './residentAccess'
 import { stamps } from './clinical'
 
-/* AI workflow layer v1 (SCHEMA §14). Workflows run only on request; see lib/workflows/engine.ts. */
+/* AI workflow layer v1 (SCHEMA §14). Workflows run only on request; see lib/workflows/engine.ts. Model calls go through lib/inference/gateway.ts only. */
 
 const when = () => timestamp({ ...ro })
 const by = () => relationship({ ref: 'User', ...ro })
@@ -36,10 +37,19 @@ export const WorkflowVersion = list({
     graphHash: systemText({ required: true }),
     policyVersion: systemText({ required: true }),
     policy: json({ ...ro, ui: { ...ro.ui, description: 'Operator-tunable parameters, such as the daily fluid threshold.' } }),
-    status: lifecycle(['draft', 'dry_run_ok', 'pending_activation', 'active', 'retired']),
-    dryRun: json({ ...ro }),
+    // SM §15.1: draft → proposed → dry_run_reviewed → (approved) active → paused → retired. dry_run_ok is the library's reviewed state.
+    status: lifecycle(['draft', 'proposed', 'dry_run_reviewed', 'dry_run_ok', 'pending_activation', 'active', 'paused', 'retired']),
+    dryRun: json({ ...ro, ui: { ...ro.ui, description: 'The last dry run over history: would-be findings per day, samples and the diff. Nothing was written.' } }),
+    dryRunAt: when(),
     createdByInference: relationship({ ref: 'InferenceCall', ...ro }),
     description: systemText(),
+    /** The plain-language job a person described (staff_described only). */
+    request: text({ ...ro, ui: { ...ro.ui, displayMode: 'textarea' } }),
+    proposedBy: by(),
+    proposedByAgent: relationship({ ref: 'AgentIdentity', ...ro }),
+    reviewedBy: by(),
+    reviewedAt: when(),
+    reviewNote: systemText(),
     activations: relationship({ ref: 'WorkflowActivation.workflowVersion', many: true, ...ro }),
     ...stamps(),
   },
@@ -68,7 +78,7 @@ export const WorkflowRun = list({
     community: relationship({ ref: 'Community', ...ro }),
     workflowVersion: relationship({ ref: 'WorkflowVersion', ...ro }),
     windowKey: systemText({ indexed: 'unique', required: true }),
-    trigger: fixedChoice(['page_load', 'run_now', 'source_change', 'dry_run']),
+    trigger: fixedChoice(['page_load', 'run_now', 'source_change', 'dry_run', 'recheck']),
     status: lifecycle(['running', 'succeeded', 'failed'], 'running'),
     startedAt: when(),
     finishedAt: when(),
@@ -92,7 +102,8 @@ export const Finding = list({
     title: systemText({ required: true }),
     detail: systemText(),
     severity: select({ ...opt(['info', 'warning', 'urgent']), defaultValue: 'warning', ...ro }),
-    status: lifecycle(['open', 'resolved', 'dismissed']),
+    // resolved: the condition no longer holds. resolved_by_evidence: a re-check found the record that satisfies the rule (SM §15.4).
+    status: lifecycle(['open', 'resolved', 'resolved_by_evidence', 'dismissed']),
     evidence: relationship({ ref: 'EvidenceRef.finding', many: true, ...ro }),
     task: relationship({ ref: 'Task', ...ro }),
     proposal: relationship({ ref: 'Proposal', ...ro }),
@@ -112,6 +123,9 @@ export const EvidenceRef = list({
     finding: relationship({ ref: 'Finding.evidence', ...ro }),
     recordType: systemText({ required: true }),
     recordId: systemText({ required: true }),
+    /** cause: why the finding opened. resolution: the record a re-check found that satisfies the rule. */
+    role: select({ ...opt(['cause', 'resolution']), defaultValue: 'cause', ...ro }),
+    /** Character offsets into the source text (a progress note body), so the passage can be shown exactly. */
     spanStart: integer({ ...ro }),
     spanEnd: integer({ ...ro }),
     quote: text({ ...ro }),
@@ -119,23 +133,76 @@ export const EvidenceRef = list({
   },
 })
 
-/** Every call to a model, allowed or refused. */
-export const InferenceCall = list({
-  access: scopedGoverned(['canManageWorkflows', 'canReadFindings'], ['community']),
-  ui: { labelField: 'purpose', listView: { initialColumns: ['purpose', 'provider', 'outcome', 'at'] } },
+/**
+ * What an extractor read from one source record (for example a fall in a progress note). A cache keyed by extractor version and the
+ * source text's digest: the model is asked once per note version, outside any business transaction, and blocks read the stored facts.
+ */
+export const ExtractedFact = list({
+  access: scopedGoverned(['canManageWorkflows'], ['community']),
+  ui: { labelField: 'extractor', listView: { initialColumns: ['extractor', 'sourceType', 'outcome', 'createdAt'] } },
   fields: {
     community: relationship({ ref: 'Community', ...ro }),
-    purpose: fixedChoice(['workflow_build', 'workflow_step', 'summarise', 'classify']),
-    provider: systemText({ required: true }),
-    providerClass: fixedChoice(['sandbox_fixture', 'self_hosted', 'baa_hosted', 'other']),
+    resident: relationship({ ref: 'Resident', ...ro }),
+    extractor: systemText({ required: true }),
+    sourceType: systemText({ required: true }),
+    sourceId: systemText({ indexed: true, required: true }),
+    sourceDigest: systemText({ required: true }),
+    /** extractor + source + digest: one extraction per version of the text. */
+    cacheKey: systemText({ indexed: 'unique', required: true }),
+    outcome: fixedChoice(['found', 'none', 'unclear', 'refused']),
+    facts: json({ ...ro, ui: { ...ro.ui, description: 'Typed facts with character spans into the source text.' } }),
+    inferenceCall: relationship({ ref: 'InferenceCall', ...ro }),
+    ...stamps(),
+  },
+})
+
+/**
+ * A registered model endpoint (INTEGRATIONS §1). The mode decides what data it may receive: self_hosted runs in the operator's network;
+ * baa_hosted needs an active ProcessorRegistration; sandbox (recorded fixtures) only ever sees synthetic subjects; no_phi never sees PHI.
+ */
+export const InferenceProvider = list({
+  access: governed(['canManageIntegrations', 'canManageWorkflows']),
+  ui: { labelField: 'key', listView: { initialColumns: ['key', 'adapter', 'mode', 'status', 'isDefault'] } },
+  fields: {
+    key: systemText({ indexed: 'unique', required: true }),
+    name: systemText({ required: true }),
+    adapter: fixedChoice(['self_hosted_openai_compat', 'bedrock', 'azure_openai', 'sandbox_fixture']),
+    mode: fixedChoice(['self_hosted', 'baa_hosted', 'sandbox', 'no_phi']),
+    endpoint: systemText(),
     model: systemText(),
-    outcome: fixedChoice(['ok', 'refused_policy', 'error']),
+    processorRegistration: relationship({ ref: 'ProcessorRegistration', ...ro }),
+    isDefault: checkbox({ defaultValue: false, ...ro }),
+    status: lifecycle(['draft', 'active', 'suspended'], 'draft'),
+    ...stamps(),
+  },
+})
+
+/** Every call to a model, allowed or refused (SCHEMA §14.9). Append-only. No prompt or response content is stored: digests and counts only. */
+export const InferenceCall = list({
+  access: scopedGoverned(['canManageWorkflows', 'canReadFindings'], ['community']),
+  ui: { labelField: 'purpose', listView: { initialColumns: ['purpose', 'provider', 'mode', 'outcome', 'at'] } },
+  fields: {
+    community: relationship({ ref: 'Community', ...ro }),
+    purpose: fixedChoice(['extract', 'summarise', 'draft_note', 'classify', 'workflow_build', 'workflow_step']),
+    provider: systemText({ required: true }),
+    inferenceProvider: relationship({ ref: 'InferenceProvider', ...ro }),
+    providerClass: fixedChoice(['sandbox_fixture', 'self_hosted', 'baa_hosted', 'other']),
+    mode: fixedChoice(['self_hosted', 'baa_hosted', 'sandbox', 'no_phi', 'none']),
+    model: systemText(),
+    outcome: fixedChoice(['ok', 'refused_policy', 'error', 'timeout', 'invalid_output']),
     policyAtCall: systemText(),
+    deidentification: fixedChoice(['none', 'identifiers_removed', 'safe_harbor']),
+    dataCategories: json({ ...ro }),
+    syntheticOnly: checkbox({ defaultValue: false, ...ro }),
     inputHash: systemText({ required: true }),
     outputHash: systemText(),
     inputTokens: integer({ ...ro }),
     outputTokens: integer({ ...ro }),
+    latencyMs: integer({ ...ro }),
     reason: systemText(),
+    workflowRun: relationship({ ref: 'WorkflowRun', ...ro }),
+    agentRun: relationship({ ref: 'AgentRun', ...ro }),
+    principal: systemText(),
     at: when(),
     actor: by(),
     ...stamps(),

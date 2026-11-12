@@ -92,6 +92,8 @@ model User {
   from_Finding_dismissedBy                     Finding[]                  @relation("Finding_dismissedBy")
   from_InferenceCall_actor                     InferenceCall[]            @relation("InferenceCall_actor")
   from_WorkflowActivation_activatedBy          WorkflowActivation[]       @relation("WorkflowActivation_activatedBy")
+  from_WorkflowVersion_proposedBy              WorkflowVersion[]          @relation("WorkflowVersion_proposedBy")
+  from_WorkflowVersion_reviewedBy              WorkflowVersion[]          @relation("WorkflowVersion_reviewedBy")
 
   @@index([roleId])
 }
@@ -254,6 +256,7 @@ model AgentIdentity {
   from_AuditEvent_actorAgent            AuditEvent[]      @relation("AuditEvent_actorAgent")
   from_Proposal_proposedByAgent         Proposal[]        @relation("Proposal_proposedByAgent")
   from_CensusEvent_actorAgent           CensusEvent[]     @relation("CensusEvent_actorAgent")
+  from_WorkflowVersion_proposedByAgent  WorkflowVersion[] @relation("WorkflowVersion_proposedByAgent")
 
   @@index([ownerId])
   @@index([oauthAppId])
@@ -421,6 +424,7 @@ model Community {
   from_Document_community                 Document[]                 @relation("Document_community")
   from_StaffAssignment_community          StaffAssignment[]          @relation("StaffAssignment_community")
   from_AgentToolGrant_communities         AgentToolGrant[]           @relation("AgentToolGrant_communities")
+  from_Proposal_community                 Proposal[]                 @relation("Proposal_community")
   from_ApartmentType_community            ApartmentType[]            @relation("ApartmentType_community")
   from_BedHoldPolicy_community            BedHoldPolicy[]            @relation("BedHoldPolicy_community")
   from_PlaceReservation_community         PlaceReservation[]         @relation("PlaceReservation_community")
@@ -476,6 +480,7 @@ model Community {
   from_PrecautionOrder_community          PrecautionOrder[]          @relation("PrecautionOrder_community")
   from_RegulatoryReport_community         RegulatoryReport[]         @relation("RegulatoryReport_community")
   from_EvidenceRef_community              EvidenceRef[]              @relation("EvidenceRef_community")
+  from_ExtractedFact_community            ExtractedFact[]            @relation("ExtractedFact_community")
   from_Finding_community                  Finding[]                  @relation("Finding_community")
   from_InferenceCall_community            InferenceCall[]            @relation("InferenceCall_community")
   from_WorkflowActivation_community       WorkflowActivation[]       @relation("WorkflowActivation_community")
@@ -768,17 +773,18 @@ model PhiReadAudit {
 }
 
 model ProcessorRegistration {
-  id             String    @id @default(cuid())
-  processor      String    @default("")
-  service        String    @default("")
-  baaDocument    Document? @relation("ProcessorRegistration_baaDocument", fields: [baaDocumentId], references: [id])
-  baaDocumentId  String?   @map("baaDocument")
-  effectiveFrom  DateTime? @postgresql.Date
-  effectiveTo    DateTime? @postgresql.Date
-  dataCategories Json?     @default("[]")
-  status         String    @default("draft")
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @default(now()) @updatedAt
+  id                                           String              @id @default(cuid())
+  processor                                    String              @default("")
+  service                                      String              @default("")
+  baaDocument                                  Document?           @relation("ProcessorRegistration_baaDocument", fields: [baaDocumentId], references: [id])
+  baaDocumentId                                String?             @map("baaDocument")
+  effectiveFrom                                DateTime?           @postgresql.Date
+  effectiveTo                                  DateTime?           @postgresql.Date
+  dataCategories                               Json?               @default("[]")
+  status                                       String              @default("draft")
+  createdAt                                    DateTime            @default(now())
+  updatedAt                                    DateTime            @default(now()) @updatedAt
+  from_InferenceProvider_processorRegistration InferenceProvider[] @relation("InferenceProvider_processorRegistration")
 
   @@index([baaDocumentId])
 }
@@ -854,18 +860,19 @@ model StaffAssignment {
 }
 
 model AgentRun {
-  id        String         @id @default(cuid())
-  agent     AgentIdentity? @relation("AgentRun_agent", fields: [agentId], references: [id])
-  agentId   String?        @map("agent")
-  purpose   String         @default("")
-  startedAt DateTime?      @default(now())
-  endedAt   DateTime?
-  status    String         @default("started")
-  toolCalls Json?
-  proposals Proposal[]     @relation("Proposal_agentRun")
-  version   Int            @default(0)
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @default(now()) @updatedAt
+  id                          String          @id @default(cuid())
+  agent                       AgentIdentity?  @relation("AgentRun_agent", fields: [agentId], references: [id])
+  agentId                     String?         @map("agent")
+  purpose                     String          @default("")
+  startedAt                   DateTime?       @default(now())
+  endedAt                     DateTime?
+  status                      String          @default("started")
+  toolCalls                   Json?
+  proposals                   Proposal[]      @relation("Proposal_agentRun")
+  version                     Int             @default(0)
+  createdAt                   DateTime        @default(now())
+  updatedAt                   DateTime        @default(now()) @updatedAt
+  from_InferenceCall_agentRun InferenceCall[] @relation("InferenceCall_agentRun")
 
   @@index([agentId])
 }
@@ -894,9 +901,16 @@ model Proposal {
   kind                   String
   payload                Json?
   payloadHash            String         @default("")
+  community              Community?     @relation("Proposal_community", fields: [communityId], references: [id])
+  communityId            String?        @map("community")
   resident               Resident?      @relation("Proposal_resident", fields: [residentId], references: [id])
   residentId             String?        @map("resident")
   status                 String         @default("proposed")
+  sourceFinding          Finding?       @relation("Proposal_sourceFinding", fields: [sourceFindingId], references: [id])
+  sourceFindingId        String?        @map("sourceFinding")
+  inferenceCall          InferenceCall? @relation("Proposal_inferenceCall", fields: [inferenceCallId], references: [id])
+  inferenceCallId        String?        @map("inferenceCall")
+  rejectedReason         String         @default("")
   agentRun               AgentRun?      @relation("Proposal_agentRun", fields: [agentRunId], references: [id])
   agentRunId             String?        @map("agentRun")
   proposedByAgent        AgentIdentity? @relation("Proposal_proposedByAgent", fields: [proposedByAgentId], references: [id])
@@ -914,7 +928,10 @@ model Proposal {
   from_CarePlan_proposal CarePlan[]     @relation("CarePlan_proposal")
   from_Finding_proposal  Finding[]      @relation("Finding_proposal")
 
+  @@index([communityId])
   @@index([residentId])
+  @@index([sourceFindingId])
+  @@index([inferenceCallId])
   @@index([agentRunId])
   @@index([proposedByAgentId])
   @@index([proposedByUserId])
@@ -1523,6 +1540,7 @@ model Resident {
   from_InfectionCase_resident            InfectionCase[]            @relation("InfectionCase_resident")
   from_PrecautionOrder_resident          PrecautionOrder[]          @relation("PrecautionOrder_resident")
   from_RegulatoryReport_resident         RegulatoryReport[]         @relation("RegulatoryReport_resident")
+  from_ExtractedFact_resident            ExtractedFact[]            @relation("ExtractedFact_resident")
   from_Finding_resident                  Finding[]                  @relation("Finding_resident")
 
   @@index([communityId])
@@ -2608,6 +2626,8 @@ model MedicationSupplyMovement {
   kind                                String
   quantity                            Decimal                   @postgresql.Decimal(14, 3)
   balanceAfter                        Decimal                   @postgresql.Decimal(14, 3)
+  emergency                           Boolean                   @default(false)
+  emergencyReason                     String                    @default("")
   at                                  DateTime?
   actor                               User?                     @relation("MedicationSupplyMovement_actor", fields: [actorId], references: [id])
   actorId                             String?                   @map("actor")
@@ -2967,6 +2987,7 @@ model EvidenceRef {
   findingId   String?    @map("finding")
   recordType  String     @default("")
   recordId    String     @default("")
+  role        String?    @default("cause")
   spanStart   Int?
   spanEnd     Int?
   quote       String     @default("")
@@ -2978,34 +2999,60 @@ model EvidenceRef {
   @@index([findingId])
 }
 
+model ExtractedFact {
+  id              String         @id @default(cuid())
+  community       Community?     @relation("ExtractedFact_community", fields: [communityId], references: [id])
+  communityId     String?        @map("community")
+  resident        Resident?      @relation("ExtractedFact_resident", fields: [residentId], references: [id])
+  residentId      String?        @map("resident")
+  extractor       String         @default("")
+  sourceType      String         @default("")
+  sourceId        String         @default("")
+  sourceDigest    String         @default("")
+  cacheKey        String         @unique @default("")
+  outcome         String
+  facts           Json?
+  inferenceCall   InferenceCall? @relation("ExtractedFact_inferenceCall", fields: [inferenceCallId], references: [id])
+  inferenceCallId String?        @map("inferenceCall")
+  version         Int            @default(0)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([residentId])
+  @@index([sourceId])
+  @@index([inferenceCallId])
+}
+
 model Finding {
-  id                String           @id @default(cuid())
-  community         Community?       @relation("Finding_community", fields: [communityId], references: [id])
-  communityId       String?          @map("community")
-  resident          Resident?        @relation("Finding_resident", fields: [residentId], references: [id])
-  residentId        String?          @map("resident")
-  workflowVersion   WorkflowVersion? @relation("Finding_workflowVersion", fields: [workflowVersionId], references: [id])
-  workflowVersionId String?          @map("workflowVersion")
-  run               WorkflowRun?     @relation("Finding_run", fields: [runId], references: [id])
-  runId             String?          @map("run")
-  workflowCode      String           @default("")
-  dedupeKey         String           @unique @default("")
-  title             String           @default("")
-  detail            String           @default("")
-  severity          String?          @default("warning")
-  status            String           @default("open")
-  evidence          EvidenceRef[]    @relation("EvidenceRef_finding")
-  task              Task?            @relation("Finding_task", fields: [taskId], references: [id])
-  taskId            String?          @map("task")
-  proposal          Proposal?        @relation("Finding_proposal", fields: [proposalId], references: [id])
-  proposalId        String?          @map("proposal")
-  resolvedAt        DateTime?
-  resolutionNote    String           @default("")
-  dismissedBy       User?            @relation("Finding_dismissedBy", fields: [dismissedById], references: [id])
-  dismissedById     String?          @map("dismissedBy")
-  version           Int              @default(0)
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @default(now()) @updatedAt
+  id                          String           @id @default(cuid())
+  community                   Community?       @relation("Finding_community", fields: [communityId], references: [id])
+  communityId                 String?          @map("community")
+  resident                    Resident?        @relation("Finding_resident", fields: [residentId], references: [id])
+  residentId                  String?          @map("resident")
+  workflowVersion             WorkflowVersion? @relation("Finding_workflowVersion", fields: [workflowVersionId], references: [id])
+  workflowVersionId           String?          @map("workflowVersion")
+  run                         WorkflowRun?     @relation("Finding_run", fields: [runId], references: [id])
+  runId                       String?          @map("run")
+  workflowCode                String           @default("")
+  dedupeKey                   String           @unique @default("")
+  title                       String           @default("")
+  detail                      String           @default("")
+  severity                    String?          @default("warning")
+  status                      String           @default("open")
+  evidence                    EvidenceRef[]    @relation("EvidenceRef_finding")
+  task                        Task?            @relation("Finding_task", fields: [taskId], references: [id])
+  taskId                      String?          @map("task")
+  proposal                    Proposal?        @relation("Finding_proposal", fields: [proposalId], references: [id])
+  proposalId                  String?          @map("proposal")
+  resolvedAt                  DateTime?
+  resolutionNote              String           @default("")
+  dismissedBy                 User?            @relation("Finding_dismissedBy", fields: [dismissedById], references: [id])
+  dismissedById               String?          @map("dismissedBy")
+  version                     Int              @default(0)
+  createdAt                   DateTime         @default(now())
+  updatedAt                   DateTime         @default(now()) @updatedAt
+  from_Proposal_sourceFinding Proposal[]       @relation("Proposal_sourceFinding")
 
   @@index([communityId])
   @@index([residentId])
@@ -3018,30 +3065,67 @@ model Finding {
 }
 
 model InferenceCall {
-  id                                      String            @id @default(cuid())
-  community                               Community?        @relation("InferenceCall_community", fields: [communityId], references: [id])
-  communityId                             String?           @map("community")
+  id                                      String             @id @default(cuid())
+  community                               Community?         @relation("InferenceCall_community", fields: [communityId], references: [id])
+  communityId                             String?            @map("community")
   purpose                                 String
-  provider                                String            @default("")
+  provider                                String             @default("")
+  inferenceProvider                       InferenceProvider? @relation("InferenceCall_inferenceProvider", fields: [inferenceProviderId], references: [id])
+  inferenceProviderId                     String?            @map("inferenceProvider")
   providerClass                           String
-  model                                   String            @default("")
+  mode                                    String
+  model                                   String             @default("")
   outcome                                 String
-  policyAtCall                            String            @default("")
-  inputHash                               String            @default("")
-  outputHash                              String            @default("")
+  policyAtCall                            String             @default("")
+  deidentification                        String
+  dataCategories                          Json?
+  syntheticOnly                           Boolean            @default(false)
+  inputHash                               String             @default("")
+  outputHash                              String             @default("")
   inputTokens                             Int?
   outputTokens                            Int?
-  reason                                  String            @default("")
+  latencyMs                               Int?
+  reason                                  String             @default("")
+  workflowRun                             WorkflowRun?       @relation("InferenceCall_workflowRun", fields: [workflowRunId], references: [id])
+  workflowRunId                           String?            @map("workflowRun")
+  agentRun                                AgentRun?          @relation("InferenceCall_agentRun", fields: [agentRunId], references: [id])
+  agentRunId                              String?            @map("agentRun")
+  principal                               String             @default("")
   at                                      DateTime?
-  actor                                   User?             @relation("InferenceCall_actor", fields: [actorId], references: [id])
-  actorId                                 String?           @map("actor")
-  version                                 Int               @default(0)
-  createdAt                               DateTime          @default(now())
-  updatedAt                               DateTime          @default(now()) @updatedAt
-  from_WorkflowVersion_createdByInference WorkflowVersion[] @relation("WorkflowVersion_createdByInference")
+  actor                                   User?              @relation("InferenceCall_actor", fields: [actorId], references: [id])
+  actorId                                 String?            @map("actor")
+  version                                 Int                @default(0)
+  createdAt                               DateTime           @default(now())
+  updatedAt                               DateTime           @default(now()) @updatedAt
+  from_Proposal_inferenceCall             Proposal[]         @relation("Proposal_inferenceCall")
+  from_ExtractedFact_inferenceCall        ExtractedFact[]    @relation("ExtractedFact_inferenceCall")
+  from_WorkflowVersion_createdByInference WorkflowVersion[]  @relation("WorkflowVersion_createdByInference")
 
   @@index([communityId])
+  @@index([inferenceProviderId])
+  @@index([workflowRunId])
+  @@index([agentRunId])
   @@index([actorId])
+}
+
+model InferenceProvider {
+  id                                   String                 @id @default(cuid())
+  key                                  String                 @unique @default("")
+  name                                 String                 @default("")
+  adapter                              String
+  mode                                 String
+  endpoint                             String                 @default("")
+  model                                String                 @default("")
+  processorRegistration                ProcessorRegistration? @relation("InferenceProvider_processorRegistration", fields: [processorRegistrationId], references: [id])
+  processorRegistrationId              String?                @map("processorRegistration")
+  isDefault                            Boolean                @default(false)
+  status                               String                 @default("draft")
+  version                              Int                    @default(0)
+  createdAt                            DateTime               @default(now())
+  updatedAt                            DateTime               @default(now()) @updatedAt
+  from_InferenceCall_inferenceProvider InferenceCall[]        @relation("InferenceCall_inferenceProvider")
+
+  @@index([processorRegistrationId])
 }
 
 model WorkflowActivation {
@@ -3083,23 +3167,24 @@ model WorkflowDefinition {
 }
 
 model WorkflowRun {
-  id                String           @id @default(cuid())
-  community         Community?       @relation("WorkflowRun_community", fields: [communityId], references: [id])
-  communityId       String?          @map("community")
-  workflowVersion   WorkflowVersion? @relation("WorkflowRun_workflowVersion", fields: [workflowVersionId], references: [id])
-  workflowVersionId String?          @map("workflowVersion")
-  windowKey         String           @unique @default("")
-  trigger           String
-  status            String           @default("running")
-  startedAt         DateTime?
-  finishedAt        DateTime?
-  findingsOpened    Int?             @default(0)
-  findingsResolved  Int?             @default(0)
-  summary           Json?
-  version           Int              @default(0)
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @default(now()) @updatedAt
-  from_Finding_run  Finding[]        @relation("Finding_run")
+  id                             String           @id @default(cuid())
+  community                      Community?       @relation("WorkflowRun_community", fields: [communityId], references: [id])
+  communityId                    String?          @map("community")
+  workflowVersion                WorkflowVersion? @relation("WorkflowRun_workflowVersion", fields: [workflowVersionId], references: [id])
+  workflowVersionId              String?          @map("workflowVersion")
+  windowKey                      String           @unique @default("")
+  trigger                        String
+  status                         String           @default("running")
+  startedAt                      DateTime?
+  finishedAt                     DateTime?
+  findingsOpened                 Int?             @default(0)
+  findingsResolved               Int?             @default(0)
+  summary                        Json?
+  version                        Int              @default(0)
+  createdAt                      DateTime         @default(now())
+  updatedAt                      DateTime         @default(now()) @updatedAt
+  from_Finding_run               Finding[]        @relation("Finding_run")
+  from_InferenceCall_workflowRun InferenceCall[]  @relation("InferenceCall_workflowRun")
 
   @@index([communityId])
   @@index([workflowVersionId])
@@ -3118,9 +3203,19 @@ model WorkflowVersion {
   policy                           Json?
   status                           String               @default("draft")
   dryRun                           Json?
+  dryRunAt                         DateTime?
   createdByInference               InferenceCall?       @relation("WorkflowVersion_createdByInference", fields: [createdByInferenceId], references: [id])
   createdByInferenceId             String?              @map("createdByInference")
   description                      String               @default("")
+  request                          String               @default("")
+  proposedBy                       User?                @relation("WorkflowVersion_proposedBy", fields: [proposedById], references: [id])
+  proposedById                     String?              @map("proposedBy")
+  proposedByAgent                  AgentIdentity?       @relation("WorkflowVersion_proposedByAgent", fields: [proposedByAgentId], references: [id])
+  proposedByAgentId                String?              @map("proposedByAgent")
+  reviewedBy                       User?                @relation("WorkflowVersion_reviewedBy", fields: [reviewedById], references: [id])
+  reviewedById                     String?              @map("reviewedBy")
+  reviewedAt                       DateTime?
+  reviewNote                       String               @default("")
   activations                      WorkflowActivation[] @relation("WorkflowActivation_workflowVersion")
   version                          Int                  @default(0)
   createdAt                        DateTime             @default(now())
@@ -3131,6 +3226,9 @@ model WorkflowVersion {
   @@index([communityId])
   @@index([definitionId])
   @@index([createdByInferenceId])
+  @@index([proposedById])
+  @@index([proposedByAgentId])
+  @@index([reviewedById])
 }
 
 enum UserKindType {

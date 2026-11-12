@@ -17,9 +17,27 @@ export type DomainTool = {
   /** Field of the GraphQL result to return. */
   field: string
   writes: boolean
+  /** A clinicalCommand op: the arguments (minus idempotencyKey) become the command input. */
+  op?: string
 }
 
-const idempotencyKey = { type: 'string', minLength: 8, maxLength: 200, pattern: '^[A-Za-z0-9._:-]+$', description: 'Unique per intent. Reusing it returns the first result instead of acting twice.' }
+const COMMAND = 'mutation Command($op: String!, $input: JSON, $idempotencyKey: String!) { clinicalCommand(op: $op, input: $input, idempotencyKey: $idempotencyKey) }'
+const command = (name: string, op: string, description: string, properties: Record<string, object>, required: string[]): DomainTool => ({
+  name, description, op, document: COMMAND, field: 'clinicalCommand', writes: true,
+  inputSchema: { type: 'object', properties: { ...properties, idempotencyKey }, required: [...required, 'idempotencyKey'], additionalProperties: false },
+})
+const read = (name: string, description: string, args: Record<string, { schema: object; gql: string; required?: boolean }>): DomainTool => {
+  const entries = Object.entries(args)
+  const vars = entries.map(([k, v]) => `$${k}: ${v.gql}`).join(', ')
+  const pass = entries.map(([k]) => `${k}: $${k}`).join(', ')
+  return {
+    name, description, field: name, writes: false,
+    document: entries.length ? `query Q(${vars}) { ${name}(${pass}) }` : `query Q { ${name} }`,
+    inputSchema: { type: 'object', properties: Object.fromEntries(entries.map(([k, v]) => [k, v.schema])), required: entries.filter(([, v]) => v.required !== false).map(([k]) => k), additionalProperties: false },
+  }
+}
+
+export const idempotencyKey = { type: 'string', minLength: 8, maxLength: 200, pattern: '^[A-Za-z0-9._:-]+$', description: 'Unique per intent. Reusing it returns the first result instead of acting twice.' }
 
 const id = (description: string) => ({ type: 'string', minLength: 1, maxLength: 64, description })
 const noArgs = { type: 'object' as const, properties: {}, required: [], additionalProperties: false }
@@ -73,6 +91,22 @@ export const DOMAIN_TOOLS: DomainTool[] = [
     field: 'logSalesActivity',
     writes: true,
   },
+
+  // Workflows, findings, tasks and proposals (INTEGRATIONS §7.2). Approving, accepting and signing have no tool: they are human-only.
+  read('listBlockTypes', 'The workflow block catalogue: code, stage (source, extract, rule, coordinate, detector), description and parameters. No resident data. Agents need workflow.read.', {}),
+  read('getBlockType', 'One block from the catalogue. Agents need workflow.read.', { code: { schema: { type: 'string', minLength: 1, maxLength: 80 }, gql: 'String!' } }),
+  read('listWorkflows', 'Library and staff-described workflows for a community, with each version\'s status and whether it is active here. Agents need workflow.read.', { communityId: { schema: id('Community id'), gql: 'ID!' } }),
+  read('getWorkflowVersion', 'One workflow version: its graph, status and last dry-run summary (counts, diff and record ids, never chart text). Agents need workflow.read.', { versionId: { schema: id('Workflow version id'), gql: 'ID!' } }),
+  read('getWorkflowRun', 'One workflow run: trigger, window, findings opened and resolved. Agents need workflow.read.', { runId: { schema: id('Workflow run id'), gql: 'ID!' } }),
+  read('listFindings', 'Findings for a community (open by default) with their evidence spans and quotes. Quotes come from the chart: every read is audited. Agents need finding.read.', { communityId: { schema: id('Community id'), gql: 'ID!' }, status: { schema: { type: 'string', enum: ['open', 'resolved', 'resolved_by_evidence', 'dismissed'] }, gql: 'String', required: false } }),
+  read('getFinding', 'One finding with its evidence (cause and resolution). Every read is audited. Agents need finding.read.', { findingId: { schema: id('Finding id'), gql: 'ID!' } }),
+  command('propose_workflow_version', 'workflow.build', 'Describe a monitoring job in plain language; the builder turns it into a workflow drawn only from the block catalogue and saves it as a proposed version. It does nothing until it is dry-run and approved by two people. Agents need workflow.propose.', { communityId: id('Community id'), request: { type: 'string', minLength: 10, maxLength: 2000, description: 'The job, e.g. "When a note says a resident fell, the charge nurse holds a huddle within 72 hours."' } }, ['communityId', 'request']),
+  command('dry_run_workflow_version', 'workflow.dryRun', 'Replay a proposed workflow over the last 30 days of records and store what it would have found, with the difference from what is open now. Writes no findings or tasks. Agents need workflow.dry_run.', { versionId: id('Workflow version id') }, ['versionId']),
+  command('request_workflow_activation', 'workflow.requestActivation', 'Send a dry-run-reviewed workflow for approval. A staff-described workflow needs the DON and then the administrator, neither of them the proposer; an agent never approves. Agents need workflow.propose.', { versionId: id('Workflow version id'), communityId: id('Community id'), reviewNote: { type: 'string', minLength: 3, maxLength: 1000, description: 'What the dry run showed' } }, ['versionId', 'communityId']),
+  command('pause_workflow_activation', 'workflow.pause', 'Pause an active workflow in a community. Agents need workflow.pause.', { activationId: id('Workflow activation id'), reason: { type: 'string', minLength: 3, maxLength: 1000 } }, ['activationId', 'reason']),
+  command('resolve_finding_with_evidence', 'finding.recheck', 'Re-check one finding now. It closes only if the record that satisfies it exists (for example the completed post-fall huddle); it never closes on request alone. Agents need finding.recheck.', { findingId: id('Finding id') }, ['findingId']),
+  command('create_task', 'task.create', 'Put a task in the staff inbox of a community (never a sent message). Agents need task.create.', { communityId: id('Community id'), title: { type: 'string', minLength: 3, maxLength: 200 }, detail: { type: 'string', maxLength: 2000 }, residentId: id('Optional resident id'), ownerRole: { type: 'string', maxLength: 80 }, dueAt: { type: 'string', maxLength: 40 } }, ['communityId', 'title']),
+  command('draft_care_plan_update', 'proposal.draftCarePlan', 'Draft a care-plan update from a finding. It is saved as a Proposal only: a nurse with care-plan rights accepts it and signs the plan in the dashboard. Agents need proposal.create_care_plan.', { findingId: id('Finding id') }, ['findingId']),
 ]
 
 export function registerDomainTools(tools: DomainTool[]) {
@@ -109,10 +143,15 @@ export function validateArguments(tool: DomainTool, args: Record<string, unknown
 
 export async function runDomainTool(tool: DomainTool, args: Record<string, unknown>, target: { graphqlEndpoint: string; auth: Record<string, string> }) {
   validateArguments(tool, args)
+  let variables: Record<string, unknown> = args
+  if (tool.op) {
+    const { idempotencyKey: key, ...input } = args
+    variables = { op: tool.op, input, idempotencyKey: key }
+  }
   const response = await fetch(target.graphqlEndpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...target.auth },
-    body: JSON.stringify({ query: tool.document, variables: args }),
+    body: JSON.stringify({ query: tool.document, variables }),
   })
   const result = await response.json()
   if (result.errors?.length) {

@@ -311,7 +311,7 @@ phiList('MedicationOrderDetail')
 
 /* ------------------------------------------------------------------ tasks */
 
-export const TASK_KINDS = ['general', 'post_fall_huddle', 'neuro_checks', 'hydration', 'wound_assessment', 'infection_review', 'prn_followup', 'incident_form', 'countersign', 'incident_follow_up', 'count_discrepancy', 'escalation', 'care_plan_review'] as const
+export const TASK_KINDS = ['general', 'post_fall_huddle', 'neuro_checks', 'hydration', 'wound_assessment', 'infection_review', 'prn_followup', 'incident_form', 'countersign', 'incident_follow_up', 'count_discrepancy', 'escalation', 'care_plan_review', 'finding'] as const
 /** The staff inbox. Escalations and notifications are tasks, never sent messages. */
 export const Task = list({
   access: scopedGoverned('canAccessDashboard', ['community']),

@@ -5,6 +5,9 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
@@ -26,6 +29,494 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// features/keystone/access.ts
+var permissionNames, NEVER_DEFAULT, approvalPermissions, isSignedIn, isStaff, hasPermission, permissions, anyOf, sys, rules;
+var init_access = __esm({
+  "features/keystone/access.ts"() {
+    "use strict";
+    permissionNames = [
+      // Starter and fleet-mandatory
+      "canSeeOtherPeople",
+      "canEditOtherPeople",
+      "canManagePeople",
+      "canManageRoles",
+      "canAccessDashboard",
+      "canManageOnboarding",
+      "canManagePayments",
+      "canIssueRefunds",
+      "canReadAudit",
+      // Operator and communities
+      "canManageOperator",
+      "canManageCommunities",
+      "canManagePlaces",
+      "canManageIntegrations",
+      "canApproveIntegrations",
+      // Sales and storefront
+      "canManageSales",
+      "canManageStorefront",
+      "canReadSales",
+      // Residents and census
+      "canAdmitDischarge",
+      "canRecordCensus",
+      "canManageRepresentatives",
+      "canApproveCensusCorrections",
+      "canReadResidentDemographics",
+      // Clinical
+      "canChartPointOfCare",
+      "canChartNursing",
+      "canManageAssessments",
+      "canManageCarePlans",
+      "canEnterOrders",
+      "canSignOrders",
+      "canApproveClinicalCorrections",
+      "canReadClinical",
+      "canReadSensitiveClinical",
+      // Medications
+      "canAdministerMeds",
+      "canWitnessControlled",
+      "canManagePharmacy",
+      "canResolveCountDiscrepancy",
+      "canApproveControlledAdjustments",
+      // Incidents and infection prevention
+      "canReportIncident",
+      "canInvestigateIncidents",
+      "canManageInfectionControl",
+      "canApproveIncidentDowngrade",
+      "canDeclareOutbreak",
+      "canReadIncidents",
+      // Workforce
+      "canManageSchedule",
+      "canManageTimecards",
+      "canManageCredentials",
+      "canApproveTimecards",
+      "canReadWorkforce",
+      // Billing
+      "canManageRates",
+      "canManageBilling",
+      "canManageClaims",
+      "canPostPayments",
+      "canApproveRates",
+      "canApproveWriteOffs",
+      "canReleaseClaims",
+      "canReadBilling",
+      "canReadIdentifiers",
+      // Resident trust
+      "canOperateTrust",
+      "canApproveTrust",
+      "canReadTrust",
+      // Compliance and quality
+      "canManageCompliance",
+      "canManageSurveys",
+      "canManageQapi",
+      "canSubmitRegulatory",
+      "canApproveCompliance",
+      "canReadCompliance",
+      // Portal and engagement
+      "canManageFamilyUpdates",
+      "canManageActivities",
+      "canManageDietary",
+      "canMessageFamilies",
+      "canApprovePortalScopes",
+      // AI workflows and agents
+      "canManageWorkflows",
+      "canManageAgents",
+      "canApproveWorkflows",
+      "canApproveAgentGrants",
+      "canReadFindings",
+      // Privacy
+      "canBreakGlass",
+      "canReviewBreakGlass",
+      "canReadPhiAudit",
+      // Raw status correction. Never seeded on a default role; every use is audited.
+      "canBreakGlassRecords"
+    ];
+    NEVER_DEFAULT = ["canBreakGlassRecords"];
+    approvalPermissions = permissionNames.filter(
+      (name) => name.startsWith("canApprove") || name === "canReleaseClaims" || name === "canResolveCountDiscrepancy" || name === "canReviewBreakGlass" || name === "canBreakGlassRecords"
+    );
+    isSignedIn = ({ session }) => {
+      if (!session) return false;
+      const expires = session.data?.accessExpiresAt;
+      return !expires || Date.parse(expires) > Date.now();
+    };
+    isStaff = ({ session }) => isSignedIn({ session }) && session?.data.kind !== "portal" && session?.data.role?.canAccessDashboard === true;
+    hasPermission = (session, permission) => isSignedIn({ session }) && session?.data.kind !== "portal" && session?.data.role?.[permission] === true;
+    permissions = Object.fromEntries(
+      permissionNames.map((name) => [name, ({ session }) => hasPermission(session, name)])
+    );
+    anyOf = (...names) => ({ session }) => names.some((name) => hasPermission(session, name));
+    sys = () => false;
+    rules = {
+      canReadPeople: ({ session }) => !isSignedIn({ session }) ? false : session.data.role?.canSeeOtherPeople || session.data.role?.canManagePeople ? true : { id: { equals: session.itemId } },
+      canUpdatePeople: ({ session }) => !isSignedIn({ session }) ? false : session.data.role?.canEditOtherPeople || session.data.role?.canManagePeople ? true : { id: { equals: session.itemId } }
+    };
+  }
+});
+
+// features/keystone/lib/errors.ts
+var DomainError, isDomainError, Codes;
+var init_errors = __esm({
+  "features/keystone/lib/errors.ts"() {
+    "use strict";
+    DomainError = class extends Error {
+      constructor(code, message, details = {}) {
+        super(message);
+        this.name = "DomainError";
+        this.code = code;
+        this.details = details;
+      }
+    };
+    isDomainError = (error) => error instanceof DomainError;
+    Codes = {
+      NOT_AUTHORIZED: "NOT_AUTHORIZED",
+      NOT_FOUND: "NOT_FOUND",
+      INVALID_INPUT: "INVALID_INPUT",
+      INVALID_TRANSITION: "INVALID_TRANSITION",
+      STALE_STATE: "STALE_STATE",
+      GUARD_FAILED: "GUARD_FAILED",
+      IDEMPOTENCY_KEY_REQUIRED: "IDEMPOTENCY_KEY_REQUIRED",
+      IDEMPOTENCY_KEY_REUSED: "IDEMPOTENCY_KEY_REUSED",
+      IN_PROGRESS: "IN_PROGRESS",
+      APPROVAL_REQUIRED: "APPROVAL_REQUIRED",
+      SELF_APPROVAL: "SELF_APPROVAL",
+      AGENT_CANNOT_APPROVE: "AGENT_CANNOT_APPROVE",
+      APPROVAL_MISMATCH: "APPROVAL_MISMATCH",
+      LEASE_LOST: "LEASE_LOST",
+      STALE_FENCING_TOKEN: "STALE_FENCING_TOKEN",
+      AUDIT_CHAIN_BROKEN: "AUDIT_CHAIN_BROKEN",
+      PLACE_UNAVAILABLE: "PLACE_UNAVAILABLE",
+      RATE_LIMITED: "RATE_LIMITED",
+      PROJECTION_MISMATCH: "PROJECTION_MISMATCH"
+    };
+  }
+});
+
+// features/keystone/lib/actor.ts
+function actorFromSession(session) {
+  if (!session || !isSignedIn({ session })) throw new DomainError(Codes.NOT_AUTHORIZED, "Sign in to continue.");
+  const role = session.data.role;
+  const granted = new Set(role ? permissionNames.filter((name) => role[name] === true) : []);
+  return { kind: "user", userId: session.itemId, name: session.data.name, permissions: granted };
+}
+function can(actor, permission) {
+  return actor.kind === "user" && actor.permissions.has(permission);
+}
+function requirePermission(actor, ...anyOf2) {
+  if (actor.kind === "system") return;
+  if (actor.kind === "agent") throw new DomainError(Codes.NOT_AUTHORIZED, "Agents act only through their tool grants.");
+  if (!anyOf2.some((permission) => actor.permissions.has(permission))) {
+    throw new DomainError(Codes.NOT_AUTHORIZED, `This needs the ${anyOf2.join(" or ")} permission.`);
+  }
+}
+function requireScope(actor, scope2) {
+  if (actor.kind !== "agent") return;
+  if (!actor.scopes.has(scope2)) throw new DomainError(Codes.NOT_AUTHORIZED, `The agent has no active ${scope2} grant.`);
+}
+var systemActor, principalKey, actorUserId, actorAgentId;
+var init_actor = __esm({
+  "features/keystone/lib/actor.ts"() {
+    "use strict";
+    init_access();
+    init_errors();
+    systemActor = (name) => ({ kind: "system", name });
+    principalKey = (actor) => actor.kind === "user" ? `user:${actor.userId}` : actor.kind === "agent" ? `agent:${actor.agentId}` : `system:${actor.name}`;
+    actorUserId = (actor) => actor.kind === "user" ? actor.userId : null;
+    actorAgentId = (actor) => actor.kind === "agent" ? actor.agentId : null;
+  }
+});
+
+// features/keystone/lib/decimal.ts
+function dec(value) {
+  if (value instanceof Decimal) return value;
+  if (typeof value === "bigint") return new Decimal(value.toString());
+  if (typeof value === "number") {
+    if (!Number.isSafeInteger(value)) throw new Error(`Refusing float ${value}: pass the exact decimal as a string`);
+    return new Decimal(value);
+  }
+  const text15 = String(value).trim();
+  if (!DECIMAL_TEXT.test(text15)) throw new Error(`Not a decimal number: ${JSON.stringify(text15).slice(0, 40)}`);
+  return new Decimal(text15);
+}
+var import_decimal, Decimal, DECIMAL_TEXT, plain, ZERO, ONE, BPS;
+var init_decimal = __esm({
+  "features/keystone/lib/decimal.ts"() {
+    "use strict";
+    import_decimal = __toESM(require("decimal.js"));
+    Decimal = import_decimal.default.clone({
+      precision: 60,
+      rounding: import_decimal.default.ROUND_HALF_EVEN,
+      toExpNeg: -40,
+      toExpPos: 60
+    });
+    DECIMAL_TEXT = /^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/;
+    plain = (value) => dec(value).toFixed();
+    ZERO = new Decimal(0);
+    ONE = new Decimal(1);
+    BPS = new Decimal(1e4);
+  }
+});
+
+// features/keystone/lib/db.ts
+async function advisoryLock(tx, key) {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`;
+}
+function tableName(model) {
+  if (!MODEL_NAME.test(model)) throw new Error(`Invalid model name: ${model.slice(0, 40)}`);
+  return `"${model}"`;
+}
+function delegateOf(tx, model) {
+  tableName(model);
+  const delegate = tx[model[0].toLowerCase() + model.slice(1)];
+  if (!delegate) throw new Error(`Unknown model: ${model}`);
+  return delegate;
+}
+var MODEL_NAME, TRANSACTION_OPTIONS;
+var init_db = __esm({
+  "features/keystone/lib/db.ts"() {
+    "use strict";
+    MODEL_NAME = /^[A-Z][A-Za-z0-9]*$/;
+    TRANSACTION_OPTIONS = { maxWait: 15e3, timeout: 6e4 };
+  }
+});
+
+// features/keystone/lib/cas.ts
+async function lockRow(tx, model, id) {
+  const rows = await tx.$queryRawUnsafe(`SELECT id FROM ${tableName(model)} WHERE id = $1 FOR UPDATE`, id);
+  if (!rows.length) throw new DomainError(Codes.NOT_FOUND, `${model} not found.`, { model, id });
+  const row = await delegateOf(tx, model).findUnique({ where: { id } });
+  return row;
+}
+async function transition(uow, spec) {
+  const statusField = spec.statusField ?? "status";
+  if (!COLUMN.test(statusField)) throw new Error("Invalid status field");
+  const row = await lockRow(uow.tx, spec.model, spec.id);
+  const currentStatus = String(row[statusField]);
+  const currentVersion = Number(row.version);
+  if (spec.expectedVersion !== void 0 && spec.expectedVersion !== null && spec.expectedVersion !== currentVersion) {
+    throw new DomainError(Codes.STALE_STATE, `${spec.model} changed since you loaded it. Reload and try again.`, { currentStatus, currentVersion });
+  }
+  if (!spec.from.includes(currentStatus)) {
+    throw new DomainError(Codes.INVALID_TRANSITION, `${spec.model} can't move from ${currentStatus} to ${spec.to}.`, { currentStatus, currentVersion, to: spec.to });
+  }
+  if (spec.guard) await spec.guard(row);
+  const extra = typeof spec.data === "function" ? await spec.data(row) : spec.data ?? {};
+  const result = await delegateOf(uow.tx, spec.model).updateMany({
+    where: { id: spec.id, version: currentVersion, [statusField]: { in: [...spec.from] } },
+    data: { ...extra, [statusField]: spec.to, version: { increment: 1 } }
+  });
+  if (result.count !== 1) {
+    throw new DomainError(Codes.STALE_STATE, `${spec.model} changed since you loaded it. Reload and try again.`, { currentStatus, currentVersion });
+  }
+  uow.audit({
+    eventType: spec.eventType,
+    entityType: spec.model,
+    entityId: spec.id,
+    actorUserId: actorUserId(spec.actor),
+    actorAgentId: actorAgentId(spec.actor),
+    approverId: spec.approverId ?? null,
+    reason: spec.reason ?? null,
+    before: { [statusField]: currentStatus, version: currentVersion },
+    after: { [statusField]: spec.to, version: currentVersion + 1, ...extra },
+    metadata: { ...spec.metadata ?? {}, ...spec.actor.kind === "system" ? { system: spec.actor.name } : {} }
+  });
+  return await delegateOf(uow.tx, spec.model).findUnique({ where: { id: spec.id } });
+}
+async function casUpdate(uow, spec) {
+  const statusField = spec.statusField ?? "status";
+  if (!COLUMN.test(statusField)) throw new Error("Invalid status field");
+  const result = await delegateOf(uow.tx, spec.model).updateMany({
+    where: { id: spec.id, version: spec.version, [statusField]: { in: [...spec.from] } },
+    data: { ...spec.data ?? {}, [statusField]: spec.to, version: { increment: 1 } }
+  });
+  if (result.count !== 1) throw new DomainError(Codes.STALE_STATE, `${spec.model} changed since you loaded it. Reload and try again.`, { currentVersion: spec.version, to: spec.to });
+  uow.audit({
+    eventType: spec.eventType,
+    entityType: spec.model,
+    entityId: spec.id,
+    actorUserId: actorUserId(spec.actor),
+    actorAgentId: actorAgentId(spec.actor),
+    approverId: spec.approverId ?? null,
+    reason: spec.reason ?? null,
+    before: { [statusField]: spec.from.length === 1 ? spec.from[0] : spec.from, version: spec.version },
+    after: { [statusField]: spec.to, version: spec.version + 1, ...spec.audit ?? spec.data ?? {} },
+    metadata: { ...spec.metadata ?? {}, ...spec.actor.kind === "system" ? { system: spec.actor.name } : {} }
+  });
+  return spec.version + 1;
+}
+function auditCreate(uow, actor, model, id, eventType, after, extra = {}) {
+  uow.audit({
+    eventType,
+    entityType: model,
+    entityId: id,
+    actorUserId: actorUserId(actor),
+    actorAgentId: actorAgentId(actor),
+    reason: extra.reason ?? null,
+    after,
+    metadata: { ...extra.metadata ?? {}, ...actor.kind === "system" ? { system: actor.name } : {} }
+  });
+}
+var COLUMN;
+var init_cas = __esm({
+  "features/keystone/lib/cas.ts"() {
+    "use strict";
+    init_db();
+    init_errors();
+    init_actor();
+    COLUMN = /^[a-z][A-Za-z0-9]*$/;
+  }
+});
+
+// features/keystone/lib/sequence.ts
+async function nextReference(tx, prefix, now = /* @__PURE__ */ new Date(), width = 6) {
+  if (!/^[A-Z]{2,5}$/.test(prefix)) throw new Error("Reference prefix must be 2-5 capital letters");
+  const key = `${prefix}-${now.getUTCFullYear()}`;
+  const row = await tx.sequence.upsert({ where: { key }, create: { key, nextValue: 2 }, update: { nextValue: { increment: 1 } } });
+  const value = row.nextValue - 1;
+  return `${key}-${String(value).padStart(width, "0")}`;
+}
+function publicCode(prefix, groups = 2) {
+  const bytes = (0, import_node_crypto4.randomBytes)(groups * 4);
+  const chars = Array.from(bytes, (byte) => CROCKFORD[byte % 32]);
+  const parts = Array.from({ length: groups }, (_, i) => chars.slice(i * 4, i * 4 + 4).join(""));
+  return `${prefix}-${parts.join("-")}`;
+}
+var import_node_crypto4, CROCKFORD;
+var init_sequence = __esm({
+  "features/keystone/lib/sequence.ts"() {
+    "use strict";
+    import_node_crypto4 = require("node:crypto");
+    CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+  }
+});
+
+// features/keystone/lib/clinical/common.ts
+var common_exports = {};
+__export(common_exports, {
+  ROLE_NAMES: () => ROLE_NAMES,
+  communityZone: () => communityZone,
+  createTask: () => createTask,
+  invalid: () => invalid,
+  notFound: () => notFound,
+  num: () => num,
+  oneOf: () => oneOf,
+  qty: () => qty,
+  ref: () => ref,
+  residentFor: () => residentFor,
+  text: () => text14,
+  userOf: () => userOf,
+  when: () => when5
+});
+async function residentFor(tx, residentId) {
+  if (typeof residentId !== "string" || !residentId) return invalid("Choose a resident.", "residentId");
+  const resident = await tx.resident.findUnique({ where: { id: residentId }, select: { id: true, communityId: true, currentStayId: true, firstName: true, lastName: true } });
+  if (!resident || !resident.communityId) return notFound("Resident");
+  const stay = resident.currentStayId ? await tx.stay.findUnique({ where: { id: resident.currentStayId }, select: { id: true, setting: true, status: true, admittedAt: true } }) : null;
+  return { ...resident, communityId: resident.communityId, stay };
+}
+async function createTask(uow, actor, input) {
+  if (input.dedupeKey) {
+    const existing = await uow.tx.task.findUnique({ where: { dedupeKey: input.dedupeKey } });
+    if (existing) return { task: existing, created: false };
+  }
+  let assigneeId = null;
+  if (input.ownerRole) {
+    const holder = await uow.tx.user.findFirst({
+      where: { role: { name: input.ownerRole }, assignments: { some: { communityId: input.communityId, status: "active" } } },
+      select: { id: true },
+      orderBy: { id: "asc" }
+    });
+    assigneeId = holder?.id ?? null;
+  }
+  const task = await uow.tx.task.create({
+    data: {
+      communityId: input.communityId,
+      residentId: input.residentId ?? null,
+      kind: input.kind,
+      title: input.title,
+      detail: input.detail ?? "",
+      dedupeKey: input.dedupeKey ?? void 0,
+      status: "open",
+      ownerRole: input.ownerRole ?? "",
+      assigneeId,
+      dueAt: input.dueAt ?? null,
+      escalateAt: input.escalateAt ?? input.dueAt ?? null,
+      escalationOwnerRole: input.escalationOwnerRole ?? "",
+      subjectType: input.subjectType ?? "",
+      subjectId: input.subjectId ?? "",
+      createdByWorkflow: input.createdByWorkflow ?? ""
+    }
+  });
+  auditCreate(uow, actor, "Task", task.id, "task.created", { kind: task.kind, ownerRole: task.ownerRole, subjectId: task.subjectId });
+  return { task, created: true };
+}
+var invalid, notFound, text14, oneOf, when5, num, qty, communityZone, ROLE_NAMES, ref, userOf;
+var init_common = __esm({
+  "features/keystone/lib/clinical/common.ts"() {
+    "use strict";
+    init_cas();
+    init_actor();
+    init_errors();
+    init_sequence();
+    init_decimal();
+    invalid = (message, field) => {
+      throw new DomainError(Codes.INVALID_INPUT, message, field ? { field } : {});
+    };
+    notFound = (what) => {
+      throw new DomainError(Codes.NOT_FOUND, `${what} not found.`);
+    };
+    text14 = (value, field, options = {}) => {
+      const v = typeof value === "string" ? value.trim() : "";
+      if (!v) {
+        if (options.required === false) return "";
+        return invalid(`${field} is required.`, field);
+      }
+      if (options.min && v.length < options.min) invalid(`${field} needs at least ${options.min} characters.`, field);
+      if (v.length > (options.max ?? 2e4)) invalid(`${field} is too long.`, field);
+      return v;
+    };
+    oneOf = (value, allowed, field) => {
+      if (!allowed.includes(value)) invalid(`Choose a valid ${field}.`, field);
+      return value;
+    };
+    when5 = (value, field, fallback) => {
+      if (value == null || value === "") {
+        if (fallback) return fallback;
+        return invalid(`${field} is required.`, field);
+      }
+      const d = new Date(String(value));
+      if (Number.isNaN(d.getTime())) invalid(`${field} is not a valid time.`, field);
+      return d;
+    };
+    num = (value, field, options = {}) => {
+      const n = typeof value === "number" ? value : Number(String(value ?? ""));
+      if (!Number.isFinite(n)) return invalid(`${field} must be a number.`, field);
+      if (options.min !== void 0 && n < options.min) invalid(`${field} must be at least ${options.min}.`, field);
+      if (options.max !== void 0 && n > options.max) invalid(`${field} must be at most ${options.max}.`, field);
+      return n;
+    };
+    qty = (value, field) => {
+      try {
+        const d = dec(typeof value === "number" ? String(value) : value);
+        if (!d.isFinite()) return invalid(`${field} must be a number.`, field);
+        return d;
+      } catch {
+        return invalid(`${field} must be a number.`, field);
+      }
+    };
+    communityZone = async (tx, communityId) => (await tx.community.findUnique({ where: { id: communityId }, select: { timeZone: true } }))?.timeZone ?? "America/New_York";
+    ROLE_NAMES = {
+      charge: "Charge Nurse (RN/LPN)",
+      don: "Director of Nursing",
+      adon: "Assistant Director of Nursing",
+      director: "Executive Director",
+      ip: "Infection Preventionist",
+      pharmacist: "Consultant Pharmacist"
+    };
+    ref = (uow, prefix) => nextReference(uow.tx, prefix, uow.now);
+    userOf = (actor) => actorUserId(actor);
+  }
+});
 
 // keystone.ts
 var keystone_exports = {};
@@ -68,123 +559,8 @@ var trackingFields = {
   })
 };
 
-// features/keystone/access.ts
-var permissionNames = [
-  // Starter and fleet-mandatory
-  "canSeeOtherPeople",
-  "canEditOtherPeople",
-  "canManagePeople",
-  "canManageRoles",
-  "canAccessDashboard",
-  "canManageOnboarding",
-  "canManagePayments",
-  "canIssueRefunds",
-  "canReadAudit",
-  // Operator and communities
-  "canManageOperator",
-  "canManageCommunities",
-  "canManagePlaces",
-  "canManageIntegrations",
-  "canApproveIntegrations",
-  // Sales and storefront
-  "canManageSales",
-  "canManageStorefront",
-  "canReadSales",
-  // Residents and census
-  "canAdmitDischarge",
-  "canRecordCensus",
-  "canManageRepresentatives",
-  "canApproveCensusCorrections",
-  "canReadResidentDemographics",
-  // Clinical
-  "canChartPointOfCare",
-  "canChartNursing",
-  "canManageAssessments",
-  "canManageCarePlans",
-  "canEnterOrders",
-  "canSignOrders",
-  "canApproveClinicalCorrections",
-  "canReadClinical",
-  "canReadSensitiveClinical",
-  // Medications
-  "canAdministerMeds",
-  "canWitnessControlled",
-  "canManagePharmacy",
-  "canResolveCountDiscrepancy",
-  "canApproveControlledAdjustments",
-  // Incidents and infection prevention
-  "canReportIncident",
-  "canInvestigateIncidents",
-  "canManageInfectionControl",
-  "canApproveIncidentDowngrade",
-  "canDeclareOutbreak",
-  "canReadIncidents",
-  // Workforce
-  "canManageSchedule",
-  "canManageTimecards",
-  "canManageCredentials",
-  "canApproveTimecards",
-  "canReadWorkforce",
-  // Billing
-  "canManageRates",
-  "canManageBilling",
-  "canManageClaims",
-  "canPostPayments",
-  "canApproveRates",
-  "canApproveWriteOffs",
-  "canReleaseClaims",
-  "canReadBilling",
-  "canReadIdentifiers",
-  // Resident trust
-  "canOperateTrust",
-  "canApproveTrust",
-  "canReadTrust",
-  // Compliance and quality
-  "canManageCompliance",
-  "canManageSurveys",
-  "canManageQapi",
-  "canSubmitRegulatory",
-  "canApproveCompliance",
-  "canReadCompliance",
-  // Portal and engagement
-  "canManageFamilyUpdates",
-  "canManageActivities",
-  "canManageDietary",
-  "canMessageFamilies",
-  "canApprovePortalScopes",
-  // AI workflows and agents
-  "canManageWorkflows",
-  "canManageAgents",
-  "canApproveWorkflows",
-  "canApproveAgentGrants",
-  "canReadFindings",
-  // Privacy
-  "canBreakGlass",
-  "canReviewBreakGlass",
-  "canReadPhiAudit",
-  // Raw status correction. Never seeded on a default role; every use is audited.
-  "canBreakGlassRecords"
-];
-var NEVER_DEFAULT = ["canBreakGlassRecords"];
-var approvalPermissions = permissionNames.filter(
-  (name) => name.startsWith("canApprove") || name === "canReleaseClaims" || name === "canResolveCountDiscrepancy" || name === "canReviewBreakGlass" || name === "canBreakGlassRecords"
-);
-var isSignedIn = ({ session }) => {
-  if (!session) return false;
-  const expires = session.data?.accessExpiresAt;
-  return !expires || Date.parse(expires) > Date.now();
-};
-var isStaff = ({ session }) => isSignedIn({ session }) && session?.data.kind !== "portal" && session?.data.role?.canAccessDashboard === true;
-var hasPermission = (session, permission) => isSignedIn({ session }) && session?.data.kind !== "portal" && session?.data.role?.[permission] === true;
-var permissions = Object.fromEntries(
-  permissionNames.map((name) => [name, ({ session }) => hasPermission(session, name)])
-);
-var anyOf = (...names) => ({ session }) => names.some((name) => hasPermission(session, name));
-var sys = () => false;
-var rules = {
-  canReadPeople: ({ session }) => !isSignedIn({ session }) ? false : session.data.role?.canSeeOtherPeople || session.data.role?.canManagePeople ? true : { id: { equals: session.itemId } },
-  canUpdatePeople: ({ session }) => !isSignedIn({ session }) ? false : session.data.role?.canEditOtherPeople || session.data.role?.canManagePeople ? true : { id: { equals: session.itemId } }
-};
+// features/keystone/models/User.ts
+init_access();
 
 // lib/labels.ts
 var ACRONYMS = {
@@ -405,6 +781,7 @@ var User = (0, import_core.list)({
 var import_core2 = require("@keystone-6/core");
 var import_access3 = require("@keystone-6/core/access");
 var import_fields3 = require("@keystone-6/core/fields");
+init_access();
 var Role = (0, import_core2.list)({
   access: {
     operation: {
@@ -440,6 +817,7 @@ var Role = (0, import_core2.list)({
 // features/keystone/models/OAuthApp.ts
 var import_core3 = require("@keystone-6/core");
 var import_fields4 = require("@keystone-6/core/fields");
+init_access();
 
 // features/keystone/mcp-oauth/core.ts
 var import_node_crypto = __toESM(require("node:crypto"));
@@ -596,6 +974,7 @@ var OAuthApp = (0, import_core3.list)({
 // features/keystone/models/OAuthToken.ts
 var import_core5 = require("@keystone-6/core");
 var import_fields5 = require("@keystone-6/core/fields");
+init_access();
 var digestTokenInput = {
   resolveInput: ({ resolvedData, fieldKey }) => resolvedData[fieldKey] ? digestToken(resolvedData[fieldKey]) : resolvedData[fieldKey]
 };
@@ -752,6 +1131,7 @@ __export(platform_exports, {
 });
 var import_core7 = require("@keystone-6/core");
 var import_fields7 = require("@keystone-6/core/fields");
+init_access();
 
 // features/keystone/models/domainFields.ts
 var import_fields6 = require("@keystone-6/core/fields");
@@ -808,6 +1188,7 @@ var fixedChoice = (values) => (0, import_fields6.select)({
 });
 
 // features/keystone/models/listAccess.ts
+init_access();
 var rule = (permission) => permission === "signedIn" ? isSignedIn : Array.isArray(permission) ? anyOf(...permission) : permissions[permission];
 var governed = (read) => ({
   operation: { query: rule(read), create: sys, update: sys, delete: sys }
@@ -821,6 +1202,7 @@ var serverOnly = {
 };
 
 // features/keystone/models/scope.ts
+init_access();
 var cache = /* @__PURE__ */ new WeakMap();
 function assignedCommunities(session, context) {
   if (!session || !isStaff({ session })) return Promise.resolve([]);
@@ -1418,14 +1800,18 @@ var AgentRun = (0, import_core8.list)({
   }
 });
 var Proposal = (0, import_core8.list)({
-  access: governed("canAccessDashboard"),
+  access: scopedGoverned(["canManageCarePlans", "canChartNursing", "canManageWorkflows"], ["community"]),
   ui: { labelField: "kind", listView: { initialColumns: ["kind", "status", "proposedByAgent", "proposedByUser", "createdAt"] } },
   fields: {
     kind: fixedChoice(PROPOSAL_KINDS),
     payload: (0, import_fields8.json)({ ...readOnly }),
     payloadHash: systemText({ required: true }),
+    community: (0, import_fields8.relationship)({ ref: "Community", ...readOnly }),
     resident: (0, import_fields8.relationship)({ ref: "Resident", ...readOnly }),
     status: lifecycle(["proposed", "accepted", "signed", "rejected", "expired"]),
+    sourceFinding: (0, import_fields8.relationship)({ ref: "Finding", ...readOnly }),
+    inferenceCall: (0, import_fields8.relationship)({ ref: "InferenceCall", ...readOnly }),
+    rejectedReason: systemText(),
     agentRun: (0, import_fields8.relationship)({ ref: "AgentRun.proposals", ...readOnly }),
     proposedByAgent: (0, import_fields8.relationship)({ ref: "AgentIdentity", ...readOnly }),
     proposedByUser: (0, import_fields8.relationship)({ ref: "User", ...readOnly }),
@@ -1455,6 +1841,7 @@ __export(places_exports, {
 });
 var import_core9 = require("@keystone-6/core");
 var import_fields9 = require("@keystone-6/core/fields");
+init_access();
 var BED_STATUSES = ["available", "reserved", "occupied", "held", "cleaning", "out_of_service"];
 var APARTMENT_STATUSES = ["available", "reserved", "occupied", "turnover", "out_of_service"];
 var Building = (0, import_core9.list)({
@@ -1635,8 +2022,10 @@ __export(residents_exports, {
 });
 var import_core10 = require("@keystone-6/core");
 var import_fields10 = require("@keystone-6/core/fields");
+init_access();
 
 // features/keystone/models/phi.ts
+init_access();
 var PROTECTED_TIERS = /* @__PURE__ */ new Set(["dem", "clin", "sens", "ident", "fin"]);
 var TIER_PERMISSIONS = {
   pub: "anyone",
@@ -1694,6 +2083,7 @@ function phiFields(listKey, spec) {
 }
 
 // features/keystone/models/residentAccess.ts
+init_access();
 var sys3 = () => false;
 var ro = readOnly;
 var opt = (values) => ({ type: "string", options: values.map((value) => ({ label: label(value), value })) });
@@ -2087,6 +2477,7 @@ __export(sales_exports, {
 });
 var import_core11 = require("@keystone-6/core");
 var import_fields11 = require("@keystone-6/core/fields");
+init_access();
 var ro2 = readOnly;
 var sys5 = () => false;
 var opt2 = (values) => ({ type: "string", options: values.map((value) => ({ label: label(value), value })) });
@@ -2712,7 +3103,7 @@ var MedicationOrderDetail = (0, import_core12.list)({
   }
 });
 phiList("MedicationOrderDetail");
-var TASK_KINDS = ["general", "post_fall_huddle", "neuro_checks", "hydration", "wound_assessment", "infection_review", "prn_followup", "incident_form", "countersign", "incident_follow_up", "count_discrepancy", "escalation", "care_plan_review"];
+var TASK_KINDS = ["general", "post_fall_huddle", "neuro_checks", "hydration", "wound_assessment", "infection_review", "prn_followup", "incident_form", "countersign", "incident_follow_up", "count_discrepancy", "escalation", "care_plan_review", "finding"];
 var Task = (0, import_core12.list)({
   access: scopedGoverned("canAccessDashboard", ["community"]),
   ui: { labelField: "title", listView: { initialColumns: ["title", "kind", "status", "ownerRole", "assignee", "dueAt"] } },
@@ -2743,6 +3134,7 @@ var medications_exports = {};
 __export(medications_exports, {
   ADMIN_OUTCOMES: () => ADMIN_OUTCOMES,
   AdministrationSlot: () => AdministrationSlot,
+  BALANCE_READERS: () => BALANCE_READERS,
   CountDiscrepancy: () => CountDiscrepancy,
   DRUG_SCHEDULES: () => DRUG_SCHEDULES,
   MOVEMENT_KINDS: () => MOVEMENT_KINDS,
@@ -2761,6 +3153,17 @@ __export(medications_exports, {
 var import_core13 = require("@keystone-6/core");
 var import_fields13 = require("@keystone-6/core/fields");
 var MEDS = ["canAdministerMeds", "canManagePharmacy", "canResolveCountDiscrepancy", "canReadClinical"];
+var BALANCE_READERS = ["canResolveCountDiscrepancy", "canManagePharmacy"];
+var seesBalance = ({ session }) => BALANCE_READERS.some((p) => session?.data?.role?.[p] === true);
+var hiddenQty = (options = {}) => (0, import_fields13.decimal)({
+  precision: 14,
+  scale: 3,
+  validation: { isRequired: options.required ?? false },
+  access: { read: seesBalance, create: () => false, update: () => false },
+  isFilterable: seesBalance,
+  isOrderable: seesBalance,
+  ui: { ...ro.ui, ...options.description ? { description: options.description } : {} }
+});
 var when2 = () => (0, import_fields13.timestamp)({ ...ro });
 var by2 = () => (0, import_fields13.relationship)({ ref: "User", ...ro });
 var DRUG_SCHEDULES = ["none", "ii", "iii", "iv", "v"];
@@ -2809,7 +3212,7 @@ var MedicationSupply = (0, import_core13.list)({
     expiresOn: (0, import_fields13.timestamp)({ ...ro }),
     controlled: (0, import_fields13.checkbox)({ defaultValue: false, ...ro }),
     unit: systemText({ required: true }),
-    balance: medQty({ required: true }),
+    balance: hiddenQty({ required: true, description: "Hidden from counting nurses (blind count). DON and pharmacy only." }),
     status: lifecycle(["active", "quarantined", "destroyed", "empty"], "active"),
     movements: (0, import_fields13.relationship)({ ref: "MedicationSupplyMovement.supply", many: true, ...ro }),
     ...stamps()
@@ -2817,7 +3220,8 @@ var MedicationSupply = (0, import_core13.list)({
 });
 var MOVEMENT_KINDS = ["receive", "administer", "waste", "transfer_out", "transfer_in", "destroy", "adjust", "count_adjust", "return_to_pharmacy"];
 var MedicationSupplyMovement = (0, import_core13.list)({
-  access: scopedGoverned(MEDS, ["community"]),
+  // The ledger adds up to the balance, so it is closed to counters as a whole, not just balanceAfter.
+  access: scopedGoverned(BALANCE_READERS, ["community"]),
   ui: { labelField: "kind", listView: { initialColumns: ["kind", "quantity", "balanceAfter", "supply", "at"] } },
   fields: {
     community: (0, import_fields13.relationship)({ ref: "Community", ...ro }),
@@ -2825,7 +3229,10 @@ var MedicationSupplyMovement = (0, import_core13.list)({
     seq: (0, import_fields13.integer)({ ...ro }),
     kind: fixedChoice(MOVEMENT_KINDS),
     quantity: medQty({ required: true, description: "Signed: negative takes stock out." }),
-    balanceAfter: medQty({ required: true }),
+    balanceAfter: hiddenQty({ required: true }),
+    /** An administer from a supply under an open count discrepancy (SM §9.5). The DB refuses one without this flag. */
+    emergency: (0, import_fields13.checkbox)({ defaultValue: false, ...ro }),
+    emergencyReason: systemText(),
     at: when2(),
     actor: by2(),
     witness: by2(),
@@ -2934,7 +3341,21 @@ var ShiftCount = (0, import_core13.list)({
   }
 });
 var ShiftCountEntry = (0, import_core13.list)({
-  access: scopedGoverned(["canAdministerMeds", "canResolveCountDiscrepancy"], ["community"]),
+  // A counter sees only their own entries, so neither nurse can read the other's number before both submit.
+  access: (() => {
+    const base = scopedGoverned(["canAdministerMeds", "canResolveCountDiscrepancy"], ["community"]);
+    return {
+      ...base,
+      filter: {
+        query: async (args) => {
+          const scoped = await base.filter.query(args);
+          if (seesBalance(args)) return scoped;
+          const own = { countedBy: { id: { equals: args.session?.itemId ?? "" } } };
+          return scoped === true ? own : { AND: [scoped, own] };
+        }
+      }
+    };
+  })(),
   ui: { labelField: "role", listView: { initialColumns: ["shiftCount", "supply", "role", "counted", "countedBy"] } },
   fields: {
     community: (0, import_fields13.relationship)({ ref: "Community", ...ro }),
@@ -2948,13 +3369,13 @@ var ShiftCountEntry = (0, import_core13.list)({
   }
 });
 var CountDiscrepancy = (0, import_core13.list)({
-  access: scopedGoverned("canResolveCountDiscrepancy", ["community"]),
+  access: scopedGoverned(BALANCE_READERS, ["community"]),
   ui: { labelField: "status", listView: { initialColumns: ["supply", "expected", "outgoingCounted", "incomingCounted", "status"] } },
   fields: {
     community: (0, import_fields13.relationship)({ ref: "Community", ...ro }),
     shiftCount: (0, import_fields13.relationship)({ ref: "ShiftCount", ...ro }),
     supply: (0, import_fields13.relationship)({ ref: "MedicationSupply", ...ro }),
-    expected: medQty({ required: true }),
+    expected: hiddenQty({ required: true }),
     outgoingCounted: medQty({ required: true }),
     incomingCounted: medQty({ required: true }),
     status: lifecycle(["open", "resolved"]),
@@ -3159,8 +3580,10 @@ phiList("Immunisation");
 var workflows_exports = {};
 __export(workflows_exports, {
   EvidenceRef: () => EvidenceRef,
+  ExtractedFact: () => ExtractedFact,
   Finding: () => Finding,
   InferenceCall: () => InferenceCall,
+  InferenceProvider: () => InferenceProvider,
   WorkflowActivation: () => WorkflowActivation,
   WorkflowDefinition: () => WorkflowDefinition,
   WorkflowRun: () => WorkflowRun,
@@ -3195,10 +3618,19 @@ var WorkflowVersion = (0, import_core15.list)({
     graphHash: systemText({ required: true }),
     policyVersion: systemText({ required: true }),
     policy: (0, import_fields15.json)({ ...ro, ui: { ...ro.ui, description: "Operator-tunable parameters, such as the daily fluid threshold." } }),
-    status: lifecycle(["draft", "dry_run_ok", "pending_activation", "active", "retired"]),
-    dryRun: (0, import_fields15.json)({ ...ro }),
+    // SM §15.1: draft → proposed → dry_run_reviewed → (approved) active → paused → retired. dry_run_ok is the library's reviewed state.
+    status: lifecycle(["draft", "proposed", "dry_run_reviewed", "dry_run_ok", "pending_activation", "active", "paused", "retired"]),
+    dryRun: (0, import_fields15.json)({ ...ro, ui: { ...ro.ui, description: "The last dry run over history: would-be findings per day, samples and the diff. Nothing was written." } }),
+    dryRunAt: when4(),
     createdByInference: (0, import_fields15.relationship)({ ref: "InferenceCall", ...ro }),
     description: systemText(),
+    /** The plain-language job a person described (staff_described only). */
+    request: (0, import_fields15.text)({ ...ro, ui: { ...ro.ui, displayMode: "textarea" } }),
+    proposedBy: by4(),
+    proposedByAgent: (0, import_fields15.relationship)({ ref: "AgentIdentity", ...ro }),
+    reviewedBy: by4(),
+    reviewedAt: when4(),
+    reviewNote: systemText(),
     activations: (0, import_fields15.relationship)({ ref: "WorkflowActivation.workflowVersion", many: true, ...ro }),
     ...stamps()
   }
@@ -3223,7 +3655,7 @@ var WorkflowRun = (0, import_core15.list)({
     community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
     workflowVersion: (0, import_fields15.relationship)({ ref: "WorkflowVersion", ...ro }),
     windowKey: systemText({ indexed: "unique", required: true }),
-    trigger: fixedChoice(["page_load", "run_now", "source_change", "dry_run"]),
+    trigger: fixedChoice(["page_load", "run_now", "source_change", "dry_run", "recheck"]),
     status: lifecycle(["running", "succeeded", "failed"], "running"),
     startedAt: when4(),
     finishedAt: when4(),
@@ -3246,7 +3678,8 @@ var Finding = (0, import_core15.list)({
     title: systemText({ required: true }),
     detail: systemText(),
     severity: (0, import_fields15.select)({ ...opt(["info", "warning", "urgent"]), defaultValue: "warning", ...ro }),
-    status: lifecycle(["open", "resolved", "dismissed"]),
+    // resolved: the condition no longer holds. resolved_by_evidence: a re-check found the record that satisfies the rule (SM §15.4).
+    status: lifecycle(["open", "resolved", "resolved_by_evidence", "dismissed"]),
     evidence: (0, import_fields15.relationship)({ ref: "EvidenceRef.finding", many: true, ...ro }),
     task: (0, import_fields15.relationship)({ ref: "Task", ...ro }),
     proposal: (0, import_fields15.relationship)({ ref: "Proposal", ...ro }),
@@ -3264,28 +3697,74 @@ var EvidenceRef = (0, import_core15.list)({
     finding: (0, import_fields15.relationship)({ ref: "Finding.evidence", ...ro }),
     recordType: systemText({ required: true }),
     recordId: systemText({ required: true }),
+    /** cause: why the finding opened. resolution: the record a re-check found that satisfies the rule. */
+    role: (0, import_fields15.select)({ ...opt(["cause", "resolution"]), defaultValue: "cause", ...ro }),
+    /** Character offsets into the source text (a progress note body), so the passage can be shown exactly. */
     spanStart: (0, import_fields15.integer)({ ...ro }),
     spanEnd: (0, import_fields15.integer)({ ...ro }),
     quote: (0, import_fields15.text)({ ...ro }),
     ...stamps()
   }
 });
-var InferenceCall = (0, import_core15.list)({
-  access: scopedGoverned(["canManageWorkflows", "canReadFindings"], ["community"]),
-  ui: { labelField: "purpose", listView: { initialColumns: ["purpose", "provider", "outcome", "at"] } },
+var ExtractedFact = (0, import_core15.list)({
+  access: scopedGoverned(["canManageWorkflows"], ["community"]),
+  ui: { labelField: "extractor", listView: { initialColumns: ["extractor", "sourceType", "outcome", "createdAt"] } },
   fields: {
     community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
-    purpose: fixedChoice(["workflow_build", "workflow_step", "summarise", "classify"]),
-    provider: systemText({ required: true }),
-    providerClass: fixedChoice(["sandbox_fixture", "self_hosted", "baa_hosted", "other"]),
+    resident: (0, import_fields15.relationship)({ ref: "Resident", ...ro }),
+    extractor: systemText({ required: true }),
+    sourceType: systemText({ required: true }),
+    sourceId: systemText({ indexed: true, required: true }),
+    sourceDigest: systemText({ required: true }),
+    /** extractor + source + digest: one extraction per version of the text. */
+    cacheKey: systemText({ indexed: "unique", required: true }),
+    outcome: fixedChoice(["found", "none", "unclear", "refused"]),
+    facts: (0, import_fields15.json)({ ...ro, ui: { ...ro.ui, description: "Typed facts with character spans into the source text." } }),
+    inferenceCall: (0, import_fields15.relationship)({ ref: "InferenceCall", ...ro }),
+    ...stamps()
+  }
+});
+var InferenceProvider = (0, import_core15.list)({
+  access: governed(["canManageIntegrations", "canManageWorkflows"]),
+  ui: { labelField: "key", listView: { initialColumns: ["key", "adapter", "mode", "status", "isDefault"] } },
+  fields: {
+    key: systemText({ indexed: "unique", required: true }),
+    name: systemText({ required: true }),
+    adapter: fixedChoice(["self_hosted_openai_compat", "bedrock", "azure_openai", "sandbox_fixture"]),
+    mode: fixedChoice(["self_hosted", "baa_hosted", "sandbox", "no_phi"]),
+    endpoint: systemText(),
     model: systemText(),
-    outcome: fixedChoice(["ok", "refused_policy", "error"]),
+    processorRegistration: (0, import_fields15.relationship)({ ref: "ProcessorRegistration", ...ro }),
+    isDefault: (0, import_fields15.checkbox)({ defaultValue: false, ...ro }),
+    status: lifecycle(["draft", "active", "suspended"], "draft"),
+    ...stamps()
+  }
+});
+var InferenceCall = (0, import_core15.list)({
+  access: scopedGoverned(["canManageWorkflows", "canReadFindings"], ["community"]),
+  ui: { labelField: "purpose", listView: { initialColumns: ["purpose", "provider", "mode", "outcome", "at"] } },
+  fields: {
+    community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
+    purpose: fixedChoice(["extract", "summarise", "draft_note", "classify", "workflow_build", "workflow_step"]),
+    provider: systemText({ required: true }),
+    inferenceProvider: (0, import_fields15.relationship)({ ref: "InferenceProvider", ...ro }),
+    providerClass: fixedChoice(["sandbox_fixture", "self_hosted", "baa_hosted", "other"]),
+    mode: fixedChoice(["self_hosted", "baa_hosted", "sandbox", "no_phi", "none"]),
+    model: systemText(),
+    outcome: fixedChoice(["ok", "refused_policy", "error", "timeout", "invalid_output"]),
     policyAtCall: systemText(),
+    deidentification: fixedChoice(["none", "identifiers_removed", "safe_harbor"]),
+    dataCategories: (0, import_fields15.json)({ ...ro }),
+    syntheticOnly: (0, import_fields15.checkbox)({ defaultValue: false, ...ro }),
     inputHash: systemText({ required: true }),
     outputHash: systemText(),
     inputTokens: (0, import_fields15.integer)({ ...ro }),
     outputTokens: (0, import_fields15.integer)({ ...ro }),
+    latencyMs: (0, import_fields15.integer)({ ...ro }),
     reason: systemText(),
+    workflowRun: (0, import_fields15.relationship)({ ref: "WorkflowRun", ...ro }),
+    agentRun: (0, import_fields15.relationship)({ ref: "AgentRun", ...ro }),
+    principal: systemText(),
     at: when4(),
     actor: by4(),
     ...stamps()
@@ -3299,7 +3778,7 @@ var { BED_STATUSES: _bed, APARTMENT_STATUSES: _apt, ...placeLists } = places_exp
 var { CODE_STATUSES: _code, REPRESENTATIVE_ROLES: _roles, ADMISSION_SOURCES: _src, DISCHARGE_DISPOSITIONS: _disp, CENSUS_EVENT_KINDS: _cek, PAYER_KINDS: _payers, ...residentLists } = residents_exports;
 var { LEAD_STATUSES: _lead, PORTAL_SCOPES: _portal, AUTHORITY_BASES: _ab, SCOPE_AUTHORITY: _sa, MFA_SCOPES: _mfa, ...salesLists } = sales_exports;
 var { NOTE_KINDS: _nk, VITAL_KINDS: _vk, ORDER_KINDS: _ok, TASK_KINDS: _tk, rl: _rl, scope: _sc, stamps: _st, choice: _ch, ...clinicalLists } = clinical_exports;
-var { DRUG_SCHEDULES: _ds, SUPPLY_KINDS: _sk, MOVEMENT_KINDS: _mk, SLOT_STATUSES: _ss, ADMIN_OUTCOMES: _ao, ...medicationLists } = medications_exports;
+var { DRUG_SCHEDULES: _ds, SUPPLY_KINDS: _sk, MOVEMENT_KINDS: _mk, SLOT_STATUSES: _ss, ADMIN_OUTCOMES: _ao, BALANCE_READERS: _br, ...medicationLists } = medications_exports;
 var { INCIDENT_KINDS: _ik, ...safetyLists } = safety_exports;
 var models = {
   User,
@@ -3334,6 +3813,7 @@ async function redirectToInit(root, args, context) {
 var redirectToInit_default = redirectToInit;
 
 // features/keystone/mutations/updateActiveUser.ts
+init_access();
 async function updateActiveUser(_root, { data }, context) {
   const session = context.session;
   if (!isSignedIn({ session })) throw new Error("Not authenticated");
@@ -3345,40 +3825,7 @@ var updateActiveUser_default = updateActiveUser;
 
 // features/keystone/mutations/op.ts
 var import_graphql = require("graphql");
-
-// features/keystone/lib/errors.ts
-var DomainError = class extends Error {
-  constructor(code, message, details = {}) {
-    super(message);
-    this.name = "DomainError";
-    this.code = code;
-    this.details = details;
-  }
-};
-var isDomainError = (error) => error instanceof DomainError;
-var Codes = {
-  NOT_AUTHORIZED: "NOT_AUTHORIZED",
-  NOT_FOUND: "NOT_FOUND",
-  INVALID_INPUT: "INVALID_INPUT",
-  INVALID_TRANSITION: "INVALID_TRANSITION",
-  STALE_STATE: "STALE_STATE",
-  GUARD_FAILED: "GUARD_FAILED",
-  IDEMPOTENCY_KEY_REQUIRED: "IDEMPOTENCY_KEY_REQUIRED",
-  IDEMPOTENCY_KEY_REUSED: "IDEMPOTENCY_KEY_REUSED",
-  IN_PROGRESS: "IN_PROGRESS",
-  APPROVAL_REQUIRED: "APPROVAL_REQUIRED",
-  SELF_APPROVAL: "SELF_APPROVAL",
-  AGENT_CANNOT_APPROVE: "AGENT_CANNOT_APPROVE",
-  APPROVAL_MISMATCH: "APPROVAL_MISMATCH",
-  LEASE_LOST: "LEASE_LOST",
-  STALE_FENCING_TOKEN: "STALE_FENCING_TOKEN",
-  AUDIT_CHAIN_BROKEN: "AUDIT_CHAIN_BROKEN",
-  PLACE_UNAVAILABLE: "PLACE_UNAVAILABLE",
-  RATE_LIMITED: "RATE_LIMITED",
-  PROJECTION_MISMATCH: "PROJECTION_MISMATCH"
-};
-
-// features/keystone/mutations/op.ts
+init_errors();
 var UNSAFE = /prisma|invocation|\bat\s+\S+\s*\(|node_modules|postgres(ql)?:\/\/|\bSQL\b|ECONN|query engine|\.ts:\d+|\.js:\d+/i;
 var SAFE_DETAIL_KEYS = /* @__PURE__ */ new Set(["currentStatus", "currentVersion", "to", "reason", "field", "problems", "replay"]);
 var op = (fn) => async (root, args, context) => {
@@ -3398,61 +3845,12 @@ var op = (fn) => async (root, args, context) => {
 };
 var requireKey = (key) => String(key ?? "");
 
-// features/keystone/lib/actor.ts
-function actorFromSession(session) {
-  if (!session || !isSignedIn({ session })) throw new DomainError(Codes.NOT_AUTHORIZED, "Sign in to continue.");
-  const role = session.data.role;
-  const granted = new Set(role ? permissionNames.filter((name) => role[name] === true) : []);
-  return { kind: "user", userId: session.itemId, name: session.data.name, permissions: granted };
-}
-var systemActor = (name) => ({ kind: "system", name });
-function can(actor, permission) {
-  return actor.kind === "user" && actor.permissions.has(permission);
-}
-function requirePermission(actor, ...anyOf2) {
-  if (actor.kind === "system") return;
-  if (actor.kind === "agent") throw new DomainError(Codes.NOT_AUTHORIZED, "Agents act only through their tool grants.");
-  if (!anyOf2.some((permission) => actor.permissions.has(permission))) {
-    throw new DomainError(Codes.NOT_AUTHORIZED, `This needs the ${anyOf2.join(" or ")} permission.`);
-  }
-}
-function requireScope(actor, scope2) {
-  if (actor.kind !== "agent") return;
-  if (!actor.scopes.has(scope2)) throw new DomainError(Codes.NOT_AUTHORIZED, `The agent has no active ${scope2} grant.`);
-}
-var principalKey = (actor) => actor.kind === "user" ? `user:${actor.userId}` : actor.kind === "agent" ? `agent:${actor.agentId}` : `system:${actor.name}`;
-var actorUserId = (actor) => actor.kind === "user" ? actor.userId : null;
-var actorAgentId = (actor) => actor.kind === "agent" ? actor.agentId : null;
+// features/keystone/mutations/setup.ts
+init_actor();
 
 // features/keystone/lib/canonical.ts
 var import_node_crypto2 = require("node:crypto");
-
-// features/keystone/lib/decimal.ts
-var import_decimal = __toESM(require("decimal.js"));
-var Decimal = import_decimal.default.clone({
-  precision: 60,
-  rounding: import_decimal.default.ROUND_HALF_EVEN,
-  toExpNeg: -40,
-  toExpPos: 60
-});
-var DECIMAL_TEXT = /^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/;
-function dec(value) {
-  if (value instanceof Decimal) return value;
-  if (typeof value === "bigint") return new Decimal(value.toString());
-  if (typeof value === "number") {
-    if (!Number.isSafeInteger(value)) throw new Error(`Refusing float ${value}: pass the exact decimal as a string`);
-    return new Decimal(value);
-  }
-  const text14 = String(value).trim();
-  if (!DECIMAL_TEXT.test(text14)) throw new Error(`Not a decimal number: ${JSON.stringify(text14).slice(0, 40)}`);
-  return new Decimal(text14);
-}
-var plain = (value) => dec(value).toFixed();
-var ZERO = new Decimal(0);
-var ONE = new Decimal(1);
-var BPS = new Decimal(1e4);
-
-// features/keystone/lib/canonical.ts
+init_decimal();
 function canonicalize(value) {
   if (value === null || value === void 0) return null;
   if (typeof value === "bigint") return value.toString();
@@ -3473,28 +3871,16 @@ function canonicalize(value) {
   throw new Error(`Canonical JSON cannot hold a ${typeof value}`);
 }
 var canonicalJson = (value) => JSON.stringify(canonicalize(value));
-var sha256 = (text14) => (0, import_node_crypto2.createHash)("sha256").update(text14).digest("hex");
+var sha256 = (text15) => (0, import_node_crypto2.createHash)("sha256").update(text15).digest("hex");
 var payloadHash = (value) => sha256(canonicalJson(value));
 var toJsonValue = (value) => canonicalize(value);
 
-// features/keystone/lib/db.ts
-async function advisoryLock(tx, key) {
-  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`;
-}
-var MODEL_NAME = /^[A-Z][A-Za-z0-9]*$/;
-function tableName(model) {
-  if (!MODEL_NAME.test(model)) throw new Error(`Invalid model name: ${model.slice(0, 40)}`);
-  return `"${model}"`;
-}
-function delegateOf(tx, model) {
-  tableName(model);
-  const delegate = tx[model[0].toLowerCase() + model.slice(1)];
-  if (!delegate) throw new Error(`Unknown model: ${model}`);
-  return delegate;
-}
-var TRANSACTION_OPTIONS = { maxWait: 15e3, timeout: 6e4 };
+// features/keystone/lib/command.ts
+init_actor();
 
 // features/keystone/lib/idempotency.ts
+init_db();
+init_errors();
 var IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,200}$/;
 function assertIdempotencyKey(key) {
   if (typeof key !== "string" || !key.trim()) throw new DomainError(Codes.IDEMPOTENCY_KEY_REQUIRED, "An idempotency key is required.");
@@ -3529,6 +3915,7 @@ async function writeReceipt(tx, input) {
 
 // features/keystone/lib/audit.ts
 var import_node_crypto3 = require("node:crypto");
+init_db();
 var GENESIS_HASH = "0".repeat(64);
 function auditHashBody(row) {
   return {
@@ -3577,7 +3964,7 @@ async function appendAuditEvents(tx, events, now = /* @__PURE__ */ new Date()) {
       prevHash,
       at: now
     };
-    const hash = auditHash(prevHash, row);
+    const hash2 = auditHash(prevHash, row);
     rows.push({
       seq: row.seq,
       eventKey: row.eventKey,
@@ -3594,11 +3981,11 @@ async function appendAuditEvents(tx, events, now = /* @__PURE__ */ new Date()) {
       ...row.metadata === null ? {} : { metadata: row.metadata },
       requestId: row.requestId ?? "",
       prevHash,
-      hash,
+      hash: hash2,
       at: row.at
     });
-    written.push({ seq, hash });
-    prevHash = hash;
+    written.push({ seq, hash: hash2 });
+    prevHash = hash2;
   }
   await tx.auditEvent.createMany({ data: rows });
   return written;
@@ -3613,7 +4000,7 @@ async function verifyAuditChain(db, batchSize = 1e3) {
     for (const row of rows) {
       if (row.seq !== expectedSeq) return { ok: false, count, lastSeq: expectedSeq - 1, lastHash: prevHash, brokenAtSeq: expectedSeq, problem: "missing event" };
       if (row.prevHash !== prevHash) return { ok: false, count, lastSeq: row.seq - 1, lastHash: prevHash, brokenAtSeq: row.seq, problem: "previous hash does not match" };
-      const hash = auditHash(prevHash, {
+      const hash2 = auditHash(prevHash, {
         ...row,
         reason: row.reason || null,
         requestId: row.requestId || null,
@@ -3621,7 +4008,7 @@ async function verifyAuditChain(db, batchSize = 1e3) {
         actorAgentId: row.actorAgentId ?? null,
         approverId: row.approverId ?? null
       });
-      if (hash !== row.hash) return { ok: false, count, lastSeq: row.seq - 1, lastHash: prevHash, brokenAtSeq: row.seq, problem: "content does not match its hash" };
+      if (hash2 !== row.hash) return { ok: false, count, lastSeq: row.seq - 1, lastHash: prevHash, brokenAtSeq: row.seq, problem: "content does not match its hash" };
       prevHash = row.hash;
       expectedSeq += 1;
       count += 1;
@@ -3631,6 +4018,7 @@ async function verifyAuditChain(db, batchSize = 1e3) {
 }
 
 // features/keystone/lib/unitOfWork.ts
+init_db();
 var UnitOfWork = class {
   constructor(tx, now, requestId) {
     this.tx = tx;
@@ -3672,6 +4060,9 @@ async function command(db, spec, work) {
     }
   }
 }
+
+// features/keystone/seed/platform.ts
+init_access();
 
 // features/keystone/lib/calendar.ts
 var US_FEDERAL = [
@@ -3771,83 +4162,8 @@ function zonedInstant(timeZone, date2, hhmm) {
   return new Date(guess);
 }
 
-// features/keystone/lib/cas.ts
-var COLUMN = /^[a-z][A-Za-z0-9]*$/;
-async function lockRow(tx, model, id) {
-  const rows = await tx.$queryRawUnsafe(`SELECT id FROM ${tableName(model)} WHERE id = $1 FOR UPDATE`, id);
-  if (!rows.length) throw new DomainError(Codes.NOT_FOUND, `${model} not found.`, { model, id });
-  const row = await delegateOf(tx, model).findUnique({ where: { id } });
-  return row;
-}
-async function transition(uow, spec) {
-  const statusField = spec.statusField ?? "status";
-  if (!COLUMN.test(statusField)) throw new Error("Invalid status field");
-  const row = await lockRow(uow.tx, spec.model, spec.id);
-  const currentStatus = String(row[statusField]);
-  const currentVersion = Number(row.version);
-  if (spec.expectedVersion !== void 0 && spec.expectedVersion !== null && spec.expectedVersion !== currentVersion) {
-    throw new DomainError(Codes.STALE_STATE, `${spec.model} changed since you loaded it. Reload and try again.`, { currentStatus, currentVersion });
-  }
-  if (!spec.from.includes(currentStatus)) {
-    throw new DomainError(Codes.INVALID_TRANSITION, `${spec.model} can't move from ${currentStatus} to ${spec.to}.`, { currentStatus, currentVersion, to: spec.to });
-  }
-  if (spec.guard) await spec.guard(row);
-  const extra = typeof spec.data === "function" ? await spec.data(row) : spec.data ?? {};
-  const result = await delegateOf(uow.tx, spec.model).updateMany({
-    where: { id: spec.id, version: currentVersion, [statusField]: { in: [...spec.from] } },
-    data: { ...extra, [statusField]: spec.to, version: { increment: 1 } }
-  });
-  if (result.count !== 1) {
-    throw new DomainError(Codes.STALE_STATE, `${spec.model} changed since you loaded it. Reload and try again.`, { currentStatus, currentVersion });
-  }
-  uow.audit({
-    eventType: spec.eventType,
-    entityType: spec.model,
-    entityId: spec.id,
-    actorUserId: actorUserId(spec.actor),
-    actorAgentId: actorAgentId(spec.actor),
-    approverId: spec.approverId ?? null,
-    reason: spec.reason ?? null,
-    before: { [statusField]: currentStatus, version: currentVersion },
-    after: { [statusField]: spec.to, version: currentVersion + 1, ...extra },
-    metadata: { ...spec.metadata ?? {}, ...spec.actor.kind === "system" ? { system: spec.actor.name } : {} }
-  });
-  return await delegateOf(uow.tx, spec.model).findUnique({ where: { id: spec.id } });
-}
-async function casUpdate(uow, spec) {
-  const statusField = spec.statusField ?? "status";
-  if (!COLUMN.test(statusField)) throw new Error("Invalid status field");
-  const result = await delegateOf(uow.tx, spec.model).updateMany({
-    where: { id: spec.id, version: spec.version, [statusField]: { in: [...spec.from] } },
-    data: { ...spec.data ?? {}, [statusField]: spec.to, version: { increment: 1 } }
-  });
-  if (result.count !== 1) throw new DomainError(Codes.STALE_STATE, `${spec.model} changed since you loaded it. Reload and try again.`, { currentVersion: spec.version, to: spec.to });
-  uow.audit({
-    eventType: spec.eventType,
-    entityType: spec.model,
-    entityId: spec.id,
-    actorUserId: actorUserId(spec.actor),
-    actorAgentId: actorAgentId(spec.actor),
-    approverId: spec.approverId ?? null,
-    reason: spec.reason ?? null,
-    before: { [statusField]: spec.from.length === 1 ? spec.from[0] : spec.from, version: spec.version },
-    after: { [statusField]: spec.to, version: spec.version + 1, ...spec.audit ?? spec.data ?? {} },
-    metadata: { ...spec.metadata ?? {}, ...spec.actor.kind === "system" ? { system: spec.actor.name } : {} }
-  });
-  return spec.version + 1;
-}
-function auditCreate(uow, actor, model, id, eventType, after, extra = {}) {
-  uow.audit({
-    eventType,
-    entityType: model,
-    entityId: id,
-    actorUserId: actorUserId(actor),
-    actorAgentId: actorAgentId(actor),
-    reason: extra.reason ?? null,
-    after,
-    metadata: { ...extra.metadata ?? {}, ...actor.kind === "system" ? { system: actor.name } : {} }
-  });
-}
+// features/keystone/seed/platform.ts
+init_cas();
 
 // features/keystone/seed/operator.ts
 var OPERATOR = {
@@ -3860,10 +4176,10 @@ var RESIDENT_READ = ["canReadResidentDemographics"];
 var CLINICAL_READ = [...RESIDENT_READ, "canReadClinical"];
 var ROLES = [
   { id: "seed_role_operator_admin", name: "Operator Admin", description: "Runs the platform for the operator: communities, people, roles and integrations.", permissions: [...STAFF_BASE, "canSeeOtherPeople", "canEditOtherPeople", "canManagePeople", "canManageRoles", "canManageOnboarding", "canManageOperator", "canManageCommunities", "canManagePlaces", "canManageIntegrations", "canManageAgents", "canReadAudit", "canReadCompliance", "canReadSales"] },
-  { id: "seed_role_executive_director", name: "Executive Director", description: "Licensed administrator: census, sales, compliance and approvals for the community.", permissions: [...STAFF_BASE, ...RESIDENT_READ, "canSeeOtherPeople", "canReadSales", "canManageSales", "canManageStorefront", "canApproveCensusCorrections", "canApproveIncidentDowngrade", "canApproveRates", "canApproveWriteOffs", "canApproveIntegrations", "canReadCompliance", "canApproveCompliance", "canReadIncidents", "canReadBilling", "canReadWorkforce", "canReadAudit", "canReadFindings", "canApproveWorkflows"] },
-  { id: "seed_role_don", name: "Director of Nursing", description: "Clinical lead: corrections, count discrepancies, care plans and clinical approvals.", permissions: [...STAFF_BASE, ...CLINICAL_READ, "canReadSensitiveClinical", "canChartNursing", "canManageCarePlans", "canManageAssessments", "canApproveClinicalCorrections", "canResolveCountDiscrepancy", "canApproveControlledAdjustments", "canInvestigateIncidents", "canReadIncidents", "canRecordCensus", "canBreakGlass", "canReadCompliance", "canReadFindings", "canApproveWorkflows", "canManageWorkflows", "canReadWorkforce"] },
-  { id: "seed_role_adon", name: "Assistant Director of Nursing", description: "Supports the DON; charts, plans care and investigates incidents.", permissions: [...STAFF_BASE, ...CLINICAL_READ, "canChartNursing", "canManageCarePlans", "canManageAssessments", "canInvestigateIncidents", "canReadIncidents", "canRecordCensus", "canBreakGlass", "canReadFindings"] },
-  { id: "seed_role_charge_nurse", name: "Charge Nurse (RN/LPN)", description: "Unit nurse: charting, medication pass, census moves on the unit.", permissions: [...STAFF_BASE, ...CLINICAL_READ, "canChartNursing", "canAdministerMeds", "canWitnessControlled", "canEnterOrders", "canRecordCensus", "canBreakGlass", "canReadIncidents"] },
+  { id: "seed_role_executive_director", name: "Executive Director", description: "Licensed administrator: census, sales, compliance and approvals for the community.", permissions: [...STAFF_BASE, ...RESIDENT_READ, "canSeeOtherPeople", "canReadSales", "canManageSales", "canManageStorefront", "canApproveCensusCorrections", "canApproveIncidentDowngrade", "canApproveRates", "canApproveWriteOffs", "canApproveIntegrations", "canReadCompliance", "canApproveCompliance", "canReadIncidents", "canReadBilling", "canReadWorkforce", "canReadAudit", "canReadFindings", "canApproveWorkflows", "canSubmitRegulatory", "canDeclareOutbreak", "canInvestigateIncidents"] },
+  { id: "seed_role_don", name: "Director of Nursing", description: "Clinical lead: corrections, count discrepancies, care plans and clinical approvals.", permissions: [...STAFF_BASE, ...CLINICAL_READ, "canReadSensitiveClinical", "canChartNursing", "canManageCarePlans", "canManageAssessments", "canApproveClinicalCorrections", "canResolveCountDiscrepancy", "canApproveControlledAdjustments", "canWitnessControlled", "canManagePharmacy", "canSubmitRegulatory", "canManageInfectionControl", "canEnterOrders", "canInvestigateIncidents", "canReadIncidents", "canRecordCensus", "canBreakGlass", "canReadCompliance", "canReadFindings", "canApproveWorkflows", "canManageWorkflows", "canReadWorkforce"] },
+  { id: "seed_role_adon", name: "Assistant Director of Nursing", description: "Supports the DON; charts, plans care and investigates incidents.", permissions: [...STAFF_BASE, ...CLINICAL_READ, "canChartNursing", "canManageCarePlans", "canManageAssessments", "canInvestigateIncidents", "canReadIncidents", "canRecordCensus", "canBreakGlass", "canReadFindings", "canWitnessControlled"] },
+  { id: "seed_role_charge_nurse", name: "Charge Nurse (RN/LPN)", description: "Unit nurse: charting, medication pass, census moves on the unit.", permissions: [...STAFF_BASE, ...CLINICAL_READ, "canChartNursing", "canAdministerMeds", "canWitnessControlled", "canEnterOrders", "canChartPointOfCare", "canManageAssessments", "canRecordCensus", "canBreakGlass", "canReadIncidents", "canReadFindings"] },
   { id: "seed_role_cna", name: "Certified Nursing Assistant", description: "Point-of-care charting (ADLs, intake, vitals) on assigned units.", permissions: [...STAFF_BASE, ...RESIDENT_READ, "canChartPointOfCare"] },
   { id: "seed_role_med_tech", name: "Med Tech (AL)", description: "Assisted-living medication administration where the state pack allows it.", permissions: [...STAFF_BASE, ...CLINICAL_READ, "canAdministerMeds", "canChartPointOfCare"] },
   { id: "seed_role_mds", name: "MDS Coordinator", description: "Assessments, MDS schedule and PDPM.", permissions: [...STAFF_BASE, ...CLINICAL_READ, "canManageAssessments", "canSubmitRegulatory", "canReadBilling", "canReadIdentifiers"] },
@@ -3908,6 +4224,8 @@ var APPROVAL_POLICIES = [
   { action: "portal.grant_scope", description: 'Grant a family portal scope above "updates".', requiredPermission: "canApprovePortalScopes", expiresAfterMinutes: 7 * 1440 },
   { action: "agent_grant.activate", description: "Activate a tool grant for an AI agent (PHI scopes need two approvers).", requiredPermission: "canApproveAgentGrants", expiresAfterMinutes: 1440 },
   { action: "role.assign_approval", description: "Give a person a role that can approve.", requiredPermission: "canManageRoles", expiresAfterMinutes: 1440 },
+  { action: "incident.downgrade", description: "Change a reportable incident to not reportable (cancels its report clocks).", requiredPermission: "canApproveIncidentDowngrade", expiresAfterMinutes: 1440 },
+  { action: "workflow.activate", description: "Turn on a workflow for a community.", requiredPermission: "canApproveWorkflows", expiresAfterMinutes: 7 * 1440 },
   { action: "rate.publish", description: "Publish a rate schedule.", requiredPermission: "canApproveRates", expiresAfterMinutes: 1440 }
 ];
 var COMMUNITY = {
@@ -4171,7 +4489,14 @@ async function seedOperatorPlatform(uow, actor) {
   return { communityId: community.id, created };
 }
 
+// features/keystone/seed/census.ts
+init_actor();
+init_errors();
+init_cas();
+
 // features/keystone/lib/clocks.ts
+init_errors();
+init_actor();
 var END_OF_DAY = "23:59";
 async function communityClockContext(tx, communityId) {
   const community = await tx.community.findUnique({ where: { id: communityId }, select: { id: true, timeZone: true, jurisdictionPackId: true, holidayCalendarId: true } });
@@ -4291,6 +4616,15 @@ async function satisfyClocks(uow, actor, where, evidence) {
   }
   return satisfied;
 }
+async function cancelClocks(uow, actor, where, reason) {
+  const clocks = await uow.tx.complianceClock.findMany({ where: { ...where.obligationCodes ? { obligationCode: { in: where.obligationCodes } } : {}, subjectType: where.subjectType, subjectId: where.subjectId, current: true, status: "open" } });
+  for (const clock of clocks) {
+    const result = await uow.tx.complianceClock.updateMany({ where: { id: clock.id, version: clock.version, status: "open" }, data: { status: "cancelled", cancelReason: reason, version: { increment: 1 } } });
+    if (result.count !== 1) throw new DomainError(Codes.STALE_STATE, "A compliance clock changed while it was being cancelled. Try again.");
+    uow.audit({ eventType: "clock.cancelled", entityType: "ComplianceClock", entityId: clock.id, actorUserId: actorUserId(actor), actorAgentId: actorAgentId(actor), reason, before: { status: "open" }, after: { status: "cancelled" } });
+  }
+  return clocks.length;
+}
 async function sweepClocks(uow, actor) {
   const due = await uow.tx.complianceClock.findMany({ where: { current: true, status: "open", dueAt: { lt: uow.now } }, take: 500, orderBy: { dueAt: "asc" } });
   let overdue = 0;
@@ -4303,24 +4637,15 @@ async function sweepClocks(uow, actor) {
   return { checked: due.length, overdue };
 }
 
-// features/keystone/lib/sequence.ts
-var import_node_crypto4 = require("node:crypto");
-async function nextReference(tx, prefix, now = /* @__PURE__ */ new Date(), width = 6) {
-  if (!/^[A-Z]{2,5}$/.test(prefix)) throw new Error("Reference prefix must be 2-5 capital letters");
-  const key = `${prefix}-${now.getUTCFullYear()}`;
-  const row = await tx.sequence.upsert({ where: { key }, create: { key, nextValue: 2 }, update: { nextValue: { increment: 1 } } });
-  const value = row.nextValue - 1;
-  return `${key}-${String(value).padStart(width, "0")}`;
-}
-var CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-function publicCode(prefix, groups = 2) {
-  const bytes = (0, import_node_crypto4.randomBytes)(groups * 4);
-  const chars = Array.from(bytes, (byte) => CROCKFORD[byte % 32]);
-  const parts = Array.from({ length: groups }, (_, i) => chars.slice(i * 4, i * 4 + 4).join(""));
-  return `${prefix}-${parts.join("-")}`;
-}
+// features/keystone/lib/census.ts
+init_cas();
+init_actor();
+init_db();
+init_errors();
+init_sequence();
 
 // features/keystone/lib/censusProjection.ts
+init_errors();
 var EMPTY_PROJECTION = {
   status: "pre_admit",
   presence: "not_admitted",
@@ -4342,12 +4667,12 @@ var fail = (message, details = {}) => {
 function leaveDaysByYear(timeZone, from, to) {
   const out = {};
   if (to.getTime() <= from.getTime()) return out;
-  let day3 = localDate(timeZone, from);
+  let day4 = localDate(timeZone, from);
   const last = localDate(timeZone, to);
-  for (let i = 0; i < 800 && day3 <= last; i += 1) {
-    const midnight = zonedInstant(timeZone, day3, "23:59").getTime();
-    if (midnight >= from.getTime() && midnight < to.getTime()) out[day3.slice(0, 4)] = (out[day3.slice(0, 4)] ?? 0) + 1;
-    day3 = addDays(day3, 1);
+  for (let i = 0; i < 800 && day4 <= last; i += 1) {
+    const midnight = zonedInstant(timeZone, day4, "23:59").getTime();
+    if (midnight >= from.getTime() && midnight < to.getTime()) out[day4.slice(0, 4)] = (out[day4.slice(0, 4)] ?? 0) + 1;
+    day4 = addDays(day4, 1);
   }
   return out;
 }
@@ -4607,7 +4932,7 @@ async function appendCensusEvents(uow, actor, stay, inputs, options = {}) {
   const events = [];
   for (const { input, event: candidate } of candidates) {
     const body = { stayId: stay.id, seq: candidate.seq, kind: input.kind, effectiveAt: input.effectiveAt.toISOString(), toBedId: candidate.toBedId, toApartmentId: candidate.toApartmentId, leaveKind: candidate.leaveKind, holdElected: Boolean(candidate.holdElected), holdPaidBy: candidate.holdPaidBy, dischargeDisposition: candidate.dischargeDisposition, initiatedBy: input.initiatedBy ?? null, voidsEventId: input.voidsEventId ?? null };
-    const hash = sha256(`${prevHash}
+    const hash2 = sha256(`${prevHash}
 ${canonicalJson(body)}`);
     const row = await uow.tx.censusEvent.create({
       data: {
@@ -4635,10 +4960,10 @@ ${canonicalJson(body)}`);
         actorAgentId: actorAgentId(actor),
         idempotencyKey: sha256(`${principalKey(actor)}:${input.idempotencyKey}:${input.kind}:${candidate.seq}`),
         prevHash,
-        hash
+        hash: hash2
       }
     });
-    prevHash = hash;
+    prevHash = hash2;
     events.push({ id: row.id, seq: row.seq, kind: row.kind });
   }
   const lastInput = inputs[inputs.length - 1];
@@ -5026,9 +5351,9 @@ async function verifyCensusProjection(tx, stayId) {
   if (!stay?.communityId) throw new DomainError(Codes.NOT_FOUND, "Stay not found.");
   const timeZone = await communityTimeZone(tx, stay.communityId);
   const rebuilt = foldStored(await loadCensusEvents(tx, stayId), timeZone);
-  const hash = projectionHash(rebuilt);
+  const hash2 = projectionHash(rebuilt);
   const columnsMatch = rebuilt.status === stay.status && rebuilt.presence === stay.presence && rebuilt.currentBedId === stay.currentBedId && rebuilt.heldBedId === stay.heldBedId && rebuilt.currentApartmentId === stay.currentApartmentId;
-  return { stayId, matches: hash === stay.projectionHash && columnsMatch, storedHash: stay.projectionHash, rebuiltHash: hash };
+  return { stayId, matches: hash2 === stay.projectionHash && columnsMatch, storedHash: stay.projectionHash, rebuiltHash: hash2 };
 }
 async function verifyCensusChain(tx, stayId) {
   const rows = await tx.censusEvent.findMany({ where: { stayId }, orderBy: { seq: "asc" } });
@@ -5043,6 +5368,8 @@ ${canonicalJson(body)}`)) return { ok: false, brokenAtSeq: row.seq };
 }
 
 // features/keystone/lib/censusDay.ts
+init_actor();
+init_errors();
 var DATE2 = /^\d{4}-\d{2}-\d{2}$/;
 var day2 = (date2) => /* @__PURE__ */ new Date(`${date2}T00:00:00Z`);
 async function timeZoneOf(tx, communityId) {
@@ -5156,6 +5483,11 @@ async function signOffCensusDay(uow, actor, input) {
 
 // features/keystone/lib/places.ts
 var import_node_crypto5 = require("node:crypto");
+init_cas();
+init_actor();
+init_db();
+init_errors();
+init_sequence();
 var MAX_RESERVATION_HOURS = 24 * 30;
 async function lockPlace(tx, target) {
   if (!target.bedId === !target.apartmentId) throw new DomainError(Codes.INVALID_INPUT, "Choose one bed or one apartment.", { field: "bedId" });
@@ -5252,6 +5584,12 @@ async function recomputeAvailability(uow, communityId) {
   uow.audit({ eventType: "availability.recomputed", entityType: "Community", entityId: communityId, actorUserId: null, after: { snapshots: results.length } });
   return results;
 }
+
+// features/keystone/lib/portal.ts
+init_cas();
+init_actor();
+init_errors();
+init_sequence();
 
 // features/keystone/lib/publicToken.ts
 var import_node_crypto7 = require("node:crypto");
@@ -5396,6 +5734,8 @@ async function setPortalAccountStatus(uow, actor, input) {
 }
 
 // features/keystone/lib/privacy.ts
+init_cas();
+init_errors();
 var BREAK_GLASS_REASONS = ["emergency_care", "coverage_gap", "other"];
 async function openBreakGlass(uow, actor, input) {
   if (actor.kind !== "user") throw new DomainError(Codes.NOT_AUTHORIZED, "Only a person can use break-glass.");
@@ -5403,14 +5743,14 @@ async function openBreakGlass(uow, actor, input) {
   if (!input.note?.trim() || input.note.trim().length < 10) throw new DomainError(Codes.INVALID_INPUT, "Describe the situation (at least 10 characters).", { field: "note" });
   const settings = await uow.tx.operatorSettings.findUnique({ where: { id: 1 }, select: { breakGlassMaxHours: true } });
   const max = settings?.breakGlassMaxHours ?? 4;
-  const hours2 = input.hours ?? max;
-  if (!Number.isInteger(hours2) || hours2 < 1 || hours2 > max) throw new DomainError(Codes.INVALID_INPUT, `Break-glass lasts 1 to ${max} hours.`, { field: "hours" });
+  const hours3 = input.hours ?? max;
+  if (!Number.isInteger(hours3) || hours3 < 1 || hours3 > max) throw new DomainError(Codes.INVALID_INPUT, `Break-glass lasts 1 to ${max} hours.`, { field: "hours" });
   const resident = await uow.tx.resident.findUnique({ where: { id: input.residentId }, select: { id: true } });
   if (!resident) throw new DomainError(Codes.NOT_FOUND, "Resident not found.");
   const open = await uow.tx.breakGlassGrant.findFirst({ where: { userId: actor.userId, residentId: input.residentId, status: "active", expiresAt: { gt: uow.now } }, select: { id: true, expiresAt: true } });
   if (open) return { grantId: open.id, expiresAt: open.expiresAt, reused: true };
-  const grant = await uow.tx.breakGlassGrant.create({ data: { userId: actor.userId, residentId: input.residentId, reason: input.reason, note: input.note.trim(), requestedAt: uow.now, expiresAt: new Date(uow.now.getTime() + hours2 * 36e5), status: "active" } });
-  auditCreate(uow, actor, "BreakGlassGrant", grant.id, "break_glass.opened", { residentId: input.residentId, reason: input.reason, hours: hours2 });
+  const grant = await uow.tx.breakGlassGrant.create({ data: { userId: actor.userId, residentId: input.residentId, reason: input.reason, note: input.note.trim(), requestedAt: uow.now, expiresAt: new Date(uow.now.getTime() + hours3 * 36e5), status: "active" } });
+  auditCreate(uow, actor, "BreakGlassGrant", grant.id, "break_glass.opened", { residentId: input.residentId, reason: input.reason, hours: hours3 });
   return { grantId: grant.id, expiresAt: grant.expiresAt, reused: false };
 }
 async function endBreakGlass(uow, actor, input) {
@@ -5437,6 +5777,11 @@ async function reviewBreakGlass(uow, actor, input) {
 }
 
 // features/keystone/lib/sales.ts
+init_cas();
+init_actor();
+init_db();
+init_errors();
+init_sequence();
 var SETTING_VALUES = ["nursing_facility", "assisted_living", "memory_care", "independent_living"];
 var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 var clean = (value, max) => typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -5639,7 +5984,7 @@ async function recordReferral(uow, actor, input) {
   }
   const receivedAt = input.receivedAt ?? uow.now;
   if (receivedAt.getTime() > uow.now.getTime() + 5 * 6e4) throw new DomainError(Codes.INVALID_INPUT, "The referral cannot be received in the future.", { field: "receivedAt" });
-  const hours2 = Math.min(Math.max(input.responseHours ?? 4, 1), 72);
+  const hours3 = Math.min(Math.max(input.responseHours ?? 4, 1), 72);
   const prospect = await uow.tx.prospect.create({ data: { reference: await nextReference(uow.tx, "PRO", uow.now), communityId: community.id, firstName, lastName, dateOfBirth: input.dateOfBirth ? /* @__PURE__ */ new Date(`${input.dateOfBirth}T00:00:00Z`) : null, desiredSetting: SETTING_VALUES.includes(String(input.desiredSetting)) ? input.desiredSetting : "nursing_facility", synthetic: community.synthetic } });
   let pasrrLevel1Id = null;
   if (input.pasrrLevel1) {
@@ -5651,7 +5996,7 @@ async function recordReferral(uow, actor, input) {
     pasrrLevel1Id = doc.id;
   }
   const referral = await uow.tx.referral.create({
-    data: { reference: await nextReference(uow.tx, "REF", uow.now), communityId: community.id, sourceId: input.sourceId ?? null, receivedAt, prospectId: prospect.id, expectedPayer: input.expectedPayer, pasrrLevel1Id, clinicalSummary: clean(input.clinicalSummary, 8e3), pasrrLevel2Required: Boolean(input.pasrrLevel2Required), status: "received", responseDueAt: new Date(receivedAt.getTime() + hours2 * 36e5) }
+    data: { reference: await nextReference(uow.tx, "REF", uow.now), communityId: community.id, sourceId: input.sourceId ?? null, receivedAt, prospectId: prospect.id, expectedPayer: input.expectedPayer, pasrrLevel1Id, clinicalSummary: clean(input.clinicalSummary, 8e3), pasrrLevel2Required: Boolean(input.pasrrLevel2Required), status: "received", responseDueAt: new Date(receivedAt.getTime() + hours3 * 36e5) }
   });
   auditCreate(uow, actor, "Referral", referral.id, "referral.received", { reference: referral.reference, sourceId: input.sourceId ?? null, expectedPayer: input.expectedPayer, responseDueAt: referral.responseDueAt });
   return { referralId: referral.id, reference: referral.reference, prospectId: prospect.id, responseDueAt: referral.responseDueAt };
@@ -5704,6 +6049,9 @@ async function expireTourHolds(uow, actor) {
 }
 
 // features/keystone/lib/storefront.ts
+init_cas();
+init_errors();
+init_sequence();
 var clean2 = (value, max) => typeof value === "string" ? value.trim().slice(0, max) : "";
 async function publishedSite(tx, slug2) {
   const community = await tx.community.findUnique({
@@ -5948,14 +6296,14 @@ function buildCensusPlan(options) {
   const steps = [];
   const acts = [];
   let seq = 0;
-  const schedule = (when5, run) => acts.push({ at: when5, seq: seq++, run });
+  const schedule = (when6, run) => acts.push({ at: when6, seq: seq++, run });
   const key = (kind, id) => `${prefix}:${kind}:${id}`;
-  const emit = (kind, id, actor, when5, input) => {
+  const emit = (kind, id, actor, when6, input) => {
     const k = key(kind, id);
-    steps.push({ key: k, kind, actor, at: when5.toISOString(), input });
+    steps.push({ key: k, kind, actor, at: when6.toISOString(), input });
     return k;
   };
-  const ref = (stepKey, field) => ({ $ref: stepKey, field });
+  const ref2 = (stepKey, field) => ({ $ref: stepKey, field });
   const places = new Places();
   const residents = /* @__PURE__ */ new Map();
   const ending = /* @__PURE__ */ new Set();
@@ -6037,41 +6385,41 @@ function buildCensusPlan(options) {
       agreementSignedAt: plan.agreement === "same" ? plus(effective, 1).toISOString() : null
     });
     if (plan.agreement === "later") {
-      schedule(plus(effective, 20 * 60), () => emit("agreement", r.code, PATEL, plus(effective, 20 * 60), { stay: ref(key("admit", r.code), "stayId"), resident: ref(key("admit", r.code), "residentId"), signedAt: plus(effective, 20 * 60).toISOString(), note: "Signed by the representative at the care conference." }));
+      schedule(plus(effective, 20 * 60), () => emit("agreement", r.code, PATEL, plus(effective, 20 * 60), { stay: ref2(key("admit", r.code), "stayId"), resident: ref2(key("admit", r.code), "residentId"), signedAt: plus(effective, 20 * 60).toISOString(), note: "Signed by the representative at the care conference." }));
     }
   }));
-  const readyLater = (placeId, when5, unit, apartment = false) => schedule(when5, () => {
+  const readyLater = (placeId, when6, unit, apartment = false) => schedule(when6, () => {
     if (apartment) {
       const apt = places.apt(placeId);
       if (apt.status !== "turnover") return;
       apt.status = "available";
-      emit("place_ready", placeId + "_" + when5.getTime(), LINDQVIST, when5, { apartmentId: placeId, note: "Apartment turned over: deep clean, paint touch-up and safety check done." });
+      emit("place_ready", placeId + "_" + when6.getTime(), LINDQVIST, when6, { apartmentId: placeId, note: "Apartment turned over: deep clean, paint touch-up and safety check done." });
     } else {
       const bed = places.bed(placeId);
       if (bed.status !== "cleaning") return;
       bed.status = "available";
-      emit("place_ready", placeId + "_" + when5.getTime(), nurseFor(unit), when5, { bedId: placeId, note: "Terminal clean done; bed made up." });
+      emit("place_ready", placeId + "_" + when6.getTime(), nurseFor(unit), when6, { bedId: placeId, note: "Terminal clean done; bed made up." });
     }
   });
-  const discharge = (code, when5, input) => schedule(when5, () => {
+  const discharge = (code, when6, input) => schedule(when6, () => {
     const place = places.release(code);
     const unit = places.beds.get(place)?.unit;
-    emit("discharge", code, PATEL, when5, { stay: ref(key("admit", code), "stayId"), disposition: input.disposition, initiatedBy: input.facility ? "facility" : "resident", effectiveAt: when5.toISOString(), noticeException: input.noticeException ?? null });
-    if (!input.keepDirty) readyLater(place, plus(when5, unit ? 180 : 3 * 1440), unit ?? "", !unit);
+    emit("discharge", code, PATEL, when6, { stay: ref2(key("admit", code), "stayId"), disposition: input.disposition, initiatedBy: input.facility ? "facility" : "resident", effectiveAt: when6.toISOString(), noticeException: input.noticeException ?? null });
+    if (!input.keepDirty) readyLater(place, plus(when6, unit ? 180 : 3 * 1440), unit ?? "", !unit);
   });
-  const death = (code, when5, pronouncedBy) => schedule(when5, () => {
+  const death = (code, when6, pronouncedBy) => schedule(when6, () => {
     const place = places.release(code);
     const unit = places.beds.get(place)?.unit ?? "";
-    emit("death", code, RAMOS, when5, { stay: ref(key("admit", code), "stayId"), effectiveAt: when5.toISOString(), pronouncedBy });
-    readyLater(place, plus(when5, 7 * 60), unit);
+    emit("death", code, RAMOS, when6, { stay: ref2(key("admit", code), "stayId"), effectiveAt: when6.toISOString(), pronouncedBy });
+    readyLater(place, plus(when6, 7 * 60), unit);
   });
-  const roomNotice = (code, when5, note) => emit("notice", `room_change_${code}_${when5.getTime()}`, BROOKS, when5, { stay: ref(key("admit", code), "stayId"), kind: "room_change", method: "in_person", deliveredAt: when5.toISOString(), acknowledgement: "signed", note });
+  const roomNotice = (code, when6, note) => emit("notice", `room_change_${code}_${when6.getTime()}`, BROOKS, when6, { stay: ref2(key("admit", code), "stayId"), kind: "room_change", method: "in_person", deliveredAt: when6.toISOString(), acknowledgement: "signed", note });
   const movedFrom = /* @__PURE__ */ new Map();
-  const moveRoom = (id, when5, pick2, reason) => schedule(plus(when5, -18 * 60), () => {
+  const moveRoom = (id, when6, pick2, reason) => schedule(plus(when6, -18 * 60), () => {
     const { code, units, prefer } = pick2();
     used.add(code);
-    roomNotice(code, plus(when5, -18 * 60), `Room change discussed with the resident and representative: ${reason.toLowerCase()}`);
-    schedule(when5, () => {
+    roomNotice(code, plus(when6, -18 * 60), `Room change discussed with the resident and representative: ${reason.toLowerCase()}`);
+    schedule(when6, () => {
       const from = places.where.get(code);
       const to = places.freeBed(units, places.sex.get(code) ?? null, { prefer });
       const fromBed = places.bed(from.bed);
@@ -6079,8 +6427,8 @@ function buildCensusPlan(options) {
       fromBed.occupant = null;
       places.where.delete(code);
       places.occupyBed(code, to);
-      emit("room_change", id, nurseFor(fromBed.unit), when5, { stay: ref(key("admit", code), "stayId"), toBedId: to, effectiveAt: when5.toISOString(), reason });
-      readyLater(fromBed.id, plus(when5, 150), fromBed.unit);
+      emit("room_change", id, nurseFor(fromBed.unit), when6, { stay: ref2(key("admit", code), "stayId"), toBedId: to, effectiveAt: when6.toISOString(), reason });
+      readyLater(fromBed.id, plus(when6, 150), fromBed.unit);
       movedFrom.set(id, fromBed.id);
     });
   });
@@ -6097,7 +6445,7 @@ function buildCensusPlan(options) {
       places.where.set(plan.code, { status: "on_leave", held: bed.id });
     }
     const startKey = emit("leave_start", id, nurseFor(bed.unit), plan.start, {
-      stay: ref(key("admit", plan.code), "stayId"),
+      stay: ref2(key("admit", plan.code), "stayId"),
       leaveKind: "hospital",
       holdElected: plan.hold !== "none",
       holdPaidBy: plan.hold === "none" ? "none" : plan.hold,
@@ -6107,8 +6455,8 @@ function buildCensusPlan(options) {
       noticeAtTransfer: { method: "phone_then_mail", deliveredAt: plan.start.toISOString(), acknowledgement: "not_required", note: plan.hold === "none" ? "Bed-hold notice given; the representative declined the hold." : "Bed-hold notice explained by phone; written copy mailed to the representative." }
     });
     if (plan.ombudsmanCopy) {
-      const when5 = plus(plan.start, 2 * 1440 + 120);
-      schedule(when5, () => emit("notice", `ombudsman_${id}`, BROOKS, when5, { stay: ref(key("admit", plan.code), "stayId"), censusEvent: ref(startKey, "eventId"), kind: "other", method: "email", deliveredAt: when5.toISOString(), copyToOmbudsmanAt: when5.toISOString(), note: "Transfer notice copy sent to the regional Long-Term Care Ombudsman." }));
+      const when6 = plus(plan.start, 2 * 1440 + 120);
+      schedule(when6, () => emit("notice", `ombudsman_${id}`, BROOKS, when6, { stay: ref2(key("admit", plan.code), "stayId"), censusEvent: ref2(startKey, "eventId"), kind: "other", method: "email", deliveredAt: when6.toISOString(), copyToOmbudsmanAt: when6.toISOString(), note: "Transfer notice copy sent to the regional Long-Term Care Ombudsman." }));
     }
     if (plan.end) {
       const end = plan.end;
@@ -6122,7 +6470,7 @@ function buildCensusPlan(options) {
           bed.status = "occupied";
           places.where.set(plan.code, { bed: bed.id, status: "in_house" });
         }
-        emit("leave_end", id, nurseFor(bed.unit), end, { stay: ref(key("admit", plan.code), "stayId"), effectiveAt: end.toISOString(), toBedId });
+        emit("leave_end", id, nurseFor(bed.unit), end, { stay: ref2(key("admit", plan.code), "stayId"), effectiveAt: end.toISOString(), toBedId });
       });
     }
   });
@@ -6164,9 +6512,9 @@ function buildCensusPlan(options) {
     b.reps = a.reps;
     if (a.sex === b.sex) b.sex = a.sex === "female" ? "male" : "female";
     places.sex.set(b.code, b.sex);
-    const when5 = at(-(300 + c * 140), "11:00");
-    admit({ r: a, when: when5, place: { aptUnit: "MEA", aptType: "seed_apt_companion" }, source: "community_home", agreement: "same" });
-    admit({ r: b, when: plus(when5, 5), place: { companionOf: a.code }, source: "community_home", agreement: "same" });
+    const when6 = at(-(300 + c * 140), "11:00");
+    admit({ r: a, when: when6, place: { aptUnit: "MEA", aptType: "seed_apt_companion" }, source: "community_home", agreement: "same" });
+    admit({ r: b, when: plus(when6, 5), place: { companionOf: a.code }, source: "community_home", agreement: "same" });
     al.push(a, b);
   }
   for (let i = 0; i < P.alSingles; i += 1) {
@@ -6190,23 +6538,23 @@ function buildCensusPlan(options) {
   }
   const homeDispositions = ["community_home", "community_home", "assisted_living", "community_home"];
   for (let k = 0; k < P.birchBeforeDischarged; k += 1) {
-    const day3 = -58 + Math.round(k * 54 / Math.max(1, P.birchBeforeDischarged - 1));
+    const day4 = -58 + Math.round(k * 54 / Math.max(1, P.birchBeforeDischarged - 1));
     const r = birchBefore[k];
     ending.add(r.code);
-    discharge(r.code, at(day3, `${10 + k % 3}:30`), { disposition: homeDispositions[k % homeDispositions.length] });
+    discharge(r.code, at(day4, `${10 + k % 3}:30`), { disposition: homeDispositions[k % homeDispositions.length] });
   }
   const birchNew = [];
   for (let j = 0; j < P.birchAdmits; j += 1) {
-    const day3 = -57 + Math.round(j * 56 / Math.max(1, P.birchAdmits - 1));
+    const day4 = -57 + Math.round(j * 56 / Math.max(1, P.birchAdmits - 1));
     const r = remember(newPerson(j % 3 === 1 ? "medicare_advantage" : "medicare_a"));
-    birchNew.push({ r, day: day3 });
+    birchNew.push({ r, day: day4 });
     const last = j === P.birchAdmits - 1;
-    admit({ r, when: at(day3, `${15 + j % 4}:${String(j * 17 % 60).padStart(2, "0")}`), place: { units: ["BIR"] }, source: "acute_hospital", agreement: last ? "none" : "later", qualifying: r.payer === "medicare_a" });
+    admit({ r, when: at(day4, `${15 + j % 4}:${String(j * 17 % 60).padStart(2, "0")}`), place: { units: ["BIR"] }, source: "acute_hospital", agreement: last ? "none" : "later", qualifying: r.payer === "medicare_a" });
   }
   for (let j = 0; j < P.birchAdmitsDischarged; j += 1) {
-    const { r, day: day3 } = birchNew[j];
+    const { r, day: day4 } = birchNew[j];
     ending.add(r.code);
-    discharge(r.code, at(day3 + 21, "11:15"), { disposition: "community_home" });
+    discharge(r.code, at(day4 + 21, "11:15"), { disposition: "community_home" });
   }
   const toLongTerm = birchNew.find((entry, j) => j >= P.birchAdmitsDischarged && entry.day <= -29);
   used.add(toLongTerm.r.code);
@@ -6244,7 +6592,7 @@ function buildCensusPlan(options) {
   const improved = lt.find((r) => r.payer === "private");
   ending.add(improved.code);
   const noticeAt = at(-45, "15:00");
-  schedule(noticeAt, () => emit("notice", `discharge_${improved.code}`, BROOKS, noticeAt, { stay: ref(key("admit", improved.code), "stayId"), kind: "transfer_discharge", method: "in_person", deliveredAt: noticeAt.toISOString(), acknowledgement: "signed", copyToOmbudsmanAt: plus(noticeAt, 60).toISOString(), note: "Health improved; nursing-facility care no longer needed. Discharge to assisted living discussed with the resident; appeal rights explained." }));
+  schedule(noticeAt, () => emit("notice", `discharge_${improved.code}`, BROOKS, noticeAt, { stay: ref2(key("admit", improved.code), "stayId"), kind: "transfer_discharge", method: "in_person", deliveredAt: noticeAt.toISOString(), acknowledgement: "signed", copyToOmbudsmanAt: plus(noticeAt, 60).toISOString(), note: "Health improved; nursing-facility care no longer needed. Discharge to assisted living discussed with the resident; appeal rights explained." }));
   discharge(improved.code, at(-14, "11:00"), { disposition: "assisted_living", facility: true });
   moveRoom("roommate", at(-17, "14:00"), () => {
     const code = [...places.where.entries()].find(([c, w]) => w.status === "in_house" && w.bed && places.bed(w.bed).unit === "WIL" && !used.has(c) && !ending.has(c) && residents.get(c).payer !== "private")?.[0];
@@ -6287,55 +6635,55 @@ function buildCensusPlan(options) {
   mc.push(mcNew);
   admit({ r: mcNew, when: at(-15, "10:40"), place: { aptUnit: "HAR" }, source: "assisted_living", agreement: "later" });
   const slot = (id, startsAt, openedAt) => schedule(openedAt, () => emit("tour_slots", id, PATEL, openedAt, { slots: [{ startsAt: startsAt.toISOString(), minutes: 45, capacity: 2, kind: "either" }] }));
-  const phoneLead = (id, when5, input) => {
+  const phoneLead = (id, when6, input) => {
     const [first, ...rest] = input.contactName.split(" ");
-    schedule(when5, () => emit("inquiry_phone", id, PATEL, when5, { contactName: input.contactName, contactEmail: familyEmail(first, rest.join(""), input.n), contactPhone: familyPhone(input.n), relationship: input.relationship, message: input.message, forWhomFirstName: input.forWhom[0], forWhomLastName: input.forWhom[1], desiredSetting: input.setting, consentToContact: true, source: input.source ?? "phone", referralSourceId: input.referralSourceId ?? null }));
+    schedule(when6, () => emit("inquiry_phone", id, PATEL, when6, { contactName: input.contactName, contactEmail: familyEmail(first, rest.join(""), input.n), contactPhone: familyPhone(input.n), relationship: input.relationship, message: input.message, forWhomFirstName: input.forWhom[0], forWhomLastName: input.forWhom[1], desiredSetting: input.setting, consentToContact: true, source: input.source ?? "phone", referralSourceId: input.referralSourceId ?? null }));
     return key("inquiry_phone", id);
   };
-  const activity = (id, lead, when5, kind, summary) => schedule(when5, () => emit("activity", id, PATEL, when5, { lead: ref(lead, "leadId"), kind, summary, at: when5.toISOString() }));
+  const activity = (id, lead, when6, kind, summary) => schedule(when6, () => emit("activity", id, PATEL, when6, { lead: ref2(lead, "leadId"), kind, summary, at: when6.toISOString() }));
   const tour = (id, lead, startsAt, bookedAt, outcome) => {
     slot(`slot_${id}`, startsAt, plus(bookedAt, -30));
-    schedule(bookedAt, () => emit("tour_schedule", id, PATEL, bookedAt, { lead: ref(lead, "leadId"), slotStartsAt: startsAt.toISOString(), kind: "in_person", notes: "Booked by phone." }));
+    schedule(bookedAt, () => emit("tour_schedule", id, PATEL, bookedAt, { lead: ref2(lead, "leadId"), slotStartsAt: startsAt.toISOString(), kind: "in_person", notes: "Booked by phone." }));
     if (outcome) {
-      const when5 = outcome === "cancelled" ? plus(startsAt, -1440) : plus(startsAt, 75);
-      schedule(when5, () => emit("tour_move", id, PATEL, when5, { tour: ref(key("tour_schedule", id), "tourId"), to: outcome, reason: outcome === "cancelled" ? "Family rescheduling after a hospital stay." : null }));
+      const when6 = outcome === "cancelled" ? plus(startsAt, -1440) : plus(startsAt, 75);
+      schedule(when6, () => emit("tour_move", id, PATEL, when6, { tour: ref2(key("tour_schedule", id), "tourId"), to: outcome, reason: outcome === "cancelled" ? "Family rescheduling after a hospital stay." : null }));
     }
   };
-  const leadMove = (id, lead, when5, to, lostReason = null, note = null) => schedule(when5, () => emit("lead_move", id, PATEL, when5, { lead: ref(lead, "leadId"), to, lostReason, note }));
+  const leadMove = (id, lead, when6, to, lostReason = null, note = null) => schedule(when6, () => emit("lead_move", id, PATEL, when6, { lead: ref2(lead, "leadId"), to, lostReason, note }));
   const agnesLead = phoneLead("agnes", at(-40, "10:15"), { contactName: "Janet Whitfield", relationship: "Daughter", forWhom: ["Agnes", "Whitfield"], setting: "assisted_living", message: "Mother is 86 and no longer safe living alone after a fall; wants a one-bedroom.", n: 61 });
   activity("agnes_call", agnesLead, at(-40, "10:40"), "call", "Discussed care needs, pricing and the one-bedroom waitlist. Tour booked.");
   tour("agnes", agnesLead, at(-35, "14:00"), at(-38, "09:00"), "completed");
   const agnesWaitlist = key("waitlist_add", "agnes");
   const wlAt = at(-34, "10:00");
-  schedule(wlAt, () => emit("waitlist_add", "agnes", PATEL, wlAt, { lead: ref(agnesLead, "leadId"), prospect: ref(agnesLead, "prospectId"), setting: "assisted_living", apartmentTypeId: "seed_apt_one_bed", priorityReason: "date_order" }));
+  schedule(wlAt, () => emit("waitlist_add", "agnes", PATEL, wlAt, { lead: ref2(agnesLead, "leadId"), prospect: ref2(agnesLead, "prospectId"), setting: "assisted_living", apartmentTypeId: "seed_apt_one_bed", priorityReason: "date_order" }));
   leadMove("agnes_waitlisted", agnesLead, plus(wlAt, 5), "waitlisted", null, "Deposit waived until a one-bedroom opens.");
   const offerAt = at(-6, "09:30");
   let agnesApt = "";
   schedule(offerAt, () => {
     agnesApt = places.freeApt("MEA", { type: "seed_apt_one_bed" });
     places.apt(agnesApt).status = "reserved";
-    emit("waitlist_offer", "agnes", PATEL, offerAt, { entry: ref(agnesWaitlist, "waitlistEntryId"), apartmentId: agnesApt, hours: 120 });
+    emit("waitlist_offer", "agnes", PATEL, offerAt, { entry: ref2(agnesWaitlist, "waitlistEntryId"), apartmentId: agnesApt, hours: 120 });
   });
   const acceptAt = at(-5, "16:00");
-  schedule(acceptAt, () => emit("waitlist_resolve", "agnes", PATEL, acceptAt, { entry: ref(agnesWaitlist, "waitlistEntryId"), to: "accepted" }));
+  schedule(acceptAt, () => emit("waitlist_resolve", "agnes", PATEL, acceptAt, { entry: ref2(agnesWaitlist, "waitlistEntryId"), to: "accepted" }));
   leadMove("agnes_move_in", agnesLead, plus(acceptAt, 10), "move_in_scheduled", null, "Move-in set for Thursday morning.");
   const agnes = remember({ code: "agnes", firstName: "Agnes", lastName: "Whitfield", sex: "female", dateOfBirth: "1940-02-11", payer: "private", reps: [{ firstName: "Janet", lastName: "Whitfield", email: familyEmail("Janet", "Whitfield", 61), phone: familyPhone(61), roles: ["healthcare_poa", "financial_responsible", "family"], contactPriority: 1 }] });
   al.push(agnes);
   const agnesAdmit = at(-3, "10:30");
-  schedule(plus(agnesAdmit, -1), () => admit({ r: agnes, when: agnesAdmit, place: { apt: agnesApt }, reserved: true, source: "community_home", agreement: "same", prospect: ref(agnesLead, "prospectId"), reservation: ref(key("waitlist_offer", "agnes"), "reservationId") }));
+  schedule(plus(agnesAdmit, -1), () => admit({ r: agnes, when: agnesAdmit, place: { apt: agnesApt }, reserved: true, source: "community_home", agreement: "same", prospect: ref2(agnesLead, "prospectId"), reservation: ref2(key("waitlist_offer", "agnes"), "reservationId") }));
   const eleanorRef = key("referral", "eleanor");
   const refAt = at(-10, "13:20");
   schedule(refAt, () => emit("referral", "eleanor", PATEL, refAt, { sourceId: "seed_referral_source_scioto_ridge", firstName: "Eleanor", lastName: "Whitcombe", dateOfBirth: "1938-09-21", desiredSetting: "nursing_facility", expectedPayer: "medicare_a", clinicalSummary: "Right hip fracture after a fall at home; ORIF on hospital day 1. Weight bearing as tolerated. Needs PT/OT five days a week, pain management and wound checks.", pasrrLevel1: { completedAt: at(-11, "16:00").toISOString(), result: "Level I negative: Level II not required." }, responseHours: 4, receivedAt: refAt.toISOString() }));
-  const referralMove = (id, refKey, when5, to, extra = {}) => schedule(when5, () => emit("referral_move", id, PATEL, when5, { referral: ref(refKey, "referralId"), to, ...extra }));
+  const referralMove = (id, refKey, when6, to, extra = {}) => schedule(when6, () => emit("referral_move", id, PATEL, when6, { referral: ref2(refKey, "referralId"), to, ...extra }));
   referralMove("eleanor_review", eleanorRef, at(-10, "13:50"), "clinical_review");
   referralMove("eleanor_payer", eleanorRef, at(-10, "14:30"), "payer_check");
   const eleanorAccept = at(-10, "15:10");
   schedule(eleanorAccept, () => {
     places.bed(NAMED_BEDS.eleanor).status = "reserved";
-    emit("referral_move", "eleanor_accept", PATEL, eleanorAccept, { referral: ref(eleanorRef, "referralId"), to: "accepted", bedId: NAMED_BEDS.eleanor, reservationHours: 48 });
+    emit("referral_move", "eleanor_accept", PATEL, eleanorAccept, { referral: ref2(eleanorRef, "referralId"), to: "accepted", bedId: NAMED_BEDS.eleanor, reservationHours: 48 });
   });
   const eleanor = remember({ code: "eleanor", firstName: "Eleanor", lastName: "Whitcombe", sex: "female", dateOfBirth: "1938-09-21", payer: "medicare_a", reps: [{ firstName: "Catherine", lastName: "Whitcombe-Shaw", email: familyEmail("Catherine", "WhitcombeShaw", 2), phone: familyPhone(9), roles: ["healthcare_poa", "family"], contactPriority: 1 }, { firstName: "Robert", lastName: "Whitcombe", email: familyEmail("Robert", "Whitcombe", 4), phone: familyPhone(10), roles: ["financial_responsible", "family"], contactPriority: 2 }] });
-  admit({ r: eleanor, when: at(-9, "15:30"), place: { bed: NAMED_BEDS.eleanor }, reserved: true, source: "acute_hospital", agreement: "later", qualifying: true, prospect: ref(eleanorRef, "prospectId"), reservation: ref(key("referral_move", "eleanor_accept"), "reservationId") });
+  admit({ r: eleanor, when: at(-9, "15:30"), place: { bed: NAMED_BEDS.eleanor }, reserved: true, source: "acute_hospital", agreement: "later", qualifying: true, prospect: ref2(eleanorRef, "prospectId"), reservation: ref2(key("referral_move", "eleanor_accept"), "reservationId") });
   const theoRef = key("referral", "theodore");
   const theoAt = at(-1, "11:05");
   schedule(theoAt, () => emit("referral", "theodore", PATEL, theoAt, { sourceId: "seed_referral_source_alum_creek", firstName: "Theodore", lastName: "Brannigan", dateOfBirth: "1944-04-03", desiredSetting: "nursing_facility", expectedPayer: "medicare_advantage", clinicalSummary: "Community-acquired pneumonia with deconditioning; on oxygen 2 L, weaning. Needs therapy and IV antibiotic completion.", pasrrLevel1: { completedAt: at(-2, "17:30").toISOString(), result: "Level I negative: Level II not required." }, responseHours: 4, receivedAt: theoAt.toISOString() }));
@@ -6344,16 +6692,16 @@ function buildCensusPlan(options) {
   schedule(T, () => {
     const id = places.freeBed(["BIR"], "male");
     places.bed(id).status = "reserved";
-    emit("referral_move", "theodore_accept", PATEL, T, { referral: ref(theoRef, "referralId"), to: "accepted", bedId: id, reservationHours: 72 });
+    emit("referral_move", "theodore_accept", PATEL, T, { referral: ref2(theoRef, "referralId"), to: "accepted", bedId: id, reservationHours: 72 });
   });
   const fischerLead = phoneLead("nf_waitlist", at(-25, "11:30"), { contactName: "Brian Lindgren", relationship: "Son", forWhom: ["Gerald", "Lindgren"], setting: "nursing_facility", message: "Father has Parkinson's disease; home care is no longer enough. Medicaid application filed.", n: 63 });
   const nfWlAt = at(-21, "10:00");
-  schedule(nfWlAt, () => emit("waitlist_add", "nf_waitlist", PATEL, nfWlAt, { lead: ref(fischerLead, "leadId"), prospect: ref(fischerLead, "prospectId"), setting: "nursing_facility", apartmentTypeId: null, priorityReason: "date_order" }));
+  schedule(nfWlAt, () => emit("waitlist_add", "nf_waitlist", PATEL, nfWlAt, { lead: ref2(fischerLead, "leadId"), prospect: ref2(fischerLead, "prospectId"), setting: "nursing_facility", apartmentTypeId: null, priorityReason: "date_order" }));
   leadMove("nf_waitlisted", fischerLead, plus(nfWlAt, 5), "waitlisted");
   schedule(T, () => {
     const id = places.freeBed(["CED", "WIL", "ASP"], "male");
     places.bed(id).status = "reserved";
-    emit("waitlist_offer", "nf_waitlist", PATEL, T, { entry: ref(key("waitlist_add", "nf_waitlist"), "waitlistEntryId"), bedId: id, hours: 72 });
+    emit("waitlist_offer", "nf_waitlist", PATEL, T, { entry: ref2(key("waitlist_add", "nf_waitlist"), "waitlistEntryId"), bedId: id, hours: 72 });
   });
   if (P.fullSales) {
     const mcWlAt = at(-14, "20:12");
@@ -6381,9 +6729,9 @@ function buildCensusPlan(options) {
       { id: "web_4", day: -1, time: "12:05", name: "Douglas Pellegrino", forWhom: ["Ethel", "Pellegrino"], setting: "memory_care", message: "Mom has dementia and is getting lost. What does memory care cost?" }
     ];
     web.forEach((w, i) => {
-      const when5 = at(w.day, w.time);
+      const when6 = at(w.day, w.time);
       const [first, ...rest] = w.name.split(" ");
-      schedule(when5, () => emit("inquiry_web", w.id, PUBLIC, when5, { communitySlug: COMMUNITY.slug, contactName: w.name, contactEmail: familyEmail(first, rest.join(""), 70 + i), contactPhone: familyPhone(70 + i), relationship: "Family", message: w.message, forWhomFirstName: w.forWhom[0], forWhomLastName: w.forWhom[1], desiredSetting: w.setting, consentToContact: true, website: "" }));
+      schedule(when6, () => emit("inquiry_web", w.id, PUBLIC, when6, { communitySlug: COMMUNITY.slug, contactName: w.name, contactEmail: familyEmail(first, rest.join(""), 70 + i), contactPhone: familyPhone(70 + i), relationship: "Family", message: w.message, forWhomFirstName: w.forWhom[0], forWhomLastName: w.forWhom[1], desiredSetting: w.setting, consentToContact: true, website: "" }));
     });
     const contacted = [
       ["call_1", -12, "Karen Zielinski", ["Doris", "Zielinski"], "assisted_living", "Asked about respite stays while the family travels."],
@@ -6392,16 +6740,16 @@ function buildCensusPlan(options) {
       ["call_4", -5, "Kevin Dawkins", ["Earl", "Dawkins"], "independent_living", "Couple selling their house in spring; wants a waitlist position."],
       ["call_5", -4, "Denise Fairbanks", ["Virginia", "Fairbanks"], "assisted_living", "Price comparison with two other communities."]
     ];
-    contacted.forEach(([id, day3, name, forWhom, setting, message], i) => {
-      const lead = phoneLead(id, at(day3, "11:20"), { contactName: name, relationship: "Son or daughter", forWhom: [forWhom[0], forWhom[1]], setting, message, n: 80 + i });
-      activity(`${id}_email`, lead, at(day3, "15:05"), "email", "Sent the brochure, pricing sheet and the dining menu.");
+    contacted.forEach(([id, day4, name, forWhom, setting, message], i) => {
+      const lead = phoneLead(id, at(day4, "11:20"), { contactName: name, relationship: "Son or daughter", forWhom: [forWhom[0], forWhom[1]], setting, message, n: 80 + i });
+      activity(`${id}_email`, lead, at(day4, "15:05"), "email", "Sent the brochure, pricing sheet and the dining menu.");
     });
     const futureSlots = [];
     for (let d = 1; d <= 14; d += 1) {
-      const day3 = date2(d);
-      const weekday2 = (/* @__PURE__ */ new Date(`${day3}T12:00:00Z`)).getUTCDay();
+      const day4 = date2(d);
+      const weekday2 = (/* @__PURE__ */ new Date(`${day4}T12:00:00Z`)).getUTCDay();
       if (weekday2 === 0) continue;
-      for (const time2 of weekday2 === 6 ? ["11:00"] : ["10:00", "14:00"]) futureSlots.push({ startsAt: zonedInstant(tz, day3, time2).toISOString(), minutes: 45, capacity: 2, kind: "either" });
+      for (const time2 of weekday2 === 6 ? ["11:00"] : ["10:00", "14:00"]) futureSlots.push({ startsAt: zonedInstant(tz, day4, time2).toISOString(), minutes: 45, capacity: 2, kind: "either" });
     }
     schedule(T, () => emit("tour_slots", "next_two_weeks", PATEL, T, { slots: futureSlots.slice(0, 60) }));
     const upcoming = [
@@ -6409,14 +6757,14 @@ function buildCensusPlan(options) {
       ["tour_2", -4, "Julie Thibodeaux", ["Lorraine", "Thibodeaux"], "memory_care", 3],
       ["tour_3", -3, "Gregory Jessup", ["Raymond", "Jessup"], "independent_living", 6]
     ];
-    upcoming.forEach(([id, day3, name, forWhom, setting, slotIndex], i) => {
-      const lead = phoneLead(id, at(day3, "10:05"), { contactName: name, relationship: "Family", forWhom: [forWhom[0], forWhom[1]], setting, message: "Wants to see the apartments and have lunch in the dining room.", n: 90 + i });
+    upcoming.forEach(([id, day4, name, forWhom, setting, slotIndex], i) => {
+      const lead = phoneLead(id, at(day4, "10:05"), { contactName: name, relationship: "Family", forWhom: [forWhom[0], forWhom[1]], setting, message: "Wants to see the apartments and have lunch in the dining room.", n: 90 + i });
       const s = futureSlots[slotIndex];
-      schedule(T, () => emit("tour_schedule", id, PATEL, T, { lead: ref(lead, "leadId"), slotStartsAt: s.startsAt, kind: "in_person", notes: "Lunch in the bistro after the tour." }));
+      schedule(T, () => emit("tour_schedule", id, PATEL, T, { lead: ref2(lead, "leadId"), slotStartsAt: s.startsAt, kind: "in_person", notes: "Lunch in the bistro after the tour." }));
     });
     const webTourSlot = futureSlots[4];
     schedule(T, () => emit("tour_request_web", "web_tour", PUBLIC, T, { communitySlug: COMMUNITY.slug, slotStartsAt: webTourSlot.startsAt, kind: "in_person", contactName: "Tamara Wexler", contactEmail: familyEmail("Tamara", "Wexler", 95), contactPhone: familyPhone(95), notes: "Coming with my brother.", consentToContact: true }));
-    schedule(T, () => emit("tour_move", "web_tour_confirm", PATEL, T, { tour: ref(key("tour_request_web", "web_tour"), "tourId"), to: "confirmed", reason: null }));
+    schedule(T, () => emit("tour_move", "web_tour_confirm", PATEL, T, { tour: ref2(key("tour_request_web", "web_tour"), "tourId"), to: "confirmed", reason: null }));
     const toured = phoneLead("toured_1", at(-19, "09:40"), { contactName: "Lisa Nakamura", relationship: "Daughter", forWhom: ["Margaret", "Nakamura"], setting: "assisted_living", message: "Mother is moving from Dayton to be closer to family.", n: 101 });
     tour("toured_1", toured, at(-16, "10:00"), at(-18, "14:00"), "completed");
     activity("toured_1_note", toured, at(-16, "11:30"), "note", "Loved the courtyard studio; wants to compare with one more community before deciding.");
@@ -6447,46 +6795,46 @@ function buildCensusPlan(options) {
   const portal = portalCandidates.filter((_, i) => i % stride === 0).slice(0, P.portalAccounts);
   portal.forEach((r, i) => {
     const admittedDay = Math.ceil((admittedAt.get(r.code).getTime() - T.getTime()) / 864e5) - 1;
-    let day3 = Math.max(-50 + Math.floor(i * 44 / Math.max(1, portal.length)), admittedDay + 2);
+    let day4 = Math.max(-50 + Math.floor(i * 44 / Math.max(1, portal.length)), admittedDay + 2);
     const pending = i >= portal.length - Math.max(1, Math.round(P.portalAccounts / 8));
-    if (pending || day3 > -2) day3 = -2;
-    const inviteAt = at(day3, "10:00");
+    if (pending || day4 > -2) day4 = -2;
+    const inviteAt = at(day4, "10:00");
     const rep = r.reps[0];
-    schedule(inviteAt, () => emit("invite", r.code, BROOKS, inviteAt, { resident: ref(key("admit", r.code), "residentId"), priority: rep.contactPriority }));
+    schedule(inviteAt, () => emit("invite", r.code, BROOKS, inviteAt, { resident: ref2(key("admit", r.code), "residentId"), priority: rep.contactPriority }));
     if (pending) return;
-    const acceptAt2 = at(day3, "20:30");
-    schedule(acceptAt2, () => emit("accept", r.code, PUBLIC, acceptAt2, { account: ref(key("invite", r.code), "accountId") }));
+    const acceptAt2 = at(day4, "20:30");
+    schedule(acceptAt2, () => emit("accept", r.code, PUBLIC, acceptAt2, { account: ref2(key("invite", r.code), "accountId") }));
     const roles = rep.roles;
     const scopes = roles.includes("guardian") ? ["updates", "calendar", "care_summary", "documents", "statements", "trust_balance"] : roles.includes("healthcare_poa") && roles.includes("financial_responsible") ? ["updates", "calendar", "documents", "care_summary", "statements"] : roles.includes("healthcare_poa") ? ["updates", "calendar", "documents", "care_summary"] : ["updates", "calendar", "statements", "payments"];
-    const proposeAt = at(day3 + 1, "09:15");
-    schedule(proposeAt, () => emit("scope_propose", r.code, PATEL, proposeAt, { resident: ref(key("admit", r.code), "residentId"), priority: rep.contactPriority, scopes }));
+    const proposeAt = at(day4 + 1, "09:15");
+    schedule(proposeAt, () => emit("scope_propose", r.code, PATEL, proposeAt, { resident: ref2(key("admit", r.code), "residentId"), priority: rep.contactPriority, scopes }));
     const awaiting = i >= portal.length - Math.max(1, Math.round(P.portalAccounts / 10)) - Math.max(1, Math.round(P.portalAccounts / 8));
-    if (!awaiting && day3 + 1 <= -1) {
-      const grantAt = at(day3 + 1, "13:40");
-      schedule(grantAt, () => emit("scope_grant", r.code, BROOKS, grantAt, { proposals: ref(key("scope_propose", r.code), "grantIds") }));
+    if (!awaiting && day4 + 1 <= -1) {
+      const grantAt = at(day4 + 1, "13:40");
+      schedule(grantAt, () => emit("scope_grant", r.code, BROOKS, grantAt, { proposals: ref2(key("scope_propose", r.code), "grantIds") }));
     }
   });
   const bgAt = at(-6, "22:40");
   schedule(bgAt, () => {
     const code = [...places.where.entries()].find(([c, w]) => w.status === "in_house" && w.bed && places.bed(w.bed).unit === "WIL" && !ending.has(c))?.[0];
     if (!code) throw new Error("Seed plan: no Willow resident for break-glass");
-    emit("break_glass_open", "night_cover", RAMOS, bgAt, { resident: ref(key("admit", code), "residentId"), reason: "coverage_gap", note: "Covering Willow overnight after a call-off; needed the medication history for a resident with chest pain.", hours: 2 });
+    emit("break_glass_open", "night_cover", RAMOS, bgAt, { resident: ref2(key("admit", code), "residentId"), reason: "coverage_gap", note: "Covering Willow overnight after a call-off; needed the medication history for a resident with chest pain.", hours: 2 });
     const endAt = plus(bgAt, 50);
-    schedule(endAt, () => emit("break_glass_end", "night_cover", RAMOS, endAt, { grant: ref(key("break_glass_open", "night_cover"), "grantId") }));
+    schedule(endAt, () => emit("break_glass_end", "night_cover", RAMOS, endAt, { grant: ref2(key("break_glass_open", "night_cover"), "grantId") }));
     const reviewAt = at(-5, "10:15");
-    schedule(reviewAt, () => emit("break_glass_review", "night_cover", FERREIRA_KAHN, reviewAt, { grant: ref(key("break_glass_open", "night_cover"), "grantId"), outcome: "reviewed_ok", note: "Matches the staffing log: Willow call-off that night. Access limited to the medication record. Appropriate." }));
+    schedule(reviewAt, () => emit("break_glass_review", "night_cover", FERREIRA_KAHN, reviewAt, { grant: ref2(key("break_glass_open", "night_cover"), "grantId"), outcome: "reviewed_ok", note: "Matches the staffing log: Willow call-off that night. Access limited to the medication record. Appropriate." }));
   });
   const bg2 = at(-2, "05:20");
   schedule(bg2, () => {
     const code = [...places.where.entries()].find(([c, w]) => w.status === "in_house" && w.bed && places.bed(w.bed).unit === "CED" && !ending.has(c))?.[0];
     if (!code) throw new Error("Seed plan: no Cedar resident for break-glass");
-    emit("break_glass_open", "rapid_response", LINDQVIST, bg2, { resident: ref(key("admit", code), "residentId"), reason: "emergency_care", note: "Rapid response on Cedar; reviewed the advance directives and code status while the charge nurse called 911.", hours: 1 });
+    emit("break_glass_open", "rapid_response", LINDQVIST, bg2, { resident: ref2(key("admit", code), "residentId"), reason: "emergency_care", note: "Rapid response on Cedar; reviewed the advance directives and code status while the charge nurse called 911.", hours: 1 });
     const endAt = plus(bg2, 35);
-    schedule(endAt, () => emit("break_glass_end", "rapid_response", LINDQVIST, endAt, { grant: ref(key("break_glass_open", "rapid_response"), "grantId") }));
+    schedule(endAt, () => emit("break_glass_end", "rapid_response", LINDQVIST, endAt, { grant: ref2(key("break_glass_open", "rapid_response"), "grantId") }));
   });
   for (let d = -(P.signOffDays + 1); d <= -2; d += 1) {
-    const when5 = at(d + 1, "09:30");
-    schedule(when5, () => emit("sign_off", date2(d), LINDQVIST, when5, { date: date2(d), note: d === -9 ? "Reconciled with the Birch hospital transfer log." : null }));
+    const when6 = at(d + 1, "09:30");
+    schedule(when6, () => emit("sign_off", date2(d), LINDQVIST, when6, { date: date2(d), note: d === -9 ? "Reconciled with the Birch hospital transfer log." : null }));
   }
   schedule(T, () => emit("snapshot", date2(-1), SCHEDULER, T, { date: date2(-1) }));
   schedule(T, () => emit("clock_sweep", "anchor", SCHEDULER, T, {}));
@@ -6839,28 +7187,359 @@ async function runCensusSeed(db, options = {}) {
   return { preset, anchor: anchor.toISOString(), total: steps.length, done, finished: done === steps.length, created };
 }
 
-// features/keystone/mutations/setup.ts
-async function loadOperatorSetup(_root, args, context) {
-  const actor = actorFromSession(context.session);
-  requirePermission(actor, "canManageOnboarding");
-  const result = await command(context.prisma, { name: "setup.load_operator", actor, idempotencyKey: args.idempotencyKey, params: {} }, (uow) => seedOperatorPlatform(uow, actor));
-  return { replay: result.replay, ...result.value };
+// features/keystone/seed/clinical.ts
+init_actor();
+
+// features/keystone/lib/clinical/assessments.ts
+var import_zod = require("zod");
+init_cas();
+init_errors();
+init_common();
+var TemplateDefinition = import_zod.z.object({
+  items: import_zod.z.array(import_zod.z.object({
+    key: import_zod.z.string().min(1),
+    prompt: import_zod.z.string().min(1),
+    options: import_zod.z.array(import_zod.z.object({ value: import_zod.z.string().min(1), label: import_zod.z.string().min(1), points: import_zod.z.number().int() })).min(2)
+  })).min(1),
+  bands: import_zod.z.array(import_zod.z.object({ min: import_zod.z.number().int(), label: import_zod.z.string().min(1) })).min(1),
+  /** 'higher_worse' scores read as risk (Braden is the reverse), kept for display only. */
+  direction: import_zod.z.enum(["higher_worse", "higher_better"])
+});
+var SCORERS = {
+  sum(def, answers) {
+    let score = 0;
+    for (const item of def.items) {
+      const chosen = item.options.find((o) => o.value === answers[item.key]);
+      if (!chosen) throw new DomainError(Codes.INVALID_INPUT, `Answer "${item.prompt}".`, { field: item.key });
+      score += chosen.points;
+    }
+    const band = [...def.bands].sort((a, b) => b.min - a.min).find((b) => score >= b.min) ?? def.bands[0];
+    return { score, band: band.label };
+  }
+};
+var opts = (...pairs) => pairs.map(([value, label2, points]) => ({ value, label: label2, points }));
+var braden = {
+  direction: "higher_better",
+  items: [
+    { key: "sensory", prompt: "Sensory perception", options: opts(["1", "Completely limited", 1], ["2", "Very limited", 2], ["3", "Slightly limited", 3], ["4", "No impairment", 4]) },
+    { key: "moisture", prompt: "Moisture", options: opts(["1", "Constantly moist", 1], ["2", "Very moist", 2], ["3", "Occasionally moist", 3], ["4", "Rarely moist", 4]) },
+    { key: "activity", prompt: "Activity", options: opts(["1", "Bedfast", 1], ["2", "Chairfast", 2], ["3", "Walks occasionally", 3], ["4", "Walks frequently", 4]) },
+    { key: "mobility", prompt: "Mobility", options: opts(["1", "Completely immobile", 1], ["2", "Very limited", 2], ["3", "Slightly limited", 3], ["4", "No limitation", 4]) },
+    { key: "nutrition", prompt: "Nutrition", options: opts(["1", "Very poor", 1], ["2", "Probably inadequate", 2], ["3", "Adequate", 3], ["4", "Excellent", 4]) },
+    { key: "friction", prompt: "Friction and shear", options: opts(["1", "Problem", 1], ["2", "Potential problem", 2], ["3", "No apparent problem", 3]) }
+  ],
+  bands: [{ min: 0, label: "Very high risk" }, { min: 10, label: "High risk" }, { min: 13, label: "Moderate risk" }, { min: 15, label: "Mild risk" }, { min: 19, label: "No risk" }]
+};
+var morse = {
+  direction: "higher_worse",
+  items: [
+    { key: "history", prompt: "History of falling (in the last 3 months)", options: opts(["no", "No", 0], ["yes", "Yes", 25]) },
+    { key: "secondary", prompt: "Secondary diagnosis", options: opts(["no", "No", 0], ["yes", "Yes", 15]) },
+    { key: "aid", prompt: "Ambulatory aid", options: opts(["none", "None, bed rest, nurse assist", 0], ["crutches", "Crutches, cane, walker", 15], ["furniture", "Furniture", 30]) },
+    { key: "iv", prompt: "IV or heparin lock", options: opts(["no", "No", 0], ["yes", "Yes", 20]) },
+    { key: "gait", prompt: "Gait", options: opts(["normal", "Normal, bed rest, wheelchair", 0], ["weak", "Weak", 10], ["impaired", "Impaired", 20]) },
+    { key: "mental", prompt: "Mental status", options: opts(["oriented", "Oriented to own ability", 0], ["forgets", "Forgets limitations", 15]) }
+  ],
+  bands: [{ min: 0, label: "Low risk" }, { min: 25, label: "Moderate risk" }, { min: 45, label: "High risk" }]
+};
+var bims = {
+  direction: "higher_better",
+  items: [
+    { key: "repetition", prompt: "Repetition of three words", options: opts(["0", "None", 0], ["1", "One", 1], ["2", "Two", 2], ["3", "Three", 3]) },
+    { key: "year", prompt: "Year", options: opts(["0", "Missed by >5 years or no answer", 0], ["1", "Missed by 2-5 years", 1], ["2", "Missed by 1 year", 2], ["3", "Correct", 3]) },
+    { key: "month", prompt: "Month", options: opts(["0", "Missed by >1 month or no answer", 0], ["1", "Missed by 6 days to 1 month", 1], ["2", "Accurate within 5 days", 2]) },
+    { key: "day", prompt: "Day of the week", options: opts(["0", "Incorrect or no answer", 0], ["1", "Correct", 1]) },
+    { key: "recall_sock", prompt: "Recall: sock", options: opts(["0", "No, could not recall", 0], ["1", "Yes, after cueing", 1], ["2", "Yes, no cue required", 2]) },
+    { key: "recall_blue", prompt: "Recall: blue", options: opts(["0", "No, could not recall", 0], ["1", "Yes, after cueing", 1], ["2", "Yes, no cue required", 2]) },
+    { key: "recall_bed", prompt: "Recall: bed", options: opts(["0", "No, could not recall", 0], ["1", "Yes, after cueing", 1], ["2", "Yes, no cue required", 2]) }
+  ],
+  bands: [{ min: 0, label: "Severe impairment" }, { min: 8, label: "Moderate impairment" }, { min: 13, label: "Cognitively intact" }]
+};
+var phqItems = ["Little interest or pleasure", "Feeling down, depressed or hopeless", "Trouble sleeping or sleeping too much", "Feeling tired or little energy", "Poor appetite or overeating", "Feeling bad about yourself", "Trouble concentrating", "Moving or speaking slowly, or restless", "Thoughts of being better off dead or of self-harm"];
+var phq9 = {
+  direction: "higher_worse",
+  items: phqItems.map((prompt, i) => ({ key: `q${i + 1}`, prompt, options: opts(["0", "Not at all", 0], ["1", "Several days", 1], ["2", "More than half the days", 2], ["3", "Nearly every day", 3]) })),
+  bands: [{ min: 0, label: "Minimal" }, { min: 5, label: "Mild" }, { min: 10, label: "Moderate" }, { min: 15, label: "Moderately severe" }, { min: 20, label: "Severe" }]
+};
+var painad = {
+  direction: "higher_worse",
+  items: [
+    { key: "breathing", prompt: "Breathing", options: opts(["0", "Normal", 0], ["1", "Occasional laboured breathing", 1], ["2", "Noisy, long hyperventilation, Cheyne-Stokes", 2]) },
+    { key: "vocalisation", prompt: "Negative vocalisation", options: opts(["0", "None", 0], ["1", "Occasional moan or groan", 1], ["2", "Repeated calling out, crying", 2]) },
+    { key: "face", prompt: "Facial expression", options: opts(["0", "Smiling or inexpressive", 0], ["1", "Sad, frightened, frown", 1], ["2", "Facial grimacing", 2]) },
+    { key: "body", prompt: "Body language", options: opts(["0", "Relaxed", 0], ["1", "Tense, fidgeting", 1], ["2", "Rigid, fists clenched, striking out", 2]) },
+    { key: "consolability", prompt: "Consolability", options: opts(["0", "No need to console", 0], ["1", "Distracted or reassured by voice or touch", 1], ["2", "Unable to console", 2]) }
+  ],
+  bands: [{ min: 0, label: "No pain" }, { min: 1, label: "Mild pain" }, { min: 4, label: "Moderate pain" }, { min: 7, label: "Severe pain" }]
+};
+var elopement = {
+  direction: "higher_worse",
+  items: [
+    { key: "history", prompt: "History of elopement or exit-seeking", options: opts(["no", "No", 0], ["yes", "Yes", 3]) },
+    { key: "cognition", prompt: "Cognitive impairment", options: opts(["none", "None", 0], ["mild", "Mild", 1], ["moderate", "Moderate or severe", 2]) },
+    { key: "wandering", prompt: "Wanders or paces", options: opts(["no", "No", 0], ["yes", "Yes", 2]) },
+    { key: "statements", prompt: "Says they want to leave or go home", options: opts(["no", "No", 0], ["yes", "Yes", 2]) },
+    { key: "mobility", prompt: "Can walk or self-propel a wheelchair", options: opts(["no", "No", 0], ["yes", "Yes", 1]) }
+  ],
+  bands: [{ min: 0, label: "Low risk" }, { min: 4, label: "Moderate risk" }, { min: 7, label: "High risk" }]
+};
+var ohioAl = {
+  direction: "higher_worse",
+  items: ["Bathing", "Dressing", "Toileting", "Transfers", "Eating", "Medication management", "Cognition and orientation", "Behaviours"].map((prompt, i) => ({
+    key: `al${i + 1}`,
+    prompt,
+    options: opts(["0", "Independent", 0], ["1", "Needs cueing or standby help", 1], ["2", "Needs hands-on help", 2], ["3", "Total help", 3])
+  })),
+  bands: [{ min: 0, label: "Care level 1 (minimal)" }, { min: 5, label: "Care level 2" }, { min: 11, label: "Care level 3" }, { min: 18, label: "Care level 4" }]
+};
+var TEMPLATE_SEEDS = [
+  { code: "braden", name: "Braden scale (pressure injury risk)", definition: braden, sourceNote: "Braden & Bergstrom 1987.", verifyNote: "" },
+  { code: "morse", name: "Morse Fall Scale", definition: morse, sourceNote: "Morse 1989.", verifyNote: "Risk cut-offs are facility policy (verify)." },
+  { code: "bims", name: "BIMS (cognition)", definition: bims, sourceNote: "MDS 3.0 C0500.", verifyNote: "" },
+  { code: "phq9", name: "PHQ-9 (depression)", definition: phq9, sourceNote: "Kroenke 2001.", verifyNote: "" },
+  { code: "painad", name: "PAINAD (pain in dementia)", definition: painad, sourceNote: "Warden 2003.", verifyNote: "" },
+  { code: "elopement", name: "Elopement risk", definition: elopement, sourceNote: "Operator screen.", verifyNote: "Weights and cut-offs are operator policy (verify)." },
+  { code: "oh_al_resident", name: "Ohio assisted-living resident assessment", definition: ohioAl, sourceNote: "Generic ADL points sheet.", verifyNote: "Verify against the OAC 3701-16/3701-17 prescribed form." }
+];
+async function seedAssessmentTemplates(uow, actor) {
+  let created = 0;
+  for (const seed of TEMPLATE_SEEDS) {
+    TemplateDefinition.parse(seed.definition);
+    if (await uow.tx.assessmentTemplate.findFirst({ where: { code: seed.code } })) continue;
+    const row = await uow.tx.assessmentTemplate.create({ data: { code: seed.code, name: seed.name, templateVersion: 1, scorer: "sum", definition: seed.definition, sourceNote: seed.sourceNote, verifyNote: seed.verifyNote, status: "active" } });
+    auditCreate(uow, actor, "AssessmentTemplate", row.id, "assessment_template.loaded", { code: seed.code });
+    created += 1;
+  }
+  return { created };
 }
-async function loadCensusSetup(_root, _args, context) {
-  const actor = actorFromSession(context.session);
-  requirePermission(actor, "canManageOnboarding");
-  const progress = await runCensusSeed(context.prisma, { budgetMs: 9e3 });
-  return { ...progress, created: progress.created };
+async function completeAssessment(uow, actor, input) {
+  const resident = await residentFor(uow.tx, input.residentId);
+  const template = await uow.tx.assessmentTemplate.findFirst({ where: { code: input.templateCode, status: "active" }, orderBy: { templateVersion: "desc" } });
+  if (!template) return notFound("Assessment template");
+  const parsed = TemplateDefinition.safeParse(template.definition);
+  if (!parsed.success) return invalid("This template is malformed.");
+  if (!input.answers || typeof input.answers !== "object") return invalid("Answer every question.", "answers");
+  const scorer = SCORERS[template.scorer];
+  if (!scorer) return invalid("This template has no scorer.");
+  const { score, band } = scorer(parsed.data, input.answers);
+  const row = await uow.tx.assessment.create({
+    data: { residentId: resident.id, communityId: resident.communityId, templateId: template.id, templateCode: template.code, templateVersion: template.templateVersion, answers: input.answers, score, band, status: "completed", completedAt: uow.now, completedById: userOf(actor) }
+  });
+  auditCreate(uow, actor, "Assessment", row.id, "assessment.completed", { template: template.code, score, band, residentId: resident.id });
+  if (template.code === "morse") await uow.tx.resident.update({ where: { id: resident.id }, data: { fallRisk: band } });
+  if (template.code === "elopement") await uow.tx.resident.update({ where: { id: resident.id }, data: { elopementRisk: band } });
+  const { createTask: createTask2, ROLE_NAMES: ROLE_NAMES2 } = await Promise.resolve().then(() => (init_common(), common_exports));
+  if (template.code === "phq9" && input.answers.q9 && input.answers.q9 !== "0") {
+    await createTask2(uow, actor, { communityId: resident.communityId, residentId: resident.id, kind: "escalation", title: "PHQ-9 item 9 answered: same-day clinical review", ownerRole: ROLE_NAMES2.charge, escalationOwnerRole: ROLE_NAMES2.don, dueAt: new Date(uow.now.getTime() + 4 * 36e5), dedupeKey: `phq9-item9:${row.id}`, subjectType: "Assessment", subjectId: row.id });
+  }
+  return { assessmentId: row.id, score, band };
 }
 
-// features/keystone/mutations/audit.ts
-async function verifyAuditChain2(_root, _args, context) {
-  const actor = actorFromSession(context.session);
-  requirePermission(actor, "canReadAudit");
-  return verifyAuditChain(context.prisma);
+// features/keystone/lib/clinical/plans.ts
+init_cas();
+init_errors();
+init_common();
+var FREQUENCIES = ["once", "every_shift", "daily", "twice_daily", "weekly", "as_needed"];
+async function createCarePlan(uow, actor, input) {
+  const resident = await residentFor(uow.tx, input.residentId);
+  const kind = oneOf(input.kind, ["baseline", "comprehensive", "service_plan"], "plan type");
+  if (!Array.isArray(input.items) || !input.items.length) invalid("Add at least one focus, goal or intervention.", "items");
+  const previous = await uow.tx.carePlan.findFirst({ where: { residentId: resident.id, kind, status: { in: ["active", "draft"] } }, orderBy: { revision: "desc" } });
+  const plan = await uow.tx.carePlan.create({
+    data: {
+      residentId: resident.id,
+      communityId: resident.communityId,
+      reference: await ref(uow, "CPL"),
+      kind,
+      status: "draft",
+      revision: (previous?.revision ?? 0) + 1,
+      supersedesId: previous?.status === "active" ? previous.id : null,
+      basedOnAssessmentId: input.basedOnAssessmentId ?? null,
+      proposalId: input.proposalId ?? null
+    }
+  });
+  const made = [];
+  for (const item of input.items) {
+    const parentId = item.parentIndex != null ? made[item.parentIndex] ?? null : null;
+    const row = await uow.tx.carePlanItem.create({
+      data: {
+        residentId: resident.id,
+        communityId: resident.communityId,
+        carePlanId: plan.id,
+        kind: oneOf(item.kind, ["focus", "goal", "intervention"], "item type"),
+        parentId,
+        text: text14(item.text, "Item text"),
+        discipline: item.discipline ?? "nursing",
+        frequency: item.frequency ? oneOf(item.frequency, FREQUENCIES, "frequency") : "as_needed",
+        targetDate: item.targetDate ? /* @__PURE__ */ new Date(`${item.targetDate}T00:00:00Z`) : null,
+        status: "active"
+      }
+    });
+    made.push(row.id);
+  }
+  auditCreate(uow, actor, "CarePlan", plan.id, "care_plan.drafted", { kind, revision: plan.revision, items: made.length, proposalId: input.proposalId ?? null });
+  return { carePlanId: plan.id, reference: plan.reference, revision: plan.revision };
 }
+async function signCarePlan(uow, actor, input) {
+  const plan = await lockRow(uow.tx, "CarePlan", input.carePlanId);
+  if (input.expectedVersion != null && input.expectedVersion !== plan.version) throw new DomainError(Codes.STALE_STATE, "The plan changed. Reload and try again.", { currentVersion: plan.version });
+  if (plan.status !== "draft") throw new DomainError(Codes.INVALID_TRANSITION, "Only a draft plan is signed.", { currentStatus: plan.status });
+  if (plan.supersedesId) {
+    const old = await lockRow(uow.tx, "CarePlan", plan.supersedesId);
+    await casUpdate(uow, { model: "CarePlan", id: old.id, version: old.version, from: ["active"], to: "superseded", actor, eventType: "care_plan.superseded", metadata: { by: plan.id } });
+  }
+  await casUpdate(uow, { model: "CarePlan", id: plan.id, version: plan.version, from: ["draft"], to: "active", actor, eventType: "care_plan.signed", data: { signedById: userOf(actor), signedAt: uow.now, startedAt: uow.now } });
+  await satisfyByEvidence(uow, actor, { subjectType: "Stay", subjectId: await stayIdOf(uow, plan.residentId) }, { type: `care_plan:${plan.kind}`, id: plan.id, at: uow.now });
+  if (plan.proposalId) {
+    const proposal = await lockRow(uow.tx, "Proposal", plan.proposalId);
+    if (proposal.status === "proposed" || proposal.status === "accepted") {
+      await casUpdate(uow, { model: "Proposal", id: proposal.id, version: proposal.version, from: ["proposed", "accepted"], to: "signed", actor, eventType: "proposal.signed", data: { acceptedById: userOf(actor), resultRecordType: "CarePlan", resultRecordId: plan.id } });
+    }
+  }
+  const slots = await generatePocSlots(uow, plan.id);
+  return { carePlanId: plan.id, status: "active", slots };
+}
+var stayIdOf = async (uow, residentId) => (await uow.tx.resident.findUnique({ where: { id: residentId }, select: { currentStayId: true } }))?.currentStayId ?? "";
+var SHIFTS = ["07:00", "15:00", "23:00"];
+var TIMES = { every_shift: SHIFTS, daily: ["09:00"], twice_daily: ["09:00", "17:00"], weekly: ["09:00"], once: ["09:00"] };
+async function generatePocSlots(uow, carePlanId) {
+  const plan = await uow.tx.carePlan.findUnique({ where: { id: carePlanId }, include: { items: { where: { kind: "intervention", status: "active" } } } });
+  if (!plan?.communityId) return 0;
+  const tz = await communityZone(uow.tx, plan.communityId);
+  const today = localDate(tz, uow.now);
+  let made = 0;
+  for (const item of plan.items) {
+    const times = TIMES[item.frequency ?? ""] ?? [];
+    if (!times.length) continue;
+    if (item.frequency === "weekly" && item.createdAt && uow.now.getTime() - item.createdAt.getTime() > 6e4 && (/* @__PURE__ */ new Date(`${today}T00:00:00Z`)).getUTCDay() !== item.createdAt.getUTCDay()) continue;
+    for (const date2 of [today, addDays(today, 1)]) {
+      for (const hhmm of times) {
+        const dueAt = zonedInstant(tz, date2, hhmm);
+        if (dueAt.getTime() < uow.now.getTime() - 12 * 36e5 || dueAt.getTime() > uow.now.getTime() + 24 * 36e5) continue;
+        const slotKey = `${item.id}:${date2}:${hhmm}`;
+        if (await uow.tx.pocTaskSlot.findUnique({ where: { slotKey } })) continue;
+        await uow.tx.pocTaskSlot.create({ data: { residentId: plan.residentId, communityId: plan.communityId, itemId: item.id, label: item.text.slice(0, 200), dueAt, slotKey, status: "pending" } });
+        made += 1;
+      }
+    }
+  }
+  return made;
+}
+async function enterOrder(uow, actor, input) {
+  const resident = await residentFor(uow.tx, input.residentId);
+  const kind = oneOf(input.kind, ORDER_KINDS, "order type");
+  const source = oneOf(input.source ?? "written", ["written", "electronic", "verbal", "telephone"], "source");
+  const verbal = source === "verbal" || source === "telephone";
+  if (verbal && !input.readBack) invalid("A verbal or telephone order needs a read-back.", "readBack");
+  let allergyOverride = "";
+  if (kind === "medication") {
+    if (!input.medication) invalid("Add the medication details.", "medication");
+    const med = input.medication;
+    const allergies = await uow.tx.allergy.findMany({ where: { residentId: resident.id, status: "active" }, select: { substance: true } });
+    const name = med.drugName.toLowerCase();
+    const hit = allergies.find((a) => a.substance && (name.includes(a.substance.toLowerCase()) || a.substance.toLowerCase().includes(name)));
+    if (hit) {
+      if (!input.allergyOverride?.trim()) throw new DomainError(Codes.GUARD_FAILED, `${resident.firstName} has an allergy recorded for ${hit.substance}. Enter a reason to override.`, { field: "allergyOverride" });
+      allergyOverride = input.allergyOverride.trim();
+    }
+  }
+  const order = await uow.tx.order.create({
+    data: {
+      residentId: resident.id,
+      communityId: resident.communityId,
+      reference: await ref(uow, "ORD"),
+      kind,
+      summary: text14(input.summary, "Order", { max: 500 }),
+      instructions: input.instructions ?? "",
+      source,
+      readBack: Boolean(input.readBack),
+      status: "active",
+      startAt: when5(input.startAt, "startAt", uow.now),
+      stopAt: input.stopAt ? when5(input.stopAt, "stopAt") : null,
+      enteredById: userOf(actor),
+      prescriberId: input.prescriberId ?? null,
+      prescriberName: input.prescriberName ?? "",
+      needsCountersign: verbal,
+      allergyOverride
+    }
+  });
+  auditCreate(uow, actor, "Order", order.id, "order.entered", { kind, source, residentId: resident.id, allergyOverride: allergyOverride || void 0 });
+  if (kind === "medication") {
+    const med = input.medication;
+    const holds = med.holdParameters;
+    if (holds && (!["systolic_bp", "diastolic_bp", "pulse", "spo2", "temperature", "blood_glucose"].includes(holds.vital) || !["lt", "gt"].includes(holds.op) || !Number.isFinite(holds.value))) invalid("Hold parameter is not valid.", "holdParameters");
+    if (!med.prn && !med.times?.length) invalid("Add the administration times.", "times");
+    for (const t of med.times ?? []) if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(t)) invalid("Times look like 08:00.", "times");
+    await uow.tx.medicationOrderDetail.create({
+      data: {
+        residentId: resident.id,
+        communityId: resident.communityId,
+        orderId: order.id,
+        referenceId: med.referenceId ?? null,
+        drugName: text14(med.drugName, "Drug"),
+        dose: String(qty(med.dose, "Dose")),
+        doseUnit: text14(med.doseUnit, "Dose unit"),
+        route: med.route ?? null,
+        prn: Boolean(med.prn),
+        prnReason: med.prnReason ?? "",
+        prnMinIntervalMinutes: med.prnMinIntervalMinutes ?? null,
+        prnFollowUpMinutes: med.prnFollowUpMinutes ?? 60,
+        times: med.times ?? [],
+        holdParameters: holds ?? null,
+        controlled: Boolean(med.controlled)
+      }
+    });
+  }
+  if (verbal) {
+    const dueAt = new Date(uow.now.getTime() + 24 * 36e5);
+    await createTask(uow, actor, { communityId: resident.communityId, residentId: resident.id, kind: "countersign", title: `Countersign ${source} order: ${order.summary.slice(0, 80)}`, ownerRole: "Prescriber", dueAt, escalationOwnerRole: ROLE_NAMES.don, dedupeKey: `countersign:${order.id}`, subjectType: "Order", subjectId: order.id });
+  }
+  return { orderId: order.id, reference: order.reference, needsCountersign: verbal };
+}
+async function countersignOrder(uow, actor, input) {
+  const order = await lockRow(uow.tx, "Order", input.orderId);
+  if (!order.needsCountersign || order.countersignedAt) throw new DomainError(Codes.INVALID_TRANSITION, "This order needs no countersignature.");
+  if (order.enteredById && order.enteredById === userOf(actor)) throw new DomainError(Codes.SELF_APPROVAL, "Someone other than the person who took the order countersigns it.");
+  const result = await uow.tx.order.updateMany({ where: { id: order.id, version: order.version }, data: { countersignedById: userOf(actor), countersignedAt: uow.now, version: { increment: 1 } } });
+  if (result.count !== 1) throw new DomainError(Codes.STALE_STATE, "The order changed. Reload and try again.");
+  uow.audit({ eventType: "order.countersigned", entityType: "Order", entityId: order.id, actorUserId: userOf(actor), before: { countersigned: false }, after: { countersigned: true } });
+  const task = await uow.tx.task.findUnique({ where: { dedupeKey: `countersign:${order.id}` } });
+  if (task && (task.status === "open" || task.status === "in_progress")) await casUpdate(uow, { model: "Task", id: task.id, version: task.version, from: ["open", "in_progress"], to: "done", actor, eventType: "task.done", data: { completedById: userOf(actor), completedAt: uow.now } });
+  return { orderId: order.id };
+}
+async function discontinueOrder(uow, actor, input) {
+  const order = await lockRow(uow.tx, "Order", input.orderId);
+  const reason = text14(input.reason, "Reason", { min: 3 });
+  await casUpdate(uow, { model: "Order", id: order.id, version: order.version, from: ["active"], to: "discontinued", actor, eventType: "order.discontinued", reason, data: { stopAt: uow.now, discontinuedReason: reason } });
+  await uow.tx.administrationSlot.updateMany({ where: { orderId: order.id, status: "scheduled", scheduledFor: { gt: uow.now } }, data: { status: "not_given", settledAt: uow.now, version: { increment: 1 } } });
+  return { orderId: order.id, status: "discontinued" };
+}
+
+// features/keystone/lib/clinical/medications.ts
+init_cas();
+init_errors();
+init_decimal();
+init_common();
+
+// features/keystone/lib/clinical/incidents.ts
+init_cas();
+
+// features/keystone/lib/approvalAppliers.ts
+var appliers = /* @__PURE__ */ new Map();
+function registerApplier(action, apply, options = {}) {
+  if (appliers.has(action)) throw new Error(`Applier for ${action} already registered`);
+  appliers.set(action, { apply, applyOnApprove: options.applyOnApprove ?? true });
+}
+function applierFor(action) {
+  return appliers.get(action) ?? null;
+}
+
+// features/keystone/lib/approval.ts
+init_actor();
+init_errors();
 
 // features/keystone/lib/separationOfDuties.ts
+init_errors();
 var SELF_APPROVAL_MESSAGE = "You can't approve your own request.";
 var AGENT_APPROVAL_MESSAGE = "An agent can propose but never approve.";
 function assertCanDecide(actor, requesterUserId, requesterAgentOwnerId, strictAgentOwner = true) {
@@ -6870,6 +7549,7 @@ function assertCanDecide(actor, requesterUserId, requesterAgentOwnerId, strictAg
 }
 
 // features/keystone/lib/approval.ts
+init_cas();
 async function requestApproval(uow, actor, input) {
   const policy = await uow.tx.approvalPolicy.findUnique({ where: { action: input.action } });
   const requiredPermission = policy?.requiredPermission ?? input.requiredPermission;
@@ -6942,15 +7622,774 @@ async function consumeApproval(uow, input) {
   return { approverId: decision?.decidedById ?? null };
 }
 
-// features/keystone/lib/approvalAppliers.ts
-var appliers = /* @__PURE__ */ new Map();
-function registerApplier(action, apply, options = {}) {
-  if (appliers.has(action)) throw new Error(`Applier for ${action} already registered`);
-  appliers.set(action, { apply, applyOnApprove: options.applyOnApprove ?? true });
+// features/keystone/lib/clinical/incidents.ts
+init_errors();
+init_common();
+var SEVERITIES = ["no_injury", "minor", "moderate", "major", "death"];
+async function createIncident(uow, actor, input) {
+  const resident = input.residentId ? await residentFor(uow.tx, input.residentId) : null;
+  const communityId = resident?.communityId ?? input.communityId;
+  if (!communityId) return invalid("Choose a community.", "communityId");
+  const kind = oneOf(input.kind, INCIDENT_KINDS, "incident type");
+  const occurredAt = input.occurredAt ? when5(input.occurredAt, "occurredAt") : uow.now;
+  const discoveredAt = input.discoveredAt ? when5(input.discoveredAt, "discoveredAt") : occurredAt;
+  if (occurredAt.getTime() > uow.now.getTime() + 5 * 6e4) invalid("An incident cannot be in the future.", "occurredAt");
+  const alleged = kind === "alleged_abuse" || kind === "misappropriation" || kind === "injury_unknown_source" || Boolean(input.allegedAbuseOrSbi);
+  const allegedOther = !alleged && (kind === "alleged_neglect" || Boolean(input.allegedOther));
+  const incident = await uow.tx.incident.create({
+    data: {
+      communityId,
+      residentId: resident?.id ?? null,
+      reference: await ref(uow, "INC"),
+      kind,
+      description: text14(input.description, "Description", { min: 5 }),
+      location: input.location ?? "",
+      severity: input.severity ? oneOf(input.severity, SEVERITIES, "severity") : "no_injury",
+      status: "reported",
+      occurredAt,
+      discoveredAt,
+      reportedAt: uow.now,
+      reportedById: userOf(actor),
+      witnessed: Boolean(input.witnessed),
+      headStrike: Boolean(input.headStrike),
+      allegedAbuseOrSbi: alleged,
+      allegedOther,
+      reportableDecision: alleged || allegedOther ? "reportable" : "pending",
+      source: input.source ?? "staff",
+      sourceNoteId: input.sourceNoteId ?? null
+    }
+  });
+  auditCreate(uow, actor, "Incident", incident.id, "incident.reported", { kind, residentId: resident?.id ?? null, alleged, allegedOther, severity: incident.severity });
+  for (const p of input.parties ?? []) {
+    await uow.tx.incidentParty.create({ data: { communityId, incidentId: incident.id, residentId: resident?.id ?? null, role: oneOf(p.role, ["involved_resident", "witness", "staff_involved", "alleged_perpetrator", "family_notified", "physician_notified"], "party role"), name: text14(p.name, "Name") } });
+  }
+  const setting = resident?.stay?.setting ?? null;
+  const clockBase = { communityId, residentId: resident?.id ?? null, subjectType: "Incident", subjectId: incident.id, startedAt: discoveredAt, setting };
+  if (alleged) await openClocksForFact(uow, actor, { ...clockBase, fact: "incident.alleged_abuse_sbi" });
+  if (allegedOther) await openClocksForFact(uow, actor, { ...clockBase, fact: "incident.alleged_other" });
+  if (alleged || allegedOther) await openClocksForFact(uow, actor, { ...clockBase, fact: "incident.reported" });
+  await createTask(uow, actor, {
+    communityId,
+    residentId: resident?.id ?? null,
+    kind: alleged || allegedOther ? "escalation" : "general",
+    title: `${alleged ? "Reportable: " : ""}Review incident ${incident.reference}`,
+    ownerRole: alleged || allegedOther ? ROLE_NAMES.director : ROLE_NAMES.don,
+    escalationOwnerRole: ROLE_NAMES.director,
+    dueAt: new Date(uow.now.getTime() + (alleged ? 1 : 24) * 36e5),
+    dedupeKey: `incident-review:${incident.id}`,
+    subjectType: "Incident",
+    subjectId: incident.id
+  });
+  return { incidentId: incident.id, reference: incident.reference, reportable: alleged || allegedOther };
 }
-function applierFor(action) {
-  return appliers.get(action) ?? null;
+async function startInvestigation(uow, actor, input) {
+  const incident = await lockRow(uow.tx, "Incident", input.incidentId);
+  if (incident.status === "closed" || incident.status === "entered_in_error") throw new DomainError(Codes.INVALID_TRANSITION, "This incident is closed.");
+  const open = await uow.tx.incidentInvestigation.findFirst({ where: { incidentId: incident.id, status: "open" } });
+  if (open) return { investigationId: open.id, reused: true };
+  const row = await uow.tx.incidentInvestigation.create({ data: { communityId: incident.communityId, residentId: incident.residentId, incidentId: incident.id, status: "open", investigatorId: userOf(actor), startedAt: uow.now } });
+  if (incident.status === "reported") await casUpdate(uow, { model: "Incident", id: incident.id, version: incident.version, from: ["reported"], to: "under_investigation", actor, eventType: "incident.investigation_started" });
+  return { investigationId: row.id, reused: false };
 }
+async function completeInvestigation(uow, actor, input) {
+  const inv = await lockRow(uow.tx, "IncidentInvestigation", input.investigationId);
+  await casUpdate(uow, {
+    model: "IncidentInvestigation",
+    id: inv.id,
+    version: inv.version,
+    from: ["open"],
+    to: "completed",
+    actor,
+    eventType: "incident.investigation_completed",
+    data: { findings: text14(input.findings, "Findings", { min: 5 }), rootCause: text14(input.rootCause, "Root cause", { min: 3 }), interventions: text14(input.interventions, "Interventions", { min: 3 }), completedAt: uow.now }
+  });
+  return { investigationId: inv.id };
+}
+async function draftRegulatoryReport(uow, actor, input) {
+  const incident = await uow.tx.incident.findUnique({ where: { id: input.incidentId } });
+  if (!incident) return notFound("Incident");
+  const kind = oneOf(input.kind, ["f609_initial", "f609_followup", "state_self_report"], "report type");
+  const existing = await uow.tx.regulatoryReport.findFirst({ where: { incidentId: incident.id, kind, status: "draft" } });
+  if (existing) return { reportId: existing.id, reused: true };
+  const row = await uow.tx.regulatoryReport.create({
+    data: {
+      communityId: incident.communityId,
+      residentId: incident.residentId,
+      incidentId: incident.id,
+      kind,
+      status: "draft",
+      body: { reference: incident.reference, kind: incident.kind, occurredAt: incident.occurredAt, discoveredAt: incident.discoveredAt, severity: incident.severity, description: incident.description },
+      ruleNote: kind === "state_self_report" ? "OPEN ITEM (verify): Ohio self-report rule and timelines." : "42 CFR 483.12(c)"
+    }
+  });
+  return { reportId: row.id, reused: false };
+}
+async function recordReportSubmission(uow, actor, input) {
+  const report = await lockRow(uow.tx, "RegulatoryReport", input.reportId);
+  const channel = oneOf(input.channel, ["state_portal", "phone", "fax", "other"], "channel");
+  const confirmation = text14(input.confirmation, "Confirmation", { min: 2 });
+  const at = when5(input.submittedAt, "submittedAt", uow.now);
+  if (at.getTime() > uow.now.getTime() + 5 * 6e4) invalid("A submission cannot be in the future.", "submittedAt");
+  await casUpdate(uow, { model: "RegulatoryReport", id: report.id, version: report.version, from: ["draft"], to: "submitted", actor, eventType: "regulatory_report.submitted", data: { channel, confirmation, submittedAt: at, submittedById: userOf(actor) } });
+  const evidence = report.kind === "f609_followup" ? "submission:state_incident_followup" : "submission:state_incident";
+  const satisfied = await satisfyByEvidence(uow, actor, { subjectType: "Incident", subjectId: report.incidentId }, { type: evidence, id: report.id, at });
+  return { reportId: report.id, satisfied };
+}
+async function closeIncident(uow, actor, input) {
+  const incident = await lockRow(uow.tx, "Incident", input.incidentId);
+  if (incident.reportableDecision === "reportable") {
+    const done = await uow.tx.incidentInvestigation.count({ where: { incidentId: incident.id, status: "completed" } });
+    if (!done) throw new DomainError(Codes.GUARD_FAILED, "Complete the investigation before closing a reportable incident.");
+    const pending = await uow.tx.complianceClock.count({ where: { subjectType: "Incident", subjectId: incident.id, current: true, status: { in: ["open", "overdue"] } } });
+    if (pending) throw new DomainError(Codes.GUARD_FAILED, "A required report is still outstanding.");
+  }
+  await casUpdate(uow, { model: "Incident", id: incident.id, version: incident.version, from: ["reported", "under_investigation"], to: "closed", actor, eventType: "incident.closed", reason: input.note ?? null, data: { closedAt: uow.now } });
+  const task = await uow.tx.task.findUnique({ where: { dedupeKey: `incident-review:${incident.id}` } });
+  if (task && (task.status === "open" || task.status === "in_progress")) await casUpdate(uow, { model: "Task", id: task.id, version: task.version, from: ["open", "in_progress"], to: "done", actor, eventType: "task.done", data: { completedById: userOf(actor), completedAt: uow.now } });
+  return { incidentId: incident.id };
+}
+async function requestDowngrade(uow, actor, input) {
+  const incident = await uow.tx.incident.findUnique({ where: { id: input.incidentId } });
+  if (!incident) return notFound("Incident");
+  if (incident.reportableDecision !== "reportable") throw new DomainError(Codes.GUARD_FAILED, "This incident is not marked reportable.");
+  const reason = text14(input.reason, "Reason", { min: 10 });
+  const request = await requestApproval(uow, actor, { action: "incident.downgrade", targetList: "Incident", targetId: incident.id, payload: { incidentId: incident.id, reason }, requiredPermission: "canApproveIncidentDowngrade", summary: `Downgrade ${incident.reference} to not reportable`, communityId: incident.communityId });
+  return { approvalRequestId: request.id };
+}
+registerApplier("incident.downgrade", async (uow, actor, request) => {
+  const payload = request.payload;
+  const approverId = userOf(actor);
+  const incident = await lockRow(uow.tx, "Incident", payload.incidentId);
+  await uow.tx.incident.update({ where: { id: incident.id }, data: { reportableDecision: "not_reportable", downgradedById: approverId, downgradeReason: payload.reason, version: { increment: 1 } } });
+  await cancelClocks(uow, actor, { subjectType: "Incident", subjectId: incident.id }, `Downgraded: ${payload.reason}`);
+  uow.audit({ eventType: "incident.downgraded", entityType: "Incident", entityId: incident.id, actorUserId: userOf(actor), approverId, reason: payload.reason });
+}, { applyOnApprove: true });
+
+// features/keystone/lib/clinical/medications.ts
+var HORIZON_MS = 72 * 36e5;
+async function generateAdministrationSlots(uow, communityId, residentId) {
+  const tz = await communityZone(uow.tx, communityId);
+  const details = await uow.tx.medicationOrderDetail.findMany({
+    where: { communityId, ...residentId ? { residentId } : {}, prn: false, order: { status: "active" } },
+    include: { order: { select: { id: true, startAt: true, stopAt: true } } }
+  });
+  const live = details.filter((d) => d.order);
+  const from = uow.now.getTime() - 2 * 36e5;
+  const to = uow.now.getTime() + HORIZON_MS;
+  let created = 0;
+  for (const dd of live) {
+    const d = { ...dd, order: dd.order };
+    const times = Array.isArray(d.times) ? d.times : [];
+    const first = localDate(tz, new Date(from));
+    for (let day4 = first; (/* @__PURE__ */ new Date(`${day4}T00:00:00Z`)).getTime() <= to + 864e5; day4 = addDays(day4, 1)) {
+      for (const hhmm of times) {
+        const at = zonedInstant(tz, day4, hhmm);
+        const t = at.getTime();
+        if (t < from || t > to) continue;
+        if (d.order.startAt && t < d.order.startAt.getTime()) continue;
+        if (d.order.stopAt && t >= d.order.stopAt.getTime()) continue;
+        const slotKey = `${d.id}:${day4}:${hhmm}`;
+        const result = await uow.tx.administrationSlot.createMany({
+          data: [{ residentId: d.residentId, communityId, detailId: d.id, orderId: d.order.id, drugName: d.drugName, slotKey, scheduledFor: at, status: "scheduled" }],
+          skipDuplicates: true
+        });
+        created += result.count;
+      }
+    }
+  }
+  return created;
+}
+async function latestVital(uow, residentId, kind) {
+  return uow.tx.vitalSign.findFirst({ where: { residentId, kind, takenAt: { gte: new Date(uow.now.getTime() - 12 * 36e5) } }, orderBy: { takenAt: "desc" } });
+}
+function emergencyOf(input) {
+  if (!input.emergency) return null;
+  return { reason: text14(input.emergencyReason ?? "", "Why this is an emergency", { min: 10 }) };
+}
+async function administerDose(uow, actor, input) {
+  const slot = await lockRow(uow.tx, "AdministrationSlot", input.slotId);
+  if (slot.status !== "scheduled") throw new DomainError(Codes.INVALID_TRANSITION, `This dose was already recorded (${slot.status}).`, { currentStatus: slot.status });
+  const outcome = oneOf(input.outcome, ["given", "held", "refused", "missed", "not_given"], "outcome");
+  const detail = await uow.tx.medicationOrderDetail.findUniqueOrThrow({ where: { id: slot.detailId } });
+  const order = await uow.tx.order.findUniqueOrThrow({ where: { id: detail.orderId }, select: { status: true } });
+  if (order.status !== "active") throw new DomainError(Codes.GUARD_FAILED, "This order is no longer active.");
+  const actual = when5(input.administeredAt, "administeredAt", uow.now);
+  const late = uow.now.getTime() - actual.getTime() > 30 * 6e4;
+  if (actual.getTime() > uow.now.getTime() + 6e4) invalid("A dose cannot be recorded in the future.", "administeredAt");
+  const minutesOff = Math.round((actual.getTime() - slot.scheduledFor.getTime()) / 6e4);
+  const timing = minutesOff < -slot.windowBefore ? "early" : minutesOff > slot.windowAfter ? "late" : "on_time";
+  const reason = (input.reason ?? "").trim();
+  if (outcome === "given" && timing !== "on_time" && Math.abs(minutesOff) > 2 * (minutesOff < 0 ? slot.windowBefore : slot.windowAfter) && !reason) invalid("This dose is well outside its window. Say why.", "reason");
+  if ((outcome === "held" || outcome === "refused" || outcome === "not_given" || outcome === "missed") && !reason) invalid("Say why the dose was not given.", "reason");
+  let holdVital = null;
+  const hold = detail.holdParameters;
+  if (hold) {
+    const reading = await latestVital(uow, slot.residentId, hold.vital);
+    if (reading) {
+      const v = Number(reading.value);
+      holdVital = { kind: hold.vital, value: v, takenAt: reading.takenAt, rule: hold };
+      const tripped = hold.op === "lt" ? v < hold.value : v > hold.value;
+      if (tripped && outcome === "given") throw new DomainError(Codes.GUARD_FAILED, `Hold parameter met: ${hold.vital.replace("_", " ")} ${v} is ${hold.op === "lt" ? "below" : "above"} ${hold.value}. Record the dose as held.`, { field: "outcome" });
+    } else if (outcome === "given") {
+      throw new DomainError(Codes.GUARD_FAILED, `This order holds on ${hold.vital.replace("_", " ")}. Record a reading in the last 12 hours first.`, { field: "outcome" });
+    }
+  }
+  let supplyId = null;
+  const dose = outcome === "given" ? qty(input.doseGiven ?? detail.dose, "Dose given") : null;
+  if (outcome === "given") {
+    if (detail.controlled && !input.witnessId) invalid("A controlled drug needs a witness.", "witnessId");
+    if (input.witnessId && input.witnessId === userOf(actor)) invalid("The witness must be a different person.", "witnessId");
+    if (input.supplyId) {
+      await postMovement(uow, actor, { supplyId: input.supplyId, kind: "administer", quantity: dose.negated(), reason: `Dose for ${slot.drugName}`, witnessId: input.witnessId ?? null, residentId: slot.residentId, emergency: emergencyOf(input) });
+      supplyId = input.supplyId;
+    } else if (detail.controlled) {
+      invalid("Choose the supply the controlled dose came from.", "supplyId");
+    }
+  }
+  const row = await uow.tx.medicationAdministration.create({
+    data: {
+      residentId: slot.residentId,
+      communityId: slot.communityId,
+      slotId: slot.id,
+      detailId: detail.id,
+      drugName: slot.drugName,
+      outcome,
+      prn: false,
+      doseGiven: dose ? dose.toString() : null,
+      doseUnit: detail.doseUnit,
+      reason,
+      administeredAt: actual,
+      recordedAt: uow.now,
+      lateEntry: late,
+      timing,
+      identityCheck: input.identityCheck ?? null,
+      holdVital: holdVital ?? void 0,
+      administeredById: userOf(actor),
+      witnessId: input.witnessId ?? null,
+      supplyId
+    }
+  });
+  const to = outcome === "given" ? "given" : outcome;
+  await casUpdate(uow, { model: "AdministrationSlot", id: slot.id, version: slot.version, from: ["scheduled"], to, actor, eventType: `emar.dose_${outcome}`, reason: reason || null, data: { settledAt: uow.now }, audit: { administrationId: row.id, timing } });
+  return { administrationId: row.id, outcome, timing, lateEntry: late };
+}
+async function settleMissedDoses(uow, actor, communityId) {
+  const cutoff = new Date(uow.now.getTime() - 4 * 36e5);
+  const due = await uow.tx.administrationSlot.findMany({ where: { communityId, status: "scheduled", scheduledFor: { lt: cutoff } }, take: 500, select: { id: true, version: true, residentId: true, drugName: true } });
+  let missed = 0;
+  for (const slot of due) {
+    const result = await uow.tx.administrationSlot.updateMany({ where: { id: slot.id, version: slot.version, status: "scheduled" }, data: { status: "missed", settledAt: uow.now, version: { increment: 1 } } });
+    if (result.count !== 1) continue;
+    missed += 1;
+    uow.audit({ eventType: "emar.dose_missed", entityType: "AdministrationSlot", entityId: slot.id, actorUserId: userOf(actor), before: { status: "scheduled" }, after: { status: "missed" }, reason: "No administration recorded within 4 hours of the scheduled time." });
+    await createTask(uow, actor, { communityId, residentId: slot.residentId, kind: "general", title: `Missed dose: ${slot.drugName}`, ownerRole: ROLE_NAMES.charge, escalationOwnerRole: ROLE_NAMES.don, dedupeKey: `missed-dose:${slot.id}`, subjectType: "AdministrationSlot", subjectId: slot.id });
+  }
+  return missed;
+}
+async function administerPrn(uow, actor, input) {
+  const detail = await uow.tx.medicationOrderDetail.findUnique({ where: { id: input.detailId } });
+  if (!detail || !detail.prn || !detail.orderId) return notFound("PRN order");
+  const order = await lockRow(uow.tx, "Order", detail.orderId);
+  if (order.status !== "active") throw new DomainError(Codes.GUARD_FAILED, "This order is no longer active.");
+  const reason = text14(input.reason, "Reason for the PRN dose", { min: 3 });
+  const actual = when5(input.administeredAt, "administeredAt", uow.now);
+  if (detail.prnMinIntervalMinutes) {
+    const last = await uow.tx.medicationAdministration.findFirst({ where: { detailId: detail.id, outcome: "given" }, orderBy: { administeredAt: "desc" } });
+    if (last?.administeredAt && actual.getTime() - last.administeredAt.getTime() < detail.prnMinIntervalMinutes * 6e4) {
+      throw new DomainError(Codes.GUARD_FAILED, `The last dose was less than ${detail.prnMinIntervalMinutes} minutes ago.`);
+    }
+  }
+  const dose = qty(input.doseGiven ?? detail.dose, "Dose given");
+  if (detail.controlled && (!input.witnessId || input.witnessId === userOf(actor))) invalid("A controlled drug needs a different person as witness.", "witnessId");
+  if (detail.controlled && !input.supplyId) invalid("Choose the supply the controlled dose came from.", "supplyId");
+  if (input.supplyId) await postMovement(uow, actor, { supplyId: input.supplyId, kind: "administer", quantity: dose.negated(), reason: `PRN ${detail.drugName}`, witnessId: input.witnessId ?? null, residentId: detail.residentId, emergency: emergencyOf(input) });
+  const followUpAt = new Date(actual.getTime() + (detail.prnFollowUpMinutes ?? 60) * 6e4);
+  const row = await uow.tx.medicationAdministration.create({
+    data: {
+      residentId: detail.residentId,
+      communityId: detail.communityId,
+      detailId: detail.id,
+      drugName: detail.drugName,
+      outcome: "given",
+      prn: true,
+      doseGiven: dose.toString(),
+      doseUnit: detail.doseUnit,
+      reason,
+      administeredAt: actual,
+      recordedAt: uow.now,
+      lateEntry: uow.now.getTime() - actual.getTime() > 30 * 6e4,
+      timing: "not_scheduled",
+      identityCheck: input.identityCheck ?? null,
+      administeredById: userOf(actor),
+      witnessId: input.witnessId ?? null,
+      supplyId: input.supplyId ?? null,
+      followUpDueAt: followUpAt
+    }
+  });
+  const followUp = await uow.tx.prnFollowUp.create({ data: { residentId: detail.residentId, communityId: detail.communityId, administrationId: row.id, dueAt: followUpAt, status: "open" } });
+  auditCreate(uow, actor, "MedicationAdministration", row.id, "emar.prn_given", { detailId: detail.id, followUpDueAt: followUpAt });
+  return { administrationId: row.id, followUpId: followUp.id, followUpDueAt: followUpAt };
+}
+async function recordPrnFollowUp(uow, actor, input) {
+  const follow = await lockRow(uow.tx, "PrnFollowUp", input.followUpId);
+  const effect = oneOf(input.effect, ["effective", "partly_effective", "not_effective", "adverse_reaction"], "effect");
+  await casUpdate(uow, { model: "PrnFollowUp", id: follow.id, version: follow.version, from: ["open", "missed"], to: "done", actor, eventType: "emar.prn_follow_up", data: { effect, recordedById: userOf(actor), recordedAt: uow.now } });
+  const task = await uow.tx.task.findUnique({ where: { dedupeKey: `prn-followup:${follow.id}` } });
+  if (task && (task.status === "open" || task.status === "in_progress")) await casUpdate(uow, { model: "Task", id: task.id, version: task.version, from: ["open", "in_progress"], to: "done", actor, eventType: "task.done", data: { completedById: userOf(actor), completedAt: uow.now } });
+  return { followUpId: follow.id, effect };
+}
+async function settlePrnFollowUps(uow, actor, communityId) {
+  const due = await uow.tx.prnFollowUp.findMany({ where: { communityId, status: "open", dueAt: { lt: uow.now } }, take: 200 });
+  for (const f of due) {
+    const result = await uow.tx.prnFollowUp.updateMany({ where: { id: f.id, version: f.version, status: "open" }, data: { status: "missed", version: { increment: 1 } } });
+    if (result.count !== 1) continue;
+    uow.audit({ eventType: "emar.prn_follow_up_missed", entityType: "PrnFollowUp", entityId: f.id, actorUserId: userOf(actor), before: { status: "open" }, after: { status: "missed" } });
+    await createTask(uow, actor, { communityId, residentId: f.residentId, kind: "prn_followup", title: "PRN follow-up not recorded", ownerRole: ROLE_NAMES.charge, escalationOwnerRole: ROLE_NAMES.don, dedupeKey: `prn-followup:${f.id}`, subjectType: "PrnFollowUp", subjectId: f.id });
+  }
+  return due.length;
+}
+async function receiveSupply(uow, actor, input) {
+  const kind = oneOf(input.kind, SUPPLY_KINDS, "supply type");
+  const quantity = qty(input.quantity, "Quantity");
+  if (quantity.lte(0)) invalid("Quantity must be more than zero.", "quantity");
+  if (input.controlled && (!input.witnessId || input.witnessId === userOf(actor))) invalid("Receiving a controlled drug needs a different person as witness.", "witnessId");
+  const supply = await uow.tx.medicationSupply.create({
+    data: {
+      communityId: input.communityId,
+      residentId: input.residentId ?? null,
+      referenceId: input.referenceId ?? null,
+      unitLocationId: input.unitLocationId ?? null,
+      label: text14(input.label, "Label"),
+      kind,
+      lot: input.lot ?? "",
+      expiresOn: input.expiresOn ? /* @__PURE__ */ new Date(`${input.expiresOn}T00:00:00Z`) : null,
+      controlled: Boolean(input.controlled),
+      unit: text14(input.unit, "Unit"),
+      balance: "0",
+      status: "active"
+    }
+  });
+  auditCreate(uow, actor, "MedicationSupply", supply.id, "supply.created", { kind, controlled: supply.controlled });
+  await postMovement(uow, actor, { supplyId: supply.id, kind: "receive", quantity, reason: "Received (manual pharmacy entry)", witnessId: input.witnessId ?? null });
+  return { supplyId: supply.id };
+}
+async function postMovement(uow, actor, input) {
+  const supply = await lockRow(uow.tx, "MedicationSupply", input.supplyId);
+  if (supply.status !== "active" && input.kind !== "destroy" && input.kind !== "count_adjust") throw new DomainError(Codes.GUARD_FAILED, `This supply is ${supply.status}.`);
+  const emergency = input.kind === "administer" ? input.emergency ?? null : null;
+  let frozenBy = null;
+  if (input.kind === "administer") {
+    const open = await uow.tx.countDiscrepancy.findFirst({ where: { supplyId: supply.id, status: "open" }, select: { id: true } });
+    if (open && !emergency) throw new DomainError(Codes.GUARD_FAILED, "This supply has an open count discrepancy. Use another supply, or record an emergency dose with a reason; the DON is told.", { field: "supplyId", discrepancyId: open.id });
+    frozenBy = open?.id ?? null;
+  }
+  const q = qty(input.quantity instanceof Decimal ? input.quantity.toString() : input.quantity, "Quantity");
+  if (q.isZero()) invalid("Quantity cannot be zero.", "quantity");
+  const witnessKinds = ["waste", "destroy", "adjust", "count_adjust", "transfer_out", "return_to_pharmacy"];
+  if (supply.controlled && witnessKinds.includes(input.kind) && (!input.witnessId || input.witnessId === userOf(actor))) invalid("A controlled drug needs a different person as witness.", "witnessId");
+  const next = new Decimal(supply.balance.toString()).plus(q);
+  if (next.lt(0)) throw new DomainError(Codes.GUARD_FAILED, "That would take the balance below zero.", { field: "quantity" });
+  const last = await uow.tx.medicationSupplyMovement.findFirst({ where: { supplyId: supply.id }, orderBy: { seq: "desc" }, select: { seq: true } });
+  const movement = await uow.tx.medicationSupplyMovement.create({
+    data: { communityId: supply.communityId, supplyId: supply.id, seq: (last?.seq ?? 0) + 1, kind: input.kind, quantity: q.toString(), balanceAfter: next.toString(), at: uow.now, actorId: userOf(actor), witnessId: input.witnessId ?? null, reason: input.reason ?? "", emergency: Boolean(emergency), emergencyReason: emergency?.reason ?? "" }
+  });
+  const moved = await uow.tx.medicationSupply.updateMany({ where: { id: supply.id, version: supply.version }, data: { balance: next.toString(), status: next.isZero() && input.kind !== "destroy" ? "empty" : void 0, version: { increment: 1 } } });
+  if (moved.count !== 1) throw new DomainError(Codes.STALE_STATE, "The supply changed. Reload and try again.");
+  if (frozenBy && emergency) {
+    uow.audit({ eventType: "supply.emergency_override", entityType: "CountDiscrepancy", entityId: frozenBy, actorUserId: userOf(actor), approverId: input.witnessId ?? null, reason: emergency.reason, after: { supplyId: supply.id, movementId: movement.id, residentId: input.residentId ?? null } });
+    await createTask(uow, actor, { communityId: supply.communityId, residentId: input.residentId ?? null, kind: "count_discrepancy", title: `Emergency dose from a supply under count discrepancy: ${supply.label}`, detail: emergency.reason, ownerRole: ROLE_NAMES.don, dedupeKey: `emergency-dose:${movement.id}`, subjectType: "MedicationSupplyMovement", subjectId: movement.id, dueAt: new Date(uow.now.getTime() + 4 * 36e5) });
+  }
+  uow.audit({ eventType: `supply.${input.kind}`, entityType: "MedicationSupply", entityId: supply.id, actorUserId: userOf(actor), approverId: input.witnessId ?? null, after: { movementId: movement.id, quantity: q.toString(), balanceAfter: next.toString() }, reason: input.reason ?? null });
+  return { movementId: movement.id, balance: next.toString() };
+}
+async function destroySupply(uow, actor, input) {
+  const supply = await uow.tx.medicationSupply.findUnique({ where: { id: input.supplyId } });
+  if (!supply) return notFound("Supply");
+  if (!input.witnessId || input.witnessId === userOf(actor)) invalid("Destruction needs a different person as witness.", "witnessId");
+  const q = input.quantity != null && input.quantity !== "" ? qty(input.quantity, "Quantity") : new Decimal(supply.balance.toString());
+  if (q.lte(0)) invalid("Nothing to destroy.", "quantity");
+  const posted = await postMovement(uow, actor, { supplyId: supply.id, kind: "destroy", quantity: q.negated(), reason: `Destroyed: ${input.method}`, witnessId: input.witnessId });
+  const row = await uow.tx.medicationDestruction.create({ data: { communityId: supply.communityId, supplyId: supply.id, quantity: q.toString(), method: text14(input.method, "Method"), destroyedAt: uow.now, destroyedById: userOf(actor), witnessId: input.witnessId, movementId: posted.movementId } });
+  const fresh = await uow.tx.medicationSupply.findUniqueOrThrow({ where: { id: supply.id } });
+  if (new Decimal(fresh.balance.toString()).isZero()) await casUpdate(uow, { model: "MedicationSupply", id: fresh.id, version: fresh.version, from: ["active", "empty", "quarantined"], to: "destroyed", actor, eventType: "supply.destroyed" });
+  return { destructionId: row.id };
+}
+async function drawFromEkit(uow, actor, input) {
+  const supply = await uow.tx.medicationSupply.findUnique({ where: { id: input.supplyId } });
+  if (!supply || supply.kind !== "ekit") return notFound("E-kit");
+  const resident = await residentFor(uow.tx, input.residentId);
+  if (supply.communityId !== resident.communityId) return notFound("E-kit");
+  const q = qty(input.quantity, "Quantity");
+  if (q.lte(0)) invalid("Quantity must be more than zero.", "quantity");
+  const posted = await postMovement(uow, actor, { supplyId: supply.id, kind: "administer", quantity: q.negated(), reason: `E-kit for resident: ${text14(input.reason, "Reason")}`, witnessId: input.witnessId ?? null, residentId: resident.id, emergency: emergencyOf(input) });
+  await createTask(uow, actor, { communityId: supply.communityId, residentId: resident.id, kind: "general", title: `E-kit used: restock and pharmacy verification for ${supply.label}`, ownerRole: ROLE_NAMES.charge, dedupeKey: `ekit:${posted.movementId}`, subjectType: "MedicationSupply", subjectId: supply.id });
+  return posted;
+}
+async function startShiftCount(uow, actor, input) {
+  const unit = await uow.tx.unit.findUnique({ where: { id: input.unitId }, select: { id: true, communityId: true } });
+  if (!unit?.communityId) return notFound("Unit");
+  const shift = oneOf(input.shift, ["day", "evening", "night"], "shift");
+  if (!input.incomingId || input.incomingId === userOf(actor)) invalid("The incoming nurse must be a different person.", "incomingId");
+  const open = await uow.tx.shiftCount.findFirst({ where: { unitId: unit.id, status: "open" } });
+  if (open) return { shiftCountId: open.id, reference: open.reference, reused: true };
+  const row = await uow.tx.shiftCount.create({ data: { communityId: unit.communityId, unitId: unit.id, reference: await ref(uow, "CNT"), shift, status: "open", outgoingId: userOf(actor), incomingId: input.incomingId, startedAt: uow.now } });
+  auditCreate(uow, actor, "ShiftCount", row.id, "shift_count.started", { unitId: unit.id, shift });
+  return { shiftCountId: row.id, reference: row.reference, reused: false };
+}
+async function submitCountEntry(uow, actor, input) {
+  const count = await lockRow(uow.tx, "ShiftCount", input.shiftCountId);
+  if (count.status !== "open") throw new DomainError(Codes.INVALID_TRANSITION, "This count is closed.", { currentStatus: count.status });
+  const me = userOf(actor);
+  const role = me === count.outgoingId ? "outgoing" : me === count.incomingId ? "incoming" : null;
+  if (!role) throw new DomainError(Codes.NOT_AUTHORIZED, "Only the two nurses named on this count record it.");
+  const supply = await uow.tx.medicationSupply.findUnique({ where: { id: input.supplyId }, select: { id: true, communityId: true, unitLocationId: true, controlled: true } });
+  if (!supply || supply.communityId !== count.communityId || supply.unitLocationId !== count.unitId || !supply.controlled) return notFound("Supply");
+  if (await uow.tx.shiftCountEntry.findFirst({ where: { shiftCountId: count.id, supplyId: supply.id, role } })) throw new DomainError(Codes.GUARD_FAILED, "You already counted this one.");
+  const counted = qty(input.counted, "Count");
+  if (counted.lt(0)) invalid("A count cannot be negative.", "counted");
+  await uow.tx.shiftCountEntry.create({ data: { communityId: count.communityId, shiftCountId: count.id, supplyId: supply.id, role, counted: counted.toString(), countedById: me, at: uow.now } });
+  return { recorded: true, role };
+}
+async function completeShiftCount(uow, actor, input) {
+  const count = await lockRow(uow.tx, "ShiftCount", input.shiftCountId);
+  if (count.status !== "open") throw new DomainError(Codes.INVALID_TRANSITION, "This count is closed.", { currentStatus: count.status });
+  if (userOf(actor) !== count.outgoingId && userOf(actor) !== count.incomingId) throw new DomainError(Codes.NOT_AUTHORIZED, "Only the two nurses named on this count can finish it.");
+  const supplies = await uow.tx.medicationSupply.findMany({ where: { communityId: count.communityId, unitLocationId: count.unitId, controlled: true, status: "active" } });
+  const entries = await uow.tx.shiftCountEntry.findMany({ where: { shiftCountId: count.id } });
+  const mismatched = [];
+  for (const s of supplies) {
+    const out = entries.find((e) => e.supplyId === s.id && e.role === "outgoing");
+    const inc = entries.find((e) => e.supplyId === s.id && e.role === "incoming");
+    if (!out || !inc) throw new DomainError(Codes.GUARD_FAILED, `Both nurses must count ${s.label} before the count can finish.`);
+    const expected = new Decimal(s.balance.toString());
+    if (!expected.equals(out.counted.toString()) || !expected.equals(inc.counted.toString())) {
+      mismatched.push(s.id);
+      const d = await uow.tx.countDiscrepancy.create({ data: { communityId: count.communityId, shiftCountId: count.id, supplyId: s.id, expected: expected.toString(), outgoingCounted: out.counted.toString(), incomingCounted: inc.counted.toString(), status: "open" } });
+      auditCreate(uow, actor, "CountDiscrepancy", d.id, "count_discrepancy.opened", { supplyId: s.id });
+      await createTask(uow, actor, { communityId: count.communityId, kind: "count_discrepancy", title: `Controlled count discrepancy: ${s.label}`, ownerRole: ROLE_NAMES.don, dedupeKey: `count-discrepancy:${d.id}`, subjectType: "CountDiscrepancy", subjectId: d.id, dueAt: new Date(uow.now.getTime() + 4 * 36e5) });
+    }
+  }
+  const to = mismatched.length ? "discrepancy" : "matched";
+  await casUpdate(uow, { model: "ShiftCount", id: count.id, version: count.version, from: ["open"], to, actor, eventType: `shift_count.${to}`, data: { completedAt: uow.now } });
+  return { status: to, discrepancies: mismatched.length };
+}
+async function resolveDiscrepancy(uow, actor, input) {
+  const d = await lockRow(uow.tx, "CountDiscrepancy", input.discrepancyId);
+  if (d.status !== "open") throw new DomainError(Codes.INVALID_TRANSITION, "Already resolved.", { currentStatus: d.status });
+  const count = await uow.tx.shiftCount.findUniqueOrThrow({ where: { id: d.shiftCountId } });
+  if (userOf(actor) === count.outgoingId || userOf(actor) === count.incomingId) throw new DomainError(Codes.SELF_APPROVAL, "A nurse who did the count cannot resolve its discrepancy.");
+  const resolution = oneOf(input.resolution, ["recount_matched", "documentation_error", "loss_suspected", "found"], "resolution");
+  const note = text14(input.note, "Note", { min: 10 });
+  let adjustmentId = null;
+  const expected = new Decimal(d.expected.toString());
+  const counted = new Decimal(d.incomingCounted.toString());
+  if (resolution !== "recount_matched" && !expected.equals(counted)) {
+    const posted = await postMovement(uow, actor, { supplyId: d.supplyId, kind: "count_adjust", quantity: counted.minus(expected), reason: `Count discrepancy ${resolution}: ${note}`, witnessId: input.witnessId ?? null });
+    adjustmentId = posted.movementId;
+  }
+  let incidentId = null;
+  if (resolution === "loss_suspected" || resolution === "documentation_error") {
+    const supply = await uow.tx.medicationSupply.findUniqueOrThrow({ where: { id: d.supplyId }, select: { label: true } });
+    const incident = await createIncident(uow, actor, { communityId: d.communityId, residentId: null, kind: "controlled_substance_discrepancy", description: `Controlled count discrepancy for ${supply.label}. Expected ${expected}, counted ${d.outgoingCounted} and ${d.incomingCounted}. Resolution: ${resolution}. ${note}`, occurredAt: count.completedAt ?? uow.now });
+    incidentId = incident.incidentId;
+  }
+  await casUpdate(uow, { model: "CountDiscrepancy", id: d.id, version: d.version, from: ["open"], to: "resolved", actor, eventType: "count_discrepancy.resolved", reason: note, data: { resolution, resolutionNote: note, resolvedById: userOf(actor), resolvedAt: uow.now, adjustmentId, incidentId } });
+  const open = await uow.tx.countDiscrepancy.count({ where: { shiftCountId: d.shiftCountId, status: "open" } });
+  if (!open) {
+    const fresh = await uow.tx.shiftCount.findUniqueOrThrow({ where: { id: d.shiftCountId } });
+    if (fresh.status === "discrepancy") await casUpdate(uow, { model: "ShiftCount", id: fresh.id, version: fresh.version, from: ["discrepancy"], to: "resolved", actor, eventType: "shift_count.resolved" });
+  }
+  const task = await uow.tx.task.findUnique({ where: { dedupeKey: `count-discrepancy:${d.id}` } });
+  if (task && (task.status === "open" || task.status === "in_progress")) await casUpdate(uow, { model: "Task", id: task.id, version: task.version, from: ["open", "in_progress"], to: "done", actor, eventType: "task.done", data: { completedById: userOf(actor), completedAt: uow.now } });
+  return { discrepancyId: d.id, resolution, incidentId, adjustmentId };
+}
+
+// features/keystone/lib/workflows/engine.ts
+var import_node_crypto8 = require("node:crypto");
+init_cas();
+init_errors();
+init_common();
+
+// features/keystone/lib/workflows/blocks.ts
+var import_zod2 = require("zod");
+var hours2 = (n) => n * 36e5;
+var day3 = (d) => d.toISOString().slice(0, 10);
+var lowFluid = {
+  code: "low_fluid_intake",
+  label: "Low fluid intake over 24 hours",
+  params: import_zod2.z.object({ thresholdMl: import_zod2.z.number().int().min(100).max(5e3).default(1e3) }),
+  async run({ tx, communityId, now, params }) {
+    const threshold = Number(params.thresholdMl ?? 1e3);
+    const since = new Date(now.getTime() - hours2(24));
+    const residents = await tx.resident.findMany({ where: { communityId, status: "current" }, select: { id: true, firstName: true } });
+    const out = [];
+    for (const r of residents) {
+      const rows = await tx.intakeRecord.findMany({ where: { residentId: r.id, kind: "fluid", at: { gte: since } }, select: { id: true, amountMl: true } });
+      const total = rows.reduce((sum, row) => sum + Number(row.amountMl ?? 0), 0);
+      if (total < threshold) {
+        out.push({ residentId: r.id, key: day3(now), title: `Low fluid intake: ${total} mL in 24 hours`, detail: `Threshold ${threshold} mL. ${rows.length} entries charted.`, severity: total < threshold / 2 ? "urgent" : "warning", ownerRole: "Charge Nurse (RN/LPN)", evidence: rows.slice(0, 10).map((row) => ({ recordType: "IntakeRecord", recordId: row.id, quote: `${row.amountMl ?? 0} mL` })) });
+      }
+    }
+    return out;
+  }
+};
+var weightLoss = {
+  code: "weight_loss",
+  label: "Weight loss over 30 days",
+  params: import_zod2.z.object({ percent: import_zod2.z.number().min(1).max(30).default(5), days: import_zod2.z.number().int().min(7).max(180).default(30) }),
+  async run({ tx, communityId, now, params }) {
+    const pct = Number(params.percent ?? 5);
+    const days = Number(params.days ?? 30);
+    const since = new Date(now.getTime() - days * 864e5);
+    const rows = await tx.vitalSign.findMany({ where: { communityId, kind: "weight", takenAt: { gte: since } }, orderBy: { takenAt: "asc" }, select: { id: true, residentId: true, value: true, takenAt: true } });
+    const by5 = /* @__PURE__ */ new Map();
+    for (const row of rows) by5.set(row.residentId, [...by5.get(row.residentId) ?? [], row]);
+    const out = [];
+    for (const [residentId, list14] of by5) {
+      if (list14.length < 2) continue;
+      const first = list14[0];
+      const last = list14[list14.length - 1];
+      const loss = (Number(first.value) - Number(last.value)) / Number(first.value) * 100;
+      if (loss >= pct) out.push({ residentId, key: day3(last.takenAt), title: `Weight down ${loss.toFixed(1)}% in ${days} days`, detail: `${first.value} kg to ${last.value} kg.`, severity: loss >= pct * 2 ? "urgent" : "warning", ownerRole: "Director of Nursing", evidence: [{ recordType: "VitalSign", recordId: first.id, quote: `${first.value} kg` }, { recordType: "VitalSign", recordId: last.id, quote: `${last.value} kg` }] });
+    }
+    return out;
+  }
+};
+var woundOverdue = {
+  code: "wound_assessment_overdue",
+  label: "Wound assessment overdue",
+  params: import_zod2.z.object({}),
+  async run({ tx, communityId, now }) {
+    const wounds = await tx.wound.findMany({ where: { communityId, status: "open" }, select: { id: true, residentId: true, site: true, lastAssessedAt: true, assessmentIntervalDays: true } });
+    const out = [];
+    for (const w of wounds) {
+      const interval = (w.assessmentIntervalDays ?? 7) * 864e5;
+      const last = w.lastAssessedAt?.getTime() ?? 0;
+      if (now.getTime() - last > interval) out.push({ residentId: w.residentId, key: `${w.id}:${day3(new Date(last || 0))}`, title: `Wound assessment overdue: ${w.site}`, detail: w.lastAssessedAt ? `Last assessed ${day3(w.lastAssessedAt)}.` : "Never assessed.", severity: "warning", ownerRole: "Charge Nurse (RN/LPN)", evidence: [{ recordType: "Wound", recordId: w.id, quote: w.site }] });
+    }
+    return out;
+  }
+};
+var missedDoses = {
+  code: "missed_doses",
+  label: "Repeated missed doses",
+  params: import_zod2.z.object({ count: import_zod2.z.number().int().min(2).max(20).default(2) }),
+  async run({ tx, communityId, now, params }) {
+    const need = Number(params.count ?? 2);
+    const slots = await tx.administrationSlot.findMany({ where: { communityId, status: "missed", scheduledFor: { gte: new Date(now.getTime() - hours2(24)) } }, select: { id: true, residentId: true, drugName: true } });
+    const by5 = /* @__PURE__ */ new Map();
+    for (const s of slots) by5.set(s.residentId, [...by5.get(s.residentId) ?? [], s]);
+    return [...by5].filter(([, list14]) => list14.length >= need).map(([residentId, list14]) => ({
+      residentId,
+      key: day3(now),
+      title: `${list14.length} missed doses in 24 hours`,
+      detail: [...new Set(list14.map((s) => s.drugName))].join(", "),
+      severity: "urgent",
+      ownerRole: "Director of Nursing",
+      evidence: list14.slice(0, 10).map((s) => ({ recordType: "AdministrationSlot", recordId: s.id, quote: s.drugName ?? void 0 }))
+    }));
+  }
+};
+var BLOCKS = Object.fromEntries([lowFluid, weightLoss, woundOverdue, missedDoses].map((b) => [b.code, b]));
+var WorkflowGraph = import_zod2.z.object({ nodes: import_zod2.z.array(import_zod2.z.object({ block: import_zod2.z.string(), params: import_zod2.z.record(import_zod2.z.string(), import_zod2.z.unknown()).default({}) })).min(1).max(8) });
+function validateGraph(input) {
+  const graph = WorkflowGraph.parse(input);
+  return { nodes: graph.nodes.map((node) => {
+    const block = BLOCKS[node.block];
+    if (!block) throw new Error(`Unknown block "${node.block}".`);
+    return { block: node.block, params: block.params.parse(node.params) };
+  }) };
+}
+var LIBRARY = [
+  { code: "low_fluid_intake", name: "Low fluid intake", description: "Residents who drank less than the daily threshold.", graph: { nodes: [{ block: "low_fluid_intake", params: { thresholdMl: 1e3 } }] }, policy: { thresholdMl: 1e3 } },
+  { code: "weight_loss", name: "Significant weight loss", description: "Weight down 5% or more over 30 days.", graph: { nodes: [{ block: "weight_loss", params: { percent: 5, days: 30 } }] }, policy: { percent: 5, days: 30 } },
+  { code: "wound_assessment_overdue", name: "Wound assessment overdue", description: "Open wounds past their assessment interval.", graph: { nodes: [{ block: "wound_assessment_overdue", params: {} }] }, policy: {} },
+  { code: "missed_doses", name: "Repeated missed doses", description: "Two or more missed doses for one resident in 24 hours.", graph: { nodes: [{ block: "missed_doses", params: { count: 2 } }] }, policy: { count: 2 } }
+];
+
+// features/keystone/lib/workflows/engine.ts
+var WINDOW_MS = { page_load: 36e5, source_change: 6e4, run_now: 6e4 };
+var hash = (value) => (0, import_node_crypto8.createHash)("sha256").update(JSON.stringify(value)).digest("hex");
+var windowKeyFor = (versionId, trigger, now, suffix = "") => `${versionId}:${trigger}:${Math.floor(now.getTime() / WINDOW_MS[trigger])}${suffix ? `:${suffix}` : ""}`;
+async function seedWorkflowLibrary(uow, actor) {
+  let created = 0;
+  for (const item of LIBRARY) {
+    if (await uow.tx.workflowDefinition.findFirst({ where: { code: item.code, communityId: null } })) continue;
+    const graph = validateGraph(item.graph);
+    const def = await uow.tx.workflowDefinition.create({ data: { code: item.code, name: item.name, description: item.description, origin: "library", status: "active" } });
+    await uow.tx.workflowVersion.create({ data: { definitionId: def.id, versionNumber: 1, graph, graphHash: hash(graph), policyVersion: "v1", policy: item.policy, status: "dry_run_ok", description: item.description } });
+    auditCreate(uow, actor, "WorkflowDefinition", def.id, "workflow.library_loaded", { code: item.code });
+    created += 1;
+  }
+  return { created };
+}
+async function requestActivation(uow, actor, input) {
+  const version2 = await uow.tx.workflowVersion.findUnique({ where: { id: input.versionId }, include: { definition: true } });
+  if (!version2) throw new DomainError(Codes.NOT_FOUND, "Workflow not found.");
+  if (version2.status !== "dry_run_ok") throw new DomainError(Codes.GUARD_FAILED, "Only a version that passed its dry run is activated.");
+  const existing = await uow.tx.workflowActivation.findFirst({ where: { workflowVersionId: version2.id, communityId: input.communityId, status: "active" } });
+  if (existing) throw new DomainError(Codes.GUARD_FAILED, "Already active here.");
+  const request = await requestApproval(uow, actor, { action: "workflow.activate", targetList: "WorkflowVersion", targetId: version2.id, payload: { versionId: version2.id, communityId: input.communityId, graphHash: version2.graphHash }, requiredPermission: "canApproveWorkflows", summary: `Turn on "${version2.definition?.name}"`, communityId: input.communityId });
+  return { approvalRequestId: request.id };
+}
+registerApplier("workflow.activate", async (uow, actor, request) => {
+  const payload = request.payload;
+  const approverId = actor.kind === "user" ? actor.userId : null;
+  const version2 = await lockRow(uow.tx, "WorkflowVersion", payload.versionId);
+  if (version2.graphHash !== payload.graphHash) throw new DomainError(Codes.APPROVAL_MISMATCH, "The workflow changed after it was approved.");
+  const row = await uow.tx.workflowActivation.create({ data: { communityId: payload.communityId, workflowVersionId: version2.id, status: "active", approvals: { approverId }, activatedAt: uow.now, activatedById: approverId } });
+  if (version2.status !== "active") await casUpdate(uow, { model: "WorkflowVersion", id: version2.id, version: version2.version, from: ["dry_run_ok", "pending_activation"], to: "active", actor, eventType: "workflow.activated", approverId });
+  auditCreate(uow, actor, "WorkflowActivation", row.id, "workflow.activation_created", { communityId: payload.communityId });
+}, { applyOnApprove: true });
+async function runWorkflows(uow, actor, input) {
+  const activations = await uow.tx.workflowActivation.findMany({ where: { communityId: input.communityId, status: "active" }, include: { workflowVersion: { include: { definition: true } } } });
+  const result = { runs: 0, skipped: 0, opened: 0, resolved: 0 };
+  for (const activation of activations) {
+    const version2 = activation.workflowVersion;
+    if (!version2 || version2.status !== "active") continue;
+    const windowKey = windowKeyFor(version2.id, input.trigger, uow.now, `${input.communityId}${input.suffix ? `:${input.suffix}` : ""}`);
+    const claimed = await uow.tx.workflowRun.createMany({ data: [{ communityId: input.communityId, workflowVersionId: version2.id, windowKey, trigger: input.trigger, status: "running", startedAt: uow.now }], skipDuplicates: true });
+    if (claimed.count === 0) {
+      result.skipped += 1;
+      continue;
+    }
+    const run = await uow.tx.workflowRun.findUniqueOrThrow({ where: { windowKey } });
+    const code = version2.definition?.code ?? "workflow";
+    const candidates = [];
+    try {
+      const graph = validateGraph(version2.graph);
+      for (const node of graph.nodes) candidates.push(...await BLOCKS[node.block].run({ tx: uow.tx, communityId: input.communityId, now: uow.now, params: node.params }));
+    } catch (error) {
+      await uow.tx.workflowRun.update({ where: { id: run.id }, data: { status: "failed", finishedAt: uow.now, summary: { error: error instanceof Error ? error.message.slice(0, 300) : "failed" }, version: { increment: 1 } } });
+      continue;
+    }
+    let opened = 0;
+    const seen = /* @__PURE__ */ new Set();
+    for (const c of candidates) {
+      const dedupeKey = `${code}:${c.residentId}:${c.key}`;
+      seen.add(dedupeKey);
+      const made = await uow.tx.finding.createMany({ data: [{ communityId: input.communityId, residentId: c.residentId, workflowVersionId: version2.id, runId: run.id, workflowCode: code, dedupeKey, title: c.title, detail: c.detail, severity: c.severity, status: "open" }], skipDuplicates: true });
+      if (made.count === 0) continue;
+      opened += 1;
+      const finding = await uow.tx.finding.findUniqueOrThrow({ where: { dedupeKey } });
+      for (const e of c.evidence) await uow.tx.evidenceRef.create({ data: { communityId: input.communityId, findingId: finding.id, recordType: e.recordType, recordId: e.recordId, quote: e.quote } });
+      const { task } = await createTask(uow, actor, { communityId: input.communityId, residentId: c.residentId, kind: "finding", title: c.title, detail: c.detail, ownerRole: c.ownerRole, dedupeKey: `finding:${dedupeKey}`, subjectType: "Finding", subjectId: finding.id, createdByWorkflow: code, dueAt: new Date(uow.now.getTime() + (c.severity === "urgent" ? 4 : 24) * 36e5) });
+      await uow.tx.finding.update({ where: { id: finding.id }, data: { taskId: task.id } });
+      uow.audit({ eventType: "finding.opened", entityType: "Finding", entityId: finding.id, actorUserId: null, after: { workflow: code, title: c.title, evidenceCount: c.evidence.length } });
+    }
+    const stale = await uow.tx.finding.findMany({ where: { communityId: input.communityId, workflowCode: code, status: "open", dedupeKey: { notIn: [...seen] } }, select: { id: true, version: true } });
+    let resolved = 0;
+    for (const f of stale) {
+      const r = await uow.tx.finding.updateMany({ where: { id: f.id, version: f.version, status: "open" }, data: { status: "resolved", resolvedAt: uow.now, resolutionNote: "The condition no longer holds.", version: { increment: 1 } } });
+      resolved += r.count;
+    }
+    await uow.tx.workflowRun.update({ where: { id: run.id }, data: { status: "succeeded", finishedAt: uow.now, findingsOpened: opened, findingsResolved: resolved, version: { increment: 1 } } });
+    result.runs += 1;
+    result.opened += opened;
+    result.resolved += resolved;
+  }
+  return result;
+}
+async function dismissFinding(uow, actor, input) {
+  const f = await lockRow(uow.tx, "Finding", input.findingId);
+  const note = (input.note ?? "").trim();
+  if (note.length < 3) throw new DomainError(Codes.INVALID_INPUT, "Say why you are dismissing it.", { field: "note" });
+  await casUpdate(uow, { model: "Finding", id: f.id, version: f.version, from: ["open"], to: "dismissed", actor, eventType: "finding.dismissed", reason: note, data: { resolvedAt: uow.now, resolutionNote: note, dismissedById: actor.kind === "user" ? actor.userId : null } });
+  return { findingId: f.id };
+}
+
+// features/keystone/seed/clinical.ts
+init_cas();
+var REFERENCES = [
+  { name: "Lisinopril", strength: "10 mg", form: "tablet", schedule: "none", highAlert: false },
+  { name: "Metformin", strength: "500 mg", form: "tablet", schedule: "none", highAlert: false },
+  { name: "Acetaminophen", strength: "325 mg", form: "tablet", schedule: "none", highAlert: false },
+  { name: "Lorazepam", strength: "0.5 mg", form: "tablet", schedule: "iv", highAlert: false },
+  { name: "Oxycodone", strength: "5 mg", form: "tablet", schedule: "ii", highAlert: true }
+];
+async function seedClinical(uow, actor = systemActor("seed")) {
+  const { tx } = uow;
+  const out = { templates: 0, workflows: 0, references: 0, orders: 0, supplies: 0, carePlans: 0, activations: 0 };
+  const on = await tx.regulatoryObligation.updateMany({ where: { code: { in: ["CP_BASELINE_48H", "CP_COMPREHENSIVE_7D", "F609_INITIAL_2H", "F609_INITIAL_24H", "F609_INVESTIGATION_5WD", "PHYSICIAN_VISIT_30_60"] }, active: false }, data: { active: true } });
+  out.clocksActivated = on.count;
+  out.templates = (await seedAssessmentTemplates(uow, actor)).created;
+  out.workflows = (await seedWorkflowLibrary(uow, actor)).created;
+  for (const ref2 of REFERENCES) {
+    if (await tx.medicationReference.findFirst({ where: { name: ref2.name, strength: ref2.strength } })) continue;
+    await tx.medicationReference.create({ data: { ...ref2, genericName: ref2.name, source: "manual", status: "active" } });
+    out.references += 1;
+  }
+  const community = await tx.community.findFirst({ where: { synthetic: true }, orderBy: { createdAt: "asc" } });
+  if (!community) return out;
+  if (!await tx.pharmacyRelationship.findFirst({ where: { communityId: community.id } })) {
+    await tx.pharmacyRelationship.create({ data: { communityId: community.id, name: "Lakeshore Institutional Pharmacy (invented)", adapter: "manual", phone: "555-0140", status: "active" } });
+  }
+  for (const version2 of await tx.workflowVersion.findMany({ where: { status: "dry_run_ok", definition: { origin: "library" } } })) {
+    await tx.workflowActivation.create({ data: { communityId: community.id, workflowVersionId: version2.id, status: "active", activatedAt: uow.now, approvals: { seed: true } } });
+    await tx.workflowVersion.update({ where: { id: version2.id }, data: { status: "active", version: { increment: 1 } } });
+    out.activations += 1;
+  }
+  const residents = await tx.resident.findMany({ where: { communityId: community.id, status: "current", synthetic: true }, orderBy: { reference: "asc" }, take: 4, select: { id: true } });
+  const kit = await tx.unit.findFirst({ where: { communityId: community.id, setting: "nursing_facility" }, orderBy: { code: "asc" } });
+  for (const [index, resident] of residents.entries()) {
+    if (await tx.order.findFirst({ where: { residentId: resident.id } })) continue;
+    const mine = index % 2 === 0 ? { drugName: "Lisinopril", dose: 10, doseUnit: "mg", times: ["08:00"], holdParameters: { vital: "systolic_bp", op: "lt", value: 100 } } : { drugName: "Metformin", dose: 500, doseUnit: "mg", times: ["08:00", "17:00"] };
+    await enterOrder(uow, actor, { residentId: resident.id, kind: "medication", summary: `${mine.drugName} ${mine.dose} ${mine.doseUnit}`, source: "written", prescriberName: "Dr. Imani Okafor (invented)", medication: { ...mine, route: "oral" } });
+    await enterOrder(uow, actor, { residentId: resident.id, kind: "medication", summary: "Acetaminophen 325 mg every 6 hours as needed for pain", source: "written", prescriberName: "Dr. Imani Okafor (invented)", medication: { drugName: "Acetaminophen", dose: 325, doseUnit: "mg", route: "oral", prn: true, prnReason: "pain", prnMinIntervalMinutes: 360, prnFollowUpMinutes: 60 } });
+    out.orders += 2;
+    await createCarePlan(uow, actor, { residentId: resident.id, kind: "baseline", items: [
+      { kind: "focus", text: "Risk of falls" },
+      { kind: "goal", text: "No falls with injury this quarter", parentIndex: 0 },
+      { kind: "intervention", text: "Check call light within reach; offer toileting", frequency: "every_shift", parentIndex: 0 }
+    ] });
+    out.carePlans += 1;
+  }
+  const witness = await tx.user.findFirst({ where: { role: { name: "Charge Nurse (RN/LPN)" } }, select: { id: true } });
+  if (kit && witness && !await tx.medicationSupply.findFirst({ where: { communityId: community.id, controlled: true } })) {
+    await receiveSupply(uow, actor, { communityId: community.id, kind: "house_stock", label: "Lorazepam 0.5 mg (house stock, invented)", unit: "tablet", quantity: 30, unitLocationId: kit.id, controlled: true, witnessId: witness?.id ?? null });
+    out.supplies += 1;
+  }
+  if (!await tx.medicationSupply.findFirst({ where: { communityId: community.id, kind: "ekit" } })) {
+    await receiveSupply(uow, actor, { communityId: community.id, kind: "ekit", label: "Emergency kit A (invented)", unit: "dose", quantity: 12, unitLocationId: kit?.id ?? null });
+    out.supplies += 1;
+  }
+  await generateAdministrationSlots(uow, community.id);
+  auditCreate(uow, actor, "Community", community.id, "seed.clinical_loaded", out);
+  return out;
+}
+
+// features/keystone/mutations/setup.ts
+async function loadOperatorSetup(_root, args, context) {
+  const actor = actorFromSession(context.session);
+  requirePermission(actor, "canManageOnboarding");
+  const result = await command(context.prisma, { name: "setup.load_operator", actor, idempotencyKey: args.idempotencyKey, params: {} }, (uow) => seedOperatorPlatform(uow, actor));
+  return { replay: result.replay, ...result.value };
+}
+async function loadCensusSetup(_root, _args, context) {
+  const actor = actorFromSession(context.session);
+  requirePermission(actor, "canManageOnboarding");
+  const progress = await runCensusSeed(context.prisma, { budgetMs: 9e3 });
+  return { ...progress, created: progress.created };
+}
+async function loadClinicalSetup(_root, args, context) {
+  const actor = actorFromSession(context.session);
+  requirePermission(actor, "canManageOnboarding");
+  const result = await command(context.prisma, { name: "setup.load_clinical", actor, idempotencyKey: args.idempotencyKey, params: {} }, (uow) => seedClinical(uow, actor));
+  return { replay: result.replay, ...result.value };
+}
+
+// features/keystone/mutations/audit.ts
+init_actor();
+async function verifyAuditChain2(_root, _args, context) {
+  const actor = actorFromSession(context.session);
+  requirePermission(actor, "canReadAudit");
+  return verifyAuditChain(context.prisma);
+}
+
+// features/keystone/mutations/approvals.ts
+init_actor();
+init_cas();
+init_errors();
 
 // features/keystone/mcp-oauth/session.ts
 async function resolveMcpAccessToken(context, token, listKey = "User") {
@@ -6989,6 +8428,7 @@ function mcpSessionMarker(session) {
 }
 
 // features/keystone/lib/operatorControls.ts
+init_errors();
 var KEYS = ["inferencePolicy", "breakGlassMaxHours", "reauthMinutes", "bedHoldNoticeGraceHours", "writeOffApprovalThresholdMinor", "refundApprovalThresholdMinor", "trustApprovalThresholdMinor", "strictAgentOwnerSoD"];
 var INTS = { breakGlassMaxHours: [1, 24], reauthMinutes: [1, 60], bedHoldNoticeGraceHours: [0, 72] };
 function validateOperatorControls(input) {
@@ -7095,6 +8535,8 @@ async function requestOperatorControls(_root, args, context) {
 }
 
 // features/keystone/lib/censusCorrection.ts
+init_cas();
+init_errors();
 var LATE_KINDS = ["room_change", "leave_start", "hold_release", "leave_end", "coverage_change"];
 function validateCorrection(payload) {
   if (!payload?.stayId) throw new DomainError(Codes.INVALID_INPUT, "Choose the stay.", { field: "stayId" });
@@ -7146,6 +8588,8 @@ async function requestClosedPeriodCorrection(uow, actor, payload) {
 registerApplier("census.correct_closed_period", (uow, actor, request) => applyCorrection(uow, actor, request.payload, request.id), { applyOnApprove: true });
 
 // features/keystone/mutations/actorFor.ts
+init_actor();
+init_errors();
 async function actorFor(context) {
   const person = actorFromSession(context.session);
   const marker = mcpSessionMarker(context.session);
@@ -7159,10 +8603,19 @@ async function actorFor(context) {
   return { kind: "agent", agentId: agent.id, ownerUserId: agent.ownerId, name: agent.name, scopes: new Set(agent.grants.map((g) => g.scope)) };
 }
 
+// features/keystone/mutations/census.ts
+init_actor();
+
+// features/keystone/mutations/run.ts
+init_actor();
+init_errors();
+
 // features/keystone/lib/jobs.ts
-var import_node_crypto8 = require("node:crypto");
+var import_node_crypto9 = require("node:crypto");
+init_actor();
 
 // features/keystone/lib/lease.ts
+init_errors();
 async function acquireLease(db, key, owner, ttlMs, now = /* @__PURE__ */ new Date()) {
   const expiresAt = new Date(now.getTime() + ttlMs);
   const rows = await db.$queryRaw`
@@ -7194,7 +8647,7 @@ async function assertFence(tx, grant, now = /* @__PURE__ */ new Date()) {
 // features/keystone/lib/jobs.ts
 var LEASE_MS = 5 * 6e4;
 async function runLeasedJob(db, kind, scopeKey, work, now = /* @__PURE__ */ new Date()) {
-  const owner = `${process.env.RAILWAY_REPLICA_ID ?? "local"}:${(0, import_node_crypto8.randomUUID)()}`;
+  const owner = `${process.env.RAILWAY_REPLICA_ID ?? "local"}:${(0, import_node_crypto9.randomUUID)()}`;
   const grant = await acquireLease(db, `job:${kind}:${scopeKey}`, owner, LEASE_MS, now);
   if (!grant) return { skipped: true };
   const run = await db.jobRun.create({ data: { kind, scopeKey, status: "running", startedAt: now, fencingToken: grant.fencingToken } });
@@ -7381,21 +8834,22 @@ async function verifyStay(_root, args, context) {
 }
 
 // features/keystone/lib/portalReads.ts
-var import_node_crypto10 = require("node:crypto");
+var import_node_crypto11 = require("node:crypto");
+init_errors();
 
 // features/keystone/security/phiReadAudit.ts
-var import_node_crypto9 = require("node:crypto");
+var import_node_crypto10 = require("node:crypto");
 var import_graphql2 = require("graphql");
 function referenceToken(secret2, resourceType, id) {
   if (!secret2 || secret2.length < 32) throw new Error("A strong PHI audit reference secret is required");
-  return (0, import_node_crypto9.createHmac)("sha256", secret2).update(`${resourceType}\0${id}`).digest("hex");
+  return (0, import_node_crypto10.createHmac)("sha256", secret2).update(`${resourceType}\0${id}`).digest("hex");
 }
 function phiReferenceSecret() {
   const configured = process.env.PHI_AUDIT_SECRET?.trim();
   if (configured) return configured;
   const session = process.env.SESSION_SECRET?.trim() ?? "";
   if (!session) return "";
-  return (0, import_node_crypto9.createHmac)("sha256", session).update("openfront-senior-care:phi-audit").digest("hex");
+  return (0, import_node_crypto10.createHmac)("sha256", session).update("openfront-senior-care:phi-audit").digest("hex");
 }
 
 // features/keystone/lib/portalReads.ts
@@ -7408,15 +8862,15 @@ async function portalAccountFor(tx, principal) {
 async function portalResidents(tx, principal) {
   const account = await portalAccountFor(tx, principal);
   const grants = await tx.portalScopeGrant.findMany({ where: { accountId: account.id, status: "granted" }, select: { residentId: true, scope: true, resident: { select: { id: true, firstName: true, preferredName: true, status: true, community: { select: { name: true, slug: true } } } } } });
-  const byResident = /* @__PURE__ */ new Map();
+  const byResident2 = /* @__PURE__ */ new Map();
   for (const grant of grants) {
     if (!grant.resident || !grant.residentId) continue;
-    const row = byResident.get(grant.residentId) ?? { residentId: grant.residentId, name: grant.resident.preferredName || grant.resident.firstName, community: grant.resident.community?.name ?? "", scopes: [] };
+    const row = byResident2.get(grant.residentId) ?? { residentId: grant.residentId, name: grant.resident.preferredName || grant.resident.firstName, community: grant.resident.community?.name ?? "", scopes: [] };
     row.scopes.push(grant.scope);
-    byResident.set(grant.residentId, row);
+    byResident2.set(grant.residentId, row);
   }
-  for (const residentId of byResident.keys()) await auditPortalRead(tx, principal, "portalMe", residentId, ["Resident.firstName", "Resident.community"], 1);
-  return { mfaEnrolled: account.mfaEnrolled, residents: [...byResident.values()] };
+  for (const residentId of byResident2.keys()) await auditPortalRead(tx, principal, "portalMe", residentId, ["Resident.firstName", "Resident.community"], 1);
+  return { mfaEnrolled: account.mfaEnrolled, residents: [...byResident2.values()] };
 }
 async function requireScope2(tx, principal, residentId, scope2) {
   const account = await portalAccountFor(tx, principal);
@@ -7438,8 +8892,8 @@ async function auditPortalRead(tx, principal, operationName, residentId, fields,
       operationName,
       rootFields: [operationName],
       selectedFields: fields,
-      selectionDigest: (0, import_node_crypto10.createHash)("sha256").update(`${operationName}:${fields.join(",")}`).digest("hex"),
-      resultReferenceDigest: (0, import_node_crypto10.createHash)("sha256").update(reference).digest("hex"),
+      selectionDigest: (0, import_node_crypto11.createHash)("sha256").update(`${operationName}:${fields.join(",")}`).digest("hex"),
+      resultReferenceDigest: (0, import_node_crypto11.createHash)("sha256").update(reference).digest("hex"),
       resourceReferences: [reference],
       purpose: "family_access",
       breakGlass: false,
@@ -7484,15 +8938,16 @@ async function portalDocuments(tx, principal, residentId) {
 }
 
 // features/keystone/lib/publicRateLimit.ts
-var import_node_crypto12 = require("node:crypto");
+var import_node_crypto13 = require("node:crypto");
+init_errors();
 
 // features/keystone/security/internalIdentity.ts
-var import_node_crypto11 = require("node:crypto");
+var import_node_crypto12 = require("node:crypto");
 var INTERNAL_IDENTITY_MAX_AGE_MS = 9e4;
 function safeEqual(left, right) {
   const leftBuffer = Buffer.from(left);
   const rightBuffer = Buffer.from(right);
-  return leftBuffer.length === rightBuffer.length && (0, import_node_crypto11.timingSafeEqual)(leftBuffer, rightBuffer);
+  return leftBuffer.length === rightBuffer.length && (0, import_node_crypto12.timingSafeEqual)(leftBuffer, rightBuffer);
 }
 function verifiedInternalIdentity(headers, socketAddress, secret2, now) {
   const loopback = /^(?:127\.|::1$|::ffff:127\.)/.test(String(socketAddress || ""));
@@ -7503,7 +8958,7 @@ function verifiedInternalIdentity(headers, socketAddress, secret2, now) {
   if (!/^[a-f0-9]{64}$/.test(identity) || !/^\d{10}$/.test(timestamp13) || !/^[a-f0-9]{64}$/.test(signature)) return null;
   const age = Math.abs(now - Number(timestamp13) * 1e3);
   if (!Number.isFinite(age) || age > INTERNAL_IDENTITY_MAX_AGE_MS) return null;
-  const expected = (0, import_node_crypto11.createHmac)("sha256", secret2).update(`${timestamp13}:${identity}`).digest("hex");
+  const expected = (0, import_node_crypto12.createHmac)("sha256", secret2).update(`${timestamp13}:${identity}`).digest("hex");
   return safeEqual(signature, expected) ? `forwarded:${identity}` : null;
 }
 
@@ -7531,8 +8986,8 @@ async function consumeRateLimit(prisma, input) {
   const now = input.now ?? /* @__PURE__ */ new Date();
   const windowMs = Math.max(6e4, Math.min(24 * 36e5, Math.floor(input.windowMs)));
   const windowStartMs = Math.floor(now.getTime() / windowMs) * windowMs;
-  const identity = (0, import_node_crypto12.createHmac)("sha256", signingSecret()).update(normalized(input.address)).digest("hex");
-  const bucketKey = (0, import_node_crypto12.createHmac)("sha256", signingSecret()).update(`${input.operation}:${windowStartMs}:${identity}`).digest("hex");
+  const identity = (0, import_node_crypto13.createHmac)("sha256", signingSecret()).update(normalized(input.address)).digest("hex");
+  const bucketKey = (0, import_node_crypto13.createHmac)("sha256", signingSecret()).update(`${input.operation}:${windowStartMs}:${identity}`).digest("hex");
   const row = await prisma.requestRateLimitBucket.upsert({
     where: { bucketKey },
     create: { bucketKey, count: 1, windowStartsAt: new Date(windowStartMs), expiresAt: new Date(windowStartMs + windowMs + 36e5) },
@@ -7548,6 +9003,7 @@ async function enforceRateLimit(context, operation, limit, windowMs = 10 * 6e4) 
 }
 
 // features/keystone/mutations/frontOfHouse.ts
+init_errors();
 var reservePlaceMutation = (_, args, context) => runDomain(context, args, { name: "place.reserve", permissions: ["canAdmitDischarge", "canManageSales"], community: (tx) => communityOf.place(tx, args) }, (uow, actor) => reservePlace(uow, actor, args));
 var releaseReservation = (_, args, context) => runDomain(context, args, { name: "place.release", permissions: ["canAdmitDischarge", "canManageSales"], community: (tx) => communityOf.reservation(tx, args.reservationId) }, (uow, actor) => endReservation(uow, actor, { ...args, to: "released" }));
 var markPlaceReadyMutation = (_, args, context) => runDomain(context, args, { name: "place.ready", permissions: ["canManagePlaces", "canRecordCensus"], community: (tx) => communityOf.place(tx, args) }, (uow, actor) => markPlaceReady(uow, actor, args));
@@ -7573,8 +9029,8 @@ var storefrontCommunityQuery = async (_, args, context) => {
 var cancelTourByToken = (_, args, context) => publicCall(context, "tour-manage", 20, (uow) => cancelTourWithToken(uow, args));
 var acceptPortalInvitationMutation = async (_, args, context) => {
   if (typeof args.password !== "string" || args.password.length < 12) throw new DomainError(Codes.INVALID_INPUT, "Use at least 12 characters.", { field: "password" });
-  const { hash } = await import("bcryptjs");
-  const passwordHash = await hash(args.password, 10);
+  const { hash: hash2 } = await import("bcryptjs");
+  const passwordHash = await hash2(args.password, 10);
   return publicCall(context, "portal-invite", 10, (uow) => acceptPortalInvitation(uow, { token: args.token, passwordHash }));
 };
 var recordInquiryMutation = (_, args, context) => runDomain(context, args, { name: "sales.inquiry", permissions: ["canManageSales"], community: async () => args.input.communityId }, (uow, actor) => recordInquiry(uow, actor, args.input));
@@ -7610,7 +9066,9 @@ var portalCalendarQuery = (_, args, context) => portalRead(context, (tx) => port
 var portalDocumentsQuery = (_, args, context) => portalRead(context, (tx) => portalDocuments(tx, portalPrincipal(context), args.residentId));
 
 // features/keystone/mutations/reads.ts
-var import_node_crypto13 = require("node:crypto");
+var import_node_crypto14 = require("node:crypto");
+init_actor();
+init_errors();
 async function reader(context, permissions2) {
   const actor = await actorFor(context);
   if (actor.kind === "agent") requireScope(actor, "census.read");
@@ -7632,8 +9090,8 @@ async function auditRead(context, actor, operationName, residentIds) {
       operationName,
       rootFields: [operationName],
       selectedFields: ["Resident.firstName", "Resident.lastName"],
-      selectionDigest: (0, import_node_crypto13.createHash)("sha256").update(`${operationName}:names`).digest("hex"),
-      resultReferenceDigest: (0, import_node_crypto13.createHash)("sha256").update(references.join(",")).digest("hex"),
+      selectionDigest: (0, import_node_crypto14.createHash)("sha256").update(`${operationName}:names`).digest("hex"),
+      resultReferenceDigest: (0, import_node_crypto14.createHash)("sha256").update(references.join(",")).digest("hex"),
       resourceReferences: references,
       purpose: mcpSessionMarker(context.session) || actor.kind === "agent" ? "operations" : "treatment_operations",
       breakGlass: false,
@@ -7746,6 +9204,393 @@ async function residentRoster(_root, args, context) {
   }));
 }
 
+// features/keystone/mutations/clinical.ts
+init_errors();
+init_db();
+init_cas();
+
+// features/keystone/lib/clinical/record.ts
+init_cas();
+init_errors();
+init_common();
+async function createProgressNote(uow, actor, input) {
+  const resident = await residentFor(uow.tx, input.residentId);
+  const kind = oneOf(input.kind, NOTE_KINDS, "note type");
+  const body = text14(input.body, "Note", { min: 3 });
+  const eventAt = when5(input.eventAt, "eventAt", uow.now);
+  if (eventAt.getTime() > uow.now.getTime() + 5 * 6e4) invalid("A note cannot describe a future time.", "eventAt");
+  const late = kind === "late_entry" || uow.now.getTime() - eventAt.getTime() > 60 * 6e4;
+  const note = await uow.tx.progressNote.create({
+    data: { residentId: resident.id, communityId: resident.communityId, kind, body, status: "draft", eventAt, lateEntry: late, authorId: userOf(actor) }
+  });
+  auditCreate(uow, actor, "ProgressNote", note.id, "progress_note.created", { kind, lateEntry: late, residentId: resident.id });
+  return input.sign ? signProgressNote(uow, actor, { noteId: note.id }) : { noteId: note.id, status: "draft", lateEntry: late };
+}
+async function signProgressNote(uow, actor, input) {
+  const note = await lockRow(uow.tx, "ProgressNote", input.noteId);
+  if (note.authorId && note.authorId !== userOf(actor)) throw new DomainError(Codes.NOT_AUTHORIZED, "Only the author signs a note.");
+  if (input.expectedVersion != null && input.expectedVersion !== note.version) throw new DomainError(Codes.STALE_STATE, "The note changed. Reload and try again.", { currentVersion: note.version });
+  await casUpdate(uow, { model: "ProgressNote", id: note.id, version: note.version, from: ["draft"], to: "signed", actor, eventType: "progress_note.signed", data: { signedById: userOf(actor), signedAt: uow.now } });
+  return { noteId: note.id, status: "signed" };
+}
+async function amendProgressNote(uow, actor, input) {
+  const old = await lockRow(uow.tx, "ProgressNote", input.noteId);
+  const reason = text14(input.reason, "Reason", { min: 3 });
+  const body = text14(input.body, "Amended note", { min: 3 });
+  const next = await uow.tx.progressNote.create({
+    data: { residentId: old.residentId, communityId: old.communityId, kind: old.kind, body: `${body}
+
+(Amends an earlier note. Reason: ${reason})`, status: "signed", eventAt: old.eventAt, lateEntry: true, authorId: userOf(actor), signedById: userOf(actor), signedAt: uow.now, amendsId: old.id }
+  });
+  await casUpdate(uow, { model: "ProgressNote", id: old.id, version: old.version, from: ["signed", "amended"], to: "amended", actor, eventType: "progress_note.amended", reason, data: { amendedById: next.id } });
+  auditCreate(uow, actor, "ProgressNote", next.id, "progress_note.created", { amends: old.id, reason });
+  return { noteId: next.id, amends: old.id };
+}
+async function markNoteInError(uow, actor, input) {
+  const note = await lockRow(uow.tx, "ProgressNote", input.noteId);
+  const reason = text14(input.reason, "Reason", { min: 5 });
+  await casUpdate(uow, { model: "ProgressNote", id: note.id, version: note.version, from: ["draft", "signed", "amended"], to: "entered_in_error", actor, eventType: "progress_note.entered_in_error", reason, data: { errorReason: reason } });
+  return { noteId: note.id, status: "entered_in_error" };
+}
+var VITAL_UNITS = {
+  temperature: { unit: "Cel", min: 30, max: 45 },
+  pulse: { unit: "/min", min: 10, max: 300 },
+  respirations: { unit: "/min", min: 2, max: 80 },
+  systolic_bp: { unit: "mm[Hg]", min: 30, max: 350 },
+  diastolic_bp: { unit: "mm[Hg]", min: 10, max: 250 },
+  spo2: { unit: "%", min: 30, max: 100 },
+  weight: { unit: "kg", min: 10, max: 400 },
+  pain: { unit: "{score}", min: 0, max: 10 },
+  blood_glucose: { unit: "mg/dL", min: 10, max: 1500 }
+};
+async function recordVitals(uow, actor, input) {
+  const resident = await residentFor(uow.tx, input.residentId);
+  if (!Array.isArray(input.readings) || !input.readings.length) invalid("Add at least one reading.", "readings");
+  const takenAt = when5(input.takenAt, "takenAt", uow.now);
+  const ids = [];
+  for (const reading of input.readings) {
+    const kind = oneOf(reading.kind, VITAL_KINDS, "vital sign");
+    const spec = VITAL_UNITS[kind];
+    const value = num(reading.value, kind, { min: spec.min, max: spec.max });
+    const row = await uow.tx.vitalSign.create({ data: { residentId: resident.id, communityId: resident.communityId, kind, value: String(value), unit: spec.unit, takenAt, recordedById: userOf(actor) } });
+    ids.push(row.id);
+  }
+  uow.audit({ eventType: "vitals.recorded", entityType: "Resident", entityId: resident.id, actorUserId: userOf(actor), after: { count: ids.length } });
+  return { vitalIds: ids };
+}
+async function recordIntake(uow, actor, input) {
+  const resident = await residentFor(uow.tx, input.residentId);
+  const kind = oneOf(input.kind, ["fluid", "meal", "supplement", "tube_feed"], "intake type");
+  const data = { residentId: resident.id, communityId: resident.communityId, kind, at: when5(input.at, "at", uow.now), recordedById: userOf(actor) };
+  if (input.amountMl != null && input.amountMl !== "") data.amountMl = String(num(input.amountMl, "Amount", { min: 0, max: 5e3 }));
+  if (input.percentEaten != null) data.percentEaten = num(input.percentEaten, "Percent eaten", { min: 0, max: 100 });
+  if (data.amountMl === void 0 && data.percentEaten === void 0) invalid("Record an amount or a percentage.");
+  const row = await uow.tx.intakeRecord.create({ data });
+  return { intakeId: row.id };
+}
+async function recordAdl(uow, actor, input) {
+  const resident = await residentFor(uow.tx, input.residentId);
+  const activity = oneOf(input.activity, ["bed_mobility", "transfer", "walking", "dressing", "eating", "toileting", "bathing", "hygiene", "continence"], "activity");
+  const level = oneOf(input.level, ["independent", "supervision", "limited_assist", "extensive_assist", "total_dependence", "did_not_occur"], "level");
+  const at = when5(input.at, "at", uow.now);
+  const row = await uow.tx.adlRecord.create({ data: { residentId: resident.id, communityId: resident.communityId, activity, level, at, recordedById: userOf(actor), pocTaskSlotId: input.slotId ?? null } });
+  if (input.slotId) {
+    const slot = await lockRow(uow.tx, "PocTaskSlot", input.slotId);
+    if (slot.residentId !== resident.id) notFound("Task");
+    await casUpdate(uow, { model: "PocTaskSlot", id: slot.id, version: slot.version, from: ["pending"], to: level === "did_not_occur" ? "not_done" : "done", actor, eventType: "poc_task.completed", data: { doneAt: at, doneById: userOf(actor) } });
+  }
+  return { adlId: row.id };
+}
+async function openWound(uow, actor, input) {
+  const resident = await residentFor(uow.tx, input.residentId);
+  const kind = oneOf(input.kind, ["pressure_injury", "skin_tear", "venous", "arterial", "diabetic", "surgical", "other"], "wound type");
+  const wound = await uow.tx.wound.create({
+    data: { residentId: resident.id, communityId: resident.communityId, site: text14(input.site, "Site"), kind, status: "open", firstNotedAt: uow.now, assessmentIntervalDays: input.intervalDays ?? 7 }
+  });
+  auditCreate(uow, actor, "Wound", wound.id, "wound.opened", { kind, residentId: resident.id });
+  await assessWoundRow(uow, actor, wound.id, resident.id, resident.communityId, input);
+  return { woundId: wound.id };
+}
+async function assessWoundRow(uow, actor, woundId, residentId, communityId, input) {
+  const stage = input.stage ? oneOf(input.stage, ["1", "2", "3", "4", "unstageable", "deep_tissue", "not_applicable"], "stage") : null;
+  const dim = (v, f) => v == null || v === "" ? null : String(qty(v, f));
+  await uow.tx.woundAssessment.create({
+    data: {
+      residentId,
+      communityId,
+      woundId,
+      stage,
+      lengthCm: dim(input.lengthCm, "Length"),
+      widthCm: dim(input.widthCm, "Width"),
+      depthCm: dim(input.depthCm, "Depth"),
+      description: input.description ?? "",
+      photos: input.photoDocumentIds ?? [],
+      assessedAt: uow.now,
+      assessedById: userOf(actor)
+    }
+  });
+  await uow.tx.wound.update({ where: { id: woundId }, data: { lastAssessedAt: uow.now, currentStage: stage ?? "", version: { increment: 1 } } });
+}
+async function assessWound(uow, actor, input) {
+  const wound = await lockRow(uow.tx, "Wound", input.woundId);
+  if (wound.status === "healed" || wound.status === "entered_in_error") throw new DomainError(Codes.INVALID_TRANSITION, "This wound is closed.");
+  await assessWoundRow(uow, actor, wound.id, wound.residentId, wound.communityId, input);
+  return { woundId: wound.id };
+}
+async function recordBehaviour(uow, actor, input) {
+  const resident = await residentFor(uow.tx, input.residentId);
+  const kind = oneOf(input.kind, ["wandering", "verbal", "physical", "resistance_to_care", "sundowning", "self_injury", "other"], "behaviour");
+  const row = await uow.tx.behaviourEpisode.create({
+    data: {
+      residentId: resident.id,
+      communityId: resident.communityId,
+      kind,
+      severity: input.severity ? oneOf(input.severity, ["mild", "moderate", "severe"], "severity") : "mild",
+      antecedent: input.antecedent ?? "",
+      intervention: input.intervention ?? "",
+      outcome: input.outcome ?? "",
+      startedAt: when5(input.startedAt, "startedAt", uow.now),
+      durationMinutes: input.durationMinutes ?? null,
+      recordedById: userOf(actor)
+    }
+  });
+  return { episodeId: row.id };
+}
+async function recordPhysicianVisit(uow, actor, input) {
+  const resident = await residentFor(uow.tx, input.residentId);
+  const kind = oneOf(input.kind, ["physician", "nurse_practitioner", "physician_assistant", "telehealth"], "visit type");
+  const visitedAt = when5(input.visitedAt, "visitedAt");
+  if (visitedAt.getTime() > uow.now.getTime() + 5 * 6e4) invalid("A visit cannot be in the future.", "visitedAt");
+  const row = await uow.tx.physicianVisit.create({
+    data: { residentId: resident.id, communityId: resident.communityId, kind, physicianName: text14(input.physicianName, "Physician"), visitedAt, summary: input.summary ?? "", recordedById: userOf(actor) }
+  });
+  auditCreate(uow, actor, "PhysicianVisit", row.id, "physician_visit.recorded", { residentId: resident.id, visitedAt });
+  return { visitId: row.id };
+}
+
+// features/keystone/lib/clinical/ipac.ts
+init_cas();
+init_errors();
+init_common();
+var SYNDROMES = ["uti", "respiratory", "skin_soft_tissue", "gastroenteritis", "covid19", "influenza", "cdiff", "other"];
+async function openInfectionCase(uow, actor, input) {
+  const resident = await residentFor(uow.tx, input.residentId);
+  const syndrome = oneOf(input.syndrome, SYNDROMES, "syndrome");
+  const criteria = input.criteria ?? {};
+  const met = Object.keys(criteria).length > 0 && Object.values(criteria).filter(Boolean).length >= 2;
+  const row = await uow.tx.infectionCase.create({
+    data: {
+      residentId: resident.id,
+      communityId: resident.communityId,
+      syndrome,
+      status: "suspected",
+      onsetAt: when5(input.onsetAt, "onsetAt", uow.now),
+      criteria,
+      criteriaMet: met,
+      criteriaSet: input.criteriaSet ?? "facility checklist (verify the surveillance definition)",
+      organism: input.organism ?? "",
+      cultureAt: input.cultureAt ? when5(input.cultureAt, "cultureAt") : null
+    }
+  });
+  auditCreate(uow, actor, "InfectionCase", row.id, "infection_case.opened", { syndrome, criteriaMet: met, residentId: resident.id });
+  if (input.precaution) await startPrecaution(uow, actor, { residentId: resident.id, kind: input.precaution, caseId: row.id, reason: `${syndrome} suspected` });
+  await clusterCheck(uow, actor, resident.communityId, syndrome, resident.id);
+  return { caseId: row.id, criteriaMet: met };
+}
+async function clusterCheck(uow, actor, communityId, syndrome, residentId) {
+  const since = new Date(uow.now.getTime() - 7 * 864e5);
+  const cases = await uow.tx.infectionCase.findMany({ where: { communityId, syndrome, status: { in: ["suspected", "confirmed"] }, onsetAt: { gte: since } }, select: { residentId: true } });
+  const people = new Set(cases.map((c) => c.residentId));
+  if (people.size < 3) return;
+  const zone = await communityZone(uow.tx, communityId);
+  await createTask(uow, actor, { communityId, residentId, kind: "escalation", title: `Possible cluster: ${people.size} residents with ${syndrome} in 7 days`, ownerRole: ROLE_NAMES.ip, escalationOwnerRole: ROLE_NAMES.don, dueAt: new Date(uow.now.getTime() + 4 * 36e5), dedupeKey: `cluster:${communityId}:${syndrome}:${localDate(zone, uow.now)}`, subjectType: "InfectionCase", subjectId: "" });
+}
+async function updateInfectionCase(uow, actor, input) {
+  const row = await lockRow(uow.tx, "InfectionCase", input.caseId);
+  const to = oneOf(input.to, ["confirmed", "ruled_out", "resolved"], "status");
+  await casUpdate(uow, { model: "InfectionCase", id: row.id, version: row.version, from: to === "resolved" ? ["suspected", "confirmed"] : ["suspected", "confirmed"], to, actor, eventType: `infection_case.${to}`, data: input.organism ? { organism: input.organism } : {} });
+  if (to === "ruled_out" || to === "resolved") {
+    await uow.tx.precautionOrder.updateMany({ where: { caseId: row.id, status: "active" }, data: { status: "ended", endedAt: uow.now, version: { increment: 1 } } });
+  }
+  return { caseId: row.id, status: to };
+}
+async function startPrecaution(uow, actor, input) {
+  const resident = await residentFor(uow.tx, input.residentId);
+  const kind = oneOf(input.kind, ["standard", "contact", "droplet", "airborne", "enhanced_barrier"], "precaution");
+  const zone = await communityZone(uow.tx, resident.communityId);
+  const row = await uow.tx.precautionOrder.create({ data: { residentId: resident.id, communityId: resident.communityId, kind, caseId: input.caseId ?? null, status: "active", startedAt: uow.now, reviewOn: /* @__PURE__ */ new Date(`${addDays(localDate(zone, uow.now), input.reviewDays ?? 7)}T00:00:00Z`), reason: input.reason ?? "" } });
+  auditCreate(uow, actor, "PrecautionOrder", row.id, "precaution.started", { kind, residentId: resident.id });
+  return { precautionId: row.id };
+}
+async function endPrecaution(uow, actor, input) {
+  const row = await lockRow(uow.tx, "PrecautionOrder", input.precautionId);
+  await casUpdate(uow, { model: "PrecautionOrder", id: row.id, version: row.version, from: ["active"], to: "ended", actor, eventType: "precaution.ended", reason: text14(input.reason, "Reason", { min: 3 }), data: { endedAt: uow.now } });
+  return { precautionId: row.id };
+}
+async function startAntibioticCourse(uow, actor, input) {
+  const resident = await residentFor(uow.tx, input.residentId);
+  const row = await uow.tx.antibioticCourse.create({
+    data: {
+      residentId: resident.id,
+      communityId: resident.communityId,
+      drugName: text14(input.drugName, "Drug"),
+      indication: text14(input.indication, "Indication"),
+      orderId: input.orderId ?? null,
+      caseId: input.caseId ?? null,
+      startedAt: uow.now,
+      plannedDays: input.plannedDays ?? null,
+      timeoutDueAt: new Date(uow.now.getTime() + 72 * 36e5),
+      status: "active"
+    }
+  });
+  auditCreate(uow, actor, "AntibioticCourse", row.id, "antibiotic.started", { drug: row.drugName, timeoutDueAt: row.timeoutDueAt });
+  await createTask(uow, actor, { communityId: resident.communityId, residentId: resident.id, kind: "general", title: `Antibiotic time-out: ${row.drugName}`, ownerRole: ROLE_NAMES.pharmacist, dueAt: row.timeoutDueAt, dedupeKey: `abx-timeout:${row.id}`, subjectType: "AntibioticCourse", subjectId: row.id });
+  return { courseId: row.id, timeoutDueAt: row.timeoutDueAt };
+}
+async function recordAntibioticTimeout(uow, actor, input) {
+  const row = await lockRow(uow.tx, "AntibioticCourse", input.courseId);
+  const outcome = oneOf(input.outcome, ["continue", "narrow", "stop", "change"], "outcome");
+  if (row.status !== "active") throw new DomainError(Codes.INVALID_TRANSITION, "This course is closed.");
+  await uow.tx.antibioticCourse.update({ where: { id: row.id }, data: { timeoutOutcome: outcome, timeoutAt: uow.now, timeoutById: userOf(actor) } });
+  if (outcome === "stop") await casUpdate(uow, { model: "AntibioticCourse", id: row.id, version: row.version, from: ["active"], to: "stopped", actor, eventType: "antibiotic.stopped" });
+  else uow.audit({ eventType: "antibiotic.timeout", entityType: "AntibioticCourse", entityId: row.id, actorUserId: userOf(actor), after: { outcome } });
+  const task = await uow.tx.task.findUnique({ where: { dedupeKey: `abx-timeout:${row.id}` } });
+  if (task && (task.status === "open" || task.status === "in_progress")) await casUpdate(uow, { model: "Task", id: task.id, version: task.version, from: ["open", "in_progress"], to: "done", actor, eventType: "task.done", data: { completedById: userOf(actor), completedAt: uow.now } });
+  return { courseId: row.id, outcome };
+}
+async function declareOutbreak(uow, actor, input) {
+  const community = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { id: true } });
+  if (!community) return notFound("Community");
+  const row = await uow.tx.outbreak.create({ data: { communityId: community.id, name: text14(input.name, "Name"), organism: input.organism ?? "", unitId: input.unitId ?? null, status: "declared", declaredAt: uow.now, declaredById: userOf(actor) } });
+  if (input.caseIds?.length) await uow.tx.infectionCase.updateMany({ where: { id: { in: input.caseIds }, communityId: community.id }, data: { outbreakId: row.id } });
+  auditCreate(uow, actor, "Outbreak", row.id, "outbreak.declared", { name: row.name, cases: input.caseIds?.length ?? 0 });
+  await createTask(uow, actor, { communityId: community.id, kind: "escalation", title: `Outbreak declared: ${row.name}. Notify the health department (done outside this system).`, ownerRole: ROLE_NAMES.director, dedupeKey: `outbreak:${row.id}`, subjectType: "Outbreak", subjectId: row.id });
+  return { outbreakId: row.id };
+}
+async function closeOutbreak(uow, actor, input) {
+  const row = await lockRow(uow.tx, "Outbreak", input.outbreakId);
+  const to = oneOf(input.status, ["contained", "closed"], "status");
+  await casUpdate(uow, { model: "Outbreak", id: row.id, version: row.version, from: to === "contained" ? ["declared"] : ["declared", "contained"], to, actor, eventType: `outbreak.${to}`, data: to === "closed" ? { closedAt: uow.now } : {} });
+  return { outbreakId: row.id, status: to };
+}
+async function recordImmunisation(uow, actor, input) {
+  const resident = await residentFor(uow.tx, input.residentId);
+  const vaccine = oneOf(input.vaccine, ["influenza", "covid19", "pneumococcal", "rsv", "tdap", "hepatitis_b", "other"], "vaccine");
+  const status = oneOf(input.status, ["offered", "accepted", "declined", "given", "contraindicated"], "status");
+  if (status === "given" && !input.givenAt) invalid("Say when it was given.", "givenAt");
+  const row = await uow.tx.immunisation.create({ data: { residentId: resident.id, communityId: resident.communityId, vaccine, status, offeredAt: uow.now, decidedAt: status === "offered" ? null : uow.now, givenAt: input.givenAt ? when5(input.givenAt, "givenAt") : null, lot: input.lot ?? "", recordedById: userOf(actor) } });
+  return { immunisationId: row.id };
+}
+
+// features/keystone/mutations/clinical.ts
+init_actor();
+var byResident = (tx, i) => communityOf.resident(tx, String(i.residentId ?? ""));
+var byCommunity = async (_tx, i) => i.communityId ? String(i.communityId) : null;
+var byRecord = (model, field) => async (tx, i) => {
+  const id = i[field];
+  if (typeof id !== "string" || !id) return null;
+  const row = await delegateOf(tx, model).findUnique({ where: { id }, select: { communityId: true } });
+  return row?.communityId ?? null;
+};
+var byUnit = async (tx, i) => (await tx.unit.findUnique({ where: { id: String(i.unitId ?? "") }, select: { communityId: true } }))?.communityId ?? null;
+var bySupply = byRecord("MedicationSupply", "supplyId");
+var NURSE = ["canChartNursing"];
+var MED = ["canAdministerMeds"];
+var HANDLERS = {
+  // Clinical record
+  "note.create": { permissions: ["canChartPointOfCare", "canChartNursing"], community: byResident, run: (u, a, i) => createProgressNote(u, a, i) },
+  "note.sign": { permissions: ["canChartPointOfCare", "canChartNursing"], community: byRecord("ProgressNote", "noteId"), run: (u, a, i) => signProgressNote(u, a, i) },
+  "note.amend": { permissions: ["canChartNursing"], community: byRecord("ProgressNote", "noteId"), run: (u, a, i) => amendProgressNote(u, a, i) },
+  "note.error": { permissions: ["canChartNursing"], community: byRecord("ProgressNote", "noteId"), run: (u, a, i) => markNoteInError(u, a, i), humanOnly: true },
+  "vitals.record": { permissions: ["canChartPointOfCare", "canChartNursing"], community: byResident, run: (u, a, i) => recordVitals(u, a, i) },
+  "intake.record": { permissions: ["canChartPointOfCare", "canChartNursing"], community: byResident, run: (u, a, i) => recordIntake(u, a, i) },
+  "adl.record": { permissions: ["canChartPointOfCare", "canChartNursing"], community: byResident, run: (u, a, i) => recordAdl(u, a, i) },
+  "wound.open": { permissions: NURSE, community: byResident, run: (u, a, i) => openWound(u, a, i) },
+  "wound.assess": { permissions: NURSE, community: byRecord("Wound", "woundId"), run: (u, a, i) => assessWound(u, a, i) },
+  "behaviour.record": { permissions: ["canChartPointOfCare", "canChartNursing"], community: byResident, run: (u, a, i) => recordBehaviour(u, a, i) },
+  "visit.record": { permissions: NURSE, community: byResident, run: (u, a, i) => recordPhysicianVisit(u, a, i) },
+  // Assessments and care plans
+  "assessment.complete": { permissions: ["canManageAssessments", "canChartNursing"], community: byResident, run: (u, a, i) => completeAssessment(u, a, i) },
+  "assessment.loadTemplates": { permissions: ["canManageAssessments"], community: async () => null, run: (u, a) => seedAssessmentTemplates(u, a) },
+  "carePlan.create": { permissions: ["canManageCarePlans"], community: byResident, run: (u, a, i) => createCarePlan(u, a, i) },
+  "carePlan.sign": { permissions: ["canManageCarePlans"], community: byRecord("CarePlan", "carePlanId"), run: (u, a, i) => signCarePlan(u, a, i), humanOnly: true },
+  // Orders
+  "order.enter": { permissions: ["canEnterOrders"], community: byResident, run: (u, a, i) => enterOrder(u, a, i) },
+  "order.countersign": { permissions: ["canSignOrders"], community: byRecord("Order", "orderId"), run: (u, a, i) => countersignOrder(u, a, i), humanOnly: true },
+  "order.discontinue": { permissions: ["canEnterOrders", "canSignOrders"], community: byRecord("Order", "orderId"), run: (u, a, i) => discontinueOrder(u, a, i) },
+  // eMAR
+  "emar.open": {
+    permissions: [...MED, "canReadClinical"],
+    community: byCommunity,
+    run: async (u, a, i) => ({ slots: await generateAdministrationSlots(u, String(i.communityId)), missed: await settleMissedDoses(u, a, String(i.communityId)), prnFollowUpsMissed: await settlePrnFollowUps(u, a, String(i.communityId)) })
+  },
+  "emar.administer": { permissions: MED, community: byRecord("AdministrationSlot", "slotId"), run: (u, a, i) => administerDose(u, a, i), humanOnly: true },
+  "emar.prn": { permissions: MED, community: byRecord("MedicationOrderDetail", "detailId"), run: (u, a, i) => administerPrn(u, a, i), humanOnly: true },
+  "emar.prnFollowUp": { permissions: MED, community: byRecord("PrnFollowUp", "followUpId"), run: (u, a, i) => recordPrnFollowUp(u, a, i) },
+  // Supplies and counts
+  "supply.receive": { permissions: ["canManagePharmacy", "canAdministerMeds"], community: byCommunity, run: (u, a, i) => receiveSupply(u, a, i), humanOnly: true },
+  "supply.destroy": { permissions: ["canManagePharmacy", "canWitnessControlled"], community: bySupply, run: (u, a, i) => destroySupply(u, a, i), humanOnly: true },
+  "ekit.draw": { permissions: MED, community: bySupply, run: (u, a, i) => drawFromEkit(u, a, i), humanOnly: true },
+  "count.start": { permissions: MED, community: byUnit, run: (u, a, i) => startShiftCount(u, a, i), humanOnly: true },
+  "count.entry": { permissions: MED, community: byRecord("ShiftCount", "shiftCountId"), run: (u, a, i) => submitCountEntry(u, a, i), humanOnly: true },
+  "count.complete": { permissions: MED, community: byRecord("ShiftCount", "shiftCountId"), run: (u, a, i) => completeShiftCount(u, a, i), humanOnly: true },
+  "count.resolve": { permissions: ["canResolveCountDiscrepancy"], community: byRecord("CountDiscrepancy", "discrepancyId"), run: (u, a, i) => resolveDiscrepancy(u, a, i), humanOnly: true },
+  // Incidents
+  "incident.report": { permissions: ["canReportIncident"], community: async (tx, i) => i.residentId ? communityOf.resident(tx, String(i.residentId)) : i.communityId ? String(i.communityId) : null, run: (u, a, i) => createIncident(u, a, i) },
+  "incident.investigate": { permissions: ["canInvestigateIncidents"], community: byRecord("Incident", "incidentId"), run: (u, a, i) => startInvestigation(u, a, i) },
+  "incident.completeInvestigation": { permissions: ["canInvestigateIncidents"], community: byRecord("IncidentInvestigation", "investigationId"), run: (u, a, i) => completeInvestigation(u, a, i) },
+  "incident.draftReport": { permissions: ["canInvestigateIncidents", "canSubmitRegulatory"], community: byRecord("Incident", "incidentId"), run: (u, a, i) => draftRegulatoryReport(u, a, i) },
+  "incident.recordSubmission": { permissions: ["canSubmitRegulatory"], community: byRecord("RegulatoryReport", "reportId"), run: (u, a, i) => recordReportSubmission(u, a, i), humanOnly: true },
+  "incident.close": { permissions: ["canInvestigateIncidents"], community: byRecord("Incident", "incidentId"), run: (u, a, i) => closeIncident(u, a, i), humanOnly: true },
+  "incident.requestDowngrade": { permissions: ["canInvestigateIncidents"], community: byRecord("Incident", "incidentId"), run: (u, a, i) => requestDowngrade(u, a, i), humanOnly: true },
+  // Infection prevention
+  "ipac.openCase": { permissions: ["canManageInfectionControl"], community: byResident, run: (u, a, i) => openInfectionCase(u, a, i) },
+  "ipac.updateCase": { permissions: ["canManageInfectionControl"], community: byRecord("InfectionCase", "caseId"), run: (u, a, i) => updateInfectionCase(u, a, i) },
+  "ipac.startPrecaution": { permissions: ["canManageInfectionControl", "canChartNursing"], community: byResident, run: (u, a, i) => startPrecaution(u, a, i) },
+  "ipac.endPrecaution": { permissions: ["canManageInfectionControl"], community: byRecord("PrecautionOrder", "precautionId"), run: (u, a, i) => endPrecaution(u, a, i) },
+  "ipac.startAntibiotic": { permissions: ["canManageInfectionControl", "canEnterOrders"], community: byResident, run: (u, a, i) => startAntibioticCourse(u, a, i) },
+  "ipac.antibioticTimeout": { permissions: ["canManageInfectionControl"], community: byRecord("AntibioticCourse", "courseId"), run: (u, a, i) => recordAntibioticTimeout(u, a, i) },
+  "ipac.declareOutbreak": { permissions: ["canDeclareOutbreak"], community: byCommunity, run: (u, a, i) => declareOutbreak(u, a, i), humanOnly: true },
+  "ipac.closeOutbreak": { permissions: ["canDeclareOutbreak"], community: async (tx, i) => (await tx.outbreak.findUnique({ where: { id: String(i.outbreakId ?? "") }, select: { communityId: true } }))?.communityId ?? null, run: (u, a, i) => closeOutbreak(u, a, i), humanOnly: true },
+  "ipac.immunisation": { permissions: ["canManageInfectionControl", "canChartNursing"], community: byResident, run: (u, a, i) => recordImmunisation(u, a, i) },
+  // Tasks
+  "task.complete": { permissions: ["canChartPointOfCare", "canChartNursing", "canReadClinical"], community: byRecord("Task", "taskId"), run: (u, a, i) => completeTask(u, a, i) },
+  // Workflows
+  "workflow.loadLibrary": { permissions: ["canManageWorkflows"], community: async () => null, run: (u, a) => seedWorkflowLibrary(u, a) },
+  "workflow.requestActivation": { permissions: ["canManageWorkflows"], community: byCommunity, run: (u, a, i) => requestActivation(u, a, i), humanOnly: true },
+  "workflow.run": { permissions: ["canReadFindings", "canManageWorkflows"], community: byCommunity, run: (u, a, i) => runWorkflows(u, a, { communityId: String(i.communityId), trigger: "run_now" }) },
+  "finding.dismiss": { permissions: ["canReadFindings"], community: byRecord("Finding", "findingId"), run: (u, a, i) => dismissFinding(u, a, i), humanOnly: true }
+};
+async function completeTask(uow, actor, input) {
+  const task = await lockRow(uow.tx, "Task", String(input.taskId));
+  await casUpdate(uow, { model: "Task", id: task.id, version: task.version, from: ["open", "in_progress"], to: "done", actor, eventType: "task.done", data: { completedById: actor.kind === "user" ? actor.userId : null, completedAt: uow.now } });
+  return { taskId: task.id };
+}
+async function clinicalCommand(_root, args, context) {
+  const handler = HANDLERS[args.op];
+  if (!handler) throw new DomainError(Codes.INVALID_INPUT, "Unknown action.");
+  const input = args.input && typeof args.input === "object" ? args.input : {};
+  return runDomain(context, { idempotencyKey: args.idempotencyKey, op: args.op, input }, { name: `clinical.${args.op}`, permissions: handler.permissions, humanOnly: handler.humanOnly, serializable: handler.serializable, community: (tx) => handler.community(tx, input) }, async (uow, actor) => {
+    const result = await handler.run(uow, actor, input);
+    if (SOURCE_OPS.has(args.op)) {
+      const communityId = await handler.community(uow.tx, input);
+      if (communityId) await runWorkflows(uow, actor, { communityId, trigger: "source_change" });
+    }
+    return result;
+  });
+}
+var SOURCE_OPS = /* @__PURE__ */ new Set(["intake.record", "vitals.record", "wound.open", "wound.assess", "emar.administer", "emar.open"]);
+async function runWorkflowsOnLoad(_root, args, context) {
+  const actor = await actorFor(context);
+  requirePermission(actor, "canReadFindings", "canManageWorkflows");
+  await advanceTimedStates(context.prisma);
+  const result = await command(context.prisma, { name: "workflow.page_load", actor, idempotencyKey: requireKey(args.idempotencyKey), params: { communityId: args.communityId } }, async (uow) => {
+    await assertCommunityAccess(uow.tx, actor, args.communityId);
+    return runWorkflows(uow, actor, { communityId: args.communityId, trigger: "page_load" });
+  });
+  return { replay: result.replay, ...result.value };
+}
+
 // features/keystone/mutations/index.ts
 var graphql = String.raw;
 function extendGraphqlSchema(baseSchema) {
@@ -7771,6 +9616,7 @@ function extendGraphqlSchema(baseSchema) {
         updateActiveUser(data: UserUpdateProfileInput!): User
         loadOperatorSetup(idempotencyKey: String!): JSON
         loadCensusSetup(idempotencyKey: String!): JSON
+        loadClinicalSetup(idempotencyKey: String!): JSON
         refreshTimedStates(idempotencyKey: String!): JSON
         decideApprovalRequest(requestId: ID!, decision: String!, reason: String, expectedVersion: Int!, idempotencyKey: String!): JSON
         cancelApprovalRequest(requestId: ID!, expectedVersion: Int!, reason: String, idempotencyKey: String!): JSON
@@ -7823,6 +9669,9 @@ function extendGraphqlSchema(baseSchema) {
         openBreakGlass(residentId: ID!, reason: String!, note: String!, hours: Int, idempotencyKey: String!): JSON
         endBreakGlass(grantId: ID!, idempotencyKey: String!): JSON
         reviewBreakGlass(grantId: ID!, outcome: String!, note: String!, expectedVersion: Int, idempotencyKey: String!): JSON
+
+        clinicalCommand(op: String!, input: JSON, idempotencyKey: String!): JSON
+        runWorkflowsOnLoad(communityId: ID!, idempotencyKey: String!): JSON
       }
     `,
     resolvers: {
@@ -7843,6 +9692,7 @@ function extendGraphqlSchema(baseSchema) {
         updateActiveUser: updateActiveUser_default,
         loadOperatorSetup: op(loadOperatorSetup),
         loadCensusSetup: op(loadCensusSetup),
+        loadClinicalSetup: op(loadClinicalSetup),
         refreshTimedStates: op(refreshTimedStatesMutation),
         decideApprovalRequest: op(decideApprovalRequest),
         cancelApprovalRequest: op(cancelApprovalRequest),
@@ -7889,7 +9739,9 @@ function extendGraphqlSchema(baseSchema) {
         setPortalAccountStatus: op(setPortalAccountStatusMutation),
         openBreakGlass: op(openBreakGlassMutation),
         endBreakGlass: op(endBreakGlassMutation),
-        reviewBreakGlass: op(reviewBreakGlassMutation)
+        reviewBreakGlass: op(reviewBreakGlassMutation),
+        clinicalCommand: op(clinicalCommand),
+        runWorkflowsOnLoad: op(runWorkflowsOnLoad)
       }
     }
   });
@@ -7960,6 +9812,9 @@ async function sendPasswordResetEmail(resetToken, to, baseUrl) {
     console.log(`\u{1F4E7} Message Sent!  Preview it at ${(0, import_nodemailer.getTestMessageUrl)(info)}`);
   }
 }
+
+// features/keystone/index.ts
+init_access();
 
 // features/keystone/prismaConstraints.ts
 var COMPOUND_UNIQUES = {

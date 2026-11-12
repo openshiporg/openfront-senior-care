@@ -32,4 +32,8 @@ export const Codes = {
   PLACE_UNAVAILABLE: 'PLACE_UNAVAILABLE',
   RATE_LIMITED: 'RATE_LIMITED',
   PROJECTION_MISMATCH: 'PROJECTION_MISMATCH',
+  /** Protected data would reach a provider that may not receive it (no_phi, sandbox with real subjects, lapsed BAA). */
+  INFERENCE_PHI_BLOCKED: 'INFERENCE_PHI_BLOCKED',
+  /** OperatorSettings.inferencePolicy does not allow this provider class. */
+  INFERENCE_POLICY_REFUSED: 'INFERENCE_POLICY_REFUSED',
 } as const

@@ -3586,8 +3586,12 @@ type Proposal {
   kind: String
   payload: JSON
   payloadHash: String
+  community: Community
   resident: Resident
   status: String
+  sourceFinding: Finding
+  inferenceCall: InferenceCall
+  rejectedReason: String
   agentRun: AgentRun
   proposedByAgent: AgentIdentity
   proposedByUser: User
@@ -3611,8 +3615,12 @@ input ProposalWhereInput {
   id: IDFilter
   kind: StringFilter
   payloadHash: StringFilter
+  community: CommunityWhereInput
   resident: ResidentWhereInput
   status: StringFilter
+  sourceFinding: FindingWhereInput
+  inferenceCall: InferenceCallWhereInput
+  rejectedReason: StringFilter
   agentRun: AgentRunWhereInput
   proposedByAgent: AgentIdentityWhereInput
   proposedByUser: UserWhereInput
@@ -3630,6 +3638,7 @@ input ProposalOrderByInput {
   kind: OrderDirection
   payloadHash: OrderDirection
   status: OrderDirection
+  rejectedReason: OrderDirection
   resultRecordType: OrderDirection
   resultRecordId: OrderDirection
   expiresAt: OrderDirection
@@ -3642,8 +3651,12 @@ input ProposalUpdateInput {
   kind: String
   payload: JSON
   payloadHash: String
+  community: CommunityRelateToOneForUpdateInput
   resident: ResidentRelateToOneForUpdateInput
   status: String
+  sourceFinding: FindingRelateToOneForUpdateInput
+  inferenceCall: InferenceCallRelateToOneForUpdateInput
+  rejectedReason: String
   agentRun: AgentRunRelateToOneForUpdateInput
   proposedByAgent: AgentIdentityRelateToOneForUpdateInput
   proposedByUser: UserRelateToOneForUpdateInput
@@ -3654,6 +3667,18 @@ input ProposalUpdateInput {
   version: Int
   createdAt: DateTime
   updatedAt: DateTime
+}
+
+input FindingRelateToOneForUpdateInput {
+  create: FindingCreateInput
+  connect: FindingWhereUniqueInput
+  disconnect: Boolean
+}
+
+input InferenceCallRelateToOneForUpdateInput {
+  create: InferenceCallCreateInput
+  connect: InferenceCallWhereUniqueInput
+  disconnect: Boolean
 }
 
 input AgentRunRelateToOneForUpdateInput {
@@ -3671,8 +3696,12 @@ input ProposalCreateInput {
   kind: String
   payload: JSON
   payloadHash: String
+  community: CommunityRelateToOneForCreateInput
   resident: ResidentRelateToOneForCreateInput
   status: String
+  sourceFinding: FindingRelateToOneForCreateInput
+  inferenceCall: InferenceCallRelateToOneForCreateInput
+  rejectedReason: String
   agentRun: AgentRunRelateToOneForCreateInput
   proposedByAgent: AgentIdentityRelateToOneForCreateInput
   proposedByUser: UserRelateToOneForCreateInput
@@ -3683,6 +3712,16 @@ input ProposalCreateInput {
   version: Int
   createdAt: DateTime
   updatedAt: DateTime
+}
+
+input FindingRelateToOneForCreateInput {
+  create: FindingCreateInput
+  connect: FindingWhereUniqueInput
+}
+
+input InferenceCallRelateToOneForCreateInput {
+  create: InferenceCallCreateInput
+  connect: InferenceCallWhereUniqueInput
 }
 
 input AgentRunRelateToOneForCreateInput {
@@ -10238,6 +10277,8 @@ type MedicationSupplyMovement {
   kind: String
   quantity: Decimal
   balanceAfter: Decimal
+  emergency: Boolean
+  emergencyReason: String
   at: DateTime
   actor: User
   witness: User
@@ -10261,6 +10302,8 @@ input MedicationSupplyMovementWhereInput {
   kind: StringFilter
   quantity: DecimalFilter
   balanceAfter: DecimalFilter
+  emergency: BooleanFilter
+  emergencyReason: StringFilter
   at: DateTimeNullableFilter
   actor: UserWhereInput
   witness: UserWhereInput
@@ -10275,6 +10318,8 @@ input MedicationSupplyMovementOrderByInput {
   kind: OrderDirection
   quantity: OrderDirection
   balanceAfter: OrderDirection
+  emergency: OrderDirection
+  emergencyReason: OrderDirection
   at: OrderDirection
   reason: OrderDirection
   createdAt: OrderDirection
@@ -10287,6 +10332,8 @@ input MedicationSupplyMovementUpdateInput {
   kind: String
   quantity: Decimal
   balanceAfter: Decimal
+  emergency: Boolean
+  emergencyReason: String
   at: DateTime
   actor: UserRelateToOneForUpdateInput
   witness: UserRelateToOneForUpdateInput
@@ -10307,6 +10354,8 @@ input MedicationSupplyMovementCreateInput {
   kind: String
   quantity: Decimal
   balanceAfter: Decimal
+  emergency: Boolean
+  emergencyReason: String
   at: DateTime
   actor: UserRelateToOneForCreateInput
   witness: UserRelateToOneForCreateInput
@@ -11625,6 +11674,7 @@ type EvidenceRef {
   finding: Finding
   recordType: String
   recordId: String
+  role: String
   spanStart: Int
   spanEnd: Int
   quote: String
@@ -11646,6 +11696,7 @@ input EvidenceRefWhereInput {
   finding: FindingWhereInput
   recordType: StringFilter
   recordId: StringFilter
+  role: StringNullableFilter
   spanStart: IntNullableFilter
   spanEnd: IntNullableFilter
   quote: StringFilter
@@ -11658,6 +11709,7 @@ input EvidenceRefOrderByInput {
   id: OrderDirection
   recordType: OrderDirection
   recordId: OrderDirection
+  role: OrderDirection
   spanStart: OrderDirection
   spanEnd: OrderDirection
   quote: OrderDirection
@@ -11671,18 +11723,13 @@ input EvidenceRefUpdateInput {
   finding: FindingRelateToOneForUpdateInput
   recordType: String
   recordId: String
+  role: String
   spanStart: Int
   spanEnd: Int
   quote: String
   version: Int
   createdAt: DateTime
   updatedAt: DateTime
-}
-
-input FindingRelateToOneForUpdateInput {
-  create: FindingCreateInput
-  connect: FindingWhereUniqueInput
-  disconnect: Boolean
 }
 
 input EvidenceRefUpdateArgs {
@@ -11695,6 +11742,7 @@ input EvidenceRefCreateInput {
   finding: FindingRelateToOneForCreateInput
   recordType: String
   recordId: String
+  role: String
   spanStart: Int
   spanEnd: Int
   quote: String
@@ -11703,9 +11751,95 @@ input EvidenceRefCreateInput {
   updatedAt: DateTime
 }
 
-input FindingRelateToOneForCreateInput {
-  create: FindingCreateInput
-  connect: FindingWhereUniqueInput
+type ExtractedFact {
+  id: ID!
+  community: Community
+  resident: Resident
+  extractor: String
+  sourceType: String
+  sourceId: String
+  sourceDigest: String
+  cacheKey: String
+  outcome: String
+  facts: JSON
+  inferenceCall: InferenceCall
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ExtractedFactWhereUniqueInput {
+  id: ID
+  cacheKey: String
+}
+
+input ExtractedFactWhereInput {
+  AND: [ExtractedFactWhereInput!]
+  OR: [ExtractedFactWhereInput!]
+  NOT: [ExtractedFactWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  extractor: StringFilter
+  sourceType: StringFilter
+  sourceId: StringFilter
+  sourceDigest: StringFilter
+  cacheKey: StringFilter
+  outcome: StringFilter
+  inferenceCall: InferenceCallWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input ExtractedFactOrderByInput {
+  id: OrderDirection
+  extractor: OrderDirection
+  sourceType: OrderDirection
+  sourceId: OrderDirection
+  sourceDigest: OrderDirection
+  cacheKey: OrderDirection
+  outcome: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input ExtractedFactUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  extractor: String
+  sourceType: String
+  sourceId: String
+  sourceDigest: String
+  cacheKey: String
+  outcome: String
+  facts: JSON
+  inferenceCall: InferenceCallRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ExtractedFactUpdateArgs {
+  where: ExtractedFactWhereUniqueInput!
+  data: ExtractedFactUpdateInput!
+}
+
+input ExtractedFactCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  extractor: String
+  sourceType: String
+  sourceId: String
+  sourceDigest: String
+  cacheKey: String
+  outcome: String
+  facts: JSON
+  inferenceCall: InferenceCallRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
 }
 
 type Finding {
@@ -11883,15 +12017,24 @@ type InferenceCall {
   community: Community
   purpose: String
   provider: String
+  inferenceProvider: InferenceProvider
   providerClass: String
+  mode: String
   model: String
   outcome: String
   policyAtCall: String
+  deidentification: String
+  dataCategories: JSON
+  syntheticOnly: Boolean
   inputHash: String
   outputHash: String
   inputTokens: Int
   outputTokens: Int
+  latencyMs: Int
   reason: String
+  workflowRun: WorkflowRun
+  agentRun: AgentRun
+  principal: String
   at: DateTime
   actor: User
   version: Int
@@ -11911,15 +12054,23 @@ input InferenceCallWhereInput {
   community: CommunityWhereInput
   purpose: StringFilter
   provider: StringFilter
+  inferenceProvider: InferenceProviderWhereInput
   providerClass: StringFilter
+  mode: StringFilter
   model: StringFilter
   outcome: StringFilter
   policyAtCall: StringFilter
+  deidentification: StringFilter
+  syntheticOnly: BooleanFilter
   inputHash: StringFilter
   outputHash: StringFilter
   inputTokens: IntNullableFilter
   outputTokens: IntNullableFilter
+  latencyMs: IntNullableFilter
   reason: StringFilter
+  workflowRun: WorkflowRunWhereInput
+  agentRun: AgentRunWhereInput
+  principal: StringFilter
   at: DateTimeNullableFilter
   actor: UserWhereInput
   version: IntFilter
@@ -11932,14 +12083,19 @@ input InferenceCallOrderByInput {
   purpose: OrderDirection
   provider: OrderDirection
   providerClass: OrderDirection
+  mode: OrderDirection
   model: OrderDirection
   outcome: OrderDirection
   policyAtCall: OrderDirection
+  deidentification: OrderDirection
+  syntheticOnly: OrderDirection
   inputHash: OrderDirection
   outputHash: OrderDirection
   inputTokens: OrderDirection
   outputTokens: OrderDirection
+  latencyMs: OrderDirection
   reason: OrderDirection
+  principal: OrderDirection
   at: OrderDirection
   version: OrderDirection
   createdAt: OrderDirection
@@ -11950,20 +12106,35 @@ input InferenceCallUpdateInput {
   community: CommunityRelateToOneForUpdateInput
   purpose: String
   provider: String
+  inferenceProvider: InferenceProviderRelateToOneForUpdateInput
   providerClass: String
+  mode: String
   model: String
   outcome: String
   policyAtCall: String
+  deidentification: String
+  dataCategories: JSON
+  syntheticOnly: Boolean
   inputHash: String
   outputHash: String
   inputTokens: Int
   outputTokens: Int
+  latencyMs: Int
   reason: String
+  workflowRun: WorkflowRunRelateToOneForUpdateInput
+  agentRun: AgentRunRelateToOneForUpdateInput
+  principal: String
   at: DateTime
   actor: UserRelateToOneForUpdateInput
   version: Int
   createdAt: DateTime
   updatedAt: DateTime
+}
+
+input InferenceProviderRelateToOneForUpdateInput {
+  create: InferenceProviderCreateInput
+  connect: InferenceProviderWhereUniqueInput
+  disconnect: Boolean
 }
 
 input InferenceCallUpdateArgs {
@@ -11975,20 +12146,135 @@ input InferenceCallCreateInput {
   community: CommunityRelateToOneForCreateInput
   purpose: String
   provider: String
+  inferenceProvider: InferenceProviderRelateToOneForCreateInput
   providerClass: String
+  mode: String
   model: String
   outcome: String
   policyAtCall: String
+  deidentification: String
+  dataCategories: JSON
+  syntheticOnly: Boolean
   inputHash: String
   outputHash: String
   inputTokens: Int
   outputTokens: Int
+  latencyMs: Int
   reason: String
+  workflowRun: WorkflowRunRelateToOneForCreateInput
+  agentRun: AgentRunRelateToOneForCreateInput
+  principal: String
   at: DateTime
   actor: UserRelateToOneForCreateInput
   version: Int
   createdAt: DateTime
   updatedAt: DateTime
+}
+
+input InferenceProviderRelateToOneForCreateInput {
+  create: InferenceProviderCreateInput
+  connect: InferenceProviderWhereUniqueInput
+}
+
+type InferenceProvider {
+  id: ID!
+  key: String
+  name: String
+  adapter: String
+  mode: String
+  endpoint: String
+  model: String
+  processorRegistration: ProcessorRegistration
+  isDefault: Boolean
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input InferenceProviderWhereUniqueInput {
+  id: ID
+  key: String
+}
+
+input InferenceProviderWhereInput {
+  AND: [InferenceProviderWhereInput!]
+  OR: [InferenceProviderWhereInput!]
+  NOT: [InferenceProviderWhereInput!]
+  id: IDFilter
+  key: StringFilter
+  name: StringFilter
+  adapter: StringFilter
+  mode: StringFilter
+  endpoint: StringFilter
+  model: StringFilter
+  processorRegistration: ProcessorRegistrationWhereInput
+  isDefault: BooleanFilter
+  status: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input InferenceProviderOrderByInput {
+  id: OrderDirection
+  key: OrderDirection
+  name: OrderDirection
+  adapter: OrderDirection
+  mode: OrderDirection
+  endpoint: OrderDirection
+  model: OrderDirection
+  isDefault: OrderDirection
+  status: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input InferenceProviderUpdateInput {
+  key: String
+  name: String
+  adapter: String
+  mode: String
+  endpoint: String
+  model: String
+  processorRegistration: ProcessorRegistrationRelateToOneForUpdateInput
+  isDefault: Boolean
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ProcessorRegistrationRelateToOneForUpdateInput {
+  create: ProcessorRegistrationCreateInput
+  connect: ProcessorRegistrationWhereUniqueInput
+  disconnect: Boolean
+}
+
+input InferenceProviderUpdateArgs {
+  where: InferenceProviderWhereUniqueInput!
+  data: InferenceProviderUpdateInput!
+}
+
+input InferenceProviderCreateInput {
+  key: String
+  name: String
+  adapter: String
+  mode: String
+  endpoint: String
+  model: String
+  processorRegistration: ProcessorRegistrationRelateToOneForCreateInput
+  isDefault: Boolean
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ProcessorRegistrationRelateToOneForCreateInput {
+  create: ProcessorRegistrationCreateInput
+  connect: ProcessorRegistrationWhereUniqueInput
 }
 
 type WorkflowActivation {
@@ -12261,8 +12547,15 @@ type WorkflowVersion {
   policy: JSON
   status: String
   dryRun: JSON
+  dryRunAt: DateTime
   createdByInference: InferenceCall
   description: String
+  request: String
+  proposedBy: User
+  proposedByAgent: AgentIdentity
+  reviewedBy: User
+  reviewedAt: DateTime
+  reviewNote: String
   activations(where: WorkflowActivationWhereInput! = {}, orderBy: [WorkflowActivationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: WorkflowActivationWhereUniqueInput): [WorkflowActivation!]
   activationsCount(where: WorkflowActivationWhereInput! = {}): Int
   version: Int
@@ -12285,8 +12578,15 @@ input WorkflowVersionWhereInput {
   graphHash: StringFilter
   policyVersion: StringFilter
   status: StringFilter
+  dryRunAt: DateTimeNullableFilter
   createdByInference: InferenceCallWhereInput
   description: StringFilter
+  request: StringFilter
+  proposedBy: UserWhereInput
+  proposedByAgent: AgentIdentityWhereInput
+  reviewedBy: UserWhereInput
+  reviewedAt: DateTimeNullableFilter
+  reviewNote: StringFilter
   activations: WorkflowActivationManyRelationFilter
   version: IntFilter
   createdAt: DateTimeFilter
@@ -12305,7 +12605,11 @@ input WorkflowVersionOrderByInput {
   graphHash: OrderDirection
   policyVersion: OrderDirection
   status: OrderDirection
+  dryRunAt: OrderDirection
   description: OrderDirection
+  request: OrderDirection
+  reviewedAt: OrderDirection
+  reviewNote: OrderDirection
   version: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
@@ -12321,8 +12625,15 @@ input WorkflowVersionUpdateInput {
   policy: JSON
   status: String
   dryRun: JSON
+  dryRunAt: DateTime
   createdByInference: InferenceCallRelateToOneForUpdateInput
   description: String
+  request: String
+  proposedBy: UserRelateToOneForUpdateInput
+  proposedByAgent: AgentIdentityRelateToOneForUpdateInput
+  reviewedBy: UserRelateToOneForUpdateInput
+  reviewedAt: DateTime
+  reviewNote: String
   activations: WorkflowActivationRelateToManyForUpdateInput
   version: Int
   createdAt: DateTime
@@ -12332,12 +12643,6 @@ input WorkflowVersionUpdateInput {
 input WorkflowDefinitionRelateToOneForUpdateInput {
   create: WorkflowDefinitionCreateInput
   connect: WorkflowDefinitionWhereUniqueInput
-  disconnect: Boolean
-}
-
-input InferenceCallRelateToOneForUpdateInput {
-  create: InferenceCallCreateInput
-  connect: InferenceCallWhereUniqueInput
   disconnect: Boolean
 }
 
@@ -12363,8 +12668,15 @@ input WorkflowVersionCreateInput {
   policy: JSON
   status: String
   dryRun: JSON
+  dryRunAt: DateTime
   createdByInference: InferenceCallRelateToOneForCreateInput
   description: String
+  request: String
+  proposedBy: UserRelateToOneForCreateInput
+  proposedByAgent: AgentIdentityRelateToOneForCreateInput
+  reviewedBy: UserRelateToOneForCreateInput
+  reviewedAt: DateTime
+  reviewNote: String
   activations: WorkflowActivationRelateToManyForCreateInput
   version: Int
   createdAt: DateTime
@@ -12374,11 +12686,6 @@ input WorkflowVersionCreateInput {
 input WorkflowDefinitionRelateToOneForCreateInput {
   create: WorkflowDefinitionCreateInput
   connect: WorkflowDefinitionWhereUniqueInput
-}
-
-input InferenceCallRelateToOneForCreateInput {
-  create: InferenceCallCreateInput
-  connect: InferenceCallWhereUniqueInput
 }
 
 input WorkflowActivationRelateToManyForCreateInput {
@@ -13034,6 +13341,12 @@ type Mutation {
   updateEvidenceRefs(data: [EvidenceRefUpdateArgs!]!): [EvidenceRef]
   deleteEvidenceRef(where: EvidenceRefWhereUniqueInput!): EvidenceRef
   deleteEvidenceRefs(where: [EvidenceRefWhereUniqueInput!]!): [EvidenceRef]
+  createExtractedFact(data: ExtractedFactCreateInput!): ExtractedFact
+  createExtractedFacts(data: [ExtractedFactCreateInput!]!): [ExtractedFact]
+  updateExtractedFact(where: ExtractedFactWhereUniqueInput!, data: ExtractedFactUpdateInput!): ExtractedFact
+  updateExtractedFacts(data: [ExtractedFactUpdateArgs!]!): [ExtractedFact]
+  deleteExtractedFact(where: ExtractedFactWhereUniqueInput!): ExtractedFact
+  deleteExtractedFacts(where: [ExtractedFactWhereUniqueInput!]!): [ExtractedFact]
   createFinding(data: FindingCreateInput!): Finding
   createFindings(data: [FindingCreateInput!]!): [Finding]
   updateFinding(where: FindingWhereUniqueInput!, data: FindingUpdateInput!): Finding
@@ -13046,6 +13359,12 @@ type Mutation {
   updateInferenceCalls(data: [InferenceCallUpdateArgs!]!): [InferenceCall]
   deleteInferenceCall(where: InferenceCallWhereUniqueInput!): InferenceCall
   deleteInferenceCalls(where: [InferenceCallWhereUniqueInput!]!): [InferenceCall]
+  createInferenceProvider(data: InferenceProviderCreateInput!): InferenceProvider
+  createInferenceProviders(data: [InferenceProviderCreateInput!]!): [InferenceProvider]
+  updateInferenceProvider(where: InferenceProviderWhereUniqueInput!, data: InferenceProviderUpdateInput!): InferenceProvider
+  updateInferenceProviders(data: [InferenceProviderUpdateArgs!]!): [InferenceProvider]
+  deleteInferenceProvider(where: InferenceProviderWhereUniqueInput!): InferenceProvider
+  deleteInferenceProviders(where: [InferenceProviderWhereUniqueInput!]!): [InferenceProvider]
   createWorkflowActivation(data: WorkflowActivationCreateInput!): WorkflowActivation
   createWorkflowActivations(data: [WorkflowActivationCreateInput!]!): [WorkflowActivation]
   updateWorkflowActivation(where: WorkflowActivationWhereUniqueInput!, data: WorkflowActivationUpdateInput!): WorkflowActivation
@@ -13078,6 +13397,7 @@ type Mutation {
   updateActiveUser(data: UserUpdateProfileInput!): User
   loadOperatorSetup(idempotencyKey: String!): JSON
   loadCensusSetup(idempotencyKey: String!): JSON
+  loadClinicalSetup(idempotencyKey: String!): JSON
   refreshTimedStates(idempotencyKey: String!): JSON
   decideApprovalRequest(requestId: ID!, decision: String!, reason: String, expectedVersion: Int!, idempotencyKey: String!): JSON
   cancelApprovalRequest(requestId: ID!, expectedVersion: Int!, reason: String, idempotencyKey: String!): JSON
@@ -13125,6 +13445,8 @@ type Mutation {
   openBreakGlass(residentId: ID!, reason: String!, note: String!, hours: Int, idempotencyKey: String!): JSON
   endBreakGlass(grantId: ID!, idempotencyKey: String!): JSON
   reviewBreakGlass(grantId: ID!, outcome: String!, note: String!, expectedVersion: Int, idempotencyKey: String!): JSON
+  clinicalCommand(op: String!, input: JSON, idempotencyKey: String!): JSON
+  runWorkflowsOnLoad(communityId: ID!, idempotencyKey: String!): JSON
 }
 
 union UserAuthenticationWithPasswordResult = UserAuthenticationWithPasswordSuccess | UserAuthenticationWithPasswordFailure
@@ -13477,12 +13799,18 @@ type Query {
   evidenceRef(where: EvidenceRefWhereUniqueInput!): EvidenceRef
   evidenceRefs(where: EvidenceRefWhereInput! = {}, orderBy: [EvidenceRefOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: EvidenceRefWhereUniqueInput): [EvidenceRef!]
   evidenceRefsCount(where: EvidenceRefWhereInput! = {}): Int
+  extractedFact(where: ExtractedFactWhereUniqueInput!): ExtractedFact
+  extractedFacts(where: ExtractedFactWhereInput! = {}, orderBy: [ExtractedFactOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ExtractedFactWhereUniqueInput): [ExtractedFact!]
+  extractedFactsCount(where: ExtractedFactWhereInput! = {}): Int
   finding(where: FindingWhereUniqueInput!): Finding
   findings(where: FindingWhereInput! = {}, orderBy: [FindingOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: FindingWhereUniqueInput): [Finding!]
   findingsCount(where: FindingWhereInput! = {}): Int
   inferenceCall(where: InferenceCallWhereUniqueInput!): InferenceCall
   inferenceCalls(where: InferenceCallWhereInput! = {}, orderBy: [InferenceCallOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: InferenceCallWhereUniqueInput): [InferenceCall!]
   inferenceCallsCount(where: InferenceCallWhereInput! = {}): Int
+  inferenceProvider(where: InferenceProviderWhereUniqueInput!): InferenceProvider
+  inferenceProviders(where: InferenceProviderWhereInput! = {}, orderBy: [InferenceProviderOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: InferenceProviderWhereUniqueInput): [InferenceProvider!]
+  inferenceProvidersCount(where: InferenceProviderWhereInput! = {}): Int
   workflowActivation(where: WorkflowActivationWhereUniqueInput!): WorkflowActivation
   workflowActivations(where: WorkflowActivationWhereInput! = {}, orderBy: [WorkflowActivationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: WorkflowActivationWhereUniqueInput): [WorkflowActivation!]
   workflowActivationsCount(where: WorkflowActivationWhereInput! = {}): Int

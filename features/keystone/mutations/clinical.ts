@@ -4,7 +4,7 @@ import { delegateOf, type Tx } from '../lib/db'
 import type { UnitOfWork } from '../lib/unitOfWork'
 import type { Actor } from '../lib/actor'
 import { casUpdate, lockRow } from '../lib/cas'
-import { assertCommunityAccess, communityOf, runDomain } from './run'
+import { assertCommunityAccess, assertHuman, authorize, communityOf, runDomain } from './run'
 import { actorFor } from './actorFor'
 import { advanceTimedStates } from '../lib/maintenance'
 import * as record from '../lib/clinical/record'
@@ -14,9 +14,13 @@ import * as meds from '../lib/clinical/medications'
 import * as inc from '../lib/clinical/incidents'
 import * as ipac from '../lib/clinical/ipac'
 import * as wf from '../lib/workflows/engine'
+import * as builder from '../lib/workflows/builder'
+import * as proposals from '../lib/clinical/proposals'
+import { extractForCommunity } from '../lib/workflows/extraction'
+import { createTask } from '../lib/clinical/common'
 import { command } from '../lib/command'
 import { requireKey } from './op'
-import { requirePermission } from '../lib/actor'
+import type { Db } from '../lib/db'
 
 type Input = Record<string, any>
 type Handler = {
@@ -26,6 +30,13 @@ type Handler = {
   run: (uow: UnitOfWork, actor: Actor, input: Input) => Promise<unknown>
   humanOnly?: boolean
   serializable?: boolean
+  /** The tool grant an agent needs (INTEGRATIONS §7.2). Without one, agents are refused. */
+  agentScope?: string
+  /**
+   * Network work (model calls through the gateway) that must happen BEFORE the transaction. It runs after the permission and
+   * community checks, and only when the idempotency key has not been used; its result is passed to `run` as `input.__prepared`.
+   */
+  prepare?: (db: Db, actor: Actor, input: Input) => Promise<unknown>
 }
 
 const byResident = (tx: Tx, i: Input) => communityOf.resident(tx, String(i.residentId ?? ''))
@@ -100,12 +111,37 @@ export const HANDLERS: Record<string, Handler> = {
   'ipac.closeOutbreak': { permissions: ['canDeclareOutbreak'], community: async (tx, i) => (await tx.outbreak.findUnique({ where: { id: String(i.outbreakId ?? '') }, select: { communityId: true } }))?.communityId ?? null, run: (u, a, i) => ipac.closeOutbreak(u, a, i as any), humanOnly: true },
   'ipac.immunisation': { permissions: ['canManageInfectionControl', 'canChartNursing'], community: byResident, run: (u, a, i) => ipac.recordImmunisation(u, a, i as any) },
   // Tasks
-  'task.complete': { permissions: ['canChartPointOfCare', 'canChartNursing', 'canReadClinical'], community: byRecord('Task', 'taskId'), run: (u, a, i) => completeTask(u, a, i) },
-  // Workflows
-  'workflow.loadLibrary': { permissions: ['canManageWorkflows'], community: async () => null, run: (u, a) => wf.seedWorkflowLibrary(u, a) },
-  'workflow.requestActivation': { permissions: ['canManageWorkflows'], community: byCommunity, run: (u, a, i) => wf.requestActivation(u, a, i as any), humanOnly: true },
-  'workflow.run': { permissions: ['canReadFindings', 'canManageWorkflows'], community: byCommunity, run: (u, a, i) => wf.runWorkflows(u, a, { communityId: String(i.communityId), trigger: 'run_now' }) },
+  'task.complete': { permissions: ['canChartPointOfCare', 'canChartNursing', 'canReadClinical'], community: byRecord('Task', 'taskId'), run: (u, a, i) => completeTask(u, a, i), humanOnly: true },
+  'task.create': { permissions: ['canChartNursing', 'canManageWorkflows'], agentScope: 'task.create', community: byCommunity, run: (u, a, i) => createInboxTask(u, a, i) },
+  // Workflows (INTEGRATIONS §2). Extraction and builder model calls run in `prepare`, outside the transaction.
+  'workflow.loadLibrary': { permissions: ['canManageWorkflows'], community: async () => null, run: (u, a) => wf.seedWorkflowLibrary(u, a), humanOnly: true },
+  'workflow.requestActivation': { permissions: ['canManageWorkflows'], agentScope: 'workflow.propose', community: byCommunity, run: (u, a, i) => wf.requestActivation(u, a, i as any) },
+  'workflow.pause': { permissions: ['canManageWorkflows'], agentScope: 'workflow.pause', community: byRecord('WorkflowActivation', 'activationId'), run: (u, a, i) => wf.pauseActivation(u, a, i as any) },
+  'workflow.run': { permissions: ['canReadFindings', 'canManageWorkflows'], community: byCommunity, prepare: (db, a, i) => extractForCommunity(db, a, { communityId: String(i.communityId) }), run: async (u, a, i) => ({ ...(await wf.runWorkflows(u, a, { communityId: String(i.communityId), trigger: 'run_now' })), extraction: i.__prepared }) },
+  'workflow.build': { permissions: ['canManageWorkflows'], agentScope: 'workflow.propose', community: byCommunity, prepare: (db, a, i) => builder.prepareBuild(db, a, { communityId: String(i.communityId), request: i.request }), run: (u, a, i) => builder.proposeBuiltInTx(u, a, { communityId: String(i.communityId), prepared: i.__prepared }) },
+  'workflow.dryRun': { permissions: ['canManageWorkflows'], agentScope: 'workflow.dry_run', community: byRecord('WorkflowVersion', 'versionId'), prepare: (db, a, i) => builder.prepareDryRun(db, a, { versionId: String(i.versionId) }), run: async (u, a, i) => ({ ...(await builder.dryRunInTx(u, a, { versionId: String(i.versionId), communityId: String((await byRecord('WorkflowVersion', 'versionId')(u.tx, i)) ?? '') })), extraction: i.__prepared }) },
+  'workflow.retire': { permissions: ['canManageWorkflows'], community: byRecord('WorkflowVersion', 'versionId'), run: (u, a, i) => builder.retireProposed(u, a, i as any), humanOnly: true },
   'finding.dismiss': { permissions: ['canReadFindings'], community: byRecord('Finding', 'findingId'), run: (u, a, i) => wf.dismissFinding(u, a, i as any), humanOnly: true },
+  'finding.recheck': { permissions: ['canReadFindings'], agentScope: 'finding.recheck', community: byRecord('Finding', 'findingId'), prepare: async (db, a, i) => { const f = await db.finding.findUnique({ where: { id: String(i.findingId ?? '') }, select: { communityId: true, residentId: true } }); return f?.communityId ? extractForCommunity(db, a, { communityId: f.communityId, residentId: f.residentId }) : null }, run: (u, a, i) => wf.recheckFinding(u, a, i as any) },
+  // Proposals (Gate 4): an AI draft stays a Proposal until a person accepts it and signs the plan it becomes.
+  'proposal.draftCarePlan': { permissions: ['canManageCarePlans'], agentScope: 'proposal.create_care_plan', community: byRecord('Finding', 'findingId'), prepare: (db, a, i) => proposals.prepareCarePlanDraft(db, a, { findingId: i.findingId }), run: (u, a, i) => proposals.proposeCarePlanUpdateInTx(u, a, i.__prepared) },
+  'proposal.accept': { permissions: ['canManageCarePlans'], community: byRecord('Proposal', 'proposalId'), run: (u, a, i) => proposals.acceptProposal(u, a, i as any), humanOnly: true },
+  'proposal.reject': { permissions: ['canManageCarePlans'], community: byRecord('Proposal', 'proposalId'), run: (u, a, i) => proposals.rejectProposal(u, a, i as any), humanOnly: true },
+}
+
+/** A person or an agent with task.create puts a task in the inbox (never a sent message). */
+async function createInboxTask(uow: UnitOfWork, actor: Actor, input: Input) {
+  const title = String(input.title ?? '').trim()
+  if (title.length < 3 || title.length > 200) throw new DomainError(Codes.INVALID_INPUT, 'Give the task a title (3 to 200 characters).', { field: 'title' })
+  const communityId = String(input.communityId)
+  if (input.residentId) {
+    const r = await uow.tx.resident.findUnique({ where: { id: String(input.residentId) }, select: { communityId: true } })
+    if (r?.communityId !== communityId) throw new DomainError(Codes.NOT_FOUND, 'Resident not found.')
+  }
+  const dueAt = input.dueAt ? new Date(String(input.dueAt)) : null
+  if (dueAt && Number.isNaN(dueAt.getTime())) throw new DomainError(Codes.INVALID_INPUT, 'dueAt is not a valid time.', { field: 'dueAt' })
+  const { task } = await createTask(uow, actor, { communityId, residentId: input.residentId ? String(input.residentId) : null, kind: 'general', title, detail: String(input.detail ?? '').slice(0, 2000), ownerRole: input.ownerRole ? String(input.ownerRole) : undefined, dueAt })
+  return { taskId: task.id }
 }
 
 async function completeTask(uow: UnitOfWork, actor: Actor, input: Input) {
@@ -118,8 +154,23 @@ async function completeTask(uow: UnitOfWork, actor: Actor, input: Input) {
 export async function clinicalCommand(_root: unknown, args: { op: string; input?: Input | null; idempotencyKey: string }, context: { session: unknown; prisma: any }) {
   const handler = HANDLERS[args.op]
   if (!handler) throw new DomainError(Codes.INVALID_INPUT, 'Unknown action.')
-  const input = (args.input && typeof args.input === 'object' ? args.input : {}) as Input
-  return runDomain(context, { idempotencyKey: args.idempotencyKey, op: args.op, input }, { name: `clinical.${args.op}`, permissions: handler.permissions, humanOnly: handler.humanOnly, serializable: handler.serializable, community: tx => handler.community(tx, input) }, async (uow, actor) => {
+  const input = (args.input && typeof args.input === 'object' ? { ...args.input } : {}) as Input
+  delete input.__prepared
+  // Only a command with an agent grant is reachable outside the dashboard (an agent, or a person's MCP token); the rest stay human-only.
+  const humanOnly = handler.humanOnly ?? !handler.agentScope
+  if (handler.prepare) {
+    // Outside the transaction: the same checks runDomain makes, then the network work. A replayed key skips it.
+    const actor = await actorFor(context)
+    assertHuman(context, actor, humanOnly)
+    authorize(actor, { permissions: handler.permissions, agentScope: handler.agentScope })
+    await assertCommunityAccess(context.prisma, actor, await handler.community(context.prisma, input))
+    const used = await context.prisma.commandReceipt.findUnique({ where: { idempotencyKey: requireKey(args.idempotencyKey) }, select: { id: true } })
+    if (!used) input.__prepared = await handler.prepare(context.prisma, actor, input)
+  }
+  const params = { ...input }
+  delete params.__prepared
+  return runDomain(context, { idempotencyKey: args.idempotencyKey, op: args.op, input: params }, { name: `clinical.${args.op}`, permissions: handler.permissions, agentScope: handler.agentScope, humanOnly, serializable: handler.serializable, community: tx => handler.community(tx, input) }, async (uow, actor) => {
+    if (handler.prepare && input.__prepared === undefined) throw new DomainError(Codes.GUARD_FAILED, 'This request could not be prepared. Try again with a new key.')
     const result = (await handler.run(uow, actor, input)) as object
     // The mutation that changes source data also asks the engine to look (idempotent per window).
     if (SOURCE_OPS.has(args.op)) {
@@ -138,8 +189,12 @@ const SOURCE_OPS = new Set(['intake.record', 'vitals.record', 'wound.open', 'wou
  */
 export async function runWorkflowsOnLoad(_root: unknown, args: { communityId: string; idempotencyKey: string }, context: { session: unknown; prisma: any }) {
   const actor = await actorFor(context)
-  requirePermission(actor, 'canReadFindings', 'canManageWorkflows')
+  authorize(actor, { permissions: ['canReadFindings', 'canManageWorkflows'] })
   await advanceTimedStates(context.prisma)
+  // Extraction for the incident-analysis workflow runs here, before the transaction, cached per note version.
+  await assertCommunityAccess(context.prisma, actor, args.communityId)
+  const used = await context.prisma.commandReceipt.findUnique({ where: { idempotencyKey: requireKey(args.idempotencyKey) }, select: { id: true } })
+  if (!used) await extractForCommunity(context.prisma, actor, { communityId: args.communityId })
   const result = await command(context.prisma, { name: 'workflow.page_load', actor, idempotencyKey: requireKey(args.idempotencyKey), params: { communityId: args.communityId } }, async uow => {
     await assertCommunityAccess(uow.tx, actor, args.communityId)
     return wf.runWorkflows(uow, actor, { communityId: args.communityId, trigger: 'page_load' })

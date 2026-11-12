@@ -44,6 +44,10 @@ export async function signCarePlan(uow: UnitOfWork, actor: Actor, input: { careP
   const plan = await lockRow<{ id: string; version: number; status: string; kind: string; residentId: string; communityId: string; supersedesId: string | null; proposalId: string | null }>(uow.tx, 'CarePlan', input.carePlanId)
   if (input.expectedVersion != null && input.expectedVersion !== plan.version) throw new DomainError(Codes.STALE_STATE, 'The plan changed. Reload and try again.', { currentVersion: plan.version })
   if (plan.status !== 'draft') throw new DomainError(Codes.INVALID_TRANSITION, 'Only a draft plan is signed.', { currentStatus: plan.status })
+  if (plan.proposalId) {
+    const from = await uow.tx.proposal.findUnique({ where: { id: plan.proposalId }, select: { status: true } })
+    if (from?.status === 'rejected' || from?.status === 'expired') throw new DomainError(Codes.GUARD_FAILED, `This plan came from a proposal that was ${from.status}.`)
+  }
   if (plan.supersedesId) {
     const old = await lockRow<{ id: string; version: number }>(uow.tx, 'CarePlan', plan.supersedesId)
     await casUpdate(uow, { model: 'CarePlan', id: old.id, version: old.version, from: ['active'], to: 'superseded', actor, eventType: 'care_plan.superseded', metadata: { by: plan.id } })

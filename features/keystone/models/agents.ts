@@ -2,6 +2,7 @@ import { list } from '@keystone-6/core'
 import { json, relationship, timestamp } from '@keystone-6/core/fields'
 import { fixedChoice, lifecycle, readOnly, systemText, versionField } from './domainFields'
 import { governed } from './listAccess'
+import { scopedGoverned } from './scope'
 import { trackingFields } from './trackingFields'
 
 /* Agents (SCHEMA §14.7-14.8, INTEGRATIONS §7.2). Every write goes through a server command. */
@@ -52,15 +53,23 @@ export const AgentRun = list({
   },
 })
 
+/**
+ * A suggestion that is never a chart record until a person turns it into one (SM §15.6): an agent or workflow drafts, a person with the
+ * right permission accepts (which makes a draft record) and signs. Payloads hold clinical text, so reads are scoped to the community.
+ */
 export const Proposal = list({
-  access: governed('canAccessDashboard'),
+  access: scopedGoverned(['canManageCarePlans', 'canChartNursing', 'canManageWorkflows'], ['community']),
   ui: { labelField: 'kind', listView: { initialColumns: ['kind', 'status', 'proposedByAgent', 'proposedByUser', 'createdAt'] } },
   fields: {
     kind: fixedChoice(PROPOSAL_KINDS),
     payload: json({ ...readOnly }),
     payloadHash: systemText({ required: true }),
+    community: relationship({ ref: 'Community', ...readOnly }),
     resident: relationship({ ref: 'Resident', ...readOnly }),
     status: lifecycle(['proposed', 'accepted', 'signed', 'rejected', 'expired']),
+    sourceFinding: relationship({ ref: 'Finding', ...readOnly }),
+    inferenceCall: relationship({ ref: 'InferenceCall', ...readOnly }),
+    rejectedReason: systemText(),
     agentRun: relationship({ ref: 'AgentRun.proposals', ...readOnly }),
     proposedByAgent: relationship({ ref: 'AgentIdentity', ...readOnly }),
     proposedByUser: relationship({ ref: 'User', ...readOnly }),

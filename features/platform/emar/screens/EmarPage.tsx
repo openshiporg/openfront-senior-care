@@ -4,6 +4,14 @@ import { onLoad, NOT_FOR_ROLE } from '../../lib/clinical';
 import { Page, Section, Row, Empty, Meta, Title, CommunityTabs } from '../../components/ui';
 import { ClinicalAction } from '../../components/ClinicalAction';
 
+/** A controlled or counted dose names its supply and witness. A supply under an open count discrepancy refuses routine doses; an emergency dose needs a reason and tells the DON (SM §9.5). */
+const SUPPLY_FIELDS = [
+  { name: 'supplyId', label: 'Supply (id)', required: true },
+  { name: 'witnessId', label: 'Witness (user id)' },
+  { name: 'emergency', label: 'Emergency dose (supply is under a count discrepancy)', type: 'checkbox' as const },
+  { name: 'emergencyReason', label: 'Why this is an emergency', type: 'textarea' as const },
+];
+
 type Slot = { id: string; drugName: string; scheduledFor: string; status: string; windowBefore: number; windowAfter: number; resident: { id: string; firstName: string; lastName: string; preferredName: string } | null };
 type Prn = { id: string; dueAt: string; status: string; administration: { drugName: string; resident: { firstName: string; lastName: string } | null } | null };
 
@@ -40,6 +48,7 @@ export default async function EmarPage({ searchParams }: { searchParams?: Promis
                 <Meta>{when(s.scheduledFor, tz)} · window −{s.windowBefore}/+{s.windowAfter} min</Meta>
               </div>
               <ClinicalAction op="emar.administer" input={{ slotId: s.id, outcome: 'given', identityCheck: 'two_identifiers' }} confirm="Give this dose? Two identifiers checked.">Give</ClinicalAction>
+              <ClinicalAction op="emar.administer" input={{ slotId: s.id, outcome: 'given', identityCheck: 'two_identifiers' }} fields={SUPPLY_FIELDS}>Give from a supply</ClinicalAction>
               <ClinicalAction op="emar.administer" input={{ slotId: s.id }} fields={[{ name: 'outcome', label: 'Outcome', type: 'select', required: true, options: ['held', 'refused', 'not_given'].map(v => ({ value: v, label: label(v) })) }, { name: 'reason', label: 'Reason', required: true }]}>Hold or refuse</ClinicalAction>
             </Row>
           );

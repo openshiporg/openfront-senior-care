@@ -10,6 +10,7 @@ import * as census from './census'
 import * as front from './frontOfHouse'
 import * as reads from './reads'
 import * as clinical from './clinical'
+import * as workflowReads from './workflowReads'
 import '../lib/operatorControls'
 import '../lib/censusCorrection'
 
@@ -35,6 +36,13 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         portalUpdates(residentId: ID!): JSON
         portalCalendar(residentId: ID!): JSON
         portalDocuments(residentId: ID!): JSON
+        listBlockTypes: JSON
+        getBlockType(code: String!): JSON
+        listWorkflows(communityId: ID!): JSON
+        getWorkflowVersion(versionId: ID!): JSON
+        getWorkflowRun(runId: ID!): JSON
+        listFindings(communityId: ID!, status: String): JSON
+        getFinding(findingId: ID!): JSON
       }
       input UserUpdateProfileInput { name: String, email: String, password: String, onboardingStatus: String }
       type Mutation {
@@ -112,6 +120,13 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         portalUpdates: op(front.portalUpdatesQuery),
         portalCalendar: op(front.portalCalendarQuery),
         portalDocuments: op(front.portalDocumentsQuery),
+        listBlockTypes: op(workflowReads.listBlockTypes),
+        getBlockType: op(workflowReads.getBlockType),
+        listWorkflows: op(workflowReads.listWorkflows),
+        getWorkflowVersion: op(workflowReads.getWorkflowVersion),
+        getWorkflowRun: op(workflowReads.getWorkflowRun),
+        listFindings: op(workflowReads.listFindings),
+        getFinding: op(workflowReads.getFinding),
       },
       Mutation: {
         updateActiveUser,

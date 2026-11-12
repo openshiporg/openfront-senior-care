@@ -26,7 +26,7 @@ async function reader(context: Ctx, permissions: Parameters<typeof requirePermis
   return { actor, names }
 }
 
-async function auditRead(context: Ctx, actor: Actor, operationName: string, residentIds: string[]) {
+export async function auditRead(context: Ctx, actor: Actor, operationName: string, residentIds: string[]) {
   if (!residentIds.length) return
   const secret = phiReferenceSecret()
   if (secret.length < 32) throw new DomainError(Codes.GUARD_FAILED, 'Protected data auditing is unavailable.')
