@@ -359,7 +359,7 @@ export async function issueRefund(db: Db, actor: Actor, refundId: string) {
 
 /** Charges the stored autopay token of every unpaid statement in a period. One command per statement; safe to press twice. */
 export async function chargeAutopayForPeriod(db: Db, actor: Actor, input: { periodId: string }) {
-  const statements = await db.statement.findMany({ where: { periodId: input.periodId, status: 'issued' }, select: { id: true, residentId: true, totalMinor: true, paidMinor: true }, orderBy: { number: 'asc' } })
+  const statements = await db.statement.findMany({ where: { periodId: input.periodId, status: 'issued' }, select: { id: true, residentId: true, totalMinor: true, paidMinor: true, adjustedMinor: true }, orderBy: { number: 'asc' } })
   const results: { statementId: string; status: string }[] = []
   for (const statement of statements) {
     const balance = balanceOf(statement)

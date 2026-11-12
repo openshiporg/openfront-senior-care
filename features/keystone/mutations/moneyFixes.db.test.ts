@@ -4,6 +4,9 @@ import { hasTestDatabase, resetDatabase, testPrisma, uniqueKey } from '../../../
 import { ALL_DEFAULT, ctx, type Ctx } from '../../../tests/helpers/sessions'
 import { createFakeStripe } from '../../integrations/payment/fake'
 import { applyPaymentEvent, usePaymentAdapter } from '../billing/payments'
+import { deriveForMonth } from '../billing/period'
+import { statementPdf } from '../billing/statementPdf'
+import { createHash } from 'node:crypto'
 import { systemActor } from '../lib/actor'
 import { ROLES, COMMUNITY } from '../seed/operator'
 import type { Permission } from '../access'
@@ -132,5 +135,78 @@ describe.skipIf(!hasTestDatabase)('r1 money fixes (database)', () => {
     expect(await prisma.balanceAdjustment.findUniqueOrThrow({ where: { id: small.adjustmentId } })).toMatchObject({ status: 'superseded' })
     expect(await prisma.statement.findUniqueOrThrow({ where: { id: statement.id } })).toMatchObject({ adjustedMinor: 470_000n, status: 'issued' })
     await expect(prisma.balanceAdjustment.deleteMany({ where: { id: fix.adjustmentId } })).rejects.toThrow()
+  }, 300_000)
+  it('r2 M4: a care-level increase never bills without notice, compared with the billed level (repeat no-notice row, manual points 0)', async () => {
+    // Two AL residents in house all of November, each on AL2 (assessed 15 points) since September.
+    const admit = async (n: number) => {
+      const r = await prisma.resident.create({ data: { reference: `R2RES-${n}`, communityId: COMMUNITY.id, firstName: `R2_${n}`, lastName: 'Care', status: 'current', synthetic: true } })
+      const stayId = `r2_stay_${n}`, at = new Date('2026-09-18T15:00:00Z')
+      await prisma.stay.create({ data: { id: stayId, reference: `R2STY-${n}`, residentId: r.id, communityId: COMMUNITY.id, setting: 'assisted_living', status: 'admitted', presence: 'in_house', admittedAt: at, currentApartmentId: `seed_apartment_mea_${n}`, initialPayerKind: 'private_pay', synthetic: true } })
+      await prisma.coveragePeriod.create({ data: { id: `r2_cov_${n}`, stayId, payerId: 'seed_payer_private', rank: 'primary', startDate: new Date('2026-09-18T00:00:00Z'), status: 'active' } })
+      await prisma.censusEvent.create({ data: { stayId, seq: 1, kind: 'admission', effectiveAt: at, toApartmentId: `seed_apartment_mea_${n}`, coverageId: `r2_cov_${n}`, idempotencyKey: `r2_evt_${n}`, prevHash: '0'.repeat(64), hash: createHash('sha256').update(`r2_evt_${n}`).digest('hex') } })
+      await bc(office, 'care_level.assign', { stayId, points: 15, effectiveFrom: '2026-09-18' })
+      return stayId
+    }
+    const repeat = await admit(1)
+    const manual = await admit(3)
+    const al2Line = (await prisma.rateLine.findFirstOrThrow({ where: { careLevelId: 'seed_care_al_2', schedule: { status: 'published' } } })).id
+    const al3Line = (await prisma.rateLine.findFirstOrThrow({ where: { careLevelId: 'seed_care_al_3', schedule: { status: 'published' } } })).id
+
+    // Bypass 1 (r2): AL3 with no notice on 10 Nov, then AL3 again with no notice on 20 Nov.
+    await bc(office, 'care_level.assign', { stayId: repeat, points: 25, effectiveFrom: '2026-11-10' })
+    await bc(office, 'care_level.assign', { stayId: repeat, points: 25, effectiveFrom: '2026-11-20' })
+    // Bypass 2 (r2): a manual AL3 with points 0 and no notice.
+    await bc(office, 'care_level.assign', { stayId: manual, careLevelId: 'seed_care_al_3', points: 0, effectiveFrom: '2026-11-16', reason: 'Set by hand' })
+
+    const nov = await deriveForMonth(prisma as never, COMMUNITY.id, '2026-11-01')
+    const careOf = (stayId: string) => nov.lines.filter(l => l.stayId === stayId && l.kind === 'care_level')
+    const sum = (lines: { amountMinor: bigint }[]) => lines.reduce((a, l) => a + l.amountMinor, 0n)
+    for (const stayId of [repeat, manual]) {
+      expect(careOf(stayId)).toHaveLength(30)
+      expect(careOf(stayId).every(l => l.derivation.rateLineId === al2Line)).toBe(true)
+      expect(careOf(stayId).some(l => l.derivation.rateLineId === al3Line)).toBe(false)
+      expect(sum(careOf(stayId))).toBe(185_000n)
+    }
+
+    // With notice delivered 1 Nov, the manual AL3 bills from 1 Dec (Nov + 30 days), never in November.
+    await bc(office, 'care_level.assign', { stayId: manual, careLevelId: 'seed_care_al_3', points: 0, effectiveFrom: '2026-11-20', noticeDeliveredOn: '2026-11-01', reason: 'Set by hand, noticed' })
+    const again = await deriveForMonth(prisma as never, COMMUNITY.id, '2026-11-01')
+    expect(again.lines.filter(l => l.stayId === manual && l.kind === 'care_level').every(l => l.derivation.rateLineId === al2Line)).toBe(true)
+    const dec = await deriveForMonth(prisma as never, COMMUNITY.id, '2026-12-01')
+    expect(dec.lines.filter(l => l.stayId === manual && l.kind === 'care_level').every(l => l.derivation.rateLineId === al3Line)).toBe(true)
+    expect(dec.lines.filter(l => l.stayId === repeat && l.kind === 'care_level').every(l => l.derivation.rateLineId === al2Line)).toBe(true)
+  }, 300_000)
+
+  it('r2 M6: autopay sees write-offs, charges the adjusted balance and finishes the run; the PDF balance is total - paid - adjusted', async () => {
+    const period = await prisma.billingPeriod.create({ data: { communityId: COMMUNITY.id, month: new Date('2026-08-01T00:00:00Z'), status: 'closed', statementCount: 3 } })
+    const made: { id: string; residentId: string }[] = []
+    for (let i = 0; i < 3; i += 1) {
+      const r = await prisma.resident.create({ data: { reference: `R2PAY-${i}`, communityId: COMMUNITY.id, firstName: `Pay${i}`, lastName: 'Auto', status: 'current', synthetic: true } })
+      await prisma.paymentMethodToken.create({ data: { communityId: COMMUNITY.id, residentId: r.id, provider: 'card', brand: 'Visa', last4: '4242', token: 'pm_card_visa', autopay: true, status: 'active' } })
+      const st = await prisma.statement.create({ data: { communityId: COMMUNITY.id, residentId: r.id, periodId: period.id, number: `STM-R2-${i}`, status: 'issued', totalMinor: 780_000n, paidMinor: 0n, lines: [], chargeHash: 'a'.repeat(64) } })
+      made.push({ id: st.id, residentId: r.id })
+    }
+    await prisma.operatorSettings.update({ where: { id: 1 }, data: { writeOffApprovalThresholdMinor: 100_000n } })
+    // The FIRST statement in the run has a posted write-off, so a throw on it would stop the other two.
+    const off = await bc(office, 'adjustment.create', { statementId: made[0].id, amountMinor: '50000', reason: 'Laundry credited' })
+    expect(off.status).toBe('posted')
+
+    const run = await bc(office, 'billing.autopay', { periodId: period.id })
+    expect(run.results).toHaveLength(3)
+    expect(run.results.every((r: { status: string }) => r.status === 'succeeded')).toBe(true)
+    const adjusted = await prisma.statement.findUniqueOrThrow({ where: { id: made[0].id } })
+    expect(adjusted).toMatchObject({ status: 'paid', paidMinor: 730_000n, adjustedMinor: 50_000n })
+    for (const m of made.slice(1)) expect(await prisma.statement.findUniqueOrThrow({ where: { id: m.id } })).toMatchObject({ status: 'paid', paidMinor: 780_000n })
+    const charged = await prisma.payment.aggregate({ where: { statementId: { in: made.map(m => m.id) }, autopay: true, status: 'succeeded' }, _sum: { amountMinor: true } })
+    expect(charged._sum.amountMinor).toBe(730_000n + 780_000n + 780_000n)
+
+    // The PDF uses the same balance as the statement page: total - paid - adjusted.
+    const text = (input: Partial<Parameters<typeof statementPdf>[0]>) => statementPdf({ number: 'S', community: 'C', resident: 'R', month: 'Oct', issuedOn: '', dueOn: '', status: 'issued', totalMinor: '780000', paidMinor: '0', lines: [], ...input }).toString('latin1')
+    const balanceRow = (pdf: string) => { const rows = pdf.split('\n'); return rows[rows.findIndex(r => r.includes('(Balance due)')) + 1] }
+    expect(balanceRow(text({ adjustedMinor: '100000' }))).toContain('($6,800.00)')
+    expect(balanceRow(text({}))).toContain('($7,800.00)')
+    // The statement page computes the same figure from the same row.
+    const page = BigInt(adjusted.totalMinor!) - BigInt(adjusted.paidMinor!) - BigInt(adjusted.adjustedMinor!)
+    expect(balanceRow(text({ totalMinor: String(adjusted.totalMinor), paidMinor: String(adjusted.paidMinor), adjustedMinor: String(adjusted.adjustedMinor) }))).toContain(page === 0n ? '($0.00)' : 'x')
   }, 300_000)
 })

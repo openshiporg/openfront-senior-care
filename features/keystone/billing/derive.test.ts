@@ -40,6 +40,25 @@ describe('M4: care-level notice', () => {
     const lines = care([{ ...old, careLevelId: 'al3', points: 20 }, { stayId: 'a', careLevelId: 'al2', points: 10, effectiveFrom: '2026-10-16', noticeDeliveredOn: null }])
     expect(lines.filter(l => l.derivation.rateLineId === 'al2').map(l => l.date)).toEqual(dates(16, 31))
   })
+  it('r2: a second no-notice AL3 row is compared with the billed AL2, so it never bills', () => {
+    const lines = care([old, { stayId: 'a', careLevelId: 'al3', points: 25, effectiveFrom: '2026-10-10', noticeDeliveredOn: null }, { stayId: 'a', careLevelId: 'al3', points: 25, effectiveFrom: '2026-10-20', noticeDeliveredOn: null }])
+    expect(lines.every(l => l.derivation.rateLineId === 'al2')).toBe(true)
+    expect(lines).toHaveLength(31)
+  })
+  it('r2: a manual AL3 with points 0 is ranked by the level minPoints, so it is an increase and needs notice', () => {
+    const al2 = { ...old, levelMinPoints: 10 }
+    const lines = care([al2, { stayId: 'a', careLevelId: 'al3', points: 0, levelMinPoints: 20, effectiveFrom: '2026-10-16', noticeDeliveredOn: null }])
+    expect(lines.every(l => l.derivation.rateLineId === 'al2')).toBe(true)
+    const noticed = care([al2, { stayId: 'a', careLevelId: 'al3', points: 0, levelMinPoints: 20, effectiveFrom: '2026-10-01', noticeDeliveredOn: '2026-10-01' }])
+    expect(noticed.filter(l => l.derivation.rateLineId === 'al3').map(l => l.date)).toEqual(['2026-10-31'])
+    // A manual decrease with high points is still a decrease by level.
+    const down = care([{ ...old, careLevelId: 'al3', points: 20, levelMinPoints: 20 }, { stayId: 'a', careLevelId: 'al2', points: 99, levelMinPoints: 10, effectiveFrom: '2026-10-16', noticeDeliveredOn: null }])
+    expect(down.filter(l => l.derivation.rateLineId === 'al2').map(l => l.date)).toEqual(dates(16, 31))
+  })
+  it('r2: a noticed AL3 after an un-noticed AL3 bills from its own notice, and a later decrease applies at once', () => {
+    const lines = care([old, { stayId: 'a', careLevelId: 'al3', points: 25, effectiveFrom: '2026-10-05', noticeDeliveredOn: null }, { stayId: 'a', careLevelId: 'al3', points: 25, effectiveFrom: '2026-10-06', noticeDeliveredOn: '2026-09-20' }, { stayId: 'a', careLevelId: 'al2', points: 10, effectiveFrom: '2026-10-25', noticeDeliveredOn: null }])
+    expect(lines.filter(l => l.derivation.rateLineId === 'al3').map(l => l.date)).toEqual(dates(20, 24))
+  })
 })
 
 describe('M5: daily method and per', () => {

@@ -13,6 +13,8 @@ export type StatementPdfInput = {
   status: string
   totalMinor: string
   paidMinor: string
+  /** Posted adjustments and write-offs; the balance is total − paid − adjusted, as on the statement page. */
+  adjustedMinor?: string
   lines: { description: string; days: number; amountMinor: string }[]
 }
 
@@ -25,7 +27,8 @@ const usd = (minor: string) => {
 const esc = (text: string) => text.replace(/[^\x20-\x7e]/g, '?').replace(/([\\()])/g, '\\$1')
 
 export function statementPdf(input: StatementPdfInput): Buffer {
-  const balance = (BigInt(input.totalMinor) - BigInt(input.paidMinor)).toString()
+  const adjusted = BigInt(input.adjustedMinor ?? '0')
+  const balance = (BigInt(input.totalMinor) - BigInt(input.paidMinor) - adjusted).toString()
   const rows: { text: string; size: number; x: number; right?: string }[] = []
   const add = (text: string, size = 10, right?: string) => rows.push({ text, size, x: 54, right })
   add(input.community, 16)
@@ -38,6 +41,7 @@ export function statementPdf(input: StatementPdfInput): Buffer {
   add('', 10)
   add('Total', 11, usd(input.totalMinor))
   add('Paid', 10, usd(input.paidMinor))
+  if (adjusted !== 0n) add('Adjusted', 10, usd(adjusted.toString()))
   add('Balance due', 12, usd(balance))
 
   const perPage = 48

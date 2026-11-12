@@ -35,7 +35,8 @@ export type RateLineIn = {
   proration: 'actual_days_in_month' | 'thirty_day_month' | 'daily'
 }
 
-export type CareAssignmentIn = { stayId: string; careLevelId: string; points: number; effectiveFrom: string; noticeDeliveredOn: string | null }
+/** levelMinPoints is the assigned level's minPoints: the rank used to tell an increase from a decrease (a manual level's own points can be anything). */
+export type CareAssignmentIn = { stayId: string; careLevelId: string; points: number; levelMinPoints?: number; effectiveFrom: string; noticeDeliveredOn: string | null }
 export type LiabilityIn = { stayId: string; liabilityMinor: bigint }
 
 export type DerivationInput = {
@@ -90,19 +91,20 @@ function rateOn(rates: readonly RateLineIn[], date: string, match: { setting: st
 /**
  * The care level billed on a date. A decrease (or the first assignment) applies from its effective date. An increase bills
  * only from the later of its effective date and noticeDeliveredOn + notice days; with no notice it never bills, so the old
- * level stays. Each row is compared with the row before it by effective date.
+ * level stays. Each row is compared with the level actually billed on that date (not the row before it), by the level's
+ * minPoints, so a repeated no-notice increase or a manual level with low points can never bill early.
  */
 const careOn = (assignments: readonly CareAssignmentIn[], stayId: string, date: string, noticeDays: number) => {
   const rows = assignments.filter(row => row.stayId === stayId).sort((a, b) => (a.effectiveFrom < b.effectiveFrom ? -1 : a.effectiveFrom > b.effectiveFrom ? 1 : 0))
-  let best: CareAssignmentIn | null = null
-  for (let index = 0; index < rows.length; index += 1) {
-    const row = rows[index]
-    const previous = index > 0 ? rows[index - 1] : null
-    const increase = previous !== null && row.points > previous.points
+  const rank = (row: CareAssignmentIn) => row.levelMinPoints ?? row.points
+  let billed: CareAssignmentIn | null = null
+  for (const row of rows) {
+    if (row.effectiveFrom > date) break
+    const increase = billed !== null && rank(row) > rank(billed)
     const billableFrom = !increase ? row.effectiveFrom : row.noticeDeliveredOn ? (addDays(row.noticeDeliveredOn, noticeDays) > row.effectiveFrom ? addDays(row.noticeDeliveredOn, noticeDays) : row.effectiveFrom) : '9999-12-31'
-    if (billableFrom <= date && row.effectiveFrom <= date) best = row
+    if (billableFrom <= date) billed = row
   }
-  return best
+  return billed
 }
 
 const finish = (line: Omit<DerivedLine, 'key' | 'derivationHash'>): DerivedLine => {

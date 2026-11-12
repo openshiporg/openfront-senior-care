@@ -39,7 +39,7 @@ export async function loadDerivationInput(tx: Tx, communityId: string, month: st
     tx.apartment.findMany({ where: { id: { in: apartmentIds } }, select: { id: true, apartmentTypeId: true } }),
     tx.coveragePeriod.findMany({ where: { id: { in: coverageIds } }, select: { id: true, payerId: true } }),
     tx.rateSchedule.findMany({ where: { communityId, status: 'published', effectiveFrom: { lte: day(monthEnd(month)) } }, select: { setting: true, lines: true } }),
-    tx.careLevelAssignment.findMany({ where: { communityId, effectiveFrom: { lte: day(monthEnd(month)) } }, select: { stayId: true, careLevelId: true, points: true, effectiveFrom: true, noticeDeliveredOn: true }, orderBy: [{ effectiveFrom: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }] }),
+    tx.careLevelAssignment.findMany({ where: { communityId, effectiveFrom: { lte: day(monthEnd(month)) } }, select: { stayId: true, careLevelId: true, points: true, effectiveFrom: true, noticeDeliveredOn: true, careLevel: { select: { minPoints: true } } }, orderBy: [{ effectiveFrom: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }] }),
     tx.medicaidLiability.findMany({ where: { communityId, month: day(month), status: { not: 'superseded' } }, select: { stayId: true, liabilityMinor: true } }),
     tx.community.findUnique({ where: { id: communityId }, select: { jurisdictionPack: { select: { rules: true } } } }),
   ])
@@ -80,7 +80,7 @@ export async function loadDerivationInput(tx: Tx, communityId: string, month: st
       apartmentTypeId: line.apartmentTypeId, careLevelId: line.careLevelId, amountMinor: line.amountMinor ?? 0n,
       per: (line.per ?? 'month') as 'month' | 'day' | 'each', proration: (line.proration ?? 'actual_days_in_month') as 'actual_days_in_month' | 'thirty_day_month' | 'daily',
     })),
-    careAssignments: assignments.filter(row => row.stayId && row.careLevelId).map(row => ({ stayId: row.stayId!, careLevelId: row.careLevelId!, points: row.points, effectiveFrom: iso(row.effectiveFrom), noticeDeliveredOn: iso(row.noticeDeliveredOn) || null })),
+    careAssignments: assignments.filter(row => row.stayId && row.careLevelId).map(row => ({ stayId: row.stayId!, careLevelId: row.careLevelId!, points: row.points, levelMinPoints: row.careLevel?.minPoints ?? undefined, effectiveFrom: iso(row.effectiveFrom), noticeDeliveredOn: iso(row.noticeDeliveredOn) || null })),
     careNoticeDays,
     liabilities: liabilities.filter(row => row.stayId).map(row => ({ stayId: row.stayId!, liabilityMinor: row.liabilityMinor ?? 0n })),
   }
