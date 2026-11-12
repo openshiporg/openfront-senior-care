@@ -12693,6 +12693,122 @@ input WorkflowActivationRelateToManyForCreateInput {
   connect: [WorkflowActivationWhereUniqueInput!]
 }
 
+type BalanceAdjustment {
+  id: ID!
+  community: Community
+  resident: Resident
+  statement: Statement
+  kind: String
+  amountMinor: BigInt
+  reason: String
+  status: String
+  approval: ApprovalRequest
+  supersedes: BalanceAdjustment
+  requestedBy: User
+  postedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input BalanceAdjustmentWhereUniqueInput {
+  id: ID
+}
+
+input BalanceAdjustmentWhereInput {
+  AND: [BalanceAdjustmentWhereInput!]
+  OR: [BalanceAdjustmentWhereInput!]
+  NOT: [BalanceAdjustmentWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  statement: StatementWhereInput
+  kind: StringFilter
+  amountMinor: BigIntFilter
+  reason: StringFilter
+  status: StringFilter
+  approval: ApprovalRequestWhereInput
+  supersedes: BalanceAdjustmentWhereInput
+  requestedBy: UserWhereInput
+  postedAt: DateTimeNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input BalanceAdjustmentOrderByInput {
+  id: OrderDirection
+  kind: OrderDirection
+  amountMinor: OrderDirection
+  reason: OrderDirection
+  status: OrderDirection
+  postedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input BalanceAdjustmentUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  statement: StatementRelateToOneForUpdateInput
+  kind: String
+  amountMinor: BigInt
+  reason: String
+  status: String
+  approval: ApprovalRequestRelateToOneForUpdateInput
+  supersedes: BalanceAdjustmentRelateToOneForUpdateInput
+  requestedBy: UserRelateToOneForUpdateInput
+  postedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input StatementRelateToOneForUpdateInput {
+  create: StatementCreateInput
+  connect: StatementWhereUniqueInput
+  disconnect: Boolean
+}
+
+input BalanceAdjustmentRelateToOneForUpdateInput {
+  create: BalanceAdjustmentCreateInput
+  connect: BalanceAdjustmentWhereUniqueInput
+  disconnect: Boolean
+}
+
+input BalanceAdjustmentUpdateArgs {
+  where: BalanceAdjustmentWhereUniqueInput!
+  data: BalanceAdjustmentUpdateInput!
+}
+
+input BalanceAdjustmentCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  statement: StatementRelateToOneForCreateInput
+  kind: String
+  amountMinor: BigInt
+  reason: String
+  status: String
+  approval: ApprovalRequestRelateToOneForCreateInput
+  supersedes: BalanceAdjustmentRelateToOneForCreateInput
+  requestedBy: UserRelateToOneForCreateInput
+  postedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input StatementRelateToOneForCreateInput {
+  create: StatementCreateInput
+  connect: StatementWhereUniqueInput
+}
+
+input BalanceAdjustmentRelateToOneForCreateInput {
+  create: BalanceAdjustmentCreateInput
+  connect: BalanceAdjustmentWhereUniqueInput
+}
+
 type BillingPeriod {
   id: ID!
   community: Community
@@ -12859,6 +12975,8 @@ type CareLevelAssignment {
   points: Int
   effectiveFrom: CalendarDay
   noticeDeliveredOn: CalendarDay
+  source: String
+  reason: String
   status: String
   version: Int
   createdAt: DateTime
@@ -12881,6 +12999,8 @@ input CareLevelAssignmentWhereInput {
   points: IntFilter
   effectiveFrom: CalendarDayNullableFilter
   noticeDeliveredOn: CalendarDayNullableFilter
+  source: StringFilter
+  reason: StringFilter
   status: StringFilter
   version: IntFilter
   createdAt: DateTimeFilter
@@ -12892,6 +13012,8 @@ input CareLevelAssignmentOrderByInput {
   points: OrderDirection
   effectiveFrom: OrderDirection
   noticeDeliveredOn: OrderDirection
+  source: OrderDirection
+  reason: OrderDirection
   status: OrderDirection
   version: OrderDirection
   createdAt: OrderDirection
@@ -12906,6 +13028,8 @@ input CareLevelAssignmentUpdateInput {
   points: Int
   effectiveFrom: CalendarDay
   noticeDeliveredOn: CalendarDay
+  source: String
+  reason: String
   status: String
   version: Int
   createdAt: DateTime
@@ -12931,6 +13055,8 @@ input CareLevelAssignmentCreateInput {
   points: Int
   effectiveFrom: CalendarDay
   noticeDeliveredOn: CalendarDay
+  source: String
+  reason: String
   status: String
   version: Int
   createdAt: DateTime
@@ -13457,12 +13583,6 @@ input PaymentUpdateInput {
   updatedAt: DateTime
 }
 
-input StatementRelateToOneForUpdateInput {
-  create: StatementCreateInput
-  connect: StatementWhereUniqueInput
-  disconnect: Boolean
-}
-
 input PaymentMethodTokenRelateToOneForUpdateInput {
   create: PaymentMethodTokenCreateInput
   connect: PaymentMethodTokenWhereUniqueInput
@@ -13495,11 +13615,6 @@ input PaymentCreateInput {
   version: Int
   createdAt: DateTime
   updatedAt: DateTime
-}
-
-input StatementRelateToOneForCreateInput {
-  create: StatementCreateInput
-  connect: StatementWhereUniqueInput
 }
 
 input PaymentMethodTokenRelateToOneForCreateInput {
@@ -13900,6 +14015,7 @@ type Refund {
   resident: Resident
   payment: Payment
   deposit: Deposit
+  credit: ResidentCredit
   amountMinor: BigInt
   reason: String
   status: String
@@ -13925,6 +14041,7 @@ input RefundWhereInput {
   resident: ResidentWhereInput
   payment: PaymentWhereInput
   deposit: DepositWhereInput
+  credit: ResidentCreditWhereInput
   amountMinor: BigIntFilter
   reason: StringFilter
   status: StringFilter
@@ -13954,6 +14071,7 @@ input RefundUpdateInput {
   resident: ResidentRelateToOneForUpdateInput
   payment: PaymentRelateToOneForUpdateInput
   deposit: DepositRelateToOneForUpdateInput
+  credit: ResidentCreditRelateToOneForUpdateInput
   amountMinor: BigInt
   reason: String
   status: String
@@ -13972,6 +14090,12 @@ input DepositRelateToOneForUpdateInput {
   disconnect: Boolean
 }
 
+input ResidentCreditRelateToOneForUpdateInput {
+  create: ResidentCreditCreateInput
+  connect: ResidentCreditWhereUniqueInput
+  disconnect: Boolean
+}
+
 input RefundUpdateArgs {
   where: RefundWhereUniqueInput!
   data: RefundUpdateInput!
@@ -13982,6 +14106,7 @@ input RefundCreateInput {
   resident: ResidentRelateToOneForCreateInput
   payment: PaymentRelateToOneForCreateInput
   deposit: DepositRelateToOneForCreateInput
+  credit: ResidentCreditRelateToOneForCreateInput
   amountMinor: BigInt
   reason: String
   status: String
@@ -13999,6 +14124,83 @@ input DepositRelateToOneForCreateInput {
   connect: DepositWhereUniqueInput
 }
 
+input ResidentCreditRelateToOneForCreateInput {
+  create: ResidentCreditCreateInput
+  connect: ResidentCreditWhereUniqueInput
+}
+
+type ResidentCredit {
+  id: ID!
+  community: Community
+  resident: Resident
+  payment: Payment
+  amountMinor: BigInt
+  remainingMinor: BigInt
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ResidentCreditWhereUniqueInput {
+  id: ID
+}
+
+input ResidentCreditWhereInput {
+  AND: [ResidentCreditWhereInput!]
+  OR: [ResidentCreditWhereInput!]
+  NOT: [ResidentCreditWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  payment: PaymentWhereInput
+  amountMinor: BigIntFilter
+  remainingMinor: BigIntFilter
+  status: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input ResidentCreditOrderByInput {
+  id: OrderDirection
+  amountMinor: OrderDirection
+  remainingMinor: OrderDirection
+  status: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input ResidentCreditUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  payment: PaymentRelateToOneForUpdateInput
+  amountMinor: BigInt
+  remainingMinor: BigInt
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ResidentCreditUpdateArgs {
+  where: ResidentCreditWhereUniqueInput!
+  data: ResidentCreditUpdateInput!
+}
+
+input ResidentCreditCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  payment: PaymentRelateToOneForCreateInput
+  amountMinor: BigInt
+  remainingMinor: BigInt
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
 type Statement {
   id: ID!
   community: Community
@@ -14010,6 +14212,7 @@ type Statement {
   dueOn: CalendarDay
   totalMinor: BigInt
   paidMinor: BigInt
+  adjustedMinor: BigInt
   lines: JSON
   chargeHash: String
   version: Int
@@ -14036,6 +14239,7 @@ input StatementWhereInput {
   dueOn: CalendarDayNullableFilter
   totalMinor: BigIntFilter
   paidMinor: BigIntFilter
+  adjustedMinor: BigIntFilter
   chargeHash: StringFilter
   version: IntFilter
   createdAt: DateTimeFilter
@@ -14050,6 +14254,7 @@ input StatementOrderByInput {
   dueOn: OrderDirection
   totalMinor: OrderDirection
   paidMinor: OrderDirection
+  adjustedMinor: OrderDirection
   chargeHash: OrderDirection
   version: OrderDirection
   createdAt: OrderDirection
@@ -14066,6 +14271,7 @@ input StatementUpdateInput {
   dueOn: CalendarDay
   totalMinor: BigInt
   paidMinor: BigInt
+  adjustedMinor: BigInt
   lines: JSON
   chargeHash: String
   version: Int
@@ -14088,6 +14294,7 @@ input StatementCreateInput {
   dueOn: CalendarDay
   totalMinor: BigInt
   paidMinor: BigInt
+  adjustedMinor: BigInt
   lines: JSON
   chargeHash: String
   version: Int
@@ -15296,6 +15503,12 @@ type Mutation {
   updateWorkflowVersions(data: [WorkflowVersionUpdateArgs!]!): [WorkflowVersion]
   deleteWorkflowVersion(where: WorkflowVersionWhereUniqueInput!): WorkflowVersion
   deleteWorkflowVersions(where: [WorkflowVersionWhereUniqueInput!]!): [WorkflowVersion]
+  createBalanceAdjustment(data: BalanceAdjustmentCreateInput!): BalanceAdjustment
+  createBalanceAdjustments(data: [BalanceAdjustmentCreateInput!]!): [BalanceAdjustment]
+  updateBalanceAdjustment(where: BalanceAdjustmentWhereUniqueInput!, data: BalanceAdjustmentUpdateInput!): BalanceAdjustment
+  updateBalanceAdjustments(data: [BalanceAdjustmentUpdateArgs!]!): [BalanceAdjustment]
+  deleteBalanceAdjustment(where: BalanceAdjustmentWhereUniqueInput!): BalanceAdjustment
+  deleteBalanceAdjustments(where: [BalanceAdjustmentWhereUniqueInput!]!): [BalanceAdjustment]
   createBillingPeriod(data: BillingPeriodCreateInput!): BillingPeriod
   createBillingPeriods(data: [BillingPeriodCreateInput!]!): [BillingPeriod]
   updateBillingPeriod(where: BillingPeriodWhereUniqueInput!, data: BillingPeriodUpdateInput!): BillingPeriod
@@ -15380,6 +15593,12 @@ type Mutation {
   updateRefunds(data: [RefundUpdateArgs!]!): [Refund]
   deleteRefund(where: RefundWhereUniqueInput!): Refund
   deleteRefunds(where: [RefundWhereUniqueInput!]!): [Refund]
+  createResidentCredit(data: ResidentCreditCreateInput!): ResidentCredit
+  createResidentCredits(data: [ResidentCreditCreateInput!]!): [ResidentCredit]
+  updateResidentCredit(where: ResidentCreditWhereUniqueInput!, data: ResidentCreditUpdateInput!): ResidentCredit
+  updateResidentCredits(data: [ResidentCreditUpdateArgs!]!): [ResidentCredit]
+  deleteResidentCredit(where: ResidentCreditWhereUniqueInput!): ResidentCredit
+  deleteResidentCredits(where: [ResidentCreditWhereUniqueInput!]!): [ResidentCredit]
   createStatement(data: StatementCreateInput!): Statement
   createStatements(data: [StatementCreateInput!]!): [Statement]
   updateStatement(where: StatementWhereUniqueInput!, data: StatementUpdateInput!): Statement
@@ -15852,6 +16071,9 @@ type Query {
   workflowVersion(where: WorkflowVersionWhereUniqueInput!): WorkflowVersion
   workflowVersions(where: WorkflowVersionWhereInput! = {}, orderBy: [WorkflowVersionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: WorkflowVersionWhereUniqueInput): [WorkflowVersion!]
   workflowVersionsCount(where: WorkflowVersionWhereInput! = {}): Int
+  balanceAdjustment(where: BalanceAdjustmentWhereUniqueInput!): BalanceAdjustment
+  balanceAdjustments(where: BalanceAdjustmentWhereInput! = {}, orderBy: [BalanceAdjustmentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: BalanceAdjustmentWhereUniqueInput): [BalanceAdjustment!]
+  balanceAdjustmentsCount(where: BalanceAdjustmentWhereInput! = {}): Int
   billingPeriod(where: BillingPeriodWhereUniqueInput!): BillingPeriod
   billingPeriods(where: BillingPeriodWhereInput! = {}, orderBy: [BillingPeriodOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: BillingPeriodWhereUniqueInput): [BillingPeriod!]
   billingPeriodsCount(where: BillingPeriodWhereInput! = {}): Int
@@ -15894,6 +16116,9 @@ type Query {
   refund(where: RefundWhereUniqueInput!): Refund
   refunds(where: RefundWhereInput! = {}, orderBy: [RefundOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RefundWhereUniqueInput): [Refund!]
   refundsCount(where: RefundWhereInput! = {}): Int
+  residentCredit(where: ResidentCreditWhereUniqueInput!): ResidentCredit
+  residentCredits(where: ResidentCreditWhereInput! = {}, orderBy: [ResidentCreditOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ResidentCreditWhereUniqueInput): [ResidentCredit!]
+  residentCreditsCount(where: ResidentCreditWhereInput! = {}): Int
   statement(where: StatementWhereUniqueInput!): Statement
   statements(where: StatementWhereInput! = {}, orderBy: [StatementOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: StatementWhereUniqueInput): [Statement!]
   statementsCount(where: StatementWhereInput! = {}): Int

@@ -28,3 +28,17 @@ Builds on Phase 2 (commit `38a4912`). No timer, job, cron, outbox, autopay runne
 4. `mutations/trust.db.test.ts`: withdrawal over the threshold needs a second approver; the preparer never signs; reversal, reconciliation, conveyance.
 5. `mutations/payments.db.test.ts`: webhook replay and an unknown outcome produce exactly one payment; refunds, deposits, autopay.
 Also `billing/medicaid.test.ts` (clocks). Run each DB file alone: `timeout 300 npx vitest run <file> --no-file-parallelism`.
+
+## r1 fixes (review items M1–M6, M8)
+
+- **M1 resident credit.** A settle that finds nothing left to allocate records the excess as a `ResidentCredit` (open, with the amount left). It shows on the statement screen under "Credit on account" and can be applied to a statement (`credit.apply`, a `credit` payment) or refunded (`refund.request` with `creditId`). Never silent.
+- **M2 deposit rules.** The Ohio pack carries `depositRefund` per deposit kind (refundable, refundWindowDays from receipt, forfeitable). A refund outside the rule is refused. `deposit.forfeit` (held → forfeited) needs a second approver. `community_fee` is a deposit kind.
+- **M3 second person.** The census gives occupancy: the first occupant of an apartment that day pays rent, the second pays the `second_person` rate.
+- **M4 care level.** An increase bills only from the later of its effective date and `noticeDeliveredOn` + the pack's `careLevelIncreaseNoticeDays`; a decrease applies at once. `care_level.assign` creates the row from AL points, or by hand with a reason, and supersedes the current one.
+- **M5 rate shape.** `per:'day'` and the `daily` method give rate × days. `rate.add_line` refuses combinations that make no sense (`checkRateShape`).
+- **M6 adjustments and write-offs.** `adjustment.create` and `writeoff.create` write a `BalanceAdjustment`. At or above `writeOffApprovalThresholdMinor` they wait for a different person with `canApproveWriteOffs`. They are append-only; a correction supersedes. `Statement.adjustedMinor` carries the total, and the balance is total − paid − adjusted.
+- **M8 database guards** (`20261112150000_phase_3_r1_money_guards`): triggers in the `hs_money_period` pattern for Statement, BillingPeriod, RateSchedule, RateLine, Charge, Payment, Refund, Deposit, MedicaidLiability, CareLevelAssignment, BalanceAdjustment, ResidentCredit, TrustTransaction and TrustReconciliation, plus a never-negative constraint trigger on the trust ledger. `scripts/sqlguards.mjs` proves each probe is refused as a non-owner role.
+
+## Deferred to Phase 3b
+
+PaymentPlan, ageing, GL export, MedicaidApplication, PNA, TrustAuthorisation, quarterly statements, the SSI alert, interest, the surety bond and the portal payments API are **deferred to Phase 3b** (Euler's decision on review item M7).

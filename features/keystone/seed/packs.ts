@@ -68,6 +68,22 @@ export const US_FED_PACK: PackSeed = {
   ],
 }
 
+/** Phase 3 billing rules, kept as data in the Ohio pack (verify with counsel before go-live). Merged into an existing pack by seedBilling. */
+export const OH_BILLING_RULES = {
+  careLevelIncreaseNoticeDays: { value: 30, ruleRef: 'Ohio Adm. Code 3701-16 / resident contract (verify)', verifyNote: 'An increase in care level bills only after this many days of written notice; a decrease applies at once.' },
+  depositRefund: {
+    value: {
+      security: { refundable: true, refundWindowDays: null, forfeitable: true },
+      pet: { refundable: true, refundWindowDays: null, forfeitable: true },
+      reservation: { refundable: true, refundWindowDays: 30, forfeitable: true },
+      community_fee: { refundable: true, refundWindowDays: 30, forfeitable: false },
+      other: { refundable: true, refundWindowDays: null, forfeitable: false },
+    },
+    ruleRef: 'Resident contract and Ohio Adm. Code 3701-16 (verify)',
+    verifyNote: 'refundWindowDays counts from the day the deposit was received; null means no window. forfeitable means the operator may keep it (needs a second approver).',
+  },
+} as const
+
 export const US_OH_PACK: PackSeed = {
   id: 'seed_pack_us_oh',
   code: 'US-OH',
@@ -85,6 +101,7 @@ export const US_OH_PACK: PackSeed = {
       ruleRef: 'Ohio Adm. Code 5160-3-16.4(D)(1)-(3), (A)(6), (C)(1); ORC 5165.34',
       verifyNote: 'Fetched 2026-11-07 from codes.ohio.gov. Confirm the prior-year occupancy figure with the Medicaid cost report each year.',
     },
+    ...OH_BILLING_RULES,
     dnrComfortCare: { codes: ['dnr_cc', 'dnr_cca'], ruleRef: 'ORC 2133.21-2133.26; Ohio Adm. Code 3701-62', verifyNote: 'Ohio DNR Comfort Care / Comfort Care-Arrest protocol (verify current forms).' },
   },
   obligations: [

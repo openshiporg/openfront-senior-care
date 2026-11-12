@@ -27,7 +27,7 @@ export async function resetDatabase(prisma: PrismaClient) {
   ])
 }
 
-const GUARDED = ['AuditEvent', 'ApprovalDecision', 'CensusEvent', 'CensusDay', 'PhiReadAudit', 'NoticeDelivery', 'CensusSignoff', 'MedicationSupplyMovement', 'MedicationAdministration', 'ShiftCountEntry', 'InferenceCall', 'TrustLedgerLine', 'PaymentAllocation', 'PaymentEvent', 'Charge', 'TrustTransaction']
+const GUARDED = ['AuditEvent', 'ApprovalDecision', 'CensusEvent', 'CensusDay', 'PhiReadAudit', 'NoticeDelivery', 'CensusSignoff', 'MedicationSupplyMovement', 'MedicationAdministration', 'ShiftCountEntry', 'InferenceCall', 'TrustLedgerLine', 'PaymentAllocation', 'PaymentEvent', 'Charge', 'TrustTransaction', 'Statement', 'BillingPeriod', 'RateSchedule', 'RateLine', 'Payment', 'Refund', 'Deposit', 'MedicaidLiability', 'CareLevelAssignment', 'TrustReconciliation', 'BalanceAdjustment', 'ResidentCredit']
 
 let counter = 0
 export const uniqueKey = (prefix = 'test') => `${prefix}-${Date.now().toString(36)}-${(counter += 1).toString(36)}-${Math.random().toString(36).slice(2, 8)}`

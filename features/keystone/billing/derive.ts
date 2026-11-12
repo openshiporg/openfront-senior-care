@@ -18,6 +18,8 @@ export type DayRow = {
   apartmentTypeId: string | null
   payerKind: string
   payerId: string | null
+  /** 1 for the first occupant of the apartment that day (by admission, then id), 2 for the second. Comes from the census. */
+  occupantRank: number
 }
 
 export type RateLineIn = {
@@ -33,7 +35,7 @@ export type RateLineIn = {
   proration: 'actual_days_in_month' | 'thirty_day_month' | 'daily'
 }
 
-export type CareAssignmentIn = { stayId: string; careLevelId: string; effectiveFrom: string }
+export type CareAssignmentIn = { stayId: string; careLevelId: string; points: number; effectiveFrom: string; noticeDeliveredOn: string | null }
 export type LiabilityIn = { stayId: string; liabilityMinor: bigint }
 
 export type DerivationInput = {
@@ -42,6 +44,8 @@ export type DerivationInput = {
   rates: RateLineIn[]
   careAssignments: CareAssignmentIn[]
   liabilities: LiabilityIn[]
+  /** Days of written notice before a care-level increase bills (pack rule careLevelIncreaseNoticeDays). */
+  careNoticeDays: number
 }
 
 export type DerivedLine = {
@@ -49,7 +53,7 @@ export type DerivedLine = {
   stayId: string
   residentId: string
   date: string
-  kind: 'rent' | 'care_level' | 'room_board' | 'bed_hold' | 'patient_liability' | 'per_diem_claim'
+  kind: 'rent' | 'second_person' | 'care_level' | 'room_board' | 'bed_hold' | 'patient_liability' | 'per_diem_claim'
   responsibility: 'resident' | 'payer'
   payerKey: string
   payerId: string | null
@@ -83,9 +87,21 @@ function rateOn(rates: readonly RateLineIn[], date: string, match: { setting: st
   return best
 }
 
-const careOn = (assignments: readonly CareAssignmentIn[], stayId: string, date: string) => {
+/**
+ * The care level billed on a date. A decrease (or the first assignment) applies from its effective date. An increase bills
+ * only from the later of its effective date and noticeDeliveredOn + notice days; with no notice it never bills, so the old
+ * level stays. Each row is compared with the row before it by effective date.
+ */
+const careOn = (assignments: readonly CareAssignmentIn[], stayId: string, date: string, noticeDays: number) => {
+  const rows = assignments.filter(row => row.stayId === stayId).sort((a, b) => (a.effectiveFrom < b.effectiveFrom ? -1 : a.effectiveFrom > b.effectiveFrom ? 1 : 0))
   let best: CareAssignmentIn | null = null
-  for (const row of assignments) if (row.stayId === stayId && row.effectiveFrom <= date && (!best || row.effectiveFrom >= best.effectiveFrom)) best = row
+  for (let index = 0; index < rows.length; index += 1) {
+    const row = rows[index]
+    const previous = index > 0 ? rows[index - 1] : null
+    const increase = previous !== null && row.points > previous.points
+    const billableFrom = !increase ? row.effectiveFrom : row.noticeDeliveredOn ? (addDays(row.noticeDeliveredOn, noticeDays) > row.effectiveFrom ? addDays(row.noticeDeliveredOn, noticeDays) : row.effectiveFrom) : '9999-12-31'
+    if (billableFrom <= date && row.effectiveFrom <= date) best = row
+  }
   return best
 }
 
@@ -94,17 +110,19 @@ const finish = (line: Omit<DerivedLine, 'key' | 'derivationHash'>): DerivedLine 
   return { ...line, key, derivationHash: sha256(canonicalJson({ key, amountMinor: line.amountMinor, derivation: line.derivation, description: line.description })) }
 }
 
-const labelOf: Record<string, string> = { rent: 'Apartment rent', care_level: 'Care level', room_board: 'Room and board', bed_hold: 'Bed hold', patient_liability: 'Patient liability', per_diem_claim: 'Per diem' }
+const labelOf: Record<string, string> = { rent: 'Apartment rent', second_person: 'Second person', care_level: 'Care level', room_board: 'Room and board', bed_hold: 'Bed hold', patient_liability: 'Patient liability', per_diem_claim: 'Per diem' }
 
 /** A monthly charge over `dates` (one group of identical rates): the prorated total, spread over the days so it sums exactly. */
 function monthly(
   base: { stayId: string; residentId: string; kind: DerivedLine['kind']; responsibility: DerivedLine['responsibility']; payerKey: string; payerId: string | null; description: string },
-  dates: string[], monthlyMinor: bigint, daysInMonth: number, derivation: Record<string, unknown>, proration: RateLineIn['proration'],
+  dates: string[], monthlyMinor: bigint, daysInMonth: number, derivation: Record<string, unknown>, proration: RateLineIn['proration'], per: RateLineIn['per'] = 'month',
 ) {
   const divisor = proration === 'thirty_day_month' ? 30 : daysInMonth
-  const total = dates.length >= daysInMonth ? monthlyMinor : roundToMinor(dec(monthlyMinor).times(dates.length).div(divisor))
+  // A daily rate (per:'day' or the daily method) is rate × days; a monthly rate is prorated by the days in the month.
+  const daily = per === 'day' || proration === 'daily'
+  const total = daily ? monthlyMinor * BigInt(dates.length) : dates.length >= daysInMonth ? monthlyMinor : roundToMinor(dec(monthlyMinor).times(dates.length).div(divisor))
   const shares = allocateMinor(total, dates.map(() => 1))
-  return dates.map((date, index) => finish({ ...base, date, amountMinor: shares[index], derivation: { ...derivation, monthlyMinor, daysInGroup: dates.length, daysInMonth, proration } }))
+  return dates.map((date, index) => finish({ ...base, date, amountMinor: shares[index], derivation: { ...derivation, monthlyMinor, daysInGroup: dates.length, daysInMonth, proration, per } }))
 }
 
 export function deriveCharges(input: DerivationInput): Derivation {
@@ -141,11 +159,18 @@ export function deriveCharges(input: DerivationInput): Derivation {
           continue
         }
         // Assisted living, memory care, independent living: rent continues while a resident is away; care level only while in house.
-        const rent = rateOn(input.rates, day.date, { setting, kind: 'apartment_rent', apartmentTypeId: day.apartmentTypeId })
-        if (!rent) { missingRate += 1; continue }
-        add(rent, { stayId, residentId, kind: 'rent', responsibility: 'resident', payerKey: 'resident', payerId: null, description: labelOf.rent }, day.date)
+        if (day.occupantRank > 1) {
+          // The second occupant of an apartment pays the second-person rate instead of rent.
+          const second = rateOn(input.rates, day.date, { setting, kind: 'second_person' })
+          if (!second) { missingRate += 1; continue }
+          add(second, { stayId, residentId, kind: 'second_person', responsibility: 'resident', payerKey: 'resident', payerId: null, description: labelOf.second_person }, day.date)
+        } else {
+          const rent = rateOn(input.rates, day.date, { setting, kind: 'apartment_rent', apartmentTypeId: day.apartmentTypeId })
+          if (!rent) { missingRate += 1; continue }
+          add(rent, { stayId, residentId, kind: 'rent', responsibility: 'resident', payerKey: 'resident', payerId: null, description: labelOf.rent }, day.date)
+        }
         if (day.presence === 'in_house') {
-          const care = careOn(input.careAssignments, stayId, day.date)
+          const care = careOn(input.careAssignments, stayId, day.date, input.careNoticeDays)
           const rate = care ? rateOn(input.rates, day.date, { setting, kind: 'care_level', careLevelId: care.careLevelId }) : null
           if (rate) add(rate, { stayId, residentId, kind: 'care_level', responsibility: 'resident', payerKey: 'resident', payerId: null, description: labelOf.care_level }, day.date)
         }
@@ -161,7 +186,7 @@ export function deriveCharges(input: DerivationInput): Derivation {
 
     for (const id of [...groups.keys()].sort()) {
       const group = groups.get(id)!
-      lines.push(...monthly(group.base, group.dates, group.rate.amountMinor, daysInMonth, { rateLineId: group.rate.id }, group.rate.proration))
+      lines.push(...monthly(group.base, group.dates, group.rate.amountMinor, daysInMonth, { rateLineId: group.rate.id }, group.rate.proration, group.rate.per))
     }
 
     // Medicaid: the resident's monthly patient liability, prorated by the days Medicaid covered them this month.

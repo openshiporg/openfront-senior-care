@@ -34,25 +34,36 @@ export async function loadDerivationInput(tx: Tx, communityId: string, month: st
   const stayIds = [...new Set(derived.flatMap(entry => entry.rows.map(row => row.stayId)))]
   const apartmentIds = [...new Set(derived.flatMap(entry => entry.rows.map(row => row.apartmentId).filter((id): id is string => Boolean(id))))]
   const coverageIds = [...new Set(derived.flatMap(entry => entry.rows.map(row => row.coverageId).filter((id): id is string => Boolean(id))))]
-  const [stays, apartments, coverages, schedules, assignments, liabilities] = await Promise.all([
-    tx.stay.findMany({ where: { id: { in: stayIds } }, select: { id: true, residentId: true } }),
+  const [stays, apartments, coverages, schedules, assignments, liabilities, pack] = await Promise.all([
+    tx.stay.findMany({ where: { id: { in: stayIds } }, select: { id: true, residentId: true, admittedAt: true } }),
     tx.apartment.findMany({ where: { id: { in: apartmentIds } }, select: { id: true, apartmentTypeId: true } }),
     tx.coveragePeriod.findMany({ where: { id: { in: coverageIds } }, select: { id: true, payerId: true } }),
     tx.rateSchedule.findMany({ where: { communityId, status: 'published', effectiveFrom: { lte: day(monthEnd(month)) } }, select: { setting: true, lines: true } }),
-    tx.careLevelAssignment.findMany({ where: { communityId, effectiveFrom: { lte: day(monthEnd(month)) } }, select: { stayId: true, careLevelId: true, effectiveFrom: true } }),
+    tx.careLevelAssignment.findMany({ where: { communityId, effectiveFrom: { lte: day(monthEnd(month)) } }, select: { stayId: true, careLevelId: true, points: true, effectiveFrom: true, noticeDeliveredOn: true }, orderBy: [{ effectiveFrom: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }] }),
     tx.medicaidLiability.findMany({ where: { communityId, month: day(month), status: { not: 'superseded' } }, select: { stayId: true, liabilityMinor: true } }),
+    tx.community.findUnique({ where: { id: communityId }, select: { jurisdictionPack: { select: { rules: true } } } }),
   ])
+  const noticeRule = ((pack?.jurisdictionPack?.rules ?? {}) as { careLevelIncreaseNoticeDays?: { value?: number } }).careLevelIncreaseNoticeDays?.value
+  const careNoticeDays = Number.isInteger(noticeRule) && (noticeRule as number) >= 0 ? (noticeRule as number) : 30
+  const admittedOf = new Map(stays.map(stay => [stay.id, stay.admittedAt?.toISOString() ?? '']))
   const residentOf = new Map(stays.map(stay => [stay.id, stay.residentId ?? '']))
   const typeOf = new Map(apartments.map(apartment => [apartment.id, apartment.apartmentTypeId]))
   const payerOf = new Map(coverages.map(coverage => [coverage.id, coverage.payerId]))
 
   const days: DayRow[] = []
   for (const entry of derived) {
+    // Occupancy comes from the census: the first occupant of an apartment that day (by admission, then id) is rank 1, the next rank 2.
+    const rank = new Map<string, number>()
+    const inApartment = new Map<string, typeof entry.rows>()
+    for (const row of entry.rows) if (row.apartmentId) inApartment.set(row.apartmentId, [...(inApartment.get(row.apartmentId) ?? []), row])
+    for (const group of inApartment.values()) {
+      group.sort((a, b) => ((admittedOf.get(a.stayId) ?? '') + a.stayId < (admittedOf.get(b.stayId) ?? '') + b.stayId ? -1 : 1)).forEach((row, index) => rank.set(row.stayId, index + 1))
+    }
     for (const row of entry.rows) {
       days.push({
         stayId: row.stayId, residentId: residentOf.get(row.stayId) ?? '', date: entry.date, setting: row.setting ?? '',
         presence: row.presence as DayRow['presence'], apartmentTypeId: row.apartmentId ? typeOf.get(row.apartmentId) ?? null : null,
-        payerKind: row.payerKind, payerId: row.coverageId ? payerOf.get(row.coverageId) ?? null : null,
+        payerKind: row.payerKind, payerId: row.coverageId ? payerOf.get(row.coverageId) ?? null : null, occupantRank: rank.get(row.stayId) ?? 1,
       })
     }
   }
@@ -69,7 +80,8 @@ export async function loadDerivationInput(tx: Tx, communityId: string, month: st
       apartmentTypeId: line.apartmentTypeId, careLevelId: line.careLevelId, amountMinor: line.amountMinor ?? 0n,
       per: (line.per ?? 'month') as 'month' | 'day' | 'each', proration: (line.proration ?? 'actual_days_in_month') as 'actual_days_in_month' | 'thirty_day_month' | 'daily',
     })),
-    careAssignments: assignments.filter(row => row.stayId && row.careLevelId).map(row => ({ stayId: row.stayId!, careLevelId: row.careLevelId!, effectiveFrom: iso(row.effectiveFrom) })),
+    careAssignments: assignments.filter(row => row.stayId && row.careLevelId).map(row => ({ stayId: row.stayId!, careLevelId: row.careLevelId!, points: row.points, effectiveFrom: iso(row.effectiveFrom), noticeDeliveredOn: iso(row.noticeDeliveredOn) || null })),
+    careNoticeDays,
     liabilities: liabilities.filter(row => row.stayId).map(row => ({ stayId: row.stayId!, liabilityMinor: row.liabilityMinor ?? 0n })),
   }
 }
@@ -213,6 +225,8 @@ export async function adjustClosedPeriod(uow: UnitOfWork, actor: Actor, input: {
   if (!period) throw new DomainError(Codes.NOT_FOUND, 'Not found.')
   await lockRow(uow.tx, 'BillingPeriod', period.id)
   if (period.status !== 'closed') throw new DomainError(Codes.GUARD_FAILED, 'This month is still open; derive it again instead.', { reason: 'period_open' })
+  // The database refuses any change to a closed month's charges except inside this command (flag is local to the transaction).
+  await uow.tx.$queryRawUnsafe(`SELECT set_config('senior_care.adjusting', $1, true)`, period.id)
   const derivation = await deriveForMonth(uow.tx, input.communityId, input.month)
   if (derivation.problems.length) throw new DomainError(Codes.GUARD_FAILED, 'The corrected month has gaps (an uncovered day, a missing rate or a missing patient liability). Fix those first.', { reason: 'derivation_problems', problems: derivation.problems.map(p => ({ ...p })) })
   const result = await applyDerivation(uow, input.communityId, period, derivation, ['posted'], 'posted')

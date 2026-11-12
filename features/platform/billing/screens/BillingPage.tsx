@@ -5,7 +5,7 @@ import { Page, Section, Row, Empty, Meta, Title, CommunityTabs, Stat } from '../
 import { BillingAction } from '../../components/BillingAction';
 
 type Period = { id: string; month: string; status: string; statementCount: number | null; closedAt: string | null };
-type Statement = { id: string; number: string; status: string; totalMinor: string; paidMinor: string; dueOn: string | null; resident: { id: string; firstName: string; lastName: string } | null; period: { id: string } | null };
+type Statement = { id: string; number: string; status: string; totalMinor: string; paidMinor: string; adjustedMinor: string; dueOn: string | null; resident: { id: string; firstName: string; lastName: string } | null; period: { id: string } | null };
 
 const monthStart = (date: string) => `${date.slice(0, 7)}-01`;
 const nextMonthOf = (month: string) => { const [y, m] = month.split('-').map(Number); return m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`; };
@@ -29,9 +29,9 @@ export default async function BillingPage({ searchParams }: { searchParams?: Pro
   const focus = sp.month && /^\d{4}-\d{2}-01$/.test(sp.month) ? sp.month : (periods.find(p => p.status === 'open')?.month.slice(0, 10) ?? lastEnded);
   const period = periods.find(p => p.month.slice(0, 10) === focus) ?? null;
   const statements = period
-    ? (await q<{ statements: Statement[] }>(`query S($p: ID!) { statements(where: { period: { id: { equals: $p } } }, orderBy: { number: asc }, take: 200) { id number status totalMinor paidMinor dueOn resident { id firstName lastName } period { id } } }`, { p: period.id }).catch(() => ({ statements: [] as Statement[] }))).statements
+    ? (await q<{ statements: Statement[] }>(`query S($p: ID!) { statements(where: { period: { id: { equals: $p } } }, orderBy: { number: asc }, take: 200) { id number status totalMinor paidMinor adjustedMinor dueOn resident { id firstName lastName } period { id } } }`, { p: period.id }).catch(() => ({ statements: [] as Statement[] }))).statements
     : [];
-  const owed = statements.reduce((sum, s) => sum + (BigInt(s.totalMinor ?? '0') - BigInt(s.paidMinor ?? '0')), 0n);
+  const owed = statements.reduce((sum, s) => sum + (BigInt(s.totalMinor ?? '0') - BigInt(s.paidMinor ?? '0') - BigInt(s.adjustedMinor ?? '0')), 0n);
   const paths = ['/dashboard/platform/billing'];
   const monthLinks = [...new Set([focus, lastEnded, ...periods.map(p => p.month.slice(0, 10))])].sort().reverse().slice(0, 8);
   return (
@@ -71,7 +71,7 @@ export default async function BillingPage({ searchParams }: { searchParams?: Pro
               <Title status={s.status}>{s.resident ? `${s.resident.firstName} ${s.resident.lastName}` : 'Resident'}</Title>
               <Meta>Statement {s.number}{s.dueOn ? ` · due ${when(s.dueOn, community.timeZone, 'date')}` : ''}</Meta>
             </div>
-            <span className="text-sm tabular-nums">{money((BigInt(s.totalMinor) - BigInt(s.paidMinor)).toString())} <span className="text-muted-foreground">of {money(s.totalMinor)}</span></span>
+            <span className="text-sm tabular-nums">{money((BigInt(s.totalMinor) - BigInt(s.paidMinor) - BigInt(s.adjustedMinor ?? '0')).toString())} <span className="text-muted-foreground">of {money(s.totalMinor)}</span></span>
           </Row>
         )) : <Empty>{period ? 'No statements for this month yet.' : 'Nothing has been worked out for this month yet.'}</Empty>}
       </Section>

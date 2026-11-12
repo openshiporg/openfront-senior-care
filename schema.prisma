@@ -94,6 +94,7 @@ model User {
   from_WorkflowActivation_activatedBy          WorkflowActivation[]       @relation("WorkflowActivation_activatedBy")
   from_WorkflowVersion_proposedBy              WorkflowVersion[]          @relation("WorkflowVersion_proposedBy")
   from_WorkflowVersion_reviewedBy              WorkflowVersion[]          @relation("WorkflowVersion_reviewedBy")
+  from_BalanceAdjustment_requestedBy           BalanceAdjustment[]        @relation("BalanceAdjustment_requestedBy")
   from_BillingPeriod_closedBy                  BillingPeriod[]            @relation("BillingPeriod_closedBy")
   from_Payment_initiatedBy                     Payment[]                  @relation("Payment_initiatedBy")
   from_Refund_requestedBy                      Refund[]                   @relation("Refund_requestedBy")
@@ -296,32 +297,33 @@ model ApprovalPolicy {
 }
 
 model ApprovalRequest {
-  id                             String             @id @default(cuid())
-  action                         String             @default("")
-  summary                        String             @default("")
-  community                      Community?         @relation("ApprovalRequest_community", fields: [communityId], references: [id])
-  communityId                    String?            @map("community")
-  targetList                     String             @default("")
-  targetId                       String             @default("")
-  payload                        Json?
-  payloadHash                    String             @default("")
-  requiredPermission             String             @default("")
-  requestedBy                    User?              @relation("ApprovalRequest_requestedBy", fields: [requestedById], references: [id])
-  requestedById                  String?            @map("requestedBy")
-  requestedByAgent               AgentIdentity?     @relation("ApprovalRequest_requestedByAgent", fields: [requestedByAgentId], references: [id])
-  requestedByAgentId             String?            @map("requestedByAgent")
-  status                         String             @default("pending")
-  expiresAt                      DateTime?
-  consumedAt                     DateTime?
-  decisions                      ApprovalDecision[] @relation("ApprovalDecision_request")
-  version                        Int                @default(0)
-  createdAt                      DateTime           @default(now())
-  updatedAt                      DateTime           @default(now()) @updatedAt
-  from_AgentToolGrant_approval   AgentToolGrant[]   @relation("AgentToolGrant_approval")
-  from_CensusEvent_approval      CensusEvent[]      @relation("CensusEvent_approval")
-  from_RateSchedule_approval     RateSchedule[]     @relation("RateSchedule_approval")
-  from_Refund_approval           Refund[]           @relation("Refund_approval")
-  from_TrustTransaction_approval TrustTransaction[] @relation("TrustTransaction_approval")
+  id                              String              @id @default(cuid())
+  action                          String              @default("")
+  summary                         String              @default("")
+  community                       Community?          @relation("ApprovalRequest_community", fields: [communityId], references: [id])
+  communityId                     String?             @map("community")
+  targetList                      String              @default("")
+  targetId                        String              @default("")
+  payload                         Json?
+  payloadHash                     String              @default("")
+  requiredPermission              String              @default("")
+  requestedBy                     User?               @relation("ApprovalRequest_requestedBy", fields: [requestedById], references: [id])
+  requestedById                   String?             @map("requestedBy")
+  requestedByAgent                AgentIdentity?      @relation("ApprovalRequest_requestedByAgent", fields: [requestedByAgentId], references: [id])
+  requestedByAgentId              String?             @map("requestedByAgent")
+  status                          String              @default("pending")
+  expiresAt                       DateTime?
+  consumedAt                      DateTime?
+  decisions                       ApprovalDecision[]  @relation("ApprovalDecision_request")
+  version                         Int                 @default(0)
+  createdAt                       DateTime            @default(now())
+  updatedAt                       DateTime            @default(now()) @updatedAt
+  from_AgentToolGrant_approval    AgentToolGrant[]    @relation("AgentToolGrant_approval")
+  from_CensusEvent_approval       CensusEvent[]       @relation("CensusEvent_approval")
+  from_BalanceAdjustment_approval BalanceAdjustment[] @relation("BalanceAdjustment_approval")
+  from_RateSchedule_approval      RateSchedule[]      @relation("RateSchedule_approval")
+  from_Refund_approval            Refund[]            @relation("Refund_approval")
+  from_TrustTransaction_approval  TrustTransaction[]  @relation("TrustTransaction_approval")
 
   @@index([action])
   @@index([communityId])
@@ -497,6 +499,7 @@ model Community {
   from_WorkflowDefinition_community       WorkflowDefinition[]       @relation("WorkflowDefinition_community")
   from_WorkflowRun_community              WorkflowRun[]              @relation("WorkflowRun_community")
   from_WorkflowVersion_community          WorkflowVersion[]          @relation("WorkflowVersion_community")
+  from_BalanceAdjustment_community        BalanceAdjustment[]        @relation("BalanceAdjustment_community")
   from_BillingPeriod_community            BillingPeriod[]            @relation("BillingPeriod_community")
   from_CareLevel_community                CareLevel[]                @relation("CareLevel_community")
   from_CareLevelAssignment_community      CareLevelAssignment[]      @relation("CareLevelAssignment_community")
@@ -510,6 +513,7 @@ model Community {
   from_PaymentMethodToken_community       PaymentMethodToken[]       @relation("PaymentMethodToken_community")
   from_RateSchedule_community             RateSchedule[]             @relation("RateSchedule_community")
   from_Refund_community                   Refund[]                   @relation("Refund_community")
+  from_ResidentCredit_community           ResidentCredit[]           @relation("ResidentCredit_community")
   from_Statement_community                Statement[]                @relation("Statement_community")
   from_ResidentTrustLedger_community      ResidentTrustLedger[]      @relation("ResidentTrustLedger_community")
   from_TrustAccount_community             TrustAccount[]             @relation("TrustAccount_community")
@@ -1573,6 +1577,7 @@ model Resident {
   from_RegulatoryReport_resident         RegulatoryReport[]         @relation("RegulatoryReport_resident")
   from_ExtractedFact_resident            ExtractedFact[]            @relation("ExtractedFact_resident")
   from_Finding_resident                  Finding[]                  @relation("Finding_resident")
+  from_BalanceAdjustment_resident        BalanceAdjustment[]        @relation("BalanceAdjustment_resident")
   from_CareLevelAssignment_resident      CareLevelAssignment[]      @relation("CareLevelAssignment_resident")
   from_Charge_resident                   Charge[]                   @relation("Charge_resident")
   from_Deposit_resident                  Deposit[]                  @relation("Deposit_resident")
@@ -1581,6 +1586,7 @@ model Resident {
   from_PaymentAllocation_resident        PaymentAllocation[]        @relation("PaymentAllocation_resident")
   from_PaymentMethodToken_resident       PaymentMethodToken[]       @relation("PaymentMethodToken_resident")
   from_Refund_resident                   Refund[]                   @relation("Refund_resident")
+  from_ResidentCredit_resident           ResidentCredit[]           @relation("ResidentCredit_resident")
   from_Statement_resident                Statement[]                @relation("Statement_resident")
   from_ResidentTrustLedger_resident      ResidentTrustLedger[]      @relation("ResidentTrustLedger_resident")
   from_TrustLedgerLine_resident          TrustLedgerLine[]          @relation("TrustLedgerLine_resident")
@@ -3277,6 +3283,38 @@ model WorkflowVersion {
   @@index([reviewedById])
 }
 
+model BalanceAdjustment {
+  id                                String              @id @default(cuid())
+  community                         Community?          @relation("BalanceAdjustment_community", fields: [communityId], references: [id])
+  communityId                       String?             @map("community")
+  resident                          Resident?           @relation("BalanceAdjustment_resident", fields: [residentId], references: [id])
+  residentId                        String?             @map("resident")
+  statement                         Statement?          @relation("BalanceAdjustment_statement", fields: [statementId], references: [id])
+  statementId                       String?             @map("statement")
+  kind                              String
+  amountMinor                       BigInt
+  reason                            String              @default("")
+  status                            String              @default("pending_approval")
+  approval                          ApprovalRequest?    @relation("BalanceAdjustment_approval", fields: [approvalId], references: [id])
+  approvalId                        String?             @map("approval")
+  supersedes                        BalanceAdjustment?  @relation("BalanceAdjustment_supersedes", fields: [supersedesId], references: [id])
+  supersedesId                      String?             @map("supersedes")
+  requestedBy                       User?               @relation("BalanceAdjustment_requestedBy", fields: [requestedById], references: [id])
+  requestedById                     String?             @map("requestedBy")
+  postedAt                          DateTime?
+  version                           Int                 @default(0)
+  createdAt                         DateTime            @default(now())
+  updatedAt                         DateTime            @default(now()) @updatedAt
+  from_BalanceAdjustment_supersedes BalanceAdjustment[] @relation("BalanceAdjustment_supersedes")
+
+  @@index([communityId])
+  @@index([residentId])
+  @@index([statementId])
+  @@index([approvalId])
+  @@index([supersedesId])
+  @@index([requestedById])
+}
+
 model BillingPeriod {
   id                    String      @id @default(cuid())
   community             Community?  @relation("BillingPeriod_community", fields: [communityId], references: [id])
@@ -3331,6 +3369,8 @@ model CareLevelAssignment {
   points            Int
   effectiveFrom     DateTime?  @postgresql.Date
   noticeDeliveredOn DateTime?  @postgresql.Date
+  source            String     @default("")
+  reason            String     @default("")
   status            String     @default("active")
   version           Int        @default(0)
   createdAt         DateTime   @default(now())
@@ -3482,6 +3522,7 @@ model Payment {
   from_PaymentAllocation_payment PaymentAllocation[] @relation("PaymentAllocation_payment")
   from_PaymentEvent_payment      PaymentEvent[]      @relation("PaymentEvent_payment")
   from_Refund_payment            Refund[]            @relation("Refund_payment")
+  from_ResidentCredit_payment    ResidentCredit[]    @relation("ResidentCredit_payment")
 
   @@index([communityId])
   @@index([residentId])
@@ -3597,6 +3638,8 @@ model Refund {
   paymentId     String?          @map("payment")
   deposit       Deposit?         @relation("Refund_deposit", fields: [depositId], references: [id])
   depositId     String?          @map("deposit")
+  credit        ResidentCredit?  @relation("Refund_credit", fields: [creditId], references: [id])
+  creditId      String?          @map("credit")
   amountMinor   BigInt
   reason        String           @default("")
   status        String           @default("requested")
@@ -3614,8 +3657,30 @@ model Refund {
   @@index([residentId])
   @@index([paymentId])
   @@index([depositId])
+  @@index([creditId])
   @@index([approvalId])
   @@index([requestedById])
+}
+
+model ResidentCredit {
+  id                 String     @id @default(cuid())
+  community          Community? @relation("ResidentCredit_community", fields: [communityId], references: [id])
+  communityId        String?    @map("community")
+  resident           Resident?  @relation("ResidentCredit_resident", fields: [residentId], references: [id])
+  residentId         String?    @map("resident")
+  payment            Payment?   @relation("ResidentCredit_payment", fields: [paymentId], references: [id])
+  paymentId          String?    @map("payment")
+  amountMinor        BigInt
+  remainingMinor     BigInt
+  status             String     @default("open")
+  version            Int        @default(0)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @default(now()) @updatedAt
+  from_Refund_credit Refund[]   @relation("Refund_credit")
+
+  @@index([communityId])
+  @@index([residentId])
+  @@index([paymentId])
 }
 
 model Statement {
@@ -3632,11 +3697,13 @@ model Statement {
   dueOn                            DateTime?           @postgresql.Date
   totalMinor                       BigInt
   paidMinor                        BigInt              @default(0)
+  adjustedMinor                    BigInt              @default(0)
   lines                            Json?
   chargeHash                       String              @default("")
   version                          Int                 @default(0)
   createdAt                        DateTime            @default(now())
   updatedAt                        DateTime            @default(now()) @updatedAt
+  from_BalanceAdjustment_statement BalanceAdjustment[] @relation("BalanceAdjustment_statement")
   from_Payment_statement           Payment[]           @relation("Payment_statement")
   from_PaymentAllocation_statement PaymentAllocation[] @relation("PaymentAllocation_statement")
 

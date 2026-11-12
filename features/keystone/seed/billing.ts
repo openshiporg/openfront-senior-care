@@ -3,6 +3,7 @@ import type { Actor } from '../lib/actor'
 import type { UnitOfWork } from '../lib/unitOfWork'
 import { COMMUNITY } from './operator'
 import { seedMeta } from './platform'
+import { OH_BILLING_RULES } from './packs'
 
 /**
  * Phase 3 starting data for Maple Ridge: care levels, published rate schedules for assisted living and memory care, the
@@ -52,6 +53,17 @@ export async function seedBilling(uow: UnitOfWork, actor: Actor) {
   const communityId = COMMUNITY.id
   if (!(await tx.community.findUnique({ where: { id: communityId }, select: { id: true } }))) return created
 
+  // The Ohio pack gains its billing rules without touching anything already in it.
+  const ohio = await tx.jurisdictionPack.findUnique({ where: { code: 'US-OH' }, select: { id: true, rules: true } })
+  if (ohio) {
+    const have = (ohio.rules ?? {}) as Record<string, unknown>
+    const missing = Object.entries(OH_BILLING_RULES).filter(([key]) => !(key in have))
+    if (missing.length) {
+      await tx.jurisdictionPack.update({ where: { id: ohio.id }, data: { rules: { ...have, ...Object.fromEntries(missing) } as never } })
+      auditCreate(uow, actor, 'JurisdictionPack', ohio.id, 'pack.billing_rules_loaded', { keys: missing.map(([key]) => key) }, seedMeta)
+    }
+  }
+
   for (const level of CARE_LEVELS) {
     if (await tx.careLevel.findUnique({ where: { id: level.id }, select: { id: true } })) continue
     await tx.careLevel.create({ data: { ...level, communityId, status: 'active' } })
@@ -63,13 +75,14 @@ export async function seedBilling(uow: UnitOfWork, actor: Actor) {
     ['seed_rates_mc_2026', 'Memory care 2026', 'memory_care', MC_LINES],
   ] as const) {
     if (await tx.rateSchedule.findUnique({ where: { id }, select: { id: true } })) continue
-    await tx.rateSchedule.create({ data: { id, communityId, name, setting, effectiveFrom: day('2026-01-01'), noticeDays: 30, status: 'published', publishedAt: uow.now } })
+    await tx.rateSchedule.create({ data: { id, communityId, name, setting, effectiveFrom: day('2026-01-01'), noticeDays: 30, status: 'draft' } })
     auditCreate(uow, actor, 'RateSchedule', id, 'rate_schedule.seeded', { setting }, seedMeta)
     created.schedules += 1
     await tx.rateLine.createMany({
       data: lines.map(([kind, apartmentTypeId, careLevelId, amountMinor]) => ({ scheduleId: id, kind, apartmentTypeId, careLevelId, amountMinor: BigInt(amountMinor), per: 'month', proration: 'actual_days_in_month' })),
     })
     created.rateLines += lines.length
+    await tx.rateSchedule.update({ where: { id }, data: { status: 'published', publishedAt: uow.now } })
   }
 
   for (const item of CHARGE_ITEMS) {

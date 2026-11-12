@@ -7,6 +7,8 @@ import { adjustClosedPeriod, closePeriod, runDerivation } from '../billing/perio
 import * as pay from '../billing/payments'
 import * as rates from '../billing/rates'
 import * as medicaid from '../billing/medicaid'
+import * as adjustments from '../billing/adjustments'
+import { assignCareLevel } from '../billing/careLevel'
 import * as trust from '../trust/service'
 import { minorOf } from '../lib/money'
 import { actorFor } from './actorFor'
@@ -49,6 +51,7 @@ const byStatement = byRecord('Statement', 'statementId')
 const BILLING: Permission[] = ['canManageBilling']
 const RATES: Permission[] = ['canManageRates']
 const PAYMENTS: Permission[] = ['canPostPayments', 'canManagePayments']
+const ADJUST: Permission[] = ['canManageBilling']
 const TRUST_OP: Permission[] = ['canOperateTrust']
 const TRUST_SIGN: Permission[] = ['canApproveTrust']
 
@@ -77,7 +80,12 @@ export const HANDLERS: Record<string, Handler> = {
     },
   },
   'deposit.apply': { permissions: PAYMENTS, community: byRecord('Deposit', 'depositId'), serializable: true, run: (u, a, i) => pay.applyDeposit(u, a, { depositId: i.depositId, statementId: i.statementId }) },
-  'refund.request': { permissions: ['canIssueRefunds', 'canManagePayments'], community: async (tx, i) => (i.paymentId ? byRecord('Payment', 'paymentId')(tx, i) : byRecord('Deposit', 'depositId')(tx, i)), serializable: true, run: (u, a, i) => pay.requestRefund(u, a, { paymentId: i.paymentId, depositId: i.depositId, amountMinor: money(i.amountMinor, 'amount'), reason: String(i.reason ?? '') }) },
+  'deposit.forfeit': { permissions: ['canIssueRefunds'], community: byRecord('Deposit', 'depositId'), serializable: true, run: (u, a, i) => pay.requestForfeit(u, a, { depositId: i.depositId, reason: String(i.reason ?? '') }) },
+  'credit.apply': { permissions: PAYMENTS, community: byRecord('ResidentCredit', 'creditId'), serializable: true, run: (u, a, i) => pay.applyCredit(u, a, { creditId: i.creditId, statementId: i.statementId }) },
+  'adjustment.create': { permissions: ADJUST, community: byStatement, serializable: true, run: (u, a, i) => adjustments.requestBalanceChange(u, a, { kind: 'adjustment', statementId: i.statementId, amountMinor: money(i.amountMinor, 'amount'), reason: String(i.reason ?? ''), supersedesId: i.supersedesId }) },
+  'writeoff.create': { permissions: ADJUST, community: byStatement, serializable: true, run: (u, a, i) => adjustments.requestBalanceChange(u, a, { kind: 'write_off', statementId: i.statementId, amountMinor: money(i.amountMinor, 'amount'), reason: String(i.reason ?? ''), supersedesId: i.supersedesId }) },
+  'care_level.assign': { permissions: BILLING, community: byRecord('Stay', 'stayId'), serializable: true, run: (u, a, i) => assignCareLevel(u, a, { stayId: i.stayId, points: i.points === undefined || i.points === null ? null : Number(i.points), careLevelId: i.careLevelId, effectiveFrom: i.effectiveFrom, noticeDeliveredOn: i.noticeDeliveredOn, reason: i.reason }) },
+  'refund.request': { permissions: ['canIssueRefunds', 'canManagePayments'], community: async (tx, i) => (i.paymentId ? byRecord('Payment', 'paymentId')(tx, i) : i.creditId ? byRecord('ResidentCredit', 'creditId')(tx, i) : byRecord('Deposit', 'depositId')(tx, i)), serializable: true, run: (u, a, i) => pay.requestRefund(u, a, { paymentId: i.paymentId, depositId: i.depositId, creditId: i.creditId, amountMinor: money(i.amountMinor, 'amount'), reason: String(i.reason ?? '') }) },
 
   // Card and ACH (Stripe test), each running its own committed steps
   'payment.charge': {

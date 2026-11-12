@@ -22,13 +22,44 @@ export async function createSchedule(uow: UnitOfWork, actor: Actor, input: { com
   return { scheduleId: schedule.id }
 }
 
+/**
+ * Which `per` and proration make sense for a kind. Monthly kinds are per month (prorated by the days in the month or a 30-day
+ * month) or per day (rate × days, proration 'daily'); daily kinds are per day; one-off kinds are per each. Anything else is refused.
+ */
+export function checkRateShape(kind: string, per: string, proration?: string) {
+  const bad = (message: string): never => { throw new DomainError(Codes.INVALID_INPUT, message, { field: 'per' }) }
+  const monthlyKinds = ['apartment_rent', 'care_level', 'second_person', 'med_management']
+  const dailyKinds = ['room_daily', 'bed_hold_daily']
+  const eachKinds = ['community_fee', 'ancillary']
+  if (!['month', 'day', 'each'].includes(per)) bad('A rate is per month, per day or per each.')
+  if (proration !== undefined && !['actual_days_in_month', 'thirty_day_month', 'daily'].includes(proration)) bad('Unknown proration method.')
+  if (dailyKinds.includes(kind)) {
+    if (per !== 'day') bad('A daily rate is charged per day.')
+    if (proration && proration !== 'daily') bad('A daily rate has no proration; use the daily method.')
+    return { per: 'day', proration: 'daily' }
+  }
+  if (eachKinds.includes(kind)) {
+    if (per !== 'each') bad('A fee is charged once, per each.')
+    return { per: 'each', proration: proration ?? 'actual_days_in_month' }
+  }
+  if (!monthlyKinds.includes(kind)) bad('Unknown rate kind.')
+  if (per === 'each') bad('A monthly charge cannot be per each.')
+  if (per === 'day') {
+    if (proration && proration !== 'daily') bad('A per-day rate is rate × days; use the daily method.')
+    return { per: 'day', proration: 'daily' }
+  }
+  if (proration === 'daily') bad('The daily method needs a per-day rate.')
+  return { per: 'month', proration: proration ?? 'actual_days_in_month' }
+}
+
 export async function addRateLine(uow: UnitOfWork, actor: Actor, input: { scheduleId: string; kind: string; amountMinor: bigint; per: 'month' | 'day' | 'each'; proration?: string; apartmentTypeId?: string | null; careLevelId?: string | null }) {
   await lockRow(uow.tx, 'RateSchedule', input.scheduleId)
   const schedule = await uow.tx.rateSchedule.findUnique({ where: { id: input.scheduleId } })
   if (!schedule) throw new DomainError(Codes.NOT_FOUND, 'Not found.')
   if (schedule.status !== 'draft') throw new DomainError(Codes.GUARD_FAILED, 'A published schedule is frozen. Make a new one for the next change.', { reason: 'frozen' })
   if (typeof input.amountMinor !== 'bigint' || input.amountMinor < 0n) throw new DomainError(Codes.INVALID_INPUT, 'The rate cannot be negative.', { field: 'amountMinor' })
-  const line = await uow.tx.rateLine.create({ data: { scheduleId: schedule.id, kind: input.kind, amountMinor: input.amountMinor, per: input.per, proration: input.proration ?? 'actual_days_in_month', apartmentTypeId: input.apartmentTypeId ?? null, careLevelId: input.careLevelId ?? null } })
+  const { per, proration } = checkRateShape(input.kind, input.per, input.proration)
+  const line = await uow.tx.rateLine.create({ data: { scheduleId: schedule.id, kind: input.kind, amountMinor: input.amountMinor, per, proration, apartmentTypeId: input.apartmentTypeId ?? null, careLevelId: input.careLevelId ?? null } })
   auditCreate(uow, actor, 'RateLine', line.id, 'rate_line.added', { kind: input.kind, amountMinor: input.amountMinor.toString() })
   return { lineId: line.id }
 }

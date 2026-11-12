@@ -13,9 +13,9 @@ import { trackingFields } from './trackingFields'
    Every row is written by a server command. Charges, allocations and webhook events are append-only (migration guards). */
 
 export const RATE_KINDS = ['apartment_rent', 'room_daily', 'care_level', 'second_person', 'med_management', 'community_fee', 'bed_hold_daily', 'ancillary'] as const
-export const CHARGE_KINDS = ['rent', 'room_board', 'care_level', 'per_diem_claim', 'coinsurance', 'patient_liability', 'ancillary', 'bed_hold', 'community_fee', 'late_fee', 'adjustment', 'deposit_application'] as const
-export const PAYMENT_METHODS = ['card', 'ach', 'check', 'cash', 'deposit', 'other'] as const
-export const DEPOSIT_KINDS = ['security', 'pet', 'reservation', 'other'] as const
+export const CHARGE_KINDS = ['rent', 'second_person', 'room_board', 'care_level', 'per_diem_claim', 'coinsurance', 'patient_liability', 'ancillary', 'bed_hold', 'community_fee', 'late_fee', 'adjustment', 'deposit_application'] as const
+export const PAYMENT_METHODS = ['card', 'ach', 'check', 'cash', 'deposit', 'credit', 'other'] as const
+export const DEPOSIT_KINDS = ['security', 'pet', 'reservation', 'community_fee', 'other'] as const
 
 const BILLING_READ: Permission[] = ['canReadBilling']
 const RATES_READ: Permission[] = ['canReadBilling', 'canManageRates']
@@ -108,6 +108,9 @@ export const CareLevelAssignment = list({
     points: integer({ ...ro, validation: { isRequired: true } }),
     effectiveFrom: day(),
     noticeDeliveredOn: day(),
+    /** 'points' (from the assessment) or 'manual' (with a reason). Append-only: a correction supersedes the row. */
+    source: systemText(),
+    reason: systemText(),
     status: lifecycle(['active', 'superseded'], 'active'),
     version: versionField(),
     ...trackingFields,
@@ -177,6 +180,8 @@ export const Statement = list({
     ...phiFields('Statement', {
       totalMinor: ['fin', bigInt, fin],
       paidMinor: ['fin', bigInt, { ...fin, defaultValue: 0n }],
+      /** Posted adjustments and write-offs (BalanceAdjustment); the balance is total − paid − adjusted. */
+      adjustedMinor: ['fin', bigInt, { ...fin, defaultValue: 0n }],
       lines: ['fin', json, { ...ro }],
     }),
     chargeHash: systemText(),
@@ -270,6 +275,7 @@ export const Refund = list({
     resident: resident(),
     payment: relationship({ ref: 'Payment', ...ro }),
     deposit: relationship({ ref: 'Deposit', ...ro }),
+    credit: relationship({ ref: 'ResidentCredit', ...ro }),
     ...phiFields('Refund', { amountMinor: ['fin', bigInt, fin] }),
     reason: systemText({ required: true }),
     status: lifecycle(['requested', 'pending_approval', 'issued', 'rejected'], 'requested'),
@@ -292,7 +298,7 @@ export const Deposit = list({
     kind: fixedChoice(DEPOSIT_KINDS),
     ...phiFields('Deposit', { amountMinor: ['fin', bigInt, fin] }),
     method: fixedChoice(PAYMENT_METHODS),
-    status: lifecycle(['held', 'applied', 'refunded'], 'held'),
+    status: lifecycle(['held', 'applied', 'refunded', 'forfeited'], 'held'),
     receivedOn: day(),
     appliedPayment: relationship({ ref: 'Payment', ...ro }),
     resolvedAt: when(),
@@ -325,3 +331,41 @@ export const MedicaidLiability = list({
   },
 })
 phiList('MedicaidLiability')
+
+/** Money received that no statement balance could take (a card settling after a check paid the bill). It is shown on the statement and resident screens and is applied to a later statement or refunded; never silent. */
+export const ResidentCredit = list({
+  access: scoped(PAYMENTS_READ),
+  ui: { labelField: 'status', listView: { initialColumns: ['resident', 'payment', 'amountMinor', 'remainingMinor', 'status'] } },
+  fields: {
+    community: community(),
+    resident: resident(),
+    payment: relationship({ ref: 'Payment', ...ro }),
+    ...phiFields('ResidentCredit', { amountMinor: ['fin', bigInt, fin], remainingMinor: ['fin', bigInt, fin] }),
+    status: lifecycle(['open', 'closed'], 'open'),
+    version: versionField(),
+    ...trackingFields,
+  },
+})
+phiList('ResidentCredit')
+
+/** A manual adjustment or write-off of part of a statement's balance. At or above the operator threshold it waits for a second person with canApproveWriteOffs. Never edited: a correction supersedes it. */
+export const BalanceAdjustment = list({
+  access: scoped(BILLING_READ),
+  ui: { labelField: 'kind', listView: { initialColumns: ['resident', 'statement', 'kind', 'amountMinor', 'status'] } },
+  fields: {
+    community: community(),
+    resident: resident(),
+    statement: relationship({ ref: 'Statement', ...ro }),
+    kind: fixedChoice(['adjustment', 'write_off']),
+    ...phiFields('BalanceAdjustment', { amountMinor: ['fin', bigInt, fin] }),
+    reason: systemText({ required: true }),
+    status: lifecycle(['pending_approval', 'posted', 'rejected', 'superseded'], 'pending_approval'),
+    approval: relationship({ ref: 'ApprovalRequest', ...ro }),
+    supersedes: relationship({ ref: 'BalanceAdjustment', ...ro }),
+    requestedBy: by(),
+    postedAt: when(),
+    version: versionField(),
+    ...trackingFields,
+  },
+})
+phiList('BalanceAdjustment')

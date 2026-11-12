@@ -3,6 +3,7 @@ import { actorUserId, type Actor } from '../lib/actor'
 import { command } from '../lib/command'
 import { lockRow, casUpdate, auditCreate } from '../lib/cas'
 import { consumeApproval, requestApproval } from '../lib/approval'
+import { registerApplier } from '../lib/approvalAppliers'
 import type { Db } from '../lib/db'
 import { DomainError, Codes } from '../lib/errors'
 import { nextReference } from '../lib/sequence'
@@ -36,7 +37,7 @@ const positive = (value: bigint, name: string) => {
   return value
 }
 
-export const balanceOf = (statement: { totalMinor: bigint | null; paidMinor: bigint | null }) => (statement.totalMinor ?? 0n) - (statement.paidMinor ?? 0n)
+export const balanceOf = (statement: { totalMinor: bigint | null; paidMinor: bigint | null; adjustedMinor?: bigint | null }) => (statement.totalMinor ?? 0n) - (statement.paidMinor ?? 0n) - (statement.adjustedMinor ?? 0n)
 
 /** Applies a settled payment to its statement, once. */
 async function settle(uow: UnitOfWork, actor: Actor, paymentId: string, providerRef?: string | null) {
@@ -48,11 +49,18 @@ async function settle(uow: UnitOfWork, actor: Actor, paymentId: string, provider
   if (payment.statementId) {
     await lockRow(uow.tx, 'Statement', payment.statementId)
     const statement = await uow.tx.statement.findUniqueOrThrow({ where: { id: payment.statementId } })
-    const apply = payment.amountMinor < balanceOf(statement) ? payment.amountMinor : balanceOf(statement) > 0n ? balanceOf(statement) : 0n
+    const open = balanceOf(statement) > 0n ? balanceOf(statement) : 0n
+    const apply = payment.amountMinor < open ? payment.amountMinor : open
+    // Whatever the statement could not take (a card settling after a check paid the bill) is a visible resident credit, never dropped.
+    const excess = payment.amountMinor - apply
+    if (excess > 0n) {
+      const credit = await uow.tx.residentCredit.create({ data: { communityId: payment.communityId, residentId: payment.residentId, paymentId: payment.id, amountMinor: excess, remainingMinor: excess, status: 'open' } })
+      auditCreate(uow, actor, 'ResidentCredit', credit.id, 'credit.created', { paymentId: payment.id, amountMinor: excess.toString() })
+    }
     if (apply > 0n) {
       await uow.tx.paymentAllocation.create({ data: { communityId: payment.communityId, residentId: payment.residentId, paymentId: payment.id, statementId: statement.id, amountMinor: apply, appliedAt: uow.now } })
       const paid = (statement.paidMinor ?? 0n) + apply
-      await uow.tx.statement.update({ where: { id: statement.id }, data: { paidMinor: paid, status: paid >= (statement.totalMinor ?? 0n) ? 'paid' : statement.status, version: { increment: 1 } } })
+      await uow.tx.statement.update({ where: { id: statement.id }, data: { paidMinor: paid, status: paid + (statement.adjustedMinor ?? 0n) >= (statement.totalMinor ?? 0n) ? 'paid' : statement.status, version: { increment: 1 } } })
     }
   }
   return { settled: true, paymentId }
@@ -104,6 +112,70 @@ export async function applyDeposit(uow: UnitOfWork, actor: Actor, input: { depos
   if (amount !== deposit.amountMinor) throw new DomainError(Codes.GUARD_FAILED, 'The deposit is larger than the balance. Refund the difference first or apply it to a larger statement.', { reason: 'deposit_larger_than_balance' })
   await casUpdate(uow, { model: 'Deposit', id: deposit.id, version: deposit.version, from: ['held'], to: 'applied', actor, eventType: 'deposit.applied', data: { appliedPaymentId: payment.id, resolvedAt: uow.now } })
   return { paymentId: payment.id }
+}
+
+type PackDepositRule = { refundable: boolean; refundWindowDays: number | null; forfeitable: boolean }
+
+/** The Ohio pack's rule for a deposit kind (SM §12.3). A community without the rule refuses the refund rather than guessing. */
+async function depositRule(uow: UnitOfWork, communityId: string | null, kind: string): Promise<PackDepositRule> {
+  const community = communityId ? await uow.tx.community.findUnique({ where: { id: communityId }, select: { jurisdictionPack: { select: { rules: true } } } }) : null
+  const rules = (community?.jurisdictionPack?.rules ?? {}) as { depositRefund?: { value?: Record<string, PackDepositRule> } }
+  const rule = rules.depositRefund?.value?.[kind]
+  if (!rule) throw new DomainError(Codes.GUARD_FAILED, 'The jurisdiction pack has no refund rule for this kind of deposit.', { reason: 'no_deposit_rule' })
+  return rule
+}
+
+/** A refund outside the pack's rule is refused: not refundable, or past its window counted from the day it was received. */
+async function assertDepositRefundAllowed(uow: UnitOfWork, deposit: { communityId: string | null; kind: string; receivedOn: Date | null }, now: Date) {
+  const rule = await depositRule(uow, deposit.communityId, deposit.kind)
+  if (!rule.refundable) throw new DomainError(Codes.GUARD_FAILED, 'This kind of deposit is not refundable.', { reason: 'deposit_not_refundable' })
+  if (rule.refundWindowDays !== null && deposit.receivedOn) {
+    const days = Math.floor((now.getTime() - deposit.receivedOn.getTime()) / 86_400_000)
+    if (days > rule.refundWindowDays) throw new DomainError(Codes.GUARD_FAILED, `This deposit can only be refunded within ${rule.refundWindowDays} days of receipt.`, { reason: 'deposit_refund_window' })
+  }
+}
+
+/** held → forfeited (SM §12.3, [MC]): the operator keeps the deposit. Only where the pack allows it, and always with a second person. */
+export async function requestForfeit(uow: UnitOfWork, actor: Actor, input: { depositId: string; reason: string }) {
+  if (!input.reason.trim()) throw new DomainError(Codes.INVALID_INPUT, 'Say why the deposit is kept.', { field: 'reason' })
+  await lockRow(uow.tx, 'Deposit', input.depositId)
+  const deposit = await uow.tx.deposit.findUnique({ where: { id: input.depositId } })
+  if (!deposit || deposit.status !== 'held') throw new DomainError(Codes.GUARD_FAILED, 'Only a held deposit can be forfeited.')
+  const rule = await depositRule(uow, deposit.communityId, deposit.kind)
+  if (!rule.forfeitable) throw new DomainError(Codes.GUARD_FAILED, 'The pack does not allow this kind of deposit to be forfeited.', { reason: 'deposit_not_forfeitable' })
+  const open = await uow.tx.refund.findFirst({ where: { depositId: deposit.id, status: { in: ['requested', 'pending_approval', 'issued'] } }, select: { id: true } })
+  if (open) throw new DomainError(Codes.GUARD_FAILED, 'This deposit has a refund in progress.')
+  const approval = await requestApproval(uow, actor, { action: 'deposit.forfeit', targetList: 'Deposit', targetId: deposit.id, payload: { depositId: deposit.id, amountMinor: deposit.amountMinor.toString() }, requiredPermission: 'canIssueRefunds', summary: `Keep deposit ${deposit.amountMinor.toString()} minor units: ${input.reason.trim().slice(0, 80)}`, communityId: deposit.communityId })
+  return { approvalRequestId: approval.id }
+}
+
+registerApplier('deposit.forfeit', async (uow, actor, request) => {
+  await lockRow(uow.tx, 'Deposit', request.targetId)
+  const deposit = await uow.tx.deposit.findUniqueOrThrow({ where: { id: request.targetId } })
+  const open = await uow.tx.refund.findFirst({ where: { depositId: deposit.id, status: { in: ['requested', 'pending_approval', 'issued'] } }, select: { id: true } })
+  if (open) throw new DomainError(Codes.GUARD_FAILED, 'This deposit has a refund in progress.')
+  await casUpdate(uow, { model: 'Deposit', id: deposit.id, version: deposit.version, from: ['held'], to: 'forfeited', actor, eventType: 'deposit.forfeited', data: { resolvedAt: uow.now } })
+  return { forfeited: deposit.id }
+})
+
+/** Applies what is left of a resident credit to one of that resident's statements, as far as its balance goes. */
+export async function applyCredit(uow: UnitOfWork, actor: Actor, input: { creditId: string; statementId: string }) {
+  await lockRow(uow.tx, 'ResidentCredit', input.creditId)
+  const credit = await uow.tx.residentCredit.findUniqueOrThrow({ where: { id: input.creditId } })
+  if (credit.status !== 'open') throw new DomainError(Codes.GUARD_FAILED, 'This credit is used up.')
+  const statement = await uow.tx.statement.findUnique({ where: { id: input.statementId }, select: { residentId: true, totalMinor: true, paidMinor: true, adjustedMinor: true } })
+  if (!statement || statement.residentId !== credit.residentId) throw new DomainError(Codes.NOT_FOUND, 'Statement not found for this resident.')
+  const pending = await uow.tx.refund.aggregate({ where: { creditId: credit.id, status: { in: ['requested', 'pending_approval'] } }, _sum: { amountMinor: true } })
+  const available = credit.remainingMinor - (pending._sum.amountMinor ?? 0n)
+  const balance = balanceOf(statement)
+  const amount = available < balance ? available : balance
+  if (amount <= 0n) throw new DomainError(Codes.GUARD_FAILED, 'There is nothing to apply the credit to.')
+  const payment = await newPayment(uow, actor, { statementId: input.statementId, method: 'credit', amountMinor: amount, reference: `Credit ${credit.id.slice(-8)}`, status: 'pending' })
+  await settle(uow, actor, payment.id)
+  const left = credit.remainingMinor - amount
+  await uow.tx.residentCredit.update({ where: { id: credit.id }, data: { remainingMinor: left, status: left === 0n ? 'closed' : 'open', version: { increment: 1 } } })
+  auditCreate(uow, actor, 'ResidentCredit', credit.id, 'credit.applied', { statementId: input.statementId, amountMinor: amount.toString() })
+  return { paymentId: payment.id, appliedMinor: amount.toString(), remainingMinor: left.toString() }
 }
 
 /** Step 1 of a card or ACH charge: record the intent and commit. One in flight per statement. */
@@ -196,13 +268,22 @@ export async function applyPaymentEvent(db: Db, actor: Actor, event: { id: strin
 /* ---- Refunds -------------------------------------------------------------------------------------------------- */
 
 /** A refund of a settled payment or a held deposit. Over the threshold it waits for a second person. */
-export async function requestRefund(uow: UnitOfWork, actor: Actor, input: { paymentId?: string | null; depositId?: string | null; amountMinor: bigint; reason: string }) {
+export async function requestRefund(uow: UnitOfWork, actor: Actor, input: { paymentId?: string | null; depositId?: string | null; creditId?: string | null; amountMinor: bigint; reason: string }) {
   const amount = positive(input.amountMinor, 'amount')
   if (!input.reason.trim()) throw new DomainError(Codes.INVALID_INPUT, 'Say why the refund is needed.', { field: 'reason' })
-  if (Boolean(input.paymentId) === Boolean(input.depositId)) throw new DomainError(Codes.INVALID_INPUT, 'Refund either a payment or a deposit.')
+  if ([input.paymentId, input.depositId, input.creditId].filter(Boolean).length !== 1) throw new DomainError(Codes.INVALID_INPUT, 'Refund a payment, a deposit or a credit.')
   let residentId: string | null
   let communityId: string | null
-  if (input.paymentId) {
+  let creditPaymentId: string | null = null
+  if (input.creditId) {
+    await lockRow(uow.tx, 'ResidentCredit', input.creditId)
+    const credit = await uow.tx.residentCredit.findUniqueOrThrow({ where: { id: input.creditId } })
+    const pending = await uow.tx.refund.aggregate({ where: { creditId: credit.id, status: { in: ['requested', 'pending_approval'] } }, _sum: { amountMinor: true } })
+    if (credit.status !== 'open' || amount + (pending._sum.amountMinor ?? 0n) > credit.remainingMinor) throw new DomainError(Codes.GUARD_FAILED, 'That is more than the credit that is left.', { reason: 'over_refund' })
+    residentId = credit.residentId
+    communityId = credit.communityId
+    creditPaymentId = credit.paymentId
+  } else if (input.paymentId) {
     await lockRow(uow.tx, 'Payment', input.paymentId)
     const payment = await uow.tx.payment.findUnique({ where: { id: input.paymentId } })
     if (!payment || payment.status !== 'succeeded') throw new DomainError(Codes.GUARD_FAILED, 'Only a settled payment can be refunded.')
@@ -215,6 +296,7 @@ export async function requestRefund(uow: UnitOfWork, actor: Actor, input: { paym
     const deposit = await uow.tx.deposit.findUnique({ where: { id: input.depositId! } })
     if (!deposit || deposit.status !== 'held') throw new DomainError(Codes.GUARD_FAILED, 'Only a held deposit can be refunded.')
     if (amount !== deposit.amountMinor) throw new DomainError(Codes.GUARD_FAILED, 'A deposit is refunded in full.', { reason: 'partial_deposit_refund' })
+    await assertDepositRefundAllowed(uow, deposit, uow.now)
     const open = await uow.tx.refund.findFirst({ where: { depositId: deposit.id, status: { in: ['requested', 'pending_approval', 'issued'] } }, select: { id: true } })
     if (open) throw new DomainError(Codes.GUARD_FAILED, 'This deposit already has a refund.', { reason: 'over_refund' })
     residentId = deposit.residentId
@@ -224,7 +306,7 @@ export async function requestRefund(uow: UnitOfWork, actor: Actor, input: { paym
   const threshold = settings?.refundApprovalThresholdMinor ?? null
   const needsApproval = threshold !== null && amount >= threshold
   const refund = await uow.tx.refund.create({
-    data: { communityId, residentId, paymentId: input.paymentId ?? null, depositId: input.depositId ?? null, amountMinor: amount, reason: input.reason.trim(), status: needsApproval ? 'pending_approval' : 'requested', requestedById: actorUserId(actor) },
+    data: { communityId, residentId, paymentId: input.paymentId ?? creditPaymentId, depositId: input.depositId ?? null, creditId: input.creditId ?? null, amountMinor: amount, reason: input.reason.trim(), status: needsApproval ? 'pending_approval' : 'requested', requestedById: actorUserId(actor) },
   })
   auditCreate(uow, actor, 'Refund', refund.id, 'refund.requested', { amountMinor: amount.toString(), needsApproval })
   if (!needsApproval) return { refundId: refund.id, status: refund.status, approvalRequestId: null }
@@ -260,6 +342,13 @@ export async function issueRefund(db: Db, actor: Actor, refundId: string) {
     if (row.depositId) {
       const deposit = await uow.tx.deposit.findUniqueOrThrow({ where: { id: row.depositId } })
       await casUpdate(uow, { model: 'Deposit', id: deposit.id, version: deposit.version, from: ['held'], to: 'refunded', actor, eventType: 'deposit.refunded', data: { resolvedAt: uow.now } })
+    }
+    if (row.creditId) {
+      await lockRow(uow.tx, 'ResidentCredit', row.creditId)
+      const credit = await uow.tx.residentCredit.findUniqueOrThrow({ where: { id: row.creditId } })
+      if (row.amountMinor > credit.remainingMinor) throw new DomainError(Codes.GUARD_FAILED, 'The credit was used since this refund was asked for.', { reason: 'over_refund' })
+      const left = credit.remainingMinor - row.amountMinor
+      await uow.tx.residentCredit.update({ where: { id: credit.id }, data: { remainingMinor: left, status: left === 0n ? 'closed' : 'open', version: { increment: 1 } } })
     }
     return { refundId, status: 'issued', refundRef: ref }
   })

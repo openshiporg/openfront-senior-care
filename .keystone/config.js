@@ -3778,6 +3778,7 @@ var InferenceCall = (0, import_core15.list)({
 // features/keystone/models/billing.ts
 var billing_exports = {};
 __export(billing_exports, {
+  BalanceAdjustment: () => BalanceAdjustment,
   BillingPeriod: () => BillingPeriod,
   CHARGE_KINDS: () => CHARGE_KINDS,
   CareLevel: () => CareLevel,
@@ -3796,15 +3797,16 @@ __export(billing_exports, {
   RateLine: () => RateLine,
   RateSchedule: () => RateSchedule,
   Refund: () => Refund,
+  ResidentCredit: () => ResidentCredit,
   Statement: () => Statement
 });
 var import_core16 = require("@keystone-6/core");
 var import_fields16 = require("@keystone-6/core/fields");
 init_access();
 var RATE_KINDS = ["apartment_rent", "room_daily", "care_level", "second_person", "med_management", "community_fee", "bed_hold_daily", "ancillary"];
-var CHARGE_KINDS = ["rent", "room_board", "care_level", "per_diem_claim", "coinsurance", "patient_liability", "ancillary", "bed_hold", "community_fee", "late_fee", "adjustment", "deposit_application"];
-var PAYMENT_METHODS = ["card", "ach", "check", "cash", "deposit", "other"];
-var DEPOSIT_KINDS = ["security", "pet", "reservation", "other"];
+var CHARGE_KINDS = ["rent", "second_person", "room_board", "care_level", "per_diem_claim", "coinsurance", "patient_liability", "ancillary", "bed_hold", "community_fee", "late_fee", "adjustment", "deposit_application"];
+var PAYMENT_METHODS = ["card", "ach", "check", "cash", "deposit", "credit", "other"];
+var DEPOSIT_KINDS = ["security", "pet", "reservation", "community_fee", "other"];
 var BILLING_READ = ["canReadBilling"];
 var RATES_READ = ["canReadBilling", "canManageRates"];
 var PAYMENTS_READ = ["canReadBilling", "canManagePayments", "canPostPayments"];
@@ -3887,6 +3889,9 @@ var CareLevelAssignment = (0, import_core16.list)({
     points: (0, import_fields16.integer)({ ...ro, validation: { isRequired: true } }),
     effectiveFrom: day(),
     noticeDeliveredOn: day(),
+    /** 'points' (from the assessment) or 'manual' (with a reason). Append-only: a correction supersedes the row. */
+    source: systemText(),
+    reason: systemText(),
     status: lifecycle(["active", "superseded"], "active"),
     version: versionField(),
     ...trackingFields
@@ -3947,6 +3952,8 @@ var Statement = (0, import_core16.list)({
     ...phiFields("Statement", {
       totalMinor: ["fin", import_fields16.bigInt, fin],
       paidMinor: ["fin", import_fields16.bigInt, { ...fin, defaultValue: 0n }],
+      /** Posted adjustments and write-offs (BalanceAdjustment); the balance is total − paid − adjusted. */
+      adjustedMinor: ["fin", import_fields16.bigInt, { ...fin, defaultValue: 0n }],
       lines: ["fin", import_fields16.json, { ...ro }]
     }),
     chargeHash: systemText(),
@@ -4030,6 +4037,7 @@ var Refund = (0, import_core16.list)({
     resident: resident(),
     payment: (0, import_fields16.relationship)({ ref: "Payment", ...ro }),
     deposit: (0, import_fields16.relationship)({ ref: "Deposit", ...ro }),
+    credit: (0, import_fields16.relationship)({ ref: "ResidentCredit", ...ro }),
     ...phiFields("Refund", { amountMinor: ["fin", import_fields16.bigInt, fin] }),
     reason: systemText({ required: true }),
     status: lifecycle(["requested", "pending_approval", "issued", "rejected"], "requested"),
@@ -4051,7 +4059,7 @@ var Deposit = (0, import_core16.list)({
     kind: fixedChoice(DEPOSIT_KINDS),
     ...phiFields("Deposit", { amountMinor: ["fin", import_fields16.bigInt, fin] }),
     method: fixedChoice(PAYMENT_METHODS),
-    status: lifecycle(["held", "applied", "refunded"], "held"),
+    status: lifecycle(["held", "applied", "refunded", "forfeited"], "held"),
     receivedOn: day(),
     appliedPayment: (0, import_fields16.relationship)({ ref: "Payment", ...ro }),
     resolvedAt: when5(),
@@ -4082,6 +4090,40 @@ var MedicaidLiability = (0, import_core16.list)({
   }
 });
 phiList("MedicaidLiability");
+var ResidentCredit = (0, import_core16.list)({
+  access: scoped(PAYMENTS_READ),
+  ui: { labelField: "status", listView: { initialColumns: ["resident", "payment", "amountMinor", "remainingMinor", "status"] } },
+  fields: {
+    community: community(),
+    resident: resident(),
+    payment: (0, import_fields16.relationship)({ ref: "Payment", ...ro }),
+    ...phiFields("ResidentCredit", { amountMinor: ["fin", import_fields16.bigInt, fin], remainingMinor: ["fin", import_fields16.bigInt, fin] }),
+    status: lifecycle(["open", "closed"], "open"),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+phiList("ResidentCredit");
+var BalanceAdjustment = (0, import_core16.list)({
+  access: scoped(BILLING_READ),
+  ui: { labelField: "kind", listView: { initialColumns: ["resident", "statement", "kind", "amountMinor", "status"] } },
+  fields: {
+    community: community(),
+    resident: resident(),
+    statement: (0, import_fields16.relationship)({ ref: "Statement", ...ro }),
+    kind: fixedChoice(["adjustment", "write_off"]),
+    ...phiFields("BalanceAdjustment", { amountMinor: ["fin", import_fields16.bigInt, fin] }),
+    reason: systemText({ required: true }),
+    status: lifecycle(["pending_approval", "posted", "rejected", "superseded"], "pending_approval"),
+    approval: (0, import_fields16.relationship)({ ref: "ApprovalRequest", ...ro }),
+    supersedes: (0, import_fields16.relationship)({ ref: "BalanceAdjustment", ...ro }),
+    requestedBy: by5(),
+    postedAt: when5(),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+phiList("BalanceAdjustment");
 
 // features/keystone/models/trust.ts
 var trust_exports = {};
@@ -4771,6 +4813,20 @@ var US_FED_PACK = {
     { code: "POC_10D", description: "Plan of correction within 10 calendar days of receiving the CMS-2567.", appliesTo: { settings: NF }, startFact: "survey.statement_received", dueRule: { kind: "calendar_days", days: 10 }, evidenceTypes: ["plan_of_correction"], ruleRef: "42 CFR 488.402(d)", verifyNote: "Phase 6.", ownerRole: "Executive Director", active: false }
   ]
 };
+var OH_BILLING_RULES = {
+  careLevelIncreaseNoticeDays: { value: 30, ruleRef: "Ohio Adm. Code 3701-16 / resident contract (verify)", verifyNote: "An increase in care level bills only after this many days of written notice; a decrease applies at once." },
+  depositRefund: {
+    value: {
+      security: { refundable: true, refundWindowDays: null, forfeitable: true },
+      pet: { refundable: true, refundWindowDays: null, forfeitable: true },
+      reservation: { refundable: true, refundWindowDays: 30, forfeitable: true },
+      community_fee: { refundable: true, refundWindowDays: 30, forfeitable: false },
+      other: { refundable: true, refundWindowDays: null, forfeitable: false }
+    },
+    ruleRef: "Resident contract and Ohio Adm. Code 3701-16 (verify)",
+    verifyNote: "refundWindowDays counts from the day the deposit was received; null means no window. forfeitable means the operator may keep it (needs a second approver)."
+  }
+};
 var US_OH_PACK = {
   id: "seed_pack_us_oh",
   code: "US-OH",
@@ -4788,6 +4844,7 @@ var US_OH_PACK = {
       ruleRef: "Ohio Adm. Code 5160-3-16.4(D)(1)-(3), (A)(6), (C)(1); ORC 5165.34",
       verifyNote: "Fetched 2026-11-07 from codes.ohio.gov. Confirm the prior-year occupancy figure with the Medicaid cost report each year."
     },
+    ...OH_BILLING_RULES,
     dnrComfortCare: { codes: ["dnr_cc", "dnr_cca"], ruleRef: "ORC 2133.21-2133.26; Ohio Adm. Code 3701-62", verifyNote: "Ohio DNR Comfort Care / Comfort Care-Arrest protocol (verify current forms)." }
   },
   obligations: [
@@ -5104,12 +5161,12 @@ var fail = (message, details = {}) => {
 function leaveDaysByYear(timeZone, from, to) {
   const out = {};
   if (to.getTime() <= from.getTime()) return out;
-  let day11 = localDate(timeZone, from);
+  let day12 = localDate(timeZone, from);
   const last = localDate(timeZone, to);
-  for (let i = 0; i < 800 && day11 <= last; i += 1) {
-    const midnight = zonedInstant(timeZone, day11, "23:59").getTime();
-    if (midnight >= from.getTime() && midnight < to.getTime()) out[day11.slice(0, 4)] = (out[day11.slice(0, 4)] ?? 0) + 1;
-    day11 = addDays(day11, 1);
+  for (let i = 0; i < 800 && day12 <= last; i += 1) {
+    const midnight = zonedInstant(timeZone, day12, "23:59").getTime();
+    if (midnight >= from.getTime() && midnight < to.getTime()) out[day12.slice(0, 4)] = (out[day12.slice(0, 4)] ?? 0) + 1;
+    day12 = addDays(day12, 1);
   }
   return out;
 }
@@ -7035,23 +7092,23 @@ function buildCensusPlan(options) {
   }
   const homeDispositions = ["community_home", "community_home", "assisted_living", "community_home"];
   for (let k = 0; k < P.birchBeforeDischarged; k += 1) {
-    const day11 = -58 + Math.round(k * 54 / Math.max(1, P.birchBeforeDischarged - 1));
+    const day12 = -58 + Math.round(k * 54 / Math.max(1, P.birchBeforeDischarged - 1));
     const r = birchBefore[k];
     ending.add(r.code);
-    discharge(r.code, at(day11, `${10 + k % 3}:30`), { disposition: homeDispositions[k % homeDispositions.length] });
+    discharge(r.code, at(day12, `${10 + k % 3}:30`), { disposition: homeDispositions[k % homeDispositions.length] });
   }
   const birchNew = [];
   for (let j = 0; j < P.birchAdmits; j += 1) {
-    const day11 = -57 + Math.round(j * 56 / Math.max(1, P.birchAdmits - 1));
+    const day12 = -57 + Math.round(j * 56 / Math.max(1, P.birchAdmits - 1));
     const r = remember(newPerson(j % 3 === 1 ? "medicare_advantage" : "medicare_a"));
-    birchNew.push({ r, day: day11 });
+    birchNew.push({ r, day: day12 });
     const last = j === P.birchAdmits - 1;
-    admit({ r, when: at(day11, `${15 + j % 4}:${String(j * 17 % 60).padStart(2, "0")}`), place: { units: ["BIR"] }, source: "acute_hospital", agreement: last ? "none" : "later", qualifying: r.payer === "medicare_a" });
+    admit({ r, when: at(day12, `${15 + j % 4}:${String(j * 17 % 60).padStart(2, "0")}`), place: { units: ["BIR"] }, source: "acute_hospital", agreement: last ? "none" : "later", qualifying: r.payer === "medicare_a" });
   }
   for (let j = 0; j < P.birchAdmitsDischarged; j += 1) {
-    const { r, day: day11 } = birchNew[j];
+    const { r, day: day12 } = birchNew[j];
     ending.add(r.code);
-    discharge(r.code, at(day11 + 21, "11:15"), { disposition: "community_home" });
+    discharge(r.code, at(day12 + 21, "11:15"), { disposition: "community_home" });
   }
   const toLongTerm = birchNew.find((entry, j) => j >= P.birchAdmitsDischarged && entry.day <= -29);
   used.add(toLongTerm.r.code);
@@ -7237,16 +7294,16 @@ function buildCensusPlan(options) {
       ["call_4", -5, "Kevin Dawkins", ["Earl", "Dawkins"], "independent_living", "Couple selling their house in spring; wants a waitlist position."],
       ["call_5", -4, "Denise Fairbanks", ["Virginia", "Fairbanks"], "assisted_living", "Price comparison with two other communities."]
     ];
-    contacted.forEach(([id, day11, name, forWhom, setting, message], i) => {
-      const lead = phoneLead(id, at(day11, "11:20"), { contactName: name, relationship: "Son or daughter", forWhom: [forWhom[0], forWhom[1]], setting, message, n: 80 + i });
-      activity(`${id}_email`, lead, at(day11, "15:05"), "email", "Sent the brochure, pricing sheet and the dining menu.");
+    contacted.forEach(([id, day12, name, forWhom, setting, message], i) => {
+      const lead = phoneLead(id, at(day12, "11:20"), { contactName: name, relationship: "Son or daughter", forWhom: [forWhom[0], forWhom[1]], setting, message, n: 80 + i });
+      activity(`${id}_email`, lead, at(day12, "15:05"), "email", "Sent the brochure, pricing sheet and the dining menu.");
     });
     const futureSlots = [];
     for (let d = 1; d <= 14; d += 1) {
-      const day11 = date2(d);
-      const weekday2 = (/* @__PURE__ */ new Date(`${day11}T12:00:00Z`)).getUTCDay();
+      const day12 = date2(d);
+      const weekday2 = (/* @__PURE__ */ new Date(`${day12}T12:00:00Z`)).getUTCDay();
       if (weekday2 === 0) continue;
-      for (const time2 of weekday2 === 6 ? ["11:00"] : ["10:00", "14:00"]) futureSlots.push({ startsAt: zonedInstant(tz, day11, time2).toISOString(), minutes: 45, capacity: 2, kind: "either" });
+      for (const time2 of weekday2 === 6 ? ["11:00"] : ["10:00", "14:00"]) futureSlots.push({ startsAt: zonedInstant(tz, day12, time2).toISOString(), minutes: 45, capacity: 2, kind: "either" });
     }
     schedule(T, () => emit("tour_slots", "next_two_weeks", PATEL, T, { slots: futureSlots.slice(0, 60) }));
     const upcoming = [
@@ -7254,8 +7311,8 @@ function buildCensusPlan(options) {
       ["tour_2", -4, "Julie Thibodeaux", ["Lorraine", "Thibodeaux"], "memory_care", 3],
       ["tour_3", -3, "Gregory Jessup", ["Raymond", "Jessup"], "independent_living", 6]
     ];
-    upcoming.forEach(([id, day11, name, forWhom, setting, slotIndex], i) => {
-      const lead = phoneLead(id, at(day11, "10:05"), { contactName: name, relationship: "Family", forWhom: [forWhom[0], forWhom[1]], setting, message: "Wants to see the apartments and have lunch in the dining room.", n: 90 + i });
+    upcoming.forEach(([id, day12, name, forWhom, setting, slotIndex], i) => {
+      const lead = phoneLead(id, at(day12, "10:05"), { contactName: name, relationship: "Family", forWhom: [forWhom[0], forWhom[1]], setting, message: "Wants to see the apartments and have lunch in the dining room.", n: 90 + i });
       const s = futureSlots[slotIndex];
       schedule(T, () => emit("tour_schedule", id, PATEL, T, { lead: ref2(lead, "leadId"), slotStartsAt: s.startsAt, kind: "in_person", notes: "Lunch in the bistro after the tour." }));
     });
@@ -7292,22 +7349,22 @@ function buildCensusPlan(options) {
   const portal = portalCandidates.filter((_, i) => i % stride === 0).slice(0, P.portalAccounts);
   portal.forEach((r, i) => {
     const admittedDay = Math.ceil((admittedAt.get(r.code).getTime() - T.getTime()) / 864e5) - 1;
-    let day11 = Math.max(-50 + Math.floor(i * 44 / Math.max(1, portal.length)), admittedDay + 2);
+    let day12 = Math.max(-50 + Math.floor(i * 44 / Math.max(1, portal.length)), admittedDay + 2);
     const pending = i >= portal.length - Math.max(1, Math.round(P.portalAccounts / 8));
-    if (pending || day11 > -2) day11 = -2;
-    const inviteAt = at(day11, "10:00");
+    if (pending || day12 > -2) day12 = -2;
+    const inviteAt = at(day12, "10:00");
     const rep = r.reps[0];
     schedule(inviteAt, () => emit("invite", r.code, BROOKS, inviteAt, { resident: ref2(key("admit", r.code), "residentId"), priority: rep.contactPriority }));
     if (pending) return;
-    const acceptAt2 = at(day11, "20:30");
+    const acceptAt2 = at(day12, "20:30");
     schedule(acceptAt2, () => emit("accept", r.code, PUBLIC, acceptAt2, { account: ref2(key("invite", r.code), "accountId") }));
     const roles = rep.roles;
     const scopes = roles.includes("guardian") ? ["updates", "calendar", "care_summary", "documents", "statements", "trust_balance"] : roles.includes("healthcare_poa") && roles.includes("financial_responsible") ? ["updates", "calendar", "documents", "care_summary", "statements"] : roles.includes("healthcare_poa") ? ["updates", "calendar", "documents", "care_summary"] : ["updates", "calendar", "statements", "payments"];
-    const proposeAt = at(day11 + 1, "09:15");
+    const proposeAt = at(day12 + 1, "09:15");
     schedule(proposeAt, () => emit("scope_propose", r.code, PATEL, proposeAt, { resident: ref2(key("admit", r.code), "residentId"), priority: rep.contactPriority, scopes }));
     const awaiting = i >= portal.length - Math.max(1, Math.round(P.portalAccounts / 10)) - Math.max(1, Math.round(P.portalAccounts / 8));
-    if (!awaiting && day11 + 1 <= -1) {
-      const grantAt = at(day11 + 1, "13:40");
+    if (!awaiting && day12 + 1 <= -1) {
+      const grantAt = at(day12 + 1, "13:40");
       schedule(grantAt, () => emit("scope_grant", r.code, BROOKS, grantAt, { proposals: ref2(key("scope_propose", r.code), "grantIds") }));
     }
   });
@@ -8282,14 +8339,14 @@ async function generateAdministrationSlots(uow, communityId, residentId) {
     const d = { ...dd, order: dd.order };
     const times = Array.isArray(d.times) ? d.times : [];
     const first = localDate(tz, new Date(from));
-    for (let day11 = first; (/* @__PURE__ */ new Date(`${day11}T00:00:00Z`)).getTime() <= to + 864e5; day11 = addDays(day11, 1)) {
+    for (let day12 = first; (/* @__PURE__ */ new Date(`${day12}T00:00:00Z`)).getTime() <= to + 864e5; day12 = addDays(day12, 1)) {
       for (const hhmm of times) {
-        const at = zonedInstant(tz, day11, hhmm);
+        const at = zonedInstant(tz, day12, hhmm);
         const t = at.getTime();
         if (t < from || t > to) continue;
         if (d.order.startAt && t < d.order.startAt.getTime()) continue;
         if (d.order.stopAt && t >= d.order.stopAt.getTime()) continue;
-        const slotKey = `${d.id}:${day11}:${hhmm}`;
+        const slotKey = `${d.id}:${day12}:${hhmm}`;
         const result = await uow.tx.administrationSlot.createMany({
           data: [{ residentId: d.residentId, communityId, detailId: d.id, orderId: d.order.id, drugName: d.drugName, slotKey, scheduledFor: at, status: "scheduled" }],
           skipDuplicates: true
@@ -9140,6 +9197,15 @@ async function seedBilling(uow, actor) {
   const created = { careLevels: 0, schedules: 0, rateLines: 0, chargeItems: 0, trustAccounts: 0 };
   const communityId = COMMUNITY.id;
   if (!await tx.community.findUnique({ where: { id: communityId }, select: { id: true } })) return created;
+  const ohio = await tx.jurisdictionPack.findUnique({ where: { code: "US-OH" }, select: { id: true, rules: true } });
+  if (ohio) {
+    const have = ohio.rules ?? {};
+    const missing = Object.entries(OH_BILLING_RULES).filter(([key]) => !(key in have));
+    if (missing.length) {
+      await tx.jurisdictionPack.update({ where: { id: ohio.id }, data: { rules: { ...have, ...Object.fromEntries(missing) } } });
+      auditCreate(uow, actor, "JurisdictionPack", ohio.id, "pack.billing_rules_loaded", { keys: missing.map(([key]) => key) }, seedMeta);
+    }
+  }
   for (const level of CARE_LEVELS) {
     if (await tx.careLevel.findUnique({ where: { id: level.id }, select: { id: true } })) continue;
     await tx.careLevel.create({ data: { ...level, communityId, status: "active" } });
@@ -10998,32 +11064,39 @@ function rateOn(rates, date2, match) {
   }
   return best;
 }
-var careOn = (assignments, stayId, date2) => {
+var careOn = (assignments, stayId, date2, noticeDays) => {
+  const rows = assignments.filter((row) => row.stayId === stayId).sort((a, b) => a.effectiveFrom < b.effectiveFrom ? -1 : a.effectiveFrom > b.effectiveFrom ? 1 : 0);
   let best = null;
-  for (const row of assignments) if (row.stayId === stayId && row.effectiveFrom <= date2 && (!best || row.effectiveFrom >= best.effectiveFrom)) best = row;
+  rows.forEach((row, index) => {
+    const previous = index > 0 ? rows[index - 1] : null;
+    const increase = previous !== null && row.points > previous.points;
+    const billableFrom = !increase ? row.effectiveFrom : row.noticeDeliveredOn ? addDays(row.noticeDeliveredOn, noticeDays) > row.effectiveFrom ? addDays(row.noticeDeliveredOn, noticeDays) : row.effectiveFrom : "9999-12-31";
+    if (billableFrom <= date2 && row.effectiveFrom <= date2) best = row;
+  });
   return best;
 };
 var finish = (line) => {
   const key = lineKey(line);
   return { ...line, key, derivationHash: sha256(canonicalJson({ key, amountMinor: line.amountMinor, derivation: line.derivation, description: line.description })) };
 };
-var labelOf = { rent: "Apartment rent", care_level: "Care level", room_board: "Room and board", bed_hold: "Bed hold", patient_liability: "Patient liability", per_diem_claim: "Per diem" };
-function monthly(base, dates, monthlyMinor, daysInMonth2, derivation, proration) {
+var labelOf = { rent: "Apartment rent", second_person: "Second person", care_level: "Care level", room_board: "Room and board", bed_hold: "Bed hold", patient_liability: "Patient liability", per_diem_claim: "Per diem" };
+function monthly(base, dates, monthlyMinor, daysInMonth2, derivation, proration, per = "month") {
   const divisor = proration === "thirty_day_month" ? 30 : daysInMonth2;
-  const total = dates.length >= daysInMonth2 ? monthlyMinor : roundToMinor(dec(monthlyMinor).times(dates.length).div(divisor));
+  const daily = per === "day" || proration === "daily";
+  const total = daily ? monthlyMinor * BigInt(dates.length) : dates.length >= daysInMonth2 ? monthlyMinor : roundToMinor(dec(monthlyMinor).times(dates.length).div(divisor));
   const shares = allocateMinor(total, dates.map(() => 1));
-  return dates.map((date2, index) => finish({ ...base, date: date2, amountMinor: shares[index], derivation: { ...derivation, monthlyMinor, daysInGroup: dates.length, daysInMonth: daysInMonth2, proration } }));
+  return dates.map((date2, index) => finish({ ...base, date: date2, amountMinor: shares[index], derivation: { ...derivation, monthlyMinor, daysInGroup: dates.length, daysInMonth: daysInMonth2, proration, per } }));
 }
 function deriveCharges(input) {
   const daysInMonth2 = monthDays(input.month);
   const problems = [];
   const lines = [];
   const byStay = /* @__PURE__ */ new Map();
-  for (const day11 of input.days) byStay.set(day11.stayId, [...byStay.get(day11.stayId) ?? [], day11]);
+  for (const day12 of input.days) byStay.set(day12.stayId, [...byStay.get(day12.stayId) ?? [], day12]);
   for (const stayId of [...byStay.keys()].sort()) {
     const days = byStay.get(stayId).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
     const residentId = days[0].residentId;
-    const uncovered = days.filter((day11) => day11.payerKind === "uncovered").length;
+    const uncovered = days.filter((day12) => day12.payerKind === "uncovered").length;
     if (uncovered) problems.push({ code: "uncovered_days", stayId, residentId, count: uncovered });
     const groups = /* @__PURE__ */ new Map();
     const add = (rate2, base, date2) => {
@@ -11033,43 +11106,52 @@ function deriveCharges(input) {
       groups.set(id, group);
     };
     let missingRate = 0;
-    for (const day11 of days) {
-      if (day11.payerKind === "private_pay") {
-        const setting = day11.setting;
+    for (const day12 of days) {
+      if (day12.payerKind === "private_pay") {
+        const setting = day12.setting;
         if (setting === "nursing_facility") {
-          const rate2 = rateOn(input.rates, day11.date, { setting, kind: day11.presence === "on_leave_hold" ? "bed_hold_daily" : "room_daily" });
+          const rate2 = rateOn(input.rates, day12.date, { setting, kind: day12.presence === "on_leave_hold" ? "bed_hold_daily" : "room_daily" });
           if (!rate2) {
             missingRate += 1;
             continue;
           }
-          const kind = day11.presence === "on_leave_hold" ? "bed_hold" : "room_board";
-          lines.push(finish({ stayId, residentId, date: day11.date, kind, responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf[kind], amountMinor: rate2.amountMinor, derivation: { rateLineId: rate2.id, per: "day" } }));
+          const kind = day12.presence === "on_leave_hold" ? "bed_hold" : "room_board";
+          lines.push(finish({ stayId, residentId, date: day12.date, kind, responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf[kind], amountMinor: rate2.amountMinor, derivation: { rateLineId: rate2.id, per: "day" } }));
           continue;
         }
-        const rent = rateOn(input.rates, day11.date, { setting, kind: "apartment_rent", apartmentTypeId: day11.apartmentTypeId });
-        if (!rent) {
-          missingRate += 1;
-          continue;
+        if (day12.occupantRank > 1) {
+          const second = rateOn(input.rates, day12.date, { setting, kind: "second_person" });
+          if (!second) {
+            missingRate += 1;
+            continue;
+          }
+          add(second, { stayId, residentId, kind: "second_person", responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf.second_person }, day12.date);
+        } else {
+          const rent = rateOn(input.rates, day12.date, { setting, kind: "apartment_rent", apartmentTypeId: day12.apartmentTypeId });
+          if (!rent) {
+            missingRate += 1;
+            continue;
+          }
+          add(rent, { stayId, residentId, kind: "rent", responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf.rent }, day12.date);
         }
-        add(rent, { stayId, residentId, kind: "rent", responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf.rent }, day11.date);
-        if (day11.presence === "in_house") {
-          const care = careOn(input.careAssignments, stayId, day11.date);
-          const rate2 = care ? rateOn(input.rates, day11.date, { setting, kind: "care_level", careLevelId: care.careLevelId }) : null;
-          if (rate2) add(rate2, { stayId, residentId, kind: "care_level", responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf.care_level }, day11.date);
+        if (day12.presence === "in_house") {
+          const care = careOn(input.careAssignments, stayId, day12.date, input.careNoticeDays);
+          const rate2 = care ? rateOn(input.rates, day12.date, { setting, kind: "care_level", careLevelId: care.careLevelId }) : null;
+          if (rate2) add(rate2, { stayId, residentId, kind: "care_level", responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf.care_level }, day12.date);
         }
-      } else if (day11.payerKind === "medicaid_ffs" || day11.payerKind === "medicaid_mco" || day11.payerKind === "medicare_a" || day11.payerKind === "medicare_advantage") {
-        const rate2 = rateOn(input.rates, day11.date, { setting: day11.setting, kind: day11.presence === "on_leave_hold" ? "bed_hold_daily" : "room_daily" });
-        if (rate2 && day11.payerId) {
-          lines.push(finish({ stayId, residentId, date: day11.date, kind: "per_diem_claim", responsibility: "payer", payerKey: day11.payerId, payerId: day11.payerId, description: labelOf.per_diem_claim, amountMinor: rate2.amountMinor, derivation: { rateLineId: rate2.id, per: "day" } }));
+      } else if (day12.payerKind === "medicaid_ffs" || day12.payerKind === "medicaid_mco" || day12.payerKind === "medicare_a" || day12.payerKind === "medicare_advantage") {
+        const rate2 = rateOn(input.rates, day12.date, { setting: day12.setting, kind: day12.presence === "on_leave_hold" ? "bed_hold_daily" : "room_daily" });
+        if (rate2 && day12.payerId) {
+          lines.push(finish({ stayId, residentId, date: day12.date, kind: "per_diem_claim", responsibility: "payer", payerKey: day12.payerId, payerId: day12.payerId, description: labelOf.per_diem_claim, amountMinor: rate2.amountMinor, derivation: { rateLineId: rate2.id, per: "day" } }));
         }
       }
     }
     if (missingRate) problems.push({ code: "missing_rate", stayId, residentId, count: missingRate });
     for (const id of [...groups.keys()].sort()) {
       const group = groups.get(id);
-      lines.push(...monthly(group.base, group.dates, group.rate.amountMinor, daysInMonth2, { rateLineId: group.rate.id }, group.rate.proration));
+      lines.push(...monthly(group.base, group.dates, group.rate.amountMinor, daysInMonth2, { rateLineId: group.rate.id }, group.rate.proration, group.rate.per));
     }
-    const medicaidDays = days.filter((day11) => day11.payerKind === "medicaid_ffs" || day11.payerKind === "medicaid_mco").map((day11) => day11.date);
+    const medicaidDays = days.filter((day12) => day12.payerKind === "medicaid_ffs" || day12.payerKind === "medicaid_mco").map((day12) => day12.date);
     if (medicaidDays.length) {
       const liability = input.liabilities.find((row) => row.stayId === stayId);
       if (!liability) problems.push({ code: "missing_liability", stayId, residentId, count: 1 });
@@ -11110,19 +11192,29 @@ async function loadDerivationInput(tx, communityId, month) {
   const stayIds = [...new Set(derived.flatMap((entry) => entry.rows.map((row) => row.stayId)))];
   const apartmentIds = [...new Set(derived.flatMap((entry) => entry.rows.map((row) => row.apartmentId).filter((id) => Boolean(id))))];
   const coverageIds = [...new Set(derived.flatMap((entry) => entry.rows.map((row) => row.coverageId).filter((id) => Boolean(id))))];
-  const [stays, apartments, coverages, schedules, assignments, liabilities] = await Promise.all([
-    tx.stay.findMany({ where: { id: { in: stayIds } }, select: { id: true, residentId: true } }),
+  const [stays, apartments, coverages, schedules, assignments, liabilities, pack] = await Promise.all([
+    tx.stay.findMany({ where: { id: { in: stayIds } }, select: { id: true, residentId: true, admittedAt: true } }),
     tx.apartment.findMany({ where: { id: { in: apartmentIds } }, select: { id: true, apartmentTypeId: true } }),
     tx.coveragePeriod.findMany({ where: { id: { in: coverageIds } }, select: { id: true, payerId: true } }),
     tx.rateSchedule.findMany({ where: { communityId, status: "published", effectiveFrom: { lte: day7(monthEnd(month)) } }, select: { setting: true, lines: true } }),
-    tx.careLevelAssignment.findMany({ where: { communityId, effectiveFrom: { lte: day7(monthEnd(month)) } }, select: { stayId: true, careLevelId: true, effectiveFrom: true } }),
-    tx.medicaidLiability.findMany({ where: { communityId, month: day7(month), status: { not: "superseded" } }, select: { stayId: true, liabilityMinor: true } })
+    tx.careLevelAssignment.findMany({ where: { communityId, effectiveFrom: { lte: day7(monthEnd(month)) } }, select: { stayId: true, careLevelId: true, points: true, effectiveFrom: true, noticeDeliveredOn: true } }),
+    tx.medicaidLiability.findMany({ where: { communityId, month: day7(month), status: { not: "superseded" } }, select: { stayId: true, liabilityMinor: true } }),
+    tx.community.findUnique({ where: { id: communityId }, select: { jurisdictionPack: { select: { rules: true } } } })
   ]);
+  const noticeRule = (pack?.jurisdictionPack?.rules ?? {}).careLevelIncreaseNoticeDays?.value;
+  const careNoticeDays = Number.isInteger(noticeRule) && noticeRule >= 0 ? noticeRule : 30;
+  const admittedOf = new Map(stays.map((stay) => [stay.id, stay.admittedAt?.toISOString() ?? ""]));
   const residentOf2 = new Map(stays.map((stay) => [stay.id, stay.residentId ?? ""]));
   const typeOf = new Map(apartments.map((apartment) => [apartment.id, apartment.apartmentTypeId]));
   const payerOf = new Map(coverages.map((coverage) => [coverage.id, coverage.payerId]));
   const days = [];
   for (const entry of derived) {
+    const rank = /* @__PURE__ */ new Map();
+    const inApartment = /* @__PURE__ */ new Map();
+    for (const row of entry.rows) if (row.apartmentId) inApartment.set(row.apartmentId, [...inApartment.get(row.apartmentId) ?? [], row]);
+    for (const group of inApartment.values()) {
+      group.sort((a, b) => (admittedOf.get(a.stayId) ?? "") + a.stayId < (admittedOf.get(b.stayId) ?? "") + b.stayId ? -1 : 1).forEach((row, index) => rank.set(row.stayId, index + 1));
+    }
     for (const row of entry.rows) {
       days.push({
         stayId: row.stayId,
@@ -11132,7 +11224,8 @@ async function loadDerivationInput(tx, communityId, month) {
         presence: row.presence,
         apartmentTypeId: row.apartmentId ? typeOf.get(row.apartmentId) ?? null : null,
         payerKind: row.payerKind,
-        payerId: row.coverageId ? payerOf.get(row.coverageId) ?? null : null
+        payerId: row.coverageId ? payerOf.get(row.coverageId) ?? null : null,
+        occupantRank: rank.get(row.stayId) ?? 1
       });
     }
   }
@@ -11156,7 +11249,8 @@ async function loadDerivationInput(tx, communityId, month) {
       per: line.per ?? "month",
       proration: line.proration ?? "actual_days_in_month"
     })),
-    careAssignments: assignments.filter((row) => row.stayId && row.careLevelId).map((row) => ({ stayId: row.stayId, careLevelId: row.careLevelId, effectiveFrom: iso(row.effectiveFrom) })),
+    careAssignments: assignments.filter((row) => row.stayId && row.careLevelId).map((row) => ({ stayId: row.stayId, careLevelId: row.careLevelId, points: row.points, effectiveFrom: iso(row.effectiveFrom), noticeDeliveredOn: iso(row.noticeDeliveredOn) || null })),
+    careNoticeDays,
     liabilities: liabilities.filter((row) => row.stayId).map((row) => ({ stayId: row.stayId, liabilityMinor: row.liabilityMinor ?? 0n }))
   };
 }
@@ -11520,7 +11614,7 @@ var positive = (value, name) => {
   if (typeof value !== "bigint" || value <= 0n) throw new DomainError(Codes.INVALID_INPUT, `The ${name} must be more than zero.`, { field: name });
   return value;
 };
-var balanceOf = (statement) => (statement.totalMinor ?? 0n) - (statement.paidMinor ?? 0n);
+var balanceOf = (statement) => (statement.totalMinor ?? 0n) - (statement.paidMinor ?? 0n) - (statement.adjustedMinor ?? 0n);
 async function settle(uow, actor, paymentId, providerRef) {
   await lockRow(uow.tx, "Payment", paymentId);
   const payment = await uow.tx.payment.findUniqueOrThrow({ where: { id: paymentId } });
@@ -11530,11 +11624,17 @@ async function settle(uow, actor, paymentId, providerRef) {
   if (payment.statementId) {
     await lockRow(uow.tx, "Statement", payment.statementId);
     const statement = await uow.tx.statement.findUniqueOrThrow({ where: { id: payment.statementId } });
-    const apply = payment.amountMinor < balanceOf(statement) ? payment.amountMinor : balanceOf(statement) > 0n ? balanceOf(statement) : 0n;
+    const open = balanceOf(statement) > 0n ? balanceOf(statement) : 0n;
+    const apply = payment.amountMinor < open ? payment.amountMinor : open;
+    const excess = payment.amountMinor - apply;
+    if (excess > 0n) {
+      const credit = await uow.tx.residentCredit.create({ data: { communityId: payment.communityId, residentId: payment.residentId, paymentId: payment.id, amountMinor: excess, remainingMinor: excess, status: "open" } });
+      auditCreate(uow, actor, "ResidentCredit", credit.id, "credit.created", { paymentId: payment.id, amountMinor: excess.toString() });
+    }
     if (apply > 0n) {
       await uow.tx.paymentAllocation.create({ data: { communityId: payment.communityId, residentId: payment.residentId, paymentId: payment.id, statementId: statement.id, amountMinor: apply, appliedAt: uow.now } });
       const paid = (statement.paidMinor ?? 0n) + apply;
-      await uow.tx.statement.update({ where: { id: statement.id }, data: { paidMinor: paid, status: paid >= (statement.totalMinor ?? 0n) ? "paid" : statement.status, version: { increment: 1 } } });
+      await uow.tx.statement.update({ where: { id: statement.id }, data: { paidMinor: paid, status: paid + (statement.adjustedMinor ?? 0n) >= (statement.totalMinor ?? 0n) ? "paid" : statement.status, version: { increment: 1 } } });
     }
   }
   return { settled: true, paymentId };
@@ -11591,6 +11691,59 @@ async function applyDeposit(uow, actor, input) {
   if (amount !== deposit.amountMinor) throw new DomainError(Codes.GUARD_FAILED, "The deposit is larger than the balance. Refund the difference first or apply it to a larger statement.", { reason: "deposit_larger_than_balance" });
   await casUpdate(uow, { model: "Deposit", id: deposit.id, version: deposit.version, from: ["held"], to: "applied", actor, eventType: "deposit.applied", data: { appliedPaymentId: payment.id, resolvedAt: uow.now } });
   return { paymentId: payment.id };
+}
+async function depositRule(uow, communityId, kind) {
+  const community3 = communityId ? await uow.tx.community.findUnique({ where: { id: communityId }, select: { jurisdictionPack: { select: { rules: true } } } }) : null;
+  const rules2 = community3?.jurisdictionPack?.rules ?? {};
+  const rule3 = rules2.depositRefund?.value?.[kind];
+  if (!rule3) throw new DomainError(Codes.GUARD_FAILED, "The jurisdiction pack has no refund rule for this kind of deposit.", { reason: "no_deposit_rule" });
+  return rule3;
+}
+async function assertDepositRefundAllowed(uow, deposit, now) {
+  const rule3 = await depositRule(uow, deposit.communityId, deposit.kind);
+  if (!rule3.refundable) throw new DomainError(Codes.GUARD_FAILED, "This kind of deposit is not refundable.", { reason: "deposit_not_refundable" });
+  if (rule3.refundWindowDays !== null && deposit.receivedOn) {
+    const days = Math.floor((now.getTime() - deposit.receivedOn.getTime()) / 864e5);
+    if (days > rule3.refundWindowDays) throw new DomainError(Codes.GUARD_FAILED, `This deposit can only be refunded within ${rule3.refundWindowDays} days of receipt.`, { reason: "deposit_refund_window" });
+  }
+}
+async function requestForfeit(uow, actor, input) {
+  if (!input.reason.trim()) throw new DomainError(Codes.INVALID_INPUT, "Say why the deposit is kept.", { field: "reason" });
+  await lockRow(uow.tx, "Deposit", input.depositId);
+  const deposit = await uow.tx.deposit.findUnique({ where: { id: input.depositId } });
+  if (!deposit || deposit.status !== "held") throw new DomainError(Codes.GUARD_FAILED, "Only a held deposit can be forfeited.");
+  const rule3 = await depositRule(uow, deposit.communityId, deposit.kind);
+  if (!rule3.forfeitable) throw new DomainError(Codes.GUARD_FAILED, "The pack does not allow this kind of deposit to be forfeited.", { reason: "deposit_not_forfeitable" });
+  const open = await uow.tx.refund.findFirst({ where: { depositId: deposit.id, status: { in: ["requested", "pending_approval", "issued"] } }, select: { id: true } });
+  if (open) throw new DomainError(Codes.GUARD_FAILED, "This deposit has a refund in progress.");
+  const approval = await requestApproval(uow, actor, { action: "deposit.forfeit", targetList: "Deposit", targetId: deposit.id, payload: { depositId: deposit.id, amountMinor: deposit.amountMinor.toString() }, requiredPermission: "canIssueRefunds", summary: `Keep deposit ${deposit.amountMinor.toString()} minor units: ${input.reason.trim().slice(0, 80)}`, communityId: deposit.communityId });
+  return { approvalRequestId: approval.id };
+}
+registerApplier("deposit.forfeit", async (uow, actor, request) => {
+  await lockRow(uow.tx, "Deposit", request.targetId);
+  const deposit = await uow.tx.deposit.findUniqueOrThrow({ where: { id: request.targetId } });
+  const open = await uow.tx.refund.findFirst({ where: { depositId: deposit.id, status: { in: ["requested", "pending_approval", "issued"] } }, select: { id: true } });
+  if (open) throw new DomainError(Codes.GUARD_FAILED, "This deposit has a refund in progress.");
+  await casUpdate(uow, { model: "Deposit", id: deposit.id, version: deposit.version, from: ["held"], to: "forfeited", actor, eventType: "deposit.forfeited", data: { resolvedAt: uow.now } });
+  return { forfeited: deposit.id };
+});
+async function applyCredit(uow, actor, input) {
+  await lockRow(uow.tx, "ResidentCredit", input.creditId);
+  const credit = await uow.tx.residentCredit.findUniqueOrThrow({ where: { id: input.creditId } });
+  if (credit.status !== "open") throw new DomainError(Codes.GUARD_FAILED, "This credit is used up.");
+  const statement = await uow.tx.statement.findUnique({ where: { id: input.statementId }, select: { residentId: true, totalMinor: true, paidMinor: true, adjustedMinor: true } });
+  if (!statement || statement.residentId !== credit.residentId) throw new DomainError(Codes.NOT_FOUND, "Statement not found for this resident.");
+  const pending = await uow.tx.refund.aggregate({ where: { creditId: credit.id, status: { in: ["requested", "pending_approval"] } }, _sum: { amountMinor: true } });
+  const available = credit.remainingMinor - (pending._sum.amountMinor ?? 0n);
+  const balance = balanceOf(statement);
+  const amount = available < balance ? available : balance;
+  if (amount <= 0n) throw new DomainError(Codes.GUARD_FAILED, "There is nothing to apply the credit to.");
+  const payment = await newPayment(uow, actor, { statementId: input.statementId, method: "credit", amountMinor: amount, reference: `Credit ${credit.id.slice(-8)}`, status: "pending" });
+  await settle(uow, actor, payment.id);
+  const left = credit.remainingMinor - amount;
+  await uow.tx.residentCredit.update({ where: { id: credit.id }, data: { remainingMinor: left, status: left === 0n ? "closed" : "open", version: { increment: 1 } } });
+  auditCreate(uow, actor, "ResidentCredit", credit.id, "credit.applied", { statementId: input.statementId, amountMinor: amount.toString() });
+  return { paymentId: payment.id, appliedMinor: amount.toString(), remainingMinor: left.toString() };
 }
 async function recordIntent(db, actor, input) {
   return command(db, { name: "payment.charge.start", actor, idempotencyKey: input.key, params: { ...input, amountMinor: input.amountMinor.toString() } }, async (uow) => {
@@ -11659,10 +11812,19 @@ async function checkPaymentStatus(db, actor, paymentId) {
 async function requestRefund(uow, actor, input) {
   const amount = positive(input.amountMinor, "amount");
   if (!input.reason.trim()) throw new DomainError(Codes.INVALID_INPUT, "Say why the refund is needed.", { field: "reason" });
-  if (Boolean(input.paymentId) === Boolean(input.depositId)) throw new DomainError(Codes.INVALID_INPUT, "Refund either a payment or a deposit.");
+  if ([input.paymentId, input.depositId, input.creditId].filter(Boolean).length !== 1) throw new DomainError(Codes.INVALID_INPUT, "Refund a payment, a deposit or a credit.");
   let residentId;
   let communityId;
-  if (input.paymentId) {
+  let creditPaymentId = null;
+  if (input.creditId) {
+    await lockRow(uow.tx, "ResidentCredit", input.creditId);
+    const credit = await uow.tx.residentCredit.findUniqueOrThrow({ where: { id: input.creditId } });
+    const pending = await uow.tx.refund.aggregate({ where: { creditId: credit.id, status: { in: ["requested", "pending_approval"] } }, _sum: { amountMinor: true } });
+    if (credit.status !== "open" || amount + (pending._sum.amountMinor ?? 0n) > credit.remainingMinor) throw new DomainError(Codes.GUARD_FAILED, "That is more than the credit that is left.", { reason: "over_refund" });
+    residentId = credit.residentId;
+    communityId = credit.communityId;
+    creditPaymentId = credit.paymentId;
+  } else if (input.paymentId) {
     await lockRow(uow.tx, "Payment", input.paymentId);
     const payment = await uow.tx.payment.findUnique({ where: { id: input.paymentId } });
     if (!payment || payment.status !== "succeeded") throw new DomainError(Codes.GUARD_FAILED, "Only a settled payment can be refunded.");
@@ -11675,6 +11837,7 @@ async function requestRefund(uow, actor, input) {
     const deposit = await uow.tx.deposit.findUnique({ where: { id: input.depositId } });
     if (!deposit || deposit.status !== "held") throw new DomainError(Codes.GUARD_FAILED, "Only a held deposit can be refunded.");
     if (amount !== deposit.amountMinor) throw new DomainError(Codes.GUARD_FAILED, "A deposit is refunded in full.", { reason: "partial_deposit_refund" });
+    await assertDepositRefundAllowed(uow, deposit, uow.now);
     const open = await uow.tx.refund.findFirst({ where: { depositId: deposit.id, status: { in: ["requested", "pending_approval", "issued"] } }, select: { id: true } });
     if (open) throw new DomainError(Codes.GUARD_FAILED, "This deposit already has a refund.", { reason: "over_refund" });
     residentId = deposit.residentId;
@@ -11684,7 +11847,7 @@ async function requestRefund(uow, actor, input) {
   const threshold = settings?.refundApprovalThresholdMinor ?? null;
   const needsApproval = threshold !== null && amount >= threshold;
   const refund = await uow.tx.refund.create({
-    data: { communityId, residentId, paymentId: input.paymentId ?? null, depositId: input.depositId ?? null, amountMinor: amount, reason: input.reason.trim(), status: needsApproval ? "pending_approval" : "requested", requestedById: actorUserId(actor) }
+    data: { communityId, residentId, paymentId: input.paymentId ?? creditPaymentId, depositId: input.depositId ?? null, creditId: input.creditId ?? null, amountMinor: amount, reason: input.reason.trim(), status: needsApproval ? "pending_approval" : "requested", requestedById: actorUserId(actor) }
   });
   auditCreate(uow, actor, "Refund", refund.id, "refund.requested", { amountMinor: amount.toString(), needsApproval });
   if (!needsApproval) return { refundId: refund.id, status: refund.status, approvalRequestId: null };
@@ -11715,6 +11878,13 @@ async function issueRefund(db, actor, refundId) {
     if (row.depositId) {
       const deposit = await uow.tx.deposit.findUniqueOrThrow({ where: { id: row.depositId } });
       await casUpdate(uow, { model: "Deposit", id: deposit.id, version: deposit.version, from: ["held"], to: "refunded", actor, eventType: "deposit.refunded", data: { resolvedAt: uow.now } });
+    }
+    if (row.creditId) {
+      await lockRow(uow.tx, "ResidentCredit", row.creditId);
+      const credit = await uow.tx.residentCredit.findUniqueOrThrow({ where: { id: row.creditId } });
+      if (row.amountMinor > credit.remainingMinor) throw new DomainError(Codes.GUARD_FAILED, "The credit was used since this refund was asked for.", { reason: "over_refund" });
+      const left = credit.remainingMinor - row.amountMinor;
+      await uow.tx.residentCredit.update({ where: { id: credit.id }, data: { remainingMinor: left, status: left === 0n ? "closed" : "open", version: { increment: 1 } } });
     }
     return { refundId, status: "issued", refundRef: ref2 };
   });
@@ -11755,13 +11925,41 @@ async function createSchedule(uow, actor, input) {
   auditCreate(uow, actor, "RateSchedule", schedule.id, "rate_schedule.created", { setting: input.setting });
   return { scheduleId: schedule.id };
 }
+function checkRateShape(kind, per, proration) {
+  const bad = (message) => {
+    throw new DomainError(Codes.INVALID_INPUT, message, { field: "per" });
+  };
+  const monthlyKinds = ["apartment_rent", "care_level", "second_person", "med_management"];
+  const dailyKinds = ["room_daily", "bed_hold_daily"];
+  const eachKinds = ["community_fee", "ancillary"];
+  if (!["month", "day", "each"].includes(per)) bad("A rate is per month, per day or per each.");
+  if (proration !== void 0 && !["actual_days_in_month", "thirty_day_month", "daily"].includes(proration)) bad("Unknown proration method.");
+  if (dailyKinds.includes(kind)) {
+    if (per !== "day") bad("A daily rate is charged per day.");
+    if (proration && proration !== "daily") bad("A daily rate has no proration; use the daily method.");
+    return { per: "day", proration: "daily" };
+  }
+  if (eachKinds.includes(kind)) {
+    if (per !== "each") bad("A fee is charged once, per each.");
+    return { per: "each", proration: proration ?? "actual_days_in_month" };
+  }
+  if (!monthlyKinds.includes(kind)) bad("Unknown rate kind.");
+  if (per === "each") bad("A monthly charge cannot be per each.");
+  if (per === "day") {
+    if (proration && proration !== "daily") bad("A per-day rate is rate \xD7 days; use the daily method.");
+    return { per: "day", proration: "daily" };
+  }
+  if (proration === "daily") bad("The daily method needs a per-day rate.");
+  return { per: "month", proration: proration ?? "actual_days_in_month" };
+}
 async function addRateLine(uow, actor, input) {
   await lockRow(uow.tx, "RateSchedule", input.scheduleId);
   const schedule = await uow.tx.rateSchedule.findUnique({ where: { id: input.scheduleId } });
   if (!schedule) throw new DomainError(Codes.NOT_FOUND, "Not found.");
   if (schedule.status !== "draft") throw new DomainError(Codes.GUARD_FAILED, "A published schedule is frozen. Make a new one for the next change.", { reason: "frozen" });
   if (typeof input.amountMinor !== "bigint" || input.amountMinor < 0n) throw new DomainError(Codes.INVALID_INPUT, "The rate cannot be negative.", { field: "amountMinor" });
-  const line = await uow.tx.rateLine.create({ data: { scheduleId: schedule.id, kind: input.kind, amountMinor: input.amountMinor, per: input.per, proration: input.proration ?? "actual_days_in_month", apartmentTypeId: input.apartmentTypeId ?? null, careLevelId: input.careLevelId ?? null } });
+  const { per, proration } = checkRateShape(input.kind, input.per, input.proration);
+  const line = await uow.tx.rateLine.create({ data: { scheduleId: schedule.id, kind: input.kind, amountMinor: input.amountMinor, per, proration, apartmentTypeId: input.apartmentTypeId ?? null, careLevelId: input.careLevelId ?? null } });
   auditCreate(uow, actor, "RateLine", line.id, "rate_line.added", { kind: input.kind, amountMinor: input.amountMinor.toString() });
   return { lineId: line.id };
 }
@@ -11848,6 +12046,96 @@ async function fileAppeal(uow, actor, input) {
   return { liabilityId: row.id, status: "appealed" };
 }
 
+// features/keystone/billing/adjustments.ts
+init_actor();
+init_cas();
+init_errors();
+async function post(uow, actor, id) {
+  await lockRow(uow.tx, "BalanceAdjustment", id);
+  const row = await uow.tx.balanceAdjustment.findUniqueOrThrow({ where: { id } });
+  if (row.status !== "pending_approval") throw new DomainError(Codes.GUARD_FAILED, `This ${row.kind.replace("_", " ")} is ${row.status.replace("_", " ")}.`);
+  await lockRow(uow.tx, "Statement", row.statementId);
+  const statement = await uow.tx.statement.findUniqueOrThrow({ where: { id: row.statementId } });
+  let freed = 0n;
+  if (row.supersedesId) {
+    const old = await uow.tx.balanceAdjustment.findUniqueOrThrow({ where: { id: row.supersedesId } });
+    if (old.status !== "posted") throw new DomainError(Codes.GUARD_FAILED, "The entry being corrected is no longer posted.");
+    freed = old.amountMinor;
+  }
+  const balance = balanceOf(statement) + freed;
+  if (row.amountMinor > balance) throw new DomainError(Codes.GUARD_FAILED, "That is more than the statement balance.", { reason: "over_balance" });
+  if (row.supersedesId) await uow.tx.balanceAdjustment.update({ where: { id: row.supersedesId }, data: { status: "superseded", version: { increment: 1 } } });
+  const adjusted = (statement.adjustedMinor ?? 0n) - freed + row.amountMinor;
+  const settled = (statement.paidMinor ?? 0n) + adjusted >= (statement.totalMinor ?? 0n);
+  await uow.tx.statement.update({ where: { id: statement.id }, data: { adjustedMinor: adjusted, status: settled ? "paid" : "issued", version: { increment: 1 } } });
+  await casUpdate(uow, { model: "BalanceAdjustment", id: row.id, version: row.version, from: ["pending_approval"], to: "posted", actor, eventType: `balance.${row.kind}_posted`, data: { postedAt: uow.now } });
+  return { adjustmentId: row.id, status: "posted" };
+}
+async function requestBalanceChange(uow, actor, input) {
+  if (input.kind !== "adjustment" && input.kind !== "write_off") throw new DomainError(Codes.INVALID_INPUT, "An adjustment or a write-off.", { field: "kind" });
+  if (typeof input.amountMinor !== "bigint" || input.amountMinor <= 0n) throw new DomainError(Codes.INVALID_INPUT, "The amount must be more than zero.", { field: "amount" });
+  if (!input.reason?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Say why.", { field: "reason" });
+  await lockRow(uow.tx, "Statement", input.statementId);
+  const statement = await uow.tx.statement.findUniqueOrThrow({ where: { id: input.statementId } });
+  if (statement.status === "void") throw new DomainError(Codes.GUARD_FAILED, "This statement was voided.");
+  let freed = 0n;
+  if (input.supersedesId) {
+    await lockRow(uow.tx, "BalanceAdjustment", input.supersedesId);
+    const old = await uow.tx.balanceAdjustment.findUniqueOrThrow({ where: { id: input.supersedesId } });
+    if (old.statementId !== statement.id || old.status !== "posted") throw new DomainError(Codes.GUARD_FAILED, "Only a posted entry on this statement can be corrected.");
+    const pending = await uow.tx.balanceAdjustment.findFirst({ where: { supersedesId: old.id, status: "pending_approval" }, select: { id: true } });
+    if (pending) throw new DomainError(Codes.GUARD_FAILED, "A correction of this entry is already waiting.");
+    freed = old.amountMinor;
+  }
+  if (input.amountMinor > balanceOf(statement) + freed) throw new DomainError(Codes.GUARD_FAILED, "That is more than the statement balance.", { reason: "over_balance" });
+  const settings = await uow.tx.operatorSettings.findUnique({ where: { id: 1 }, select: { writeOffApprovalThresholdMinor: true } });
+  const needsApproval = input.amountMinor >= (settings?.writeOffApprovalThresholdMinor ?? 0n);
+  const row = await uow.tx.balanceAdjustment.create({
+    data: { communityId: statement.communityId, residentId: statement.residentId, statementId: statement.id, kind: input.kind, amountMinor: input.amountMinor, reason: input.reason.trim(), status: "pending_approval", supersedesId: input.supersedesId ?? null, requestedById: actorUserId(actor) }
+  });
+  auditCreate(uow, actor, "BalanceAdjustment", row.id, `balance.${input.kind}_requested`, { amountMinor: input.amountMinor.toString(), needsApproval }, { reason: input.reason.trim() });
+  if (!needsApproval) return { ...await post(uow, actor, row.id), approvalRequestId: null };
+  const approval = await requestApproval(uow, actor, { action: "balance.adjust", targetList: "BalanceAdjustment", targetId: row.id, payload: { adjustmentId: row.id, statementId: statement.id, kind: input.kind, amountMinor: input.amountMinor.toString() }, requiredPermission: "canApproveWriteOffs", summary: `${input.kind === "write_off" ? "Write off" : "Adjust"} ${input.amountMinor.toString()} minor units: ${input.reason.trim().slice(0, 80)}`, communityId: statement.communityId });
+  await uow.tx.balanceAdjustment.update({ where: { id: row.id }, data: { approvalId: approval.id } });
+  return { adjustmentId: row.id, status: "pending_approval", approvalRequestId: approval.id };
+}
+registerApplier("balance.adjust", async (uow, actor, request) => post(uow, actor, request.targetId));
+
+// features/keystone/billing/careLevel.ts
+init_cas();
+init_errors();
+var DATE4 = /^\d{4}-\d{2}-\d{2}$/;
+var day10 = (date2) => /* @__PURE__ */ new Date(`${date2}T00:00:00Z`);
+async function assignCareLevel(uow, actor, input) {
+  if (!DATE4.test(String(input.effectiveFrom))) throw new DomainError(Codes.INVALID_INPUT, "Give the date the level starts, like 2026-10-01.", { field: "effectiveFrom" });
+  if (input.noticeDeliveredOn && !DATE4.test(input.noticeDeliveredOn)) throw new DomainError(Codes.INVALID_INPUT, "The notice date is a date.", { field: "noticeDeliveredOn" });
+  await lockRow(uow.tx, "Stay", input.stayId);
+  const stay = await uow.tx.stay.findUniqueOrThrow({ where: { id: input.stayId }, select: { id: true, residentId: true, communityId: true, setting: true } });
+  if (stay.setting !== "assisted_living" && stay.setting !== "memory_care") throw new DomainError(Codes.GUARD_FAILED, "Care levels apply to assisted living and memory care.");
+  const manual = Boolean(input.careLevelId);
+  let level;
+  let points;
+  if (manual) {
+    if (!input.reason?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Say why the level is set by hand.", { field: "reason" });
+    level = await uow.tx.careLevel.findFirst({ where: { id: input.careLevelId, communityId: stay.communityId, setting: stay.setting, status: "active" }, select: { id: true, minPoints: true, maxPoints: true } });
+    points = input.points ?? level?.minPoints ?? 0;
+  } else {
+    if (typeof input.points !== "number" || !Number.isInteger(input.points) || input.points < 0) throw new DomainError(Codes.INVALID_INPUT, "Enter the assessment points.", { field: "points" });
+    points = input.points;
+    level = await uow.tx.careLevel.findFirst({ where: { communityId: stay.communityId, setting: stay.setting, status: "active", minPoints: { lte: points }, maxPoints: { gte: points } }, select: { id: true, minPoints: true, maxPoints: true } });
+  }
+  if (!level) throw new DomainError(Codes.GUARD_FAILED, manual ? "That care level is not available for this stay." : "No care level covers those points.", { reason: "no_care_level" });
+  const current = await uow.tx.careLevelAssignment.findFirst({ where: { stayId: stay.id, status: "active" }, orderBy: { effectiveFrom: "desc" } });
+  if (current && current.careLevelId === level.id && current.effectiveFrom?.toISOString().slice(0, 10) === input.effectiveFrom) return { assignmentId: current.id, unchanged: true };
+  if (current?.effectiveFrom && current.effectiveFrom.toISOString().slice(0, 10) > input.effectiveFrom) throw new DomainError(Codes.GUARD_FAILED, "A later assignment already exists.", { reason: "later_assignment" });
+  if (current) await uow.tx.careLevelAssignment.update({ where: { id: current.id }, data: { status: "superseded", version: { increment: 1 } } });
+  const created = await uow.tx.careLevelAssignment.create({
+    data: { communityId: stay.communityId, residentId: stay.residentId, stayId: stay.id, careLevelId: level.id, points, effectiveFrom: day10(input.effectiveFrom), noticeDeliveredOn: input.noticeDeliveredOn ? day10(input.noticeDeliveredOn) : null, source: manual ? "manual" : "points", reason: input.reason?.trim() ?? "", status: "active" }
+  });
+  auditCreate(uow, actor, "CareLevelAssignment", created.id, "care_level.assigned", { careLevelId: level.id, points, source: manual ? "manual" : "points", supersedes: current?.id ?? null }, { reason: input.reason?.trim() ?? null });
+  return { assignmentId: created.id, careLevelId: level.id, supersedes: current?.id ?? null, unchanged: false };
+}
+
 // features/keystone/trust/service.ts
 init_actor();
 init_cas();
@@ -11855,7 +12143,7 @@ init_errors();
 init_sequence();
 
 // features/keystone/trust/ledger.ts
-var DATE4 = /^\d{4}-\d{2}-\d{2}$/;
+var DATE5 = /^\d{4}-\d{2}-\d{2}$/;
 var BUCKETS = /* @__PURE__ */ new Set(["bank_control", "client_liability", "bank_fee", "suspense"]);
 var TrustLedgerError = class extends Error {
   constructor(message, reason) {
@@ -11870,7 +12158,7 @@ function assertBalanced(lines) {
   for (const line of lines) {
     if (typeof line.amountMinor !== "bigint" || line.amountMinor <= 0n) throw new TrustLedgerError("Every trust line needs a positive amount.", "invalid");
     if (!BUCKETS.has(line.bucket)) throw new TrustLedgerError("Unknown trust bucket.", "invalid");
-    if (!DATE4.test(line.effectiveOn)) throw new TrustLedgerError("Every trust line needs a date.", "invalid");
+    if (!DATE5.test(line.effectiveOn)) throw new TrustLedgerError("Every trust line needs a date.", "invalid");
     if (line.bucket === "client_liability" !== Boolean(line.ledgerId)) throw new TrustLedgerError("Only resident lines name a resident ledger, and each one must.", "invalid");
     if (line.side === "debit") debit += line.amountMinor;
     else if (line.side === "credit") credit += line.amountMinor;
@@ -11901,18 +12189,18 @@ function assertHistoricalMinimumBalances(existing, proposed) {
   for (const line of [...existing, ...proposed]) {
     if (line.bucket !== "client_liability" || !line.ledgerId) continue;
     const days = byLedger2.get(line.ledgerId) ?? /* @__PURE__ */ new Map();
-    const day11 = days.get(line.effectiveOn) ?? { in: 0n, out: 0n };
-    if (line.side === "credit") day11.in += line.amountMinor;
-    else day11.out += line.amountMinor;
-    days.set(line.effectiveOn, day11);
+    const day12 = days.get(line.effectiveOn) ?? { in: 0n, out: 0n };
+    if (line.side === "credit") day12.in += line.amountMinor;
+    else day12.out += line.amountMinor;
+    days.set(line.effectiveOn, day12);
     byLedger2.set(line.ledgerId, days);
   }
   for (const days of byLedger2.values()) {
     let balance = 0n;
     for (const date2 of [...days.keys()].sort()) {
-      const day11 = days.get(date2);
-      balance += day11.in;
-      balance -= day11.out;
+      const day12 = days.get(date2);
+      balance += day12.in;
+      balance -= day12.out;
       if (balance < 0n) throw new TrustLedgerError(`This would leave the resident's trust ledger short on ${date2}.`, "overdrawn");
     }
   }
@@ -11932,7 +12220,7 @@ function reconcile(lines, bankBalanceMinor, asOf) {
 // features/keystone/trust/service.ts
 var CONVEYANCE_DAYS = 30;
 var iso3 = (value) => value ? value.toISOString().slice(0, 10) : "";
-var day10 = (date2) => /* @__PURE__ */ new Date(`${date2}T00:00:00Z`);
+var day11 = (date2) => /* @__PURE__ */ new Date(`${date2}T00:00:00Z`);
 var asDomain = (error) => {
   if (error instanceof TrustLedgerError) throw new DomainError(error.reason === "overdrawn" ? Codes.GUARD_FAILED : Codes.INVALID_INPUT, error.message, { reason: error.reason });
   throw error;
@@ -11956,7 +12244,7 @@ async function loadLedger(uow, ledgerId) {
   await lockRow(uow.tx, "TrustAccount", ledger.accountId);
   return ledger;
 }
-async function post(uow, actor, tx, lines) {
+async function post2(uow, actor, tx, lines) {
   assertBalanced(lines);
   try {
     assertHistoricalMinimumBalances(await linesOfAccount(uow.tx, tx.accountId), lines);
@@ -11964,7 +12252,7 @@ async function post(uow, actor, tx, lines) {
     asDomain(error);
   }
   await uow.tx.trustLedgerLine.createMany({
-    data: lines.map((line) => ({ communityId: tx.communityId, residentId: tx.residentId, transactionId: tx.id, ledgerId: line.ledgerId, accountId: tx.accountId, bucket: line.bucket, side: line.side, amountMinor: line.amountMinor, effectiveOn: day10(line.effectiveOn) }))
+    data: lines.map((line) => ({ communityId: tx.communityId, residentId: tx.residentId, transactionId: tx.id, ledgerId: line.ledgerId, accountId: tx.accountId, bucket: line.bucket, side: line.side, amountMinor: line.amountMinor, effectiveOn: day11(line.effectiveOn) }))
   });
   auditCreate(uow, actor, "TrustTransaction", tx.id, "trust.lines_posted", { lines: lines.length });
 }
@@ -11985,9 +12273,9 @@ async function recordDeposit(uow, actor, input) {
   const on = await effective(uow, ledger.communityId, input.effectiveOn);
   const kind = input.kind ?? "deposit";
   const tx = await uow.tx.trustTransaction.create({
-    data: { communityId: ledger.communityId, residentId: ledger.residentId, ledgerId: ledger.id, accountId: ledger.accountId, reference: await nextReference(uow.tx, "TRX", uow.now, 6), kind, amountMinor: input.amountMinor, purpose: input.purpose ?? "", status: "posted", preparedById: actorUserId(actor), effectiveOn: day10(on), postedAt: uow.now }
+    data: { communityId: ledger.communityId, residentId: ledger.residentId, ledgerId: ledger.id, accountId: ledger.accountId, reference: await nextReference(uow.tx, "TRX", uow.now, 6), kind, amountMinor: input.amountMinor, purpose: input.purpose ?? "", status: "posted", preparedById: actorUserId(actor), effectiveOn: day11(on), postedAt: uow.now }
   });
-  await post(uow, actor, { id: tx.id, communityId: ledger.communityId, residentId: ledger.residentId, ledgerId: ledger.id, accountId: ledger.accountId }, linesOf(kind, ledger.id, input.amountMinor, on));
+  await post2(uow, actor, { id: tx.id, communityId: ledger.communityId, residentId: ledger.residentId, ledgerId: ledger.id, accountId: ledger.accountId }, linesOf(kind, ledger.id, input.amountMinor, on));
   return { transactionId: tx.id, status: "posted" };
 }
 var linesOf = (kind, ledgerId, amountMinor, effectiveOn) => linesFor(kind === "bank_fee" || kind === "conveyance" ? "withdrawal" : kind, { ledgerId, amountMinor, effectiveOn });
@@ -12017,12 +12305,12 @@ async function prepareWithdrawal(uow, actor, input) {
       purpose: input.purpose.trim(),
       status: needsSecond ? "pending_signature" : "posted",
       preparedById: actorUserId(actor),
-      effectiveOn: day10(on),
+      effectiveOn: day11(on),
       postedAt: needsSecond ? null : uow.now
     }
   });
   if (!needsSecond) {
-    await post(uow, actor, { id: tx.id, communityId: ledger.communityId, residentId: ledger.residentId, ledgerId: ledger.id, accountId: ledger.accountId }, linesOf("withdrawal", ledger.id, input.amountMinor, on));
+    await post2(uow, actor, { id: tx.id, communityId: ledger.communityId, residentId: ledger.residentId, ledgerId: ledger.id, accountId: ledger.accountId }, linesOf("withdrawal", ledger.id, input.amountMinor, on));
     if (input.conveyance) await markConveyed(uow, actor, ledger.id, on);
     return { transactionId: tx.id, status: "posted", approvalRequestId: null };
   }
@@ -12052,13 +12340,13 @@ async function signWithdrawal(uow, actor, input) {
   const approved = await consumeApproval(uow, { requestId: tx.approvalId, action: "trust.withdraw", targetList: "TrustTransaction", targetId: tx.id, payload: { transactionId: tx.id, ledgerId: ledger.id, amountMinor: tx.amountMinor.toString(), effectiveOn: on } });
   if (approved.approverId && approved.approverId === tx.preparedById) throw new DomainError(Codes.SELF_APPROVAL, "The person who prepared a withdrawal cannot approve it.", { reason: "preparer_is_signer" });
   await casUpdate(uow, { model: "TrustTransaction", id: tx.id, version: tx.version, from: ["pending_signature"], to: "posted", actor, eventType: "trust.withdrawal_signed", approverId: approved.approverId, data: { signedById: actor.userId, postedAt: uow.now } });
-  await post(uow, actor, { id: tx.id, communityId: tx.communityId, residentId: tx.residentId, ledgerId: ledger.id, accountId: ledger.accountId }, linesOf("withdrawal", ledger.id, tx.amountMinor, on));
+  await post2(uow, actor, { id: tx.id, communityId: tx.communityId, residentId: tx.residentId, ledgerId: ledger.id, accountId: ledger.accountId }, linesOf("withdrawal", ledger.id, tx.amountMinor, on));
   if (tx.kind === "conveyance") await markConveyed(uow, actor, ledger.id, on);
   return { transactionId: tx.id, status: "posted" };
 }
 async function markConveyed(uow, actor, ledgerId, on) {
   const ledger = await uow.tx.residentTrustLedger.findUniqueOrThrow({ where: { id: ledgerId } });
-  await casUpdate(uow, { model: "ResidentTrustLedger", id: ledgerId, version: ledger.version, from: ["closed"], to: "conveyed", actor, eventType: "trust.ledger_conveyed", data: { conveyedOn: day10(on) } });
+  await casUpdate(uow, { model: "ResidentTrustLedger", id: ledgerId, version: ledger.version, from: ["closed"], to: "conveyed", actor, eventType: "trust.ledger_conveyed", data: { conveyedOn: day11(on) } });
 }
 async function rejectWithdrawal(uow, actor, input) {
   await lockRow(uow.tx, "TrustTransaction", input.transactionId);
@@ -12078,10 +12366,10 @@ async function reverseTransaction(uow, actor, input) {
   const ledger = await loadLedger(uow, original.ledgerId);
   const on = await effective(uow, original.communityId, null);
   const reversal = await uow.tx.trustTransaction.create({
-    data: { communityId: original.communityId, residentId: original.residentId, ledgerId: original.ledgerId, accountId: original.accountId, reference: await nextReference(uow.tx, "TRX", uow.now, 6), kind: "reversal", amountMinor: original.amountMinor, purpose: input.reason.trim(), status: "posted", preparedById: actorUserId(actor), reversesId: original.id, effectiveOn: day10(on), postedAt: uow.now }
+    data: { communityId: original.communityId, residentId: original.residentId, ledgerId: original.ledgerId, accountId: original.accountId, reference: await nextReference(uow.tx, "TRX", uow.now, 6), kind: "reversal", amountMinor: original.amountMinor, purpose: input.reason.trim(), status: "posted", preparedById: actorUserId(actor), reversesId: original.id, effectiveOn: day11(on), postedAt: uow.now }
   });
   const mirrored = original.lines.map((line) => ({ ledgerId: line.ledgerId, bucket: line.bucket, side: line.side, amountMinor: line.amountMinor, effectiveOn: iso3(line.effectiveOn) }));
-  await post(uow, actor, { id: reversal.id, communityId: original.communityId, residentId: original.residentId, ledgerId: ledger.id, accountId: ledger.accountId }, reverseLines(mirrored, on));
+  await post2(uow, actor, { id: reversal.id, communityId: original.communityId, residentId: original.residentId, ledgerId: ledger.id, accountId: ledger.accountId }, reverseLines(mirrored, on));
   return { transactionId: reversal.id, reverses: original.id };
 }
 async function balanceOfLedger(tx, ledgerId, asOf) {
@@ -12098,12 +12386,12 @@ async function prepareReconciliation(uow, actor, input) {
   if (!account) throw new DomainError(Codes.NOT_FOUND, "Trust account not found.");
   const asOf = addDays(input.month, daysInMonth(input.month) - 1);
   const result = reconcile(await linesOfAccount(uow.tx, account.id), input.bankBalanceMinor, asOf);
-  const prior = await uow.tx.trustReconciliation.findFirst({ where: { accountId: account.id, month: day10(input.month) } });
+  const prior = await uow.tx.trustReconciliation.findFirst({ where: { accountId: account.id, month: day11(input.month) } });
   if (prior?.status === "signed") throw new DomainError(Codes.GUARD_FAILED, "This month is already signed off.");
   const data = {
     communityId: account.communityId,
     accountId: account.id,
-    month: day10(input.month),
+    month: day11(input.month),
     bankBalanceMinor: result.bankBalanceMinor,
     bookBalanceMinor: result.bookBalanceMinor,
     residentTotalMinor: result.residentTotalMinor,
@@ -12134,7 +12422,7 @@ var daysInMonth = (month) => {
 async function closeLedger(uow, actor, input) {
   const ledger = await loadLedger(uow, input.ledgerId);
   const on = await effective(uow, ledger.communityId, input.closedOn);
-  await casUpdate(uow, { model: "ResidentTrustLedger", id: ledger.id, version: ledger.version, from: ["open"], to: "closed", actor, eventType: "trust.ledger_closed", data: { closedOn: day10(on), closedReason: input.reason } });
+  await casUpdate(uow, { model: "ResidentTrustLedger", id: ledger.id, version: ledger.version, from: ["open"], to: "closed", actor, eventType: "trust.ledger_closed", data: { closedOn: day11(on), closedReason: input.reason } });
   return { ledgerId: ledger.id, closedOn: on, dueBy: addDays(on, CONVEYANCE_DAYS) };
 }
 async function conveyBalance(uow, actor, input) {
@@ -12143,7 +12431,7 @@ async function conveyBalance(uow, actor, input) {
   if (!input.conveyedTo.trim()) throw new DomainError(Codes.INVALID_INPUT, "Name who the money was paid to.", { field: "conveyedTo" });
   const balance = await balanceOfLedger(uow.tx, ledger.id);
   if (balance <= 0n) {
-    await casUpdate(uow, { model: "ResidentTrustLedger", id: ledger.id, version: ledger.version, from: ["closed"], to: "conveyed", actor, eventType: "trust.ledger_conveyed", data: { conveyedOn: day10(await effective(uow, ledger.communityId, input.effectiveOn)), conveyedTo: input.conveyedTo.trim() } });
+    await casUpdate(uow, { model: "ResidentTrustLedger", id: ledger.id, version: ledger.version, from: ["closed"], to: "conveyed", actor, eventType: "trust.ledger_conveyed", data: { conveyedOn: day11(await effective(uow, ledger.communityId, input.effectiveOn)), conveyedTo: input.conveyedTo.trim() } });
     return { ledgerId: ledger.id, status: "conveyed", transactionId: null };
   }
   await uow.tx.residentTrustLedger.update({ where: { id: ledger.id }, data: { conveyedTo: input.conveyedTo.trim() } });
@@ -12171,6 +12459,7 @@ var byStatement = byRecord2("Statement", "statementId");
 var BILLING = ["canManageBilling"];
 var RATES = ["canManageRates"];
 var PAYMENTS = ["canPostPayments", "canManagePayments"];
+var ADJUST = ["canManageBilling"];
 var TRUST_OP = ["canOperateTrust"];
 var TRUST_SIGN = ["canApproveTrust"];
 var HANDLERS2 = {
@@ -12197,7 +12486,12 @@ var HANDLERS2 = {
     }
   },
   "deposit.apply": { permissions: PAYMENTS, community: byRecord2("Deposit", "depositId"), serializable: true, run: (u, a, i) => applyDeposit(u, a, { depositId: i.depositId, statementId: i.statementId }) },
-  "refund.request": { permissions: ["canIssueRefunds", "canManagePayments"], community: async (tx, i) => i.paymentId ? byRecord2("Payment", "paymentId")(tx, i) : byRecord2("Deposit", "depositId")(tx, i), serializable: true, run: (u, a, i) => requestRefund(u, a, { paymentId: i.paymentId, depositId: i.depositId, amountMinor: money2(i.amountMinor, "amount"), reason: String(i.reason ?? "") }) },
+  "deposit.forfeit": { permissions: ["canIssueRefunds"], community: byRecord2("Deposit", "depositId"), serializable: true, run: (u, a, i) => requestForfeit(u, a, { depositId: i.depositId, reason: String(i.reason ?? "") }) },
+  "credit.apply": { permissions: PAYMENTS, community: byRecord2("ResidentCredit", "creditId"), serializable: true, run: (u, a, i) => applyCredit(u, a, { creditId: i.creditId, statementId: i.statementId }) },
+  "adjustment.create": { permissions: ADJUST, community: byStatement, serializable: true, run: (u, a, i) => requestBalanceChange(u, a, { kind: "adjustment", statementId: i.statementId, amountMinor: money2(i.amountMinor, "amount"), reason: String(i.reason ?? ""), supersedesId: i.supersedesId }) },
+  "writeoff.create": { permissions: ADJUST, community: byStatement, serializable: true, run: (u, a, i) => requestBalanceChange(u, a, { kind: "write_off", statementId: i.statementId, amountMinor: money2(i.amountMinor, "amount"), reason: String(i.reason ?? ""), supersedesId: i.supersedesId }) },
+  "care_level.assign": { permissions: BILLING, community: byRecord2("Stay", "stayId"), serializable: true, run: (u, a, i) => assignCareLevel(u, a, { stayId: i.stayId, points: i.points === void 0 || i.points === null ? null : Number(i.points), careLevelId: i.careLevelId, effectiveFrom: i.effectiveFrom, noticeDeliveredOn: i.noticeDeliveredOn, reason: i.reason }) },
+  "refund.request": { permissions: ["canIssueRefunds", "canManagePayments"], community: async (tx, i) => i.paymentId ? byRecord2("Payment", "paymentId")(tx, i) : i.creditId ? byRecord2("ResidentCredit", "creditId")(tx, i) : byRecord2("Deposit", "depositId")(tx, i), serializable: true, run: (u, a, i) => requestRefund(u, a, { paymentId: i.paymentId, depositId: i.depositId, creditId: i.creditId, amountMinor: money2(i.amountMinor, "amount"), reason: String(i.reason ?? "") }) },
   // Card and ACH (Stripe test), each running its own committed steps
   "payment.charge": {
     permissions: ["canManagePayments"],

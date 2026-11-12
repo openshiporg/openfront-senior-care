@@ -108,12 +108,12 @@ export async function portalDocuments(tx: Tx, principal: PortalPrincipal, reside
 /** Statements for a resident the account holds the `statements` scope for. Amounts are integer minor units as strings. */
 export async function portalStatements(tx: Tx, principal: PortalPrincipal, residentId: string) {
   await requireScope(tx, principal, residentId, 'statements')
-  const rows = await tx.statement.findMany({ where: { residentId }, orderBy: { issuedAt: 'desc' }, take: 24, select: { id: true, number: true, status: true, totalMinor: true, paidMinor: true, dueOn: true, issuedAt: true, lines: true } })
+  const rows = await tx.statement.findMany({ where: { residentId }, orderBy: { issuedAt: 'desc' }, take: 24, select: { id: true, number: true, status: true, totalMinor: true, paidMinor: true, adjustedMinor: true, dueOn: true, issuedAt: true, lines: true } })
   await auditPortalRead(tx, principal, 'portalStatements', residentId, ['Statement.number', 'Statement.totalMinor', 'Statement.lines'], rows.length)
   return {
     statements: rows.map(row => ({
       id: row.id, number: row.number, status: row.status, totalMinor: String(row.totalMinor ?? 0n), paidMinor: String(row.paidMinor ?? 0n),
-      balanceMinor: String((row.totalMinor ?? 0n) - (row.paidMinor ?? 0n)), dueOn: row.dueOn ? row.dueOn.toISOString().slice(0, 10) : null, issuedAt: row.issuedAt, lines: row.lines,
+      balanceMinor: String((row.totalMinor ?? 0n) - (row.paidMinor ?? 0n) - (row.adjustedMinor ?? 0n)), dueOn: row.dueOn ? row.dueOn.toISOString().slice(0, 10) : null, issuedAt: row.issuedAt, lines: row.lines,
     })),
   }
 }
