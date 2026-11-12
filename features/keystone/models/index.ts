@@ -11,6 +11,8 @@ import * as clinical from './clinical'
 import * as medications from './medications'
 import * as safety from './safety'
 import * as workflows from './workflows'
+import * as billing from './billing'
+import * as trust from './trust'
 
 const { SETTINGS: _settings, ...platformLists } = platform
 const { AGENT_SCOPES: _scopes, PHI_AGENT_SCOPES: _phiScopes, PROPOSAL_KINDS: _kinds, ...agentLists } = agents
@@ -21,6 +23,8 @@ const { LEAD_STATUSES: _lead, PORTAL_SCOPES: _portal, AUTHORITY_BASES: _ab, SCOP
 const { NOTE_KINDS: _nk, VITAL_KINDS: _vk, ORDER_KINDS: _ok, TASK_KINDS: _tk, rl: _rl, scope: _sc, stamps: _st, choice: _ch, ...clinicalLists } = clinical
 const { DRUG_SCHEDULES: _ds, SUPPLY_KINDS: _sk, MOVEMENT_KINDS: _mk, SLOT_STATUSES: _ss, ADMIN_OUTCOMES: _ao, BALANCE_READERS: _br, ...medicationLists } = medications
 const { INCIDENT_KINDS: _ik, ...safetyLists } = safety
+const { RATE_KINDS: _rk, CHARGE_KINDS: _chk, PAYMENT_METHODS: _pm, DEPOSIT_KINDS: _dk, ...billingLists } = billing
+const { TRUST_BUCKETS: _tb, TRUST_TX_KINDS: _ttk, ...trustLists } = trust
 
 export const models = {
   User,
@@ -36,6 +40,8 @@ export const models = {
   ...medicationLists,
   ...safetyLists,
   ...workflows,
+  ...billingLists,
+  ...trustLists,
 }
 
 export default models

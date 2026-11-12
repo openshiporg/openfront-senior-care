@@ -1,5 +1,5 @@
 import {
-  Activity, AlertTriangle, BedDouble, Bell, Pill, Lock, ShieldPlus, Stethoscope, Sparkles, BookOpenCheck, CalendarClock, ClipboardCheck, ClipboardList, Hourglass, KeyRound, ListChecks, LucideIcon, Moon, Settings, Store, Users,
+  Receipt, Tags, Landmark, PiggyBank, Activity, AlertTriangle, BedDouble, Bell, Pill, Lock, ShieldPlus, Stethoscope, Sparkles, BookOpenCheck, CalendarClock, ClipboardCheck, ClipboardList, Hourglass, KeyRound, ListChecks, LucideIcon, Moon, Settings, Store, Users,
 } from 'lucide-react'
 
 export interface PlatformNavItem {
@@ -40,6 +40,11 @@ export const platformNavItems: PlatformNavItem[] = [
   { title: 'Waitlist', href: '/platform/sales/waitlist', color: 'amber', description: 'Waitlist by apartment type and setting; offers and holds.', icon: Hourglass, group: 'sales' },
   { title: 'Storefront', href: '/platform/sales/storefront', color: 'cyan', description: 'Storefront copy, starting prices, availability and tour times.', icon: Store, group: 'sales' },
 
+  { title: 'Billing', href: '/platform/billing', color: 'emerald', description: 'Month-end close, statements and payments.', icon: Receipt, group: 'billing' },
+  { title: 'Rates and notices', href: '/platform/billing/rates', color: 'blue', description: 'Rate schedules and rate-change notices.', icon: Tags, group: 'billing' },
+  { title: 'Medicaid liability', href: '/platform/billing/medicaid', color: 'indigo', description: 'Patient liability with reply and appeal deadlines.', icon: Landmark, group: 'billing' },
+  { title: 'Resident funds', href: '/platform/trust', color: 'amber', description: 'Resident trust ledgers, withdrawals and reconciliation.', icon: PiggyBank, group: 'billing' },
+
   { title: 'Approvals', href: '/platform/approvals', color: 'amber', description: 'Maker-checker requests waiting for a second person.', icon: ClipboardCheck, group: 'standalone' },
   { title: 'Compliance clocks', href: '/platform/compliance', color: 'rose', description: 'Regulatory clocks: due, overdue and satisfied.', icon: CalendarClock, group: 'standalone' },
 
@@ -54,6 +59,7 @@ export const SHIPPED_ROUTES = new Set<string>([
   '/platform/census', '/platform/census/residents', '/platform/census/events', '/platform/census/midnight',
   '/platform/clinical', '/platform/emar', '/platform/counts', '/platform/incidents', '/platform/ipac', '/platform/tasks', '/platform/findings',
   '/platform/sales', '/platform/sales/waitlist', '/platform/sales/storefront',
+  '/platform/billing', '/platform/billing/rates', '/platform/billing/medicaid', '/platform/trust',
   '/platform/approvals', '/platform/compliance', '/platform/privacy/break-glass', '/platform/audit',
 ])
 
@@ -64,6 +70,7 @@ export const platformStandaloneItems = shipped.filter(item => item.group === 'st
 export const platformNavGroups: PlatformNavGroup[] = [
   { id: 'census', title: 'Census', icon: BedDouble, items: shipped.filter(i => i.group === 'census') },
   { id: 'clinical', title: 'Clinical', icon: Stethoscope, items: shipped.filter(i => i.group === 'clinical') },
+  { id: 'billing', title: 'Billing', icon: Receipt, items: shipped.filter(i => i.group === 'billing') },
   { id: 'sales', title: 'Sales', icon: ClipboardList, items: shipped.filter(i => i.group === 'sales') },
   { id: 'operator', title: 'Operator', icon: Settings, items: shipped.filter(i => i.group === 'operator') },
 ]

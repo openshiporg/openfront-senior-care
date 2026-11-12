@@ -70,3 +70,8 @@ export function allocateMinor(total: bigint, weights: DecimalInput[]): bigint[] 
   for (let i = 0; leftover > 0n; i = (i + 1) % order.length, leftover -= 1n) shares[order[i].index] += 1n
   return negative ? shares.map(x => -x) : shares
 }
+
+/** An exact decimal amount already in minor units, rounded half-even to a whole minor unit. */
+export function roundToMinor(value: DecimalInput): bigint {
+  return BigInt(dec(value).toDecimalPlaces(0, Decimal.ROUND_HALF_EVEN).toFixed(0))
+}

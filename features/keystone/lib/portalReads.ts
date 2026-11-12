@@ -104,3 +104,29 @@ export async function portalDocuments(tx: Tx, principal: PortalPrincipal, reside
   await auditPortalRead(tx, principal, 'portalDocuments', residentId, ['Document.title', 'NoticeDelivery.kind'], docs.length + notices.length)
   return { documents: docs, notices }
 }
+
+/** Statements for a resident the account holds the `statements` scope for. Amounts are integer minor units as strings. */
+export async function portalStatements(tx: Tx, principal: PortalPrincipal, residentId: string) {
+  await requireScope(tx, principal, residentId, 'statements')
+  const rows = await tx.statement.findMany({ where: { residentId }, orderBy: { issuedAt: 'desc' }, take: 24, select: { id: true, number: true, status: true, totalMinor: true, paidMinor: true, dueOn: true, issuedAt: true, lines: true } })
+  await auditPortalRead(tx, principal, 'portalStatements', residentId, ['Statement.number', 'Statement.totalMinor', 'Statement.lines'], rows.length)
+  return {
+    statements: rows.map(row => ({
+      id: row.id, number: row.number, status: row.status, totalMinor: String(row.totalMinor ?? 0n), paidMinor: String(row.paidMinor ?? 0n),
+      balanceMinor: String((row.totalMinor ?? 0n) - (row.paidMinor ?? 0n)), dueOn: row.dueOn ? row.dueOn.toISOString().slice(0, 10) : null, issuedAt: row.issuedAt, lines: row.lines,
+    })),
+  }
+}
+
+/** The resident's funds balance (client-liability credits less debits) for a `trust_balance` grant. Read only. */
+export async function portalTrustBalance(tx: Tx, principal: PortalPrincipal, residentId: string) {
+  await requireScope(tx, principal, residentId, 'trust_balance')
+  const ledger = await tx.residentTrustLedger.findFirst({ where: { residentId }, select: { id: true, status: true } })
+  let balance = 0n
+  if (ledger) {
+    const lines = await tx.trustLedgerLine.findMany({ where: { ledgerId: ledger.id, bucket: 'client_liability' }, select: { side: true, amountMinor: true } })
+    for (const line of lines) balance += line.side === 'credit' ? (line.amountMinor ?? 0n) : -(line.amountMinor ?? 0n)
+  }
+  await auditPortalRead(tx, principal, 'portalTrustBalance', residentId, ['ResidentTrustLedger.balance'], 1)
+  return { hasLedger: Boolean(ledger), status: ledger?.status ?? null, balanceMinor: balance.toString() }
+}

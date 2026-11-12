@@ -10,6 +10,7 @@ import * as census from './census'
 import * as front from './frontOfHouse'
 import * as reads from './reads'
 import * as clinical from './clinical'
+import * as billing from './billing'
 import * as workflowReads from './workflowReads'
 import '../lib/operatorControls'
 import '../lib/censusCorrection'
@@ -36,6 +37,8 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         portalUpdates(residentId: ID!): JSON
         portalCalendar(residentId: ID!): JSON
         portalDocuments(residentId: ID!): JSON
+        portalStatements(residentId: ID!): JSON
+        portalTrustBalance(residentId: ID!): JSON
         listBlockTypes: JSON
         getBlockType(code: String!): JSON
         listWorkflows(communityId: ID!): JSON
@@ -50,6 +53,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         loadOperatorSetup(idempotencyKey: String!): JSON
         loadCensusSetup(idempotencyKey: String!): JSON
         loadClinicalSetup(idempotencyKey: String!): JSON
+        loadBillingSetup(idempotencyKey: String!): JSON
         refreshTimedStates(idempotencyKey: String!): JSON
         decideApprovalRequest(requestId: ID!, decision: String!, reason: String, expectedVersion: Int!, idempotencyKey: String!): JSON
         cancelApprovalRequest(requestId: ID!, expectedVersion: Int!, reason: String, idempotencyKey: String!): JSON
@@ -105,6 +109,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
 
         clinicalCommand(op: String!, input: JSON, idempotencyKey: String!): JSON
         runWorkflowsOnLoad(communityId: ID!, idempotencyKey: String!): JSON
+        billingCommand(op: String!, input: JSON, idempotencyKey: String!): JSON
       }
     `,
     resolvers: {
@@ -120,6 +125,8 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         portalUpdates: op(front.portalUpdatesQuery),
         portalCalendar: op(front.portalCalendarQuery),
         portalDocuments: op(front.portalDocumentsQuery),
+        portalStatements: op(front.portalStatementsQuery),
+        portalTrustBalance: op(front.portalTrustBalanceQuery),
         listBlockTypes: op(workflowReads.listBlockTypes),
         getBlockType: op(workflowReads.getBlockType),
         listWorkflows: op(workflowReads.listWorkflows),
@@ -133,6 +140,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         loadOperatorSetup: op(setup.loadOperatorSetup),
         loadCensusSetup: op(setup.loadCensusSetup),
         loadClinicalSetup: op(setup.loadClinicalSetup),
+        loadBillingSetup: op(setup.loadBillingSetup),
         refreshTimedStates: op(front.refreshTimedStatesMutation),
         decideApprovalRequest: op(approvals.decideApprovalRequest),
         cancelApprovalRequest: op(approvals.cancelApprovalRequest),
@@ -188,6 +196,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
 
         clinicalCommand: op(clinical.clinicalCommand),
         runWorkflowsOnLoad: op(clinical.runWorkflowsOnLoad),
+        billingCommand: op(billing.billingCommand),
       },
     },
   })

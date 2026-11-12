@@ -3,6 +3,7 @@ import { command } from '../lib/command'
 import { seedOperatorPlatform } from '../seed/platform'
 import { runCensusSeed } from '../seed/census'
 import { seedClinical } from '../seed/clinical'
+import { seedBilling } from '../seed/billing'
 
 /** Onboarding: load the Ridgeline Senior Living / Maple Ridge spine (synthetic=true). Idempotent per key and per record. */
 export async function loadOperatorSetup(_root: unknown, args: { idempotencyKey: string }, context: any) {
@@ -30,5 +31,13 @@ export async function loadClinicalSetup(_root: unknown, args: { idempotencyKey: 
   const actor = actorFromSession(context.session)
   requirePermission(actor, 'canManageOnboarding')
   const result = await command(context.prisma, { name: 'setup.load_clinical', actor, idempotencyKey: args.idempotencyKey, params: {} }, uow => seedClinical(uow, actor))
+  return { replay: result.replay, ...result.value }
+}
+
+/** Onboarding: Phase 3 rates, care levels, charge list and the resident funds trust account. Idempotent. */
+export async function loadBillingSetup(_root: unknown, args: { idempotencyKey: string }, context: any) {
+  const actor = actorFromSession(context.session)
+  requirePermission(actor, 'canManageOnboarding')
+  const result = await command(context.prisma, { name: 'setup.load_billing', actor, idempotencyKey: args.idempotencyKey, params: {} }, uow => seedBilling(uow, actor))
   return { replay: result.replay, ...result.value }
 }

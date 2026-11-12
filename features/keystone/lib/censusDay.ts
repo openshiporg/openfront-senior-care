@@ -82,6 +82,72 @@ export async function deriveCensusDay(tx: Tx, communityId: string, date: string)
   return { timeZone, rows, totals }
 }
 
+/**
+ * The same rows as `deriveCensusDay`, for many dates, from one load of the events, coverage and places. The month-end close
+ * reads thirty-one days; this keeps it to a handful of queries instead of a few hundred.
+ */
+export async function deriveCensusRange(tx: Tx, communityId: string, dates: readonly string[]) {
+  for (const date of dates) if (!DATE.test(date)) throw new DomainError(Codes.INVALID_INPUT, 'Date must be YYYY-MM-DD.', { field: 'date' })
+  const timeZone = await timeZoneOf(tx, communityId)
+  type Row = { stayId: string; setting: string; presence: string; bedId: string | null; apartmentId: string | null; unitId: string | null; coverageId: string | null; payerKind: string }
+  const out = new Map<string, Row[]>()
+  if (!dates.length) return out
+  const first = [...dates].sort()[0]
+  const stays = await tx.stay.findMany({
+    where: { communityId, admittedAt: { not: null }, OR: [{ dischargedAt: null }, { dischargedAt: { gte: new Date(day(first).getTime() - 86_400_000) } }] },
+    select: { id: true, setting: true },
+  })
+  const stayIds = stays.map(stay => stay.id)
+  const [eventRows, voidRows, coverages] = await Promise.all([
+    tx.censusEvent.findMany({ where: { stayId: { in: stayIds }, voidsEventId: null, kind: { not: 'correction' } }, orderBy: [{ effectiveAt: 'asc' }, { seq: 'asc' }] }),
+    tx.censusEvent.findMany({ where: { stayId: { in: stayIds }, voidsEventId: { not: null } }, select: { voidsEventId: true } }),
+    tx.coveragePeriod.findMany({
+      where: { stayId: { in: stayIds }, rank: 'primary', status: { in: ['active', 'ending', 'ended', 'retro_approved'] } },
+      orderBy: { startDate: 'desc' }, select: { id: true, stayId: true, startDate: true, endDate: true, payer: { select: { kind: true } } },
+    }),
+  ])
+  const voided = new Set(voidRows.map(row => row.voidsEventId))
+  const eventsByStay = new Map<string, CensusEventInput[]>()
+  for (const row of eventRows) {
+    if (voided.has(row.id) || !row.stayId) continue
+    const list = eventsByStay.get(row.stayId) ?? []
+    list.push({ seq: list.length + 1, kind: row.kind as CensusEventKind, effectiveAt: row.effectiveAt, toBedId: row.toBedId, toApartmentId: row.toApartmentId, leaveKind: row.leaveKind, holdElected: row.holdElected, holdPaidBy: row.holdPaidBy, dischargeDisposition: row.dischargeDisposition })
+    eventsByStay.set(row.stayId, list)
+  }
+  const projectedByDate = new Map<string, { stay: (typeof stays)[number]; projection: ReturnType<typeof presenceAt> }[]>()
+  const bedIds = new Set<string>()
+  const apartmentIds = new Set<string>()
+  for (const date of dates) {
+    const projected = stays.map(stay => ({ stay, projection: presenceAt(eventsByStay.get(stay.id) ?? [], timeZone, date) })).filter(({ projection }) => projection.presence === 'in_house' || projection.presence === 'on_leave_hold')
+    projectedByDate.set(date, projected)
+    for (const { projection } of projected) {
+      const bedId = projection.presence === 'in_house' ? projection.currentBedId : projection.heldBedId
+      if (bedId) bedIds.add(bedId)
+      if (projection.currentApartmentId) apartmentIds.add(projection.currentApartmentId)
+    }
+  }
+  const [beds, apartments] = await Promise.all([
+    bedIds.size ? tx.bed.findMany({ where: { id: { in: [...bedIds] } }, select: { id: true, room: { select: { unitId: true } } } }) : Promise.resolve([]),
+    apartmentIds.size ? tx.apartment.findMany({ where: { id: { in: [...apartmentIds] } }, select: { id: true, unitId: true } }) : Promise.resolve([]),
+  ])
+  const unitOfBed = new Map(beds.map(bed => [bed.id, bed.room?.unitId ?? null]))
+  const unitOfApartment = new Map(apartments.map(apartment => [apartment.id, apartment.unitId]))
+  for (const date of dates) {
+    const start = day(date).getTime()
+    const rows: Row[] = []
+    for (const { stay, projection } of projectedByDate.get(date) ?? []) {
+      const bedId = projection.presence === 'in_house' ? projection.currentBedId : projection.heldBedId
+      const apartmentId = projection.currentApartmentId
+      const unitId = bedId ? unitOfBed.get(bedId) ?? null : apartmentId ? unitOfApartment.get(apartmentId) ?? null : null
+      // Latest start first, so the first period covering the day wins, as in the single-day query.
+      const coverage = coverages.find(row => row.stayId === stay.id && row.startDate.getTime() <= start && (!row.endDate || row.endDate.getTime() > start))
+      rows.push({ stayId: stay.id, setting: stay.setting, presence: projection.presence, bedId, apartmentId, unitId, coverageId: coverage?.id ?? null, payerKind: coverage?.payer?.kind ?? 'uncovered' })
+    }
+    out.set(date, rows)
+  }
+  return out
+}
+
 /** Writes CensusDay rows for an open date. Unchanged rows stay; changed ones are superseded. */
 export async function snapshotCensusDay(uow: UnitOfWork, actor: Actor, input: { communityId: string; date: string; runId?: string | null }) {
   const closed = await closedThrough(uow.tx, input.communityId)

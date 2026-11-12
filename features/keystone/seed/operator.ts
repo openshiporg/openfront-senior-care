@@ -77,6 +77,8 @@ export const APPROVAL_POLICIES: PolicySeed[] = [
   { action: 'role.assign_approval', description: 'Give a person a role that can approve.', requiredPermission: 'canManageRoles', expiresAfterMinutes: 1440 },
   { action: 'incident.downgrade', description: 'Change a reportable incident to not reportable (cancels its report clocks).', requiredPermission: 'canApproveIncidentDowngrade', expiresAfterMinutes: 1440 },
   { action: 'workflow.activate', description: 'Turn on a workflow for a community.', requiredPermission: 'canApproveWorkflows', expiresAfterMinutes: 7 * 1440 },
+  { action: 'trust.withdraw', description: 'Sign a resident trust withdrawal over the threshold (never the person who prepared it).', requiredPermission: 'canApproveTrust', expiresAfterMinutes: 1440 },
+  { action: 'refund.issue', description: 'Approve a refund over the threshold.', requiredPermission: 'canIssueRefunds', expiresAfterMinutes: 1440 },
   { action: 'rate.publish', description: 'Publish a rate schedule.', requiredPermission: 'canApproveRates', expiresAfterMinutes: 1440 },
 ]
 

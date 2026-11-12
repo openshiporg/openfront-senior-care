@@ -12693,6 +12693,1913 @@ input WorkflowActivationRelateToManyForCreateInput {
   connect: [WorkflowActivationWhereUniqueInput!]
 }
 
+type BillingPeriod {
+  id: ID!
+  community: Community
+  month: CalendarDay
+  status: String
+  derivationHash: String
+  statementCount: Int
+  closedAt: DateTime
+  closedBy: User
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input BillingPeriodWhereUniqueInput {
+  id: ID
+}
+
+input BillingPeriodWhereInput {
+  AND: [BillingPeriodWhereInput!]
+  OR: [BillingPeriodWhereInput!]
+  NOT: [BillingPeriodWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  month: CalendarDayNullableFilter
+  status: StringFilter
+  derivationHash: StringFilter
+  statementCount: IntNullableFilter
+  closedAt: DateTimeNullableFilter
+  closedBy: UserWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input BillingPeriodOrderByInput {
+  id: OrderDirection
+  month: OrderDirection
+  status: OrderDirection
+  derivationHash: OrderDirection
+  statementCount: OrderDirection
+  closedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input BillingPeriodUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  month: CalendarDay
+  status: String
+  derivationHash: String
+  statementCount: Int
+  closedAt: DateTime
+  closedBy: UserRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input BillingPeriodUpdateArgs {
+  where: BillingPeriodWhereUniqueInput!
+  data: BillingPeriodUpdateInput!
+}
+
+input BillingPeriodCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  month: CalendarDay
+  status: String
+  derivationHash: String
+  statementCount: Int
+  closedAt: DateTime
+  closedBy: UserRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type CareLevel {
+  id: ID!
+  community: Community
+  code: String
+  name: String
+  setting: String
+  minPoints: Int
+  maxPoints: Int
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input CareLevelWhereUniqueInput {
+  id: ID
+}
+
+input CareLevelWhereInput {
+  AND: [CareLevelWhereInput!]
+  OR: [CareLevelWhereInput!]
+  NOT: [CareLevelWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  code: StringFilter
+  name: StringFilter
+  setting: StringFilter
+  minPoints: IntFilter
+  maxPoints: IntFilter
+  status: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input CareLevelOrderByInput {
+  id: OrderDirection
+  code: OrderDirection
+  name: OrderDirection
+  setting: OrderDirection
+  minPoints: OrderDirection
+  maxPoints: OrderDirection
+  status: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input CareLevelUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  code: String
+  name: String
+  setting: String
+  minPoints: Int
+  maxPoints: Int
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input CareLevelUpdateArgs {
+  where: CareLevelWhereUniqueInput!
+  data: CareLevelUpdateInput!
+}
+
+input CareLevelCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  code: String
+  name: String
+  setting: String
+  minPoints: Int
+  maxPoints: Int
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type CareLevelAssignment {
+  id: ID!
+  community: Community
+  resident: Resident
+  stay: Stay
+  careLevel: CareLevel
+  points: Int
+  effectiveFrom: CalendarDay
+  noticeDeliveredOn: CalendarDay
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input CareLevelAssignmentWhereUniqueInput {
+  id: ID
+}
+
+input CareLevelAssignmentWhereInput {
+  AND: [CareLevelAssignmentWhereInput!]
+  OR: [CareLevelAssignmentWhereInput!]
+  NOT: [CareLevelAssignmentWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  stay: StayWhereInput
+  careLevel: CareLevelWhereInput
+  points: IntFilter
+  effectiveFrom: CalendarDayNullableFilter
+  noticeDeliveredOn: CalendarDayNullableFilter
+  status: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input CareLevelAssignmentOrderByInput {
+  id: OrderDirection
+  points: OrderDirection
+  effectiveFrom: OrderDirection
+  noticeDeliveredOn: OrderDirection
+  status: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input CareLevelAssignmentUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  stay: StayRelateToOneForUpdateInput
+  careLevel: CareLevelRelateToOneForUpdateInput
+  points: Int
+  effectiveFrom: CalendarDay
+  noticeDeliveredOn: CalendarDay
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input CareLevelRelateToOneForUpdateInput {
+  create: CareLevelCreateInput
+  connect: CareLevelWhereUniqueInput
+  disconnect: Boolean
+}
+
+input CareLevelAssignmentUpdateArgs {
+  where: CareLevelAssignmentWhereUniqueInput!
+  data: CareLevelAssignmentUpdateInput!
+}
+
+input CareLevelAssignmentCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  stay: StayRelateToOneForCreateInput
+  careLevel: CareLevelRelateToOneForCreateInput
+  points: Int
+  effectiveFrom: CalendarDay
+  noticeDeliveredOn: CalendarDay
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input CareLevelRelateToOneForCreateInput {
+  create: CareLevelCreateInput
+  connect: CareLevelWhereUniqueInput
+}
+
+type Charge {
+  id: ID!
+  community: Community
+  resident: Resident
+  stay: Stay
+  period: BillingPeriod
+  date: CalendarDay
+  kind: String
+  responsibility: String
+  payerKey: String
+  payer: Payer
+  description: String
+  amountMinor: BigInt
+  source: String
+  status: String
+  supersededBy: Charge
+  adjustsCharge: Charge
+  derivation: JSON
+  derivationHash: String
+  createdAt: DateTime
+}
+
+input ChargeWhereUniqueInput {
+  id: ID
+}
+
+input ChargeWhereInput {
+  AND: [ChargeWhereInput!]
+  OR: [ChargeWhereInput!]
+  NOT: [ChargeWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  stay: StayWhereInput
+  period: BillingPeriodWhereInput
+  date: CalendarDayNullableFilter
+  kind: StringFilter
+  responsibility: StringFilter
+  payerKey: StringFilter
+  payer: PayerWhereInput
+  description: StringFilter
+  amountMinor: BigIntFilter
+  source: StringFilter
+  status: StringFilter
+  supersededBy: ChargeWhereInput
+  adjustsCharge: ChargeWhereInput
+  derivationHash: StringFilter
+  createdAt: DateTimeNullableFilter
+}
+
+input ChargeOrderByInput {
+  id: OrderDirection
+  date: OrderDirection
+  kind: OrderDirection
+  responsibility: OrderDirection
+  payerKey: OrderDirection
+  description: OrderDirection
+  amountMinor: OrderDirection
+  source: OrderDirection
+  status: OrderDirection
+  derivationHash: OrderDirection
+  createdAt: OrderDirection
+}
+
+input ChargeUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  stay: StayRelateToOneForUpdateInput
+  period: BillingPeriodRelateToOneForUpdateInput
+  date: CalendarDay
+  kind: String
+  responsibility: String
+  payerKey: String
+  payer: PayerRelateToOneForUpdateInput
+  description: String
+  amountMinor: BigInt
+  source: String
+  status: String
+  supersededBy: ChargeRelateToOneForUpdateInput
+  adjustsCharge: ChargeRelateToOneForUpdateInput
+  derivation: JSON
+  derivationHash: String
+  createdAt: DateTime
+}
+
+input BillingPeriodRelateToOneForUpdateInput {
+  create: BillingPeriodCreateInput
+  connect: BillingPeriodWhereUniqueInput
+  disconnect: Boolean
+}
+
+input ChargeRelateToOneForUpdateInput {
+  create: ChargeCreateInput
+  connect: ChargeWhereUniqueInput
+  disconnect: Boolean
+}
+
+input ChargeUpdateArgs {
+  where: ChargeWhereUniqueInput!
+  data: ChargeUpdateInput!
+}
+
+input ChargeCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  stay: StayRelateToOneForCreateInput
+  period: BillingPeriodRelateToOneForCreateInput
+  date: CalendarDay
+  kind: String
+  responsibility: String
+  payerKey: String
+  payer: PayerRelateToOneForCreateInput
+  description: String
+  amountMinor: BigInt
+  source: String
+  status: String
+  supersededBy: ChargeRelateToOneForCreateInput
+  adjustsCharge: ChargeRelateToOneForCreateInput
+  derivation: JSON
+  derivationHash: String
+  createdAt: DateTime
+}
+
+input BillingPeriodRelateToOneForCreateInput {
+  create: BillingPeriodCreateInput
+  connect: BillingPeriodWhereUniqueInput
+}
+
+input ChargeRelateToOneForCreateInput {
+  create: ChargeCreateInput
+  connect: ChargeWhereUniqueInput
+}
+
+type ChargeItem {
+  id: ID!
+  community: Community
+  code: String
+  name: String
+  kind: String
+  unitPriceMinor: BigInt
+  status: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ChargeItemWhereUniqueInput {
+  id: ID
+}
+
+input ChargeItemWhereInput {
+  AND: [ChargeItemWhereInput!]
+  OR: [ChargeItemWhereInput!]
+  NOT: [ChargeItemWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  code: StringFilter
+  name: StringFilter
+  kind: StringFilter
+  unitPriceMinor: BigIntFilter
+  status: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input ChargeItemOrderByInput {
+  id: OrderDirection
+  code: OrderDirection
+  name: OrderDirection
+  kind: OrderDirection
+  unitPriceMinor: OrderDirection
+  status: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input ChargeItemUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  code: String
+  name: String
+  kind: String
+  unitPriceMinor: BigInt
+  status: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ChargeItemUpdateArgs {
+  where: ChargeItemWhereUniqueInput!
+  data: ChargeItemUpdateInput!
+}
+
+input ChargeItemCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  code: String
+  name: String
+  kind: String
+  unitPriceMinor: BigInt
+  status: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type Deposit {
+  id: ID!
+  community: Community
+  resident: Resident
+  kind: String
+  amountMinor: BigInt
+  method: String
+  status: String
+  receivedOn: CalendarDay
+  appliedPayment: Payment
+  resolvedAt: DateTime
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input DepositWhereUniqueInput {
+  id: ID
+}
+
+input DepositWhereInput {
+  AND: [DepositWhereInput!]
+  OR: [DepositWhereInput!]
+  NOT: [DepositWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  kind: StringFilter
+  amountMinor: BigIntFilter
+  method: StringFilter
+  status: StringFilter
+  receivedOn: CalendarDayNullableFilter
+  appliedPayment: PaymentWhereInput
+  resolvedAt: DateTimeNullableFilter
+  note: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input DepositOrderByInput {
+  id: OrderDirection
+  kind: OrderDirection
+  amountMinor: OrderDirection
+  method: OrderDirection
+  status: OrderDirection
+  receivedOn: OrderDirection
+  resolvedAt: OrderDirection
+  note: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input DepositUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  kind: String
+  amountMinor: BigInt
+  method: String
+  status: String
+  receivedOn: CalendarDay
+  appliedPayment: PaymentRelateToOneForUpdateInput
+  resolvedAt: DateTime
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PaymentRelateToOneForUpdateInput {
+  create: PaymentCreateInput
+  connect: PaymentWhereUniqueInput
+  disconnect: Boolean
+}
+
+input DepositUpdateArgs {
+  where: DepositWhereUniqueInput!
+  data: DepositUpdateInput!
+}
+
+input DepositCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  kind: String
+  amountMinor: BigInt
+  method: String
+  status: String
+  receivedOn: CalendarDay
+  appliedPayment: PaymentRelateToOneForCreateInput
+  resolvedAt: DateTime
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PaymentRelateToOneForCreateInput {
+  create: PaymentCreateInput
+  connect: PaymentWhereUniqueInput
+}
+
+type MedicaidLiability {
+  id: ID!
+  community: Community
+  resident: Resident
+  stay: Stay
+  month: CalendarDay
+  liabilityMinor: BigInt
+  status: String
+  noticeReceivedOn: CalendarDay
+  infoRequestedOn: CalendarDay
+  infoRespondedOn: CalendarDay
+  appealFiledOn: CalendarDay
+  supersededBy: MedicaidLiability
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MedicaidLiabilityWhereUniqueInput {
+  id: ID
+}
+
+input MedicaidLiabilityWhereInput {
+  AND: [MedicaidLiabilityWhereInput!]
+  OR: [MedicaidLiabilityWhereInput!]
+  NOT: [MedicaidLiabilityWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  stay: StayWhereInput
+  month: CalendarDayNullableFilter
+  liabilityMinor: BigIntFilter
+  status: StringFilter
+  noticeReceivedOn: CalendarDayNullableFilter
+  infoRequestedOn: CalendarDayNullableFilter
+  infoRespondedOn: CalendarDayNullableFilter
+  appealFiledOn: CalendarDayNullableFilter
+  supersededBy: MedicaidLiabilityWhereInput
+  note: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input MedicaidLiabilityOrderByInput {
+  id: OrderDirection
+  month: OrderDirection
+  liabilityMinor: OrderDirection
+  status: OrderDirection
+  noticeReceivedOn: OrderDirection
+  infoRequestedOn: OrderDirection
+  infoRespondedOn: OrderDirection
+  appealFiledOn: OrderDirection
+  note: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input MedicaidLiabilityUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  stay: StayRelateToOneForUpdateInput
+  month: CalendarDay
+  liabilityMinor: BigInt
+  status: String
+  noticeReceivedOn: CalendarDay
+  infoRequestedOn: CalendarDay
+  infoRespondedOn: CalendarDay
+  appealFiledOn: CalendarDay
+  supersededBy: MedicaidLiabilityRelateToOneForUpdateInput
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MedicaidLiabilityRelateToOneForUpdateInput {
+  create: MedicaidLiabilityCreateInput
+  connect: MedicaidLiabilityWhereUniqueInput
+  disconnect: Boolean
+}
+
+input MedicaidLiabilityUpdateArgs {
+  where: MedicaidLiabilityWhereUniqueInput!
+  data: MedicaidLiabilityUpdateInput!
+}
+
+input MedicaidLiabilityCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  stay: StayRelateToOneForCreateInput
+  month: CalendarDay
+  liabilityMinor: BigInt
+  status: String
+  noticeReceivedOn: CalendarDay
+  infoRequestedOn: CalendarDay
+  infoRespondedOn: CalendarDay
+  appealFiledOn: CalendarDay
+  supersededBy: MedicaidLiabilityRelateToOneForCreateInput
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MedicaidLiabilityRelateToOneForCreateInput {
+  create: MedicaidLiabilityCreateInput
+  connect: MedicaidLiabilityWhereUniqueInput
+}
+
+type Payment {
+  id: ID!
+  community: Community
+  resident: Resident
+  statement: Statement
+  method: String
+  status: String
+  amountMinor: BigInt
+  currency: String
+  idempotencyKey: String
+  providerRef: String
+  token: PaymentMethodToken
+  reference: String
+  failureCode: String
+  autopay: Boolean
+  initiatedBy: User
+  initiatedAt: DateTime
+  settledAt: DateTime
+  lastCheckedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PaymentWhereUniqueInput {
+  id: ID
+  idempotencyKey: String
+}
+
+input PaymentWhereInput {
+  AND: [PaymentWhereInput!]
+  OR: [PaymentWhereInput!]
+  NOT: [PaymentWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  statement: StatementWhereInput
+  method: StringFilter
+  status: StringFilter
+  amountMinor: BigIntFilter
+  currency: StringFilter
+  idempotencyKey: StringFilter
+  providerRef: StringFilter
+  token: PaymentMethodTokenWhereInput
+  reference: StringFilter
+  failureCode: StringFilter
+  autopay: BooleanFilter
+  initiatedBy: UserWhereInput
+  initiatedAt: DateTimeNullableFilter
+  settledAt: DateTimeNullableFilter
+  lastCheckedAt: DateTimeNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input PaymentOrderByInput {
+  id: OrderDirection
+  method: OrderDirection
+  status: OrderDirection
+  amountMinor: OrderDirection
+  currency: OrderDirection
+  idempotencyKey: OrderDirection
+  providerRef: OrderDirection
+  reference: OrderDirection
+  failureCode: OrderDirection
+  autopay: OrderDirection
+  initiatedAt: OrderDirection
+  settledAt: OrderDirection
+  lastCheckedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input PaymentUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  statement: StatementRelateToOneForUpdateInput
+  method: String
+  status: String
+  amountMinor: BigInt
+  currency: String
+  idempotencyKey: String
+  providerRef: String
+  token: PaymentMethodTokenRelateToOneForUpdateInput
+  reference: String
+  failureCode: String
+  autopay: Boolean
+  initiatedBy: UserRelateToOneForUpdateInput
+  initiatedAt: DateTime
+  settledAt: DateTime
+  lastCheckedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input StatementRelateToOneForUpdateInput {
+  create: StatementCreateInput
+  connect: StatementWhereUniqueInput
+  disconnect: Boolean
+}
+
+input PaymentMethodTokenRelateToOneForUpdateInput {
+  create: PaymentMethodTokenCreateInput
+  connect: PaymentMethodTokenWhereUniqueInput
+  disconnect: Boolean
+}
+
+input PaymentUpdateArgs {
+  where: PaymentWhereUniqueInput!
+  data: PaymentUpdateInput!
+}
+
+input PaymentCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  statement: StatementRelateToOneForCreateInput
+  method: String
+  status: String
+  amountMinor: BigInt
+  currency: String
+  idempotencyKey: String
+  providerRef: String
+  token: PaymentMethodTokenRelateToOneForCreateInput
+  reference: String
+  failureCode: String
+  autopay: Boolean
+  initiatedBy: UserRelateToOneForCreateInput
+  initiatedAt: DateTime
+  settledAt: DateTime
+  lastCheckedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input StatementRelateToOneForCreateInput {
+  create: StatementCreateInput
+  connect: StatementWhereUniqueInput
+}
+
+input PaymentMethodTokenRelateToOneForCreateInput {
+  create: PaymentMethodTokenCreateInput
+  connect: PaymentMethodTokenWhereUniqueInput
+}
+
+type PaymentAllocation {
+  id: ID!
+  community: Community
+  resident: Resident
+  payment: Payment
+  statement: Statement
+  amountMinor: BigInt
+  appliedAt: DateTime
+}
+
+input PaymentAllocationWhereUniqueInput {
+  id: ID
+}
+
+input PaymentAllocationWhereInput {
+  AND: [PaymentAllocationWhereInput!]
+  OR: [PaymentAllocationWhereInput!]
+  NOT: [PaymentAllocationWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  payment: PaymentWhereInput
+  statement: StatementWhereInput
+  amountMinor: BigIntFilter
+  appliedAt: DateTimeNullableFilter
+}
+
+input PaymentAllocationOrderByInput {
+  id: OrderDirection
+  amountMinor: OrderDirection
+  appliedAt: OrderDirection
+}
+
+input PaymentAllocationUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  payment: PaymentRelateToOneForUpdateInput
+  statement: StatementRelateToOneForUpdateInput
+  amountMinor: BigInt
+  appliedAt: DateTime
+}
+
+input PaymentAllocationUpdateArgs {
+  where: PaymentAllocationWhereUniqueInput!
+  data: PaymentAllocationUpdateInput!
+}
+
+input PaymentAllocationCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  payment: PaymentRelateToOneForCreateInput
+  statement: StatementRelateToOneForCreateInput
+  amountMinor: BigInt
+  appliedAt: DateTime
+}
+
+type PaymentEvent {
+  id: ID!
+  community: Community
+  providerEventId: String
+  type: String
+  payment: Payment
+  outcome: String
+  receivedAt: DateTime
+}
+
+input PaymentEventWhereUniqueInput {
+  id: ID
+  providerEventId: String
+}
+
+input PaymentEventWhereInput {
+  AND: [PaymentEventWhereInput!]
+  OR: [PaymentEventWhereInput!]
+  NOT: [PaymentEventWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  providerEventId: StringFilter
+  type: StringFilter
+  payment: PaymentWhereInput
+  outcome: StringFilter
+  receivedAt: DateTimeNullableFilter
+}
+
+input PaymentEventOrderByInput {
+  id: OrderDirection
+  providerEventId: OrderDirection
+  type: OrderDirection
+  outcome: OrderDirection
+  receivedAt: OrderDirection
+}
+
+input PaymentEventUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  providerEventId: String
+  type: String
+  payment: PaymentRelateToOneForUpdateInput
+  outcome: String
+  receivedAt: DateTime
+}
+
+input PaymentEventUpdateArgs {
+  where: PaymentEventWhereUniqueInput!
+  data: PaymentEventUpdateInput!
+}
+
+input PaymentEventCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  providerEventId: String
+  type: String
+  payment: PaymentRelateToOneForCreateInput
+  outcome: String
+  receivedAt: DateTime
+}
+
+type PaymentMethodToken {
+  id: ID!
+  community: Community
+  resident: Resident
+  provider: String
+  brand: String
+  last4: String
+  token: String
+  autopay: Boolean
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PaymentMethodTokenWhereUniqueInput {
+  id: ID
+}
+
+input PaymentMethodTokenWhereInput {
+  AND: [PaymentMethodTokenWhereInput!]
+  OR: [PaymentMethodTokenWhereInput!]
+  NOT: [PaymentMethodTokenWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  provider: StringFilter
+  brand: StringFilter
+  last4: StringFilter
+  token: StringFilter
+  autopay: BooleanFilter
+  status: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input PaymentMethodTokenOrderByInput {
+  id: OrderDirection
+  provider: OrderDirection
+  brand: OrderDirection
+  last4: OrderDirection
+  token: OrderDirection
+  autopay: OrderDirection
+  status: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input PaymentMethodTokenUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  provider: String
+  brand: String
+  last4: String
+  token: String
+  autopay: Boolean
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PaymentMethodTokenUpdateArgs {
+  where: PaymentMethodTokenWhereUniqueInput!
+  data: PaymentMethodTokenUpdateInput!
+}
+
+input PaymentMethodTokenCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  provider: String
+  brand: String
+  last4: String
+  token: String
+  autopay: Boolean
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type RateLine {
+  id: ID!
+  schedule: RateSchedule
+  kind: String
+  apartmentType: ApartmentType
+  careLevel: CareLevel
+  amountMinor: BigInt
+  per: String
+  proration: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input RateLineWhereUniqueInput {
+  id: ID
+}
+
+input RateLineWhereInput {
+  AND: [RateLineWhereInput!]
+  OR: [RateLineWhereInput!]
+  NOT: [RateLineWhereInput!]
+  id: IDFilter
+  schedule: RateScheduleWhereInput
+  kind: StringFilter
+  apartmentType: ApartmentTypeWhereInput
+  careLevel: CareLevelWhereInput
+  amountMinor: BigIntFilter
+  per: StringFilter
+  proration: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input RateLineOrderByInput {
+  id: OrderDirection
+  kind: OrderDirection
+  amountMinor: OrderDirection
+  per: OrderDirection
+  proration: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input RateLineUpdateInput {
+  schedule: RateScheduleRelateToOneForUpdateInput
+  kind: String
+  apartmentType: ApartmentTypeRelateToOneForUpdateInput
+  careLevel: CareLevelRelateToOneForUpdateInput
+  amountMinor: BigInt
+  per: String
+  proration: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input RateScheduleRelateToOneForUpdateInput {
+  create: RateScheduleCreateInput
+  connect: RateScheduleWhereUniqueInput
+  disconnect: Boolean
+}
+
+input RateLineUpdateArgs {
+  where: RateLineWhereUniqueInput!
+  data: RateLineUpdateInput!
+}
+
+input RateLineCreateInput {
+  schedule: RateScheduleRelateToOneForCreateInput
+  kind: String
+  apartmentType: ApartmentTypeRelateToOneForCreateInput
+  careLevel: CareLevelRelateToOneForCreateInput
+  amountMinor: BigInt
+  per: String
+  proration: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input RateScheduleRelateToOneForCreateInput {
+  create: RateScheduleCreateInput
+  connect: RateScheduleWhereUniqueInput
+}
+
+type RateSchedule {
+  id: ID!
+  community: Community
+  name: String
+  setting: String
+  effectiveFrom: CalendarDay
+  noticeDays: Int
+  status: String
+  publishedAt: DateTime
+  approval: ApprovalRequest
+  lines(where: RateLineWhereInput! = {}, orderBy: [RateLineOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RateLineWhereUniqueInput): [RateLine!]
+  linesCount(where: RateLineWhereInput! = {}): Int
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input RateScheduleWhereUniqueInput {
+  id: ID
+}
+
+input RateScheduleWhereInput {
+  AND: [RateScheduleWhereInput!]
+  OR: [RateScheduleWhereInput!]
+  NOT: [RateScheduleWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  name: StringFilter
+  setting: StringFilter
+  effectiveFrom: CalendarDayNullableFilter
+  noticeDays: IntFilter
+  status: StringFilter
+  publishedAt: DateTimeNullableFilter
+  approval: ApprovalRequestWhereInput
+  lines: RateLineManyRelationFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input RateLineManyRelationFilter {
+  every: RateLineWhereInput
+  some: RateLineWhereInput
+  none: RateLineWhereInput
+}
+
+input RateScheduleOrderByInput {
+  id: OrderDirection
+  name: OrderDirection
+  setting: OrderDirection
+  effectiveFrom: OrderDirection
+  noticeDays: OrderDirection
+  status: OrderDirection
+  publishedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input RateScheduleUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  name: String
+  setting: String
+  effectiveFrom: CalendarDay
+  noticeDays: Int
+  status: String
+  publishedAt: DateTime
+  approval: ApprovalRequestRelateToOneForUpdateInput
+  lines: RateLineRelateToManyForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input RateLineRelateToManyForUpdateInput {
+  disconnect: [RateLineWhereUniqueInput!]
+  set: [RateLineWhereUniqueInput!]
+  create: [RateLineCreateInput!]
+  connect: [RateLineWhereUniqueInput!]
+}
+
+input RateScheduleUpdateArgs {
+  where: RateScheduleWhereUniqueInput!
+  data: RateScheduleUpdateInput!
+}
+
+input RateScheduleCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  name: String
+  setting: String
+  effectiveFrom: CalendarDay
+  noticeDays: Int
+  status: String
+  publishedAt: DateTime
+  approval: ApprovalRequestRelateToOneForCreateInput
+  lines: RateLineRelateToManyForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input RateLineRelateToManyForCreateInput {
+  create: [RateLineCreateInput!]
+  connect: [RateLineWhereUniqueInput!]
+}
+
+type Refund {
+  id: ID!
+  community: Community
+  resident: Resident
+  payment: Payment
+  deposit: Deposit
+  amountMinor: BigInt
+  reason: String
+  status: String
+  approval: ApprovalRequest
+  refundRef: String
+  requestedBy: User
+  issuedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input RefundWhereUniqueInput {
+  id: ID
+}
+
+input RefundWhereInput {
+  AND: [RefundWhereInput!]
+  OR: [RefundWhereInput!]
+  NOT: [RefundWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  payment: PaymentWhereInput
+  deposit: DepositWhereInput
+  amountMinor: BigIntFilter
+  reason: StringFilter
+  status: StringFilter
+  approval: ApprovalRequestWhereInput
+  refundRef: StringFilter
+  requestedBy: UserWhereInput
+  issuedAt: DateTimeNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input RefundOrderByInput {
+  id: OrderDirection
+  amountMinor: OrderDirection
+  reason: OrderDirection
+  status: OrderDirection
+  refundRef: OrderDirection
+  issuedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input RefundUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  payment: PaymentRelateToOneForUpdateInput
+  deposit: DepositRelateToOneForUpdateInput
+  amountMinor: BigInt
+  reason: String
+  status: String
+  approval: ApprovalRequestRelateToOneForUpdateInput
+  refundRef: String
+  requestedBy: UserRelateToOneForUpdateInput
+  issuedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input DepositRelateToOneForUpdateInput {
+  create: DepositCreateInput
+  connect: DepositWhereUniqueInput
+  disconnect: Boolean
+}
+
+input RefundUpdateArgs {
+  where: RefundWhereUniqueInput!
+  data: RefundUpdateInput!
+}
+
+input RefundCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  payment: PaymentRelateToOneForCreateInput
+  deposit: DepositRelateToOneForCreateInput
+  amountMinor: BigInt
+  reason: String
+  status: String
+  approval: ApprovalRequestRelateToOneForCreateInput
+  refundRef: String
+  requestedBy: UserRelateToOneForCreateInput
+  issuedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input DepositRelateToOneForCreateInput {
+  create: DepositCreateInput
+  connect: DepositWhereUniqueInput
+}
+
+type Statement {
+  id: ID!
+  community: Community
+  resident: Resident
+  period: BillingPeriod
+  number: String
+  status: String
+  issuedAt: DateTime
+  dueOn: CalendarDay
+  totalMinor: BigInt
+  paidMinor: BigInt
+  lines: JSON
+  chargeHash: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input StatementWhereUniqueInput {
+  id: ID
+  number: String
+}
+
+input StatementWhereInput {
+  AND: [StatementWhereInput!]
+  OR: [StatementWhereInput!]
+  NOT: [StatementWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  period: BillingPeriodWhereInput
+  number: StringFilter
+  status: StringFilter
+  issuedAt: DateTimeNullableFilter
+  dueOn: CalendarDayNullableFilter
+  totalMinor: BigIntFilter
+  paidMinor: BigIntFilter
+  chargeHash: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input StatementOrderByInput {
+  id: OrderDirection
+  number: OrderDirection
+  status: OrderDirection
+  issuedAt: OrderDirection
+  dueOn: OrderDirection
+  totalMinor: OrderDirection
+  paidMinor: OrderDirection
+  chargeHash: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input StatementUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  period: BillingPeriodRelateToOneForUpdateInput
+  number: String
+  status: String
+  issuedAt: DateTime
+  dueOn: CalendarDay
+  totalMinor: BigInt
+  paidMinor: BigInt
+  lines: JSON
+  chargeHash: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input StatementUpdateArgs {
+  where: StatementWhereUniqueInput!
+  data: StatementUpdateInput!
+}
+
+input StatementCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  period: BillingPeriodRelateToOneForCreateInput
+  number: String
+  status: String
+  issuedAt: DateTime
+  dueOn: CalendarDay
+  totalMinor: BigInt
+  paidMinor: BigInt
+  lines: JSON
+  chargeHash: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type ResidentTrustLedger {
+  id: ID!
+  community: Community
+  resident: Resident
+  account: TrustAccount
+  reference: String
+  status: String
+  closedOn: CalendarDay
+  closedReason: String
+  conveyedOn: CalendarDay
+  conveyedTo: String
+  consentOnFile: Boolean
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ResidentTrustLedgerWhereUniqueInput {
+  id: ID
+  reference: String
+}
+
+input ResidentTrustLedgerWhereInput {
+  AND: [ResidentTrustLedgerWhereInput!]
+  OR: [ResidentTrustLedgerWhereInput!]
+  NOT: [ResidentTrustLedgerWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  account: TrustAccountWhereInput
+  reference: StringFilter
+  status: StringFilter
+  closedOn: CalendarDayNullableFilter
+  closedReason: StringNullableFilter
+  conveyedOn: CalendarDayNullableFilter
+  conveyedTo: StringFilter
+  consentOnFile: BooleanFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input ResidentTrustLedgerOrderByInput {
+  id: OrderDirection
+  reference: OrderDirection
+  status: OrderDirection
+  closedOn: OrderDirection
+  closedReason: OrderDirection
+  conveyedOn: OrderDirection
+  conveyedTo: OrderDirection
+  consentOnFile: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input ResidentTrustLedgerUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  account: TrustAccountRelateToOneForUpdateInput
+  reference: String
+  status: String
+  closedOn: CalendarDay
+  closedReason: String
+  conveyedOn: CalendarDay
+  conveyedTo: String
+  consentOnFile: Boolean
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input TrustAccountRelateToOneForUpdateInput {
+  create: TrustAccountCreateInput
+  connect: TrustAccountWhereUniqueInput
+  disconnect: Boolean
+}
+
+input ResidentTrustLedgerUpdateArgs {
+  where: ResidentTrustLedgerWhereUniqueInput!
+  data: ResidentTrustLedgerUpdateInput!
+}
+
+input ResidentTrustLedgerCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  account: TrustAccountRelateToOneForCreateInput
+  reference: String
+  status: String
+  closedOn: CalendarDay
+  closedReason: String
+  conveyedOn: CalendarDay
+  conveyedTo: String
+  consentOnFile: Boolean
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input TrustAccountRelateToOneForCreateInput {
+  create: TrustAccountCreateInput
+  connect: TrustAccountWhereUniqueInput
+}
+
+type TrustAccount {
+  id: ID!
+  community: Community
+  name: String
+  bankName: String
+  last4: String
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input TrustAccountWhereUniqueInput {
+  id: ID
+}
+
+input TrustAccountWhereInput {
+  AND: [TrustAccountWhereInput!]
+  OR: [TrustAccountWhereInput!]
+  NOT: [TrustAccountWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  name: StringFilter
+  bankName: StringFilter
+  last4: StringFilter
+  status: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input TrustAccountOrderByInput {
+  id: OrderDirection
+  name: OrderDirection
+  bankName: OrderDirection
+  last4: OrderDirection
+  status: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input TrustAccountUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  name: String
+  bankName: String
+  last4: String
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input TrustAccountUpdateArgs {
+  where: TrustAccountWhereUniqueInput!
+  data: TrustAccountUpdateInput!
+}
+
+input TrustAccountCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  name: String
+  bankName: String
+  last4: String
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type TrustLedgerLine {
+  id: ID!
+  community: Community
+  resident: Resident
+  transaction: TrustTransaction
+  ledger: ResidentTrustLedger
+  account: TrustAccount
+  bucket: String
+  side: String
+  amountMinor: BigInt
+  effectiveOn: CalendarDay
+  createdAt: DateTime
+}
+
+input TrustLedgerLineWhereUniqueInput {
+  id: ID
+}
+
+input TrustLedgerLineWhereInput {
+  AND: [TrustLedgerLineWhereInput!]
+  OR: [TrustLedgerLineWhereInput!]
+  NOT: [TrustLedgerLineWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  transaction: TrustTransactionWhereInput
+  ledger: ResidentTrustLedgerWhereInput
+  account: TrustAccountWhereInput
+  bucket: StringFilter
+  side: StringFilter
+  amountMinor: BigIntFilter
+  effectiveOn: CalendarDayNullableFilter
+  createdAt: DateTimeNullableFilter
+}
+
+input TrustLedgerLineOrderByInput {
+  id: OrderDirection
+  bucket: OrderDirection
+  side: OrderDirection
+  amountMinor: OrderDirection
+  effectiveOn: OrderDirection
+  createdAt: OrderDirection
+}
+
+input TrustLedgerLineUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  transaction: TrustTransactionRelateToOneForUpdateInput
+  ledger: ResidentTrustLedgerRelateToOneForUpdateInput
+  account: TrustAccountRelateToOneForUpdateInput
+  bucket: String
+  side: String
+  amountMinor: BigInt
+  effectiveOn: CalendarDay
+  createdAt: DateTime
+}
+
+input TrustTransactionRelateToOneForUpdateInput {
+  create: TrustTransactionCreateInput
+  connect: TrustTransactionWhereUniqueInput
+  disconnect: Boolean
+}
+
+input ResidentTrustLedgerRelateToOneForUpdateInput {
+  create: ResidentTrustLedgerCreateInput
+  connect: ResidentTrustLedgerWhereUniqueInput
+  disconnect: Boolean
+}
+
+input TrustLedgerLineUpdateArgs {
+  where: TrustLedgerLineWhereUniqueInput!
+  data: TrustLedgerLineUpdateInput!
+}
+
+input TrustLedgerLineCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  transaction: TrustTransactionRelateToOneForCreateInput
+  ledger: ResidentTrustLedgerRelateToOneForCreateInput
+  account: TrustAccountRelateToOneForCreateInput
+  bucket: String
+  side: String
+  amountMinor: BigInt
+  effectiveOn: CalendarDay
+  createdAt: DateTime
+}
+
+input TrustTransactionRelateToOneForCreateInput {
+  create: TrustTransactionCreateInput
+  connect: TrustTransactionWhereUniqueInput
+}
+
+input ResidentTrustLedgerRelateToOneForCreateInput {
+  create: ResidentTrustLedgerCreateInput
+  connect: ResidentTrustLedgerWhereUniqueInput
+}
+
+type TrustReconciliation {
+  id: ID!
+  community: Community
+  account: TrustAccount
+  month: CalendarDay
+  bankBalanceMinor: BigInt
+  bookBalanceMinor: BigInt
+  residentTotalMinor: BigInt
+  differenceMinor: BigInt
+  status: String
+  detail: JSON
+  preparedBy: User
+  signedBy: User
+  signedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input TrustReconciliationWhereUniqueInput {
+  id: ID
+}
+
+input TrustReconciliationWhereInput {
+  AND: [TrustReconciliationWhereInput!]
+  OR: [TrustReconciliationWhereInput!]
+  NOT: [TrustReconciliationWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  account: TrustAccountWhereInput
+  month: CalendarDayNullableFilter
+  bankBalanceMinor: BigIntFilter
+  bookBalanceMinor: BigIntFilter
+  residentTotalMinor: BigIntFilter
+  differenceMinor: BigIntFilter
+  status: StringFilter
+  preparedBy: UserWhereInput
+  signedBy: UserWhereInput
+  signedAt: DateTimeNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input TrustReconciliationOrderByInput {
+  id: OrderDirection
+  month: OrderDirection
+  bankBalanceMinor: OrderDirection
+  bookBalanceMinor: OrderDirection
+  residentTotalMinor: OrderDirection
+  differenceMinor: OrderDirection
+  status: OrderDirection
+  signedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input TrustReconciliationUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  account: TrustAccountRelateToOneForUpdateInput
+  month: CalendarDay
+  bankBalanceMinor: BigInt
+  bookBalanceMinor: BigInt
+  residentTotalMinor: BigInt
+  differenceMinor: BigInt
+  status: String
+  detail: JSON
+  preparedBy: UserRelateToOneForUpdateInput
+  signedBy: UserRelateToOneForUpdateInput
+  signedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input TrustReconciliationUpdateArgs {
+  where: TrustReconciliationWhereUniqueInput!
+  data: TrustReconciliationUpdateInput!
+}
+
+input TrustReconciliationCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  account: TrustAccountRelateToOneForCreateInput
+  month: CalendarDay
+  bankBalanceMinor: BigInt
+  bookBalanceMinor: BigInt
+  residentTotalMinor: BigInt
+  differenceMinor: BigInt
+  status: String
+  detail: JSON
+  preparedBy: UserRelateToOneForCreateInput
+  signedBy: UserRelateToOneForCreateInput
+  signedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type TrustTransaction {
+  id: ID!
+  community: Community
+  resident: Resident
+  ledger: ResidentTrustLedger
+  account: TrustAccount
+  reference: String
+  kind: String
+  amountMinor: BigInt
+  purpose: String
+  status: String
+  preparedBy: User
+  signedBy: User
+  approval: ApprovalRequest
+  reverses: TrustTransaction
+  effectiveOn: CalendarDay
+  postedAt: DateTime
+  lines(where: TrustLedgerLineWhereInput! = {}, orderBy: [TrustLedgerLineOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TrustLedgerLineWhereUniqueInput): [TrustLedgerLine!]
+  linesCount(where: TrustLedgerLineWhereInput! = {}): Int
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input TrustTransactionWhereUniqueInput {
+  id: ID
+  reference: String
+}
+
+input TrustTransactionWhereInput {
+  AND: [TrustTransactionWhereInput!]
+  OR: [TrustTransactionWhereInput!]
+  NOT: [TrustTransactionWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  ledger: ResidentTrustLedgerWhereInput
+  account: TrustAccountWhereInput
+  reference: StringFilter
+  kind: StringFilter
+  amountMinor: BigIntFilter
+  purpose: StringFilter
+  status: StringFilter
+  preparedBy: UserWhereInput
+  signedBy: UserWhereInput
+  approval: ApprovalRequestWhereInput
+  reverses: TrustTransactionWhereInput
+  effectiveOn: CalendarDayNullableFilter
+  postedAt: DateTimeNullableFilter
+  lines: TrustLedgerLineManyRelationFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input TrustLedgerLineManyRelationFilter {
+  every: TrustLedgerLineWhereInput
+  some: TrustLedgerLineWhereInput
+  none: TrustLedgerLineWhereInput
+}
+
+input TrustTransactionOrderByInput {
+  id: OrderDirection
+  reference: OrderDirection
+  kind: OrderDirection
+  amountMinor: OrderDirection
+  purpose: OrderDirection
+  status: OrderDirection
+  effectiveOn: OrderDirection
+  postedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input TrustTransactionUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  ledger: ResidentTrustLedgerRelateToOneForUpdateInput
+  account: TrustAccountRelateToOneForUpdateInput
+  reference: String
+  kind: String
+  amountMinor: BigInt
+  purpose: String
+  status: String
+  preparedBy: UserRelateToOneForUpdateInput
+  signedBy: UserRelateToOneForUpdateInput
+  approval: ApprovalRequestRelateToOneForUpdateInput
+  reverses: TrustTransactionRelateToOneForUpdateInput
+  effectiveOn: CalendarDay
+  postedAt: DateTime
+  lines: TrustLedgerLineRelateToManyForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input TrustLedgerLineRelateToManyForUpdateInput {
+  disconnect: [TrustLedgerLineWhereUniqueInput!]
+  set: [TrustLedgerLineWhereUniqueInput!]
+  create: [TrustLedgerLineCreateInput!]
+  connect: [TrustLedgerLineWhereUniqueInput!]
+}
+
+input TrustTransactionUpdateArgs {
+  where: TrustTransactionWhereUniqueInput!
+  data: TrustTransactionUpdateInput!
+}
+
+input TrustTransactionCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  ledger: ResidentTrustLedgerRelateToOneForCreateInput
+  account: TrustAccountRelateToOneForCreateInput
+  reference: String
+  kind: String
+  amountMinor: BigInt
+  purpose: String
+  status: String
+  preparedBy: UserRelateToOneForCreateInput
+  signedBy: UserRelateToOneForCreateInput
+  approval: ApprovalRequestRelateToOneForCreateInput
+  reverses: TrustTransactionRelateToOneForCreateInput
+  effectiveOn: CalendarDay
+  postedAt: DateTime
+  lines: TrustLedgerLineRelateToManyForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input TrustLedgerLineRelateToManyForCreateInput {
+  create: [TrustLedgerLineCreateInput!]
+  connect: [TrustLedgerLineWhereUniqueInput!]
+}
+
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -13389,6 +15296,126 @@ type Mutation {
   updateWorkflowVersions(data: [WorkflowVersionUpdateArgs!]!): [WorkflowVersion]
   deleteWorkflowVersion(where: WorkflowVersionWhereUniqueInput!): WorkflowVersion
   deleteWorkflowVersions(where: [WorkflowVersionWhereUniqueInput!]!): [WorkflowVersion]
+  createBillingPeriod(data: BillingPeriodCreateInput!): BillingPeriod
+  createBillingPeriods(data: [BillingPeriodCreateInput!]!): [BillingPeriod]
+  updateBillingPeriod(where: BillingPeriodWhereUniqueInput!, data: BillingPeriodUpdateInput!): BillingPeriod
+  updateBillingPeriods(data: [BillingPeriodUpdateArgs!]!): [BillingPeriod]
+  deleteBillingPeriod(where: BillingPeriodWhereUniqueInput!): BillingPeriod
+  deleteBillingPeriods(where: [BillingPeriodWhereUniqueInput!]!): [BillingPeriod]
+  createCareLevel(data: CareLevelCreateInput!): CareLevel
+  createCareLevels(data: [CareLevelCreateInput!]!): [CareLevel]
+  updateCareLevel(where: CareLevelWhereUniqueInput!, data: CareLevelUpdateInput!): CareLevel
+  updateCareLevels(data: [CareLevelUpdateArgs!]!): [CareLevel]
+  deleteCareLevel(where: CareLevelWhereUniqueInput!): CareLevel
+  deleteCareLevels(where: [CareLevelWhereUniqueInput!]!): [CareLevel]
+  createCareLevelAssignment(data: CareLevelAssignmentCreateInput!): CareLevelAssignment
+  createCareLevelAssignments(data: [CareLevelAssignmentCreateInput!]!): [CareLevelAssignment]
+  updateCareLevelAssignment(where: CareLevelAssignmentWhereUniqueInput!, data: CareLevelAssignmentUpdateInput!): CareLevelAssignment
+  updateCareLevelAssignments(data: [CareLevelAssignmentUpdateArgs!]!): [CareLevelAssignment]
+  deleteCareLevelAssignment(where: CareLevelAssignmentWhereUniqueInput!): CareLevelAssignment
+  deleteCareLevelAssignments(where: [CareLevelAssignmentWhereUniqueInput!]!): [CareLevelAssignment]
+  createCharge(data: ChargeCreateInput!): Charge
+  createCharges(data: [ChargeCreateInput!]!): [Charge]
+  updateCharge(where: ChargeWhereUniqueInput!, data: ChargeUpdateInput!): Charge
+  updateCharges(data: [ChargeUpdateArgs!]!): [Charge]
+  deleteCharge(where: ChargeWhereUniqueInput!): Charge
+  deleteCharges(where: [ChargeWhereUniqueInput!]!): [Charge]
+  createChargeItem(data: ChargeItemCreateInput!): ChargeItem
+  createChargeItems(data: [ChargeItemCreateInput!]!): [ChargeItem]
+  updateChargeItem(where: ChargeItemWhereUniqueInput!, data: ChargeItemUpdateInput!): ChargeItem
+  updateChargeItems(data: [ChargeItemUpdateArgs!]!): [ChargeItem]
+  deleteChargeItem(where: ChargeItemWhereUniqueInput!): ChargeItem
+  deleteChargeItems(where: [ChargeItemWhereUniqueInput!]!): [ChargeItem]
+  createDeposit(data: DepositCreateInput!): Deposit
+  createDeposits(data: [DepositCreateInput!]!): [Deposit]
+  updateDeposit(where: DepositWhereUniqueInput!, data: DepositUpdateInput!): Deposit
+  updateDeposits(data: [DepositUpdateArgs!]!): [Deposit]
+  deleteDeposit(where: DepositWhereUniqueInput!): Deposit
+  deleteDeposits(where: [DepositWhereUniqueInput!]!): [Deposit]
+  createMedicaidLiability(data: MedicaidLiabilityCreateInput!): MedicaidLiability
+  createMedicaidLiabilities(data: [MedicaidLiabilityCreateInput!]!): [MedicaidLiability]
+  updateMedicaidLiability(where: MedicaidLiabilityWhereUniqueInput!, data: MedicaidLiabilityUpdateInput!): MedicaidLiability
+  updateMedicaidLiabilities(data: [MedicaidLiabilityUpdateArgs!]!): [MedicaidLiability]
+  deleteMedicaidLiability(where: MedicaidLiabilityWhereUniqueInput!): MedicaidLiability
+  deleteMedicaidLiabilities(where: [MedicaidLiabilityWhereUniqueInput!]!): [MedicaidLiability]
+  createPayment(data: PaymentCreateInput!): Payment
+  createPayments(data: [PaymentCreateInput!]!): [Payment]
+  updatePayment(where: PaymentWhereUniqueInput!, data: PaymentUpdateInput!): Payment
+  updatePayments(data: [PaymentUpdateArgs!]!): [Payment]
+  deletePayment(where: PaymentWhereUniqueInput!): Payment
+  deletePayments(where: [PaymentWhereUniqueInput!]!): [Payment]
+  createPaymentAllocation(data: PaymentAllocationCreateInput!): PaymentAllocation
+  createPaymentAllocations(data: [PaymentAllocationCreateInput!]!): [PaymentAllocation]
+  updatePaymentAllocation(where: PaymentAllocationWhereUniqueInput!, data: PaymentAllocationUpdateInput!): PaymentAllocation
+  updatePaymentAllocations(data: [PaymentAllocationUpdateArgs!]!): [PaymentAllocation]
+  deletePaymentAllocation(where: PaymentAllocationWhereUniqueInput!): PaymentAllocation
+  deletePaymentAllocations(where: [PaymentAllocationWhereUniqueInput!]!): [PaymentAllocation]
+  createPaymentEvent(data: PaymentEventCreateInput!): PaymentEvent
+  createPaymentEvents(data: [PaymentEventCreateInput!]!): [PaymentEvent]
+  updatePaymentEvent(where: PaymentEventWhereUniqueInput!, data: PaymentEventUpdateInput!): PaymentEvent
+  updatePaymentEvents(data: [PaymentEventUpdateArgs!]!): [PaymentEvent]
+  deletePaymentEvent(where: PaymentEventWhereUniqueInput!): PaymentEvent
+  deletePaymentEvents(where: [PaymentEventWhereUniqueInput!]!): [PaymentEvent]
+  createPaymentMethodToken(data: PaymentMethodTokenCreateInput!): PaymentMethodToken
+  createPaymentMethodTokens(data: [PaymentMethodTokenCreateInput!]!): [PaymentMethodToken]
+  updatePaymentMethodToken(where: PaymentMethodTokenWhereUniqueInput!, data: PaymentMethodTokenUpdateInput!): PaymentMethodToken
+  updatePaymentMethodTokens(data: [PaymentMethodTokenUpdateArgs!]!): [PaymentMethodToken]
+  deletePaymentMethodToken(where: PaymentMethodTokenWhereUniqueInput!): PaymentMethodToken
+  deletePaymentMethodTokens(where: [PaymentMethodTokenWhereUniqueInput!]!): [PaymentMethodToken]
+  createRateLine(data: RateLineCreateInput!): RateLine
+  createRateLines(data: [RateLineCreateInput!]!): [RateLine]
+  updateRateLine(where: RateLineWhereUniqueInput!, data: RateLineUpdateInput!): RateLine
+  updateRateLines(data: [RateLineUpdateArgs!]!): [RateLine]
+  deleteRateLine(where: RateLineWhereUniqueInput!): RateLine
+  deleteRateLines(where: [RateLineWhereUniqueInput!]!): [RateLine]
+  createRateSchedule(data: RateScheduleCreateInput!): RateSchedule
+  createRateSchedules(data: [RateScheduleCreateInput!]!): [RateSchedule]
+  updateRateSchedule(where: RateScheduleWhereUniqueInput!, data: RateScheduleUpdateInput!): RateSchedule
+  updateRateSchedules(data: [RateScheduleUpdateArgs!]!): [RateSchedule]
+  deleteRateSchedule(where: RateScheduleWhereUniqueInput!): RateSchedule
+  deleteRateSchedules(where: [RateScheduleWhereUniqueInput!]!): [RateSchedule]
+  createRefund(data: RefundCreateInput!): Refund
+  createRefunds(data: [RefundCreateInput!]!): [Refund]
+  updateRefund(where: RefundWhereUniqueInput!, data: RefundUpdateInput!): Refund
+  updateRefunds(data: [RefundUpdateArgs!]!): [Refund]
+  deleteRefund(where: RefundWhereUniqueInput!): Refund
+  deleteRefunds(where: [RefundWhereUniqueInput!]!): [Refund]
+  createStatement(data: StatementCreateInput!): Statement
+  createStatements(data: [StatementCreateInput!]!): [Statement]
+  updateStatement(where: StatementWhereUniqueInput!, data: StatementUpdateInput!): Statement
+  updateStatements(data: [StatementUpdateArgs!]!): [Statement]
+  deleteStatement(where: StatementWhereUniqueInput!): Statement
+  deleteStatements(where: [StatementWhereUniqueInput!]!): [Statement]
+  createResidentTrustLedger(data: ResidentTrustLedgerCreateInput!): ResidentTrustLedger
+  createResidentTrustLedgers(data: [ResidentTrustLedgerCreateInput!]!): [ResidentTrustLedger]
+  updateResidentTrustLedger(where: ResidentTrustLedgerWhereUniqueInput!, data: ResidentTrustLedgerUpdateInput!): ResidentTrustLedger
+  updateResidentTrustLedgers(data: [ResidentTrustLedgerUpdateArgs!]!): [ResidentTrustLedger]
+  deleteResidentTrustLedger(where: ResidentTrustLedgerWhereUniqueInput!): ResidentTrustLedger
+  deleteResidentTrustLedgers(where: [ResidentTrustLedgerWhereUniqueInput!]!): [ResidentTrustLedger]
+  createTrustAccount(data: TrustAccountCreateInput!): TrustAccount
+  createTrustAccounts(data: [TrustAccountCreateInput!]!): [TrustAccount]
+  updateTrustAccount(where: TrustAccountWhereUniqueInput!, data: TrustAccountUpdateInput!): TrustAccount
+  updateTrustAccounts(data: [TrustAccountUpdateArgs!]!): [TrustAccount]
+  deleteTrustAccount(where: TrustAccountWhereUniqueInput!): TrustAccount
+  deleteTrustAccounts(where: [TrustAccountWhereUniqueInput!]!): [TrustAccount]
+  createTrustLedgerLine(data: TrustLedgerLineCreateInput!): TrustLedgerLine
+  createTrustLedgerLines(data: [TrustLedgerLineCreateInput!]!): [TrustLedgerLine]
+  updateTrustLedgerLine(where: TrustLedgerLineWhereUniqueInput!, data: TrustLedgerLineUpdateInput!): TrustLedgerLine
+  updateTrustLedgerLines(data: [TrustLedgerLineUpdateArgs!]!): [TrustLedgerLine]
+  deleteTrustLedgerLine(where: TrustLedgerLineWhereUniqueInput!): TrustLedgerLine
+  deleteTrustLedgerLines(where: [TrustLedgerLineWhereUniqueInput!]!): [TrustLedgerLine]
+  createTrustReconciliation(data: TrustReconciliationCreateInput!): TrustReconciliation
+  createTrustReconciliations(data: [TrustReconciliationCreateInput!]!): [TrustReconciliation]
+  updateTrustReconciliation(where: TrustReconciliationWhereUniqueInput!, data: TrustReconciliationUpdateInput!): TrustReconciliation
+  updateTrustReconciliations(data: [TrustReconciliationUpdateArgs!]!): [TrustReconciliation]
+  deleteTrustReconciliation(where: TrustReconciliationWhereUniqueInput!): TrustReconciliation
+  deleteTrustReconciliations(where: [TrustReconciliationWhereUniqueInput!]!): [TrustReconciliation]
+  createTrustTransaction(data: TrustTransactionCreateInput!): TrustTransaction
+  createTrustTransactions(data: [TrustTransactionCreateInput!]!): [TrustTransaction]
+  updateTrustTransaction(where: TrustTransactionWhereUniqueInput!, data: TrustTransactionUpdateInput!): TrustTransaction
+  updateTrustTransactions(data: [TrustTransactionUpdateArgs!]!): [TrustTransaction]
+  deleteTrustTransaction(where: TrustTransactionWhereUniqueInput!): TrustTransaction
+  deleteTrustTransactions(where: [TrustTransactionWhereUniqueInput!]!): [TrustTransaction]
   endSession: Boolean!
   authenticateUserWithPassword(email: String!, password: String!): UserAuthenticationWithPasswordResult
   createInitialUser(data: CreateInitialUserInput!): UserAuthenticationWithPasswordSuccess!
@@ -13398,6 +15425,7 @@ type Mutation {
   loadOperatorSetup(idempotencyKey: String!): JSON
   loadCensusSetup(idempotencyKey: String!): JSON
   loadClinicalSetup(idempotencyKey: String!): JSON
+  loadBillingSetup(idempotencyKey: String!): JSON
   refreshTimedStates(idempotencyKey: String!): JSON
   decideApprovalRequest(requestId: ID!, decision: String!, reason: String, expectedVersion: Int!, idempotencyKey: String!): JSON
   cancelApprovalRequest(requestId: ID!, expectedVersion: Int!, reason: String, idempotencyKey: String!): JSON
@@ -13447,6 +15475,7 @@ type Mutation {
   reviewBreakGlass(grantId: ID!, outcome: String!, note: String!, expectedVersion: Int, idempotencyKey: String!): JSON
   clinicalCommand(op: String!, input: JSON, idempotencyKey: String!): JSON
   runWorkflowsOnLoad(communityId: ID!, idempotencyKey: String!): JSON
+  billingCommand(op: String!, input: JSON, idempotencyKey: String!): JSON
 }
 
 union UserAuthenticationWithPasswordResult = UserAuthenticationWithPasswordSuccess | UserAuthenticationWithPasswordFailure
@@ -13823,6 +15852,66 @@ type Query {
   workflowVersion(where: WorkflowVersionWhereUniqueInput!): WorkflowVersion
   workflowVersions(where: WorkflowVersionWhereInput! = {}, orderBy: [WorkflowVersionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: WorkflowVersionWhereUniqueInput): [WorkflowVersion!]
   workflowVersionsCount(where: WorkflowVersionWhereInput! = {}): Int
+  billingPeriod(where: BillingPeriodWhereUniqueInput!): BillingPeriod
+  billingPeriods(where: BillingPeriodWhereInput! = {}, orderBy: [BillingPeriodOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: BillingPeriodWhereUniqueInput): [BillingPeriod!]
+  billingPeriodsCount(where: BillingPeriodWhereInput! = {}): Int
+  careLevel(where: CareLevelWhereUniqueInput!): CareLevel
+  careLevels(where: CareLevelWhereInput! = {}, orderBy: [CareLevelOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CareLevelWhereUniqueInput): [CareLevel!]
+  careLevelsCount(where: CareLevelWhereInput! = {}): Int
+  careLevelAssignment(where: CareLevelAssignmentWhereUniqueInput!): CareLevelAssignment
+  careLevelAssignments(where: CareLevelAssignmentWhereInput! = {}, orderBy: [CareLevelAssignmentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CareLevelAssignmentWhereUniqueInput): [CareLevelAssignment!]
+  careLevelAssignmentsCount(where: CareLevelAssignmentWhereInput! = {}): Int
+  charge(where: ChargeWhereUniqueInput!): Charge
+  charges(where: ChargeWhereInput! = {}, orderBy: [ChargeOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ChargeWhereUniqueInput): [Charge!]
+  chargesCount(where: ChargeWhereInput! = {}): Int
+  chargeItem(where: ChargeItemWhereUniqueInput!): ChargeItem
+  chargeItems(where: ChargeItemWhereInput! = {}, orderBy: [ChargeItemOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ChargeItemWhereUniqueInput): [ChargeItem!]
+  chargeItemsCount(where: ChargeItemWhereInput! = {}): Int
+  deposit(where: DepositWhereUniqueInput!): Deposit
+  deposits(where: DepositWhereInput! = {}, orderBy: [DepositOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: DepositWhereUniqueInput): [Deposit!]
+  depositsCount(where: DepositWhereInput! = {}): Int
+  medicaidLiability(where: MedicaidLiabilityWhereUniqueInput!): MedicaidLiability
+  medicaidLiabilities(where: MedicaidLiabilityWhereInput! = {}, orderBy: [MedicaidLiabilityOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MedicaidLiabilityWhereUniqueInput): [MedicaidLiability!]
+  medicaidLiabilitiesCount(where: MedicaidLiabilityWhereInput! = {}): Int
+  payment(where: PaymentWhereUniqueInput!): Payment
+  payments(where: PaymentWhereInput! = {}, orderBy: [PaymentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentWhereUniqueInput): [Payment!]
+  paymentsCount(where: PaymentWhereInput! = {}): Int
+  paymentAllocation(where: PaymentAllocationWhereUniqueInput!): PaymentAllocation
+  paymentAllocations(where: PaymentAllocationWhereInput! = {}, orderBy: [PaymentAllocationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentAllocationWhereUniqueInput): [PaymentAllocation!]
+  paymentAllocationsCount(where: PaymentAllocationWhereInput! = {}): Int
+  paymentEvent(where: PaymentEventWhereUniqueInput!): PaymentEvent
+  paymentEvents(where: PaymentEventWhereInput! = {}, orderBy: [PaymentEventOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentEventWhereUniqueInput): [PaymentEvent!]
+  paymentEventsCount(where: PaymentEventWhereInput! = {}): Int
+  paymentMethodToken(where: PaymentMethodTokenWhereUniqueInput!): PaymentMethodToken
+  paymentMethodTokens(where: PaymentMethodTokenWhereInput! = {}, orderBy: [PaymentMethodTokenOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentMethodTokenWhereUniqueInput): [PaymentMethodToken!]
+  paymentMethodTokensCount(where: PaymentMethodTokenWhereInput! = {}): Int
+  rateLine(where: RateLineWhereUniqueInput!): RateLine
+  rateLines(where: RateLineWhereInput! = {}, orderBy: [RateLineOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RateLineWhereUniqueInput): [RateLine!]
+  rateLinesCount(where: RateLineWhereInput! = {}): Int
+  rateSchedule(where: RateScheduleWhereUniqueInput!): RateSchedule
+  rateSchedules(where: RateScheduleWhereInput! = {}, orderBy: [RateScheduleOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RateScheduleWhereUniqueInput): [RateSchedule!]
+  rateSchedulesCount(where: RateScheduleWhereInput! = {}): Int
+  refund(where: RefundWhereUniqueInput!): Refund
+  refunds(where: RefundWhereInput! = {}, orderBy: [RefundOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RefundWhereUniqueInput): [Refund!]
+  refundsCount(where: RefundWhereInput! = {}): Int
+  statement(where: StatementWhereUniqueInput!): Statement
+  statements(where: StatementWhereInput! = {}, orderBy: [StatementOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: StatementWhereUniqueInput): [Statement!]
+  statementsCount(where: StatementWhereInput! = {}): Int
+  residentTrustLedger(where: ResidentTrustLedgerWhereUniqueInput!): ResidentTrustLedger
+  residentTrustLedgers(where: ResidentTrustLedgerWhereInput! = {}, orderBy: [ResidentTrustLedgerOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ResidentTrustLedgerWhereUniqueInput): [ResidentTrustLedger!]
+  residentTrustLedgersCount(where: ResidentTrustLedgerWhereInput! = {}): Int
+  trustAccount(where: TrustAccountWhereUniqueInput!): TrustAccount
+  trustAccounts(where: TrustAccountWhereInput! = {}, orderBy: [TrustAccountOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TrustAccountWhereUniqueInput): [TrustAccount!]
+  trustAccountsCount(where: TrustAccountWhereInput! = {}): Int
+  trustLedgerLine(where: TrustLedgerLineWhereUniqueInput!): TrustLedgerLine
+  trustLedgerLines(where: TrustLedgerLineWhereInput! = {}, orderBy: [TrustLedgerLineOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TrustLedgerLineWhereUniqueInput): [TrustLedgerLine!]
+  trustLedgerLinesCount(where: TrustLedgerLineWhereInput! = {}): Int
+  trustReconciliation(where: TrustReconciliationWhereUniqueInput!): TrustReconciliation
+  trustReconciliations(where: TrustReconciliationWhereInput! = {}, orderBy: [TrustReconciliationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TrustReconciliationWhereUniqueInput): [TrustReconciliation!]
+  trustReconciliationsCount(where: TrustReconciliationWhereInput! = {}): Int
+  trustTransaction(where: TrustTransactionWhereUniqueInput!): TrustTransaction
+  trustTransactions(where: TrustTransactionWhereInput! = {}, orderBy: [TrustTransactionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TrustTransactionWhereUniqueInput): [TrustTransaction!]
+  trustTransactionsCount(where: TrustTransactionWhereInput! = {}): Int
   keystone: KeystoneMeta!
   authenticatedItem: AuthenticatedItem
   validateUserPasswordResetToken(email: String!, token: String!): ValidateUserPasswordResetTokenResult
@@ -13837,6 +15926,15 @@ type Query {
   portalUpdates(residentId: ID!): JSON
   portalCalendar(residentId: ID!): JSON
   portalDocuments(residentId: ID!): JSON
+  portalStatements(residentId: ID!): JSON
+  portalTrustBalance(residentId: ID!): JSON
+  listBlockTypes: JSON
+  getBlockType(code: String!): JSON
+  listWorkflows(communityId: ID!): JSON
+  getWorkflowVersion(versionId: ID!): JSON
+  getWorkflowRun(runId: ID!): JSON
+  listFindings(communityId: ID!, status: String): JSON
+  getFinding(findingId: ID!): JSON
 }
 
 union AuthenticatedItem = User

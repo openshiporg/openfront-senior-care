@@ -10,6 +10,7 @@ import { keystoneClient } from '@/features/dashboard/lib/keystoneClient';
 const OPS: Record<string, Record<string, string>> = {
   refreshTimedStates: {},
   loadClinicalSetup: {},
+  loadBillingSetup: {},
   decideApprovalRequest: { requestId: 'ID!', decision: 'String!', reason: 'String', expectedVersion: 'Int!' },
   cancelApprovalRequest: { requestId: 'ID!', expectedVersion: 'Int!', reason: 'String' },
   requestOperatorControls: { changes: 'JSON!', reason: 'String!' },
@@ -51,6 +52,7 @@ const OPS: Record<string, Record<string, string>> = {
   endBreakGlass: { grantId: 'ID!' },
   reviewBreakGlass: { grantId: 'ID!', outcome: 'String!', note: 'String!', expectedVersion: 'Int' },
   clinicalCommand: { op: 'String!', input: 'JSON' },
+  billingCommand: { op: 'String!', input: 'JSON' },
   runWorkflowsOnLoad: { communityId: 'ID!' },
 };
 

@@ -1,7 +1,7 @@
 import { endReservation, markPlaceReady, recomputeAvailability, reservePlace, setPlaceService, type ReserveInput } from '../lib/places'
 import { addToWaitlist, cancelTourWithToken, logSalesActivity, moveLead, moveReferral, moveTour, offerWaitlistPlace, recordInquiry, recordReferral, requestTour, scheduleTour, resolveWaitlistOffer, submitInquiry, type InquiryInput } from '../lib/sales'
 import { joinWaitlist, movePublishedPrice, openTourSlots, setStorefrontPublished, storefrontCommunity } from '../lib/storefront'
-import { portalCalendar, portalDocuments, portalResidents, portalUpdates } from '../lib/portalReads'
+import { portalCalendar, portalDocuments, portalResidents, portalStatements, portalTrustBalance, portalUpdates } from '../lib/portalReads'
 import { date } from './run'
 import { acceptPortalInvitation, grantPortalScope, inviteRepresentative, proposePortalScope, revokePortalScope, setPortalAccountStatus } from '../lib/portal'
 import { endBreakGlass, openBreakGlass, reviewBreakGlass } from '../lib/privacy'
@@ -154,4 +154,6 @@ const portalRead = <T>(context: Ctx, work: (tx: any) => Promise<T>) => context.p
 export const portalMeQuery = (_: unknown, __: unknown, context: Ctx) => portalRead(context, tx => portalResidents(tx, portalPrincipal(context)))
 export const portalUpdatesQuery = (_: unknown, args: { residentId: string }, context: Ctx) => portalRead(context, tx => portalUpdates(tx, portalPrincipal(context), args.residentId))
 export const portalCalendarQuery = (_: unknown, args: { residentId: string }, context: Ctx) => portalRead(context, tx => portalCalendar(tx, portalPrincipal(context), args.residentId))
+export const portalStatementsQuery = (_: unknown, args: { residentId: string }, context: Ctx) => portalRead(context, tx => portalStatements(tx, portalPrincipal(context), args.residentId))
+export const portalTrustBalanceQuery = (_: unknown, args: { residentId: string }, context: Ctx) => portalRead(context, tx => portalTrustBalance(tx, portalPrincipal(context), args.residentId))
 export const portalDocumentsQuery = (_: unknown, args: { residentId: string }, context: Ctx) => portalRead(context, tx => portalDocuments(tx, portalPrincipal(context), args.residentId))

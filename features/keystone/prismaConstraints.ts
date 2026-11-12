@@ -13,6 +13,10 @@ export const COMPOUND_UNIQUES: Record<string, string[]> = {
   RegulatoryObligation: ['@@unique([packId, code], map: "RegulatoryObligation_pack_code_key")'],
   ComplianceClock: ['@@unique([obligationCode, subjectType, subjectId, occurrenceKey, supersedesId], map: "ComplianceClock_occurrence_key")'],
   MedicationSupplyMovement: ['@@unique([supplyId, seq], map: "MedicationSupplyMovement_supply_seq_key")'],
+  BillingPeriod: ['@@unique([communityId, month], map: "BillingPeriod_community_month_key")'],
+  Statement: ['@@unique([periodId, residentId], map: "Statement_period_resident_key")'],
+  ResidentTrustLedger: ['@@unique([residentId, accountId], map: "ResidentTrustLedger_resident_account_key")'],
+  TrustReconciliation: ['@@unique([accountId, month], map: "TrustReconciliation_account_month_key")'],
   CensusEvent: ['@@unique([stayId, seq], map: "CensusEvent_stay_seq_key")'],
 }
 
