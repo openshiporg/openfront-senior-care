@@ -16745,7 +16745,6 @@ type Claim {
   diagnoses: JSON
   totalChargesMinor: BigInt
   paidMinor: BigInt
-  exportText: String
   denial: JSON
   status: String
   previousClaim: Claim
@@ -16793,7 +16792,6 @@ input ClaimWhereInput {
   frequencyCode: StringFilter
   totalChargesMinor: BigIntFilter
   paidMinor: BigIntNullableFilter
-  exportText: StringFilter
   status: StringFilter
   previousClaim: ClaimWhereInput
   exportHash: StringFilter
@@ -16836,7 +16834,6 @@ input ClaimOrderByInput {
   frequencyCode: OrderDirection
   totalChargesMinor: OrderDirection
   paidMinor: OrderDirection
-  exportText: OrderDirection
   status: OrderDirection
   exportHash: OrderDirection
   exportedAt: OrderDirection
@@ -16869,7 +16866,6 @@ input ClaimUpdateInput {
   diagnoses: JSON
   totalChargesMinor: BigInt
   paidMinor: BigInt
-  exportText: String
   denial: JSON
   status: String
   previousClaim: ClaimRelateToOneForUpdateInput
@@ -16930,7 +16926,6 @@ input ClaimCreateInput {
   diagnoses: JSON
   totalChargesMinor: BigInt
   paidMinor: BigInt
-  exportText: String
   denial: JSON
   status: String
   previousClaim: ClaimRelateToOneForCreateInput
