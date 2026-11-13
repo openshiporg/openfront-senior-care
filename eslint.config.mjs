@@ -9,6 +9,7 @@ const EXACT_PATHS = [
   "features/keystone/trust/**/*.ts",
   "features/keystone/coverage/**/*.ts",
   "features/keystone/pdpm/**/*.ts",
+  "features/keystone/claims/**/*.ts",
   "features/keystone/medications/**/*.ts",
 ];
 

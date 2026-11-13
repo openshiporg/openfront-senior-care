@@ -21,7 +21,7 @@ const CLINICAL_READ: Permission[] = [...RESIDENT_READ, 'canReadClinical']
 /** The 25 roles from DOMAIN §10 / SCHEMA §1.4. None carries canBreakGlassRecords. */
 export const ROLES: RoleSeed[] = [
   { id: 'seed_role_operator_admin', name: 'Operator Admin', description: 'Runs the platform for the operator: communities, people, roles and integrations.', permissions: [...STAFF_BASE, 'canSeeOtherPeople', 'canEditOtherPeople', 'canManagePeople', 'canManageRoles', 'canManageOnboarding', 'canManageOperator', 'canManageCommunities', 'canManagePlaces', 'canManageIntegrations', 'canManageAgents', 'canReadAudit', 'canReadCompliance', 'canReadSales'] },
-  { id: 'seed_role_executive_director', name: 'Executive Director', description: 'Licensed administrator: census, sales, compliance and approvals for the community.', permissions: [...STAFF_BASE, ...RESIDENT_READ, 'canSeeOtherPeople', 'canReadSales', 'canManageSales', 'canManageStorefront', 'canApproveCensusCorrections', 'canApproveIncidentDowngrade', 'canApproveRates', 'canApproveWriteOffs', 'canApproveIntegrations', 'canReadCompliance', 'canApproveCompliance', 'canReadIncidents', 'canReadBilling', 'canReadWorkforce', 'canReadAudit', 'canReadFindings', 'canApproveWorkflows', 'canSubmitRegulatory', 'canDeclareOutbreak', 'canInvestigateIncidents'] },
+  { id: 'seed_role_executive_director', name: 'Executive Director', description: 'Licensed administrator: census, sales, compliance and approvals for the community.', permissions: [...STAFF_BASE, ...RESIDENT_READ, 'canSeeOtherPeople', 'canReleaseClaims', 'canReadBilling', 'canReadSales', 'canManageSales', 'canManageStorefront', 'canApproveCensusCorrections', 'canApproveIncidentDowngrade', 'canApproveRates', 'canApproveWriteOffs', 'canApproveIntegrations', 'canReadCompliance', 'canApproveCompliance', 'canReadIncidents', 'canReadBilling', 'canReadWorkforce', 'canReadAudit', 'canReadFindings', 'canApproveWorkflows', 'canSubmitRegulatory', 'canDeclareOutbreak', 'canInvestigateIncidents'] },
   { id: 'seed_role_don', name: 'Director of Nursing', description: 'Clinical lead: corrections, count discrepancies, care plans and clinical approvals.', permissions: [...STAFF_BASE, ...CLINICAL_READ, 'canReadSensitiveClinical', 'canChartNursing', 'canManageCarePlans', 'canManageAssessments', 'canApproveClinicalCorrections', 'canResolveCountDiscrepancy', 'canApproveControlledAdjustments', 'canWitnessControlled', 'canManagePharmacy', 'canSubmitRegulatory', 'canManageInfectionControl', 'canEnterOrders', 'canInvestigateIncidents', 'canReadIncidents', 'canRecordCensus', 'canBreakGlass', 'canReadCompliance', 'canReadFindings', 'canApproveWorkflows', 'canManageWorkflows', 'canReadWorkforce'] },
   { id: 'seed_role_adon', name: 'Assistant Director of Nursing', description: 'Supports the DON; charts, plans care and investigates incidents.', permissions: [...STAFF_BASE, ...CLINICAL_READ, 'canChartNursing', 'canManageCarePlans', 'canManageAssessments', 'canInvestigateIncidents', 'canReadIncidents', 'canRecordCensus', 'canBreakGlass', 'canReadFindings', 'canWitnessControlled'] },
   { id: 'seed_role_charge_nurse', name: 'Charge Nurse (RN/LPN)', description: 'Unit nurse: charting, medication pass, census moves on the unit.', permissions: [...STAFF_BASE, ...CLINICAL_READ, 'canChartNursing', 'canAdministerMeds', 'canWitnessControlled', 'canEnterOrders', 'canChartPointOfCare', 'canManageAssessments', 'canRecordCensus', 'canBreakGlass', 'canReadIncidents', 'canReadFindings'] },
@@ -64,6 +64,8 @@ export const STAFF: StaffSeed[] = [
   { id: 'seed_user_ferreira_kahn', name: 'Martin Ferreira-Kahn', email: 'martin.ferreira-kahn@ridgelineseniorcommunities.com', title: 'Privacy Officer', roleId: 'seed_role_privacy_officer', kind: 'staff' },
   { id: 'seed_user_brandvold', name: 'Dr. Ilse Brandvold', email: 'ilse.brandvold@mapleridgeseniorliving.com', title: 'Medical Director', roleId: 'seed_role_prescriber', kind: 'staff' },
   { id: 'seed_user_adewale', name: 'Dr. Femi Adewale', email: 'femi.adewale@mapleridgeseniorliving.com', title: 'Consultant Pharmacist', roleId: 'seed_role_consultant_pharmacist', kind: 'staff' },
+  { id: 'seed_user_marchetti', name: 'Lucia Marchetti', email: 'lucia.marchetti@ridgelineseniorcommunities.com', title: 'HR Manager', roleId: 'seed_role_hr', kind: 'staff' },
+  { id: 'seed_user_okafor', name: 'Daniel Okafor', email: 'daniel.okafor@ridgelineseniorcommunities.com', title: 'HR Generalist', roleId: 'seed_role_hr', kind: 'staff' },
   { id: 'seed_user_ferris', name: 'Owen Ferris', email: 'owen.ferris@ridgelineseniorcommunities.com', title: 'Operator Administrator', roleId: 'seed_role_operator_admin', kind: 'staff' },
 ]
 
@@ -98,7 +100,7 @@ export const COMMUNITY = {
   country: 'US',
   phone: '(614) 471-3800',
   settingsOffered: ['nursing_facility', 'assisted_living', 'memory_care', 'independent_living'],
-  identifiers: { ccn: '366427', npi: '1487296530', stateLicence: 'NH-2194', medicaidProviderId: '0318462', nhsnOrgId: '48271' },
+  identifiers: { ccn: '366427', npi: '1487296539', taxId: '31-0000001', taxonomy: '313M00000X', zip4: '432151234', stateLicence: 'NH-2194', medicaidProviderId: '0318462', nhsnOrgId: '48271' },
 }
 
 /** 120 dual-certified nursing beds (BUILD-PLAN §5): semi-private rooms of two beds; Aspen has 4 isolation-capable private rooms. */
@@ -132,7 +134,7 @@ export function apartmentTypeFor(unitCode: string, index: number) {
 }
 
 export const PAYERS = [
-  { id: 'seed_payer_medicare_a', name: 'Medicare Part A', kind: 'medicare_a', claimFormat: '837i', dayCountingRule: 'count_admit_not_discharge' },
+  { id: 'seed_payer_medicare_a', name: 'Medicare Part A', kind: 'medicare_a', payerId: '15202', claimFormat: '837i', dayCountingRule: 'count_admit_not_discharge' },
   { id: 'seed_payer_ohio_medicaid', name: 'Ohio Medicaid (fee-for-service)', kind: 'medicaid_ffs', claimFormat: '837i', dayCountingRule: 'count_admit_not_discharge' },
   { id: 'seed_payer_buckeye_ma', name: 'Buckeye Health Advantage', kind: 'medicare_advantage', claimFormat: '837i', dayCountingRule: 'count_admit_not_discharge' },
   { id: 'seed_payer_ohio_mco', name: 'Scioto Care Partners', kind: 'medicaid_mco', claimFormat: '837i', dayCountingRule: 'count_admit_not_discharge' },

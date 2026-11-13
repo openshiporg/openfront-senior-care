@@ -112,6 +112,22 @@ model User {
   from_MdsSubmission_generatedBy               MdsSubmission[]            @relation("MdsSubmission_generatedBy")
   from_MdsSubmission_uploadedBy                MdsSubmission[]            @relation("MdsSubmission_uploadedBy")
   from_PriorSnfDaysObservation_recordedBy      PriorSnfDaysObservation[]  @relation("PriorSnfDaysObservation_recordedBy")
+  from_AncillaryInvoice_receivedBy             AncillaryInvoice[]         @relation("AncillaryInvoice_receivedBy")
+  from_AncillaryInvoice_approvedBy             AncillaryInvoice[]         @relation("AncillaryInvoice_approvedBy")
+  from_Claim_exportedBy                        Claim[]                    @relation("Claim_exportedBy")
+  from_Claim_uploadedBy                        Claim[]                    @relation("Claim_uploadedBy")
+  from_Claim_validatedBy                       Claim[]                    @relation("Claim_validatedBy")
+  from_Claim_releasedBy                        Claim[]                    @relation("Claim_releasedBy")
+  from_Remittance_importedBy                   Remittance[]               @relation("Remittance_importedBy")
+  from_Remittance_postedBy                     Remittance[]               @relation("Remittance_postedBy")
+  from_NhsnExport_generatedBy                  NhsnExport[]               @relation("NhsnExport_generatedBy")
+  from_PbjQuarter_exportedBy                   PbjQuarter[]               @relation("PbjQuarter_exportedBy")
+  from_StaffMember_user                        StaffMember[]              @relation("StaffMember_user")
+  from_TimeCorrection_requestedBy              TimeCorrection[]           @relation("TimeCorrection_requestedBy")
+  from_TimeCorrection_decidedBy                TimeCorrection[]           @relation("TimeCorrection_decidedBy")
+  from_TimePunch_recordedBy                    TimePunch[]                @relation("TimePunch_recordedBy")
+  from_Timecard_submittedBy                    Timecard[]                 @relation("Timecard_submittedBy")
+  from_Timecard_approvedBy                     Timecard[]                 @relation("Timecard_approvedBy")
 
   @@index([roleId])
 }
@@ -546,6 +562,18 @@ model Community {
   from_MdsSubmission_community            MdsSubmission[]            @relation("MdsSubmission_community")
   from_PdpmClassification_community       PdpmClassification[]       @relation("PdpmClassification_community")
   from_PriorSnfDaysObservation_community  PriorSnfDaysObservation[]  @relation("PriorSnfDaysObservation_community")
+  from_AncillaryInvoice_community         AncillaryInvoice[]         @relation("AncillaryInvoice_community")
+  from_Claim_community                    Claim[]                    @relation("Claim_community")
+  from_ClaimLine_community                ClaimLine[]                @relation("ClaimLine_community")
+  from_Remittance_community               Remittance[]               @relation("Remittance_community")
+  from_RemittancePosting_community        RemittancePosting[]        @relation("RemittancePosting_community")
+  from_JobCode_community                  JobCode[]                  @relation("JobCode_community")
+  from_NhsnExport_community               NhsnExport[]               @relation("NhsnExport_community")
+  from_PbjQuarter_community               PbjQuarter[]               @relation("PbjQuarter_community")
+  from_StaffMember_community              StaffMember[]              @relation("StaffMember_community")
+  from_TimeCorrection_community           TimeCorrection[]           @relation("TimeCorrection_community")
+  from_TimePunch_community                TimePunch[]                @relation("TimePunch_community")
+  from_Timecard_community                 Timecard[]                 @relation("Timecard_community")
 
   @@index([jurisdictionPackId])
   @@index([holidayCalendarId])
@@ -1423,6 +1451,7 @@ model CoveragePeriod {
   from_CensusDay_primaryCoverage CensusDay[]     @relation("CensusDay_primaryCoverage")
   from_CensusEvent_coverage      CensusEvent[]   @relation("CensusEvent_coverage")
   from_Authorisation_coverage    Authorisation[] @relation("Authorisation_coverage")
+  from_Claim_coverage            Claim[]         @relation("Claim_coverage")
 
   @@index([stayId])
   @@index([payerId])
@@ -1493,6 +1522,8 @@ model Payer {
   from_CoveragePeriod_payer CoveragePeriod[] @relation("CoveragePeriod_payer")
   from_Charge_payer         Charge[]         @relation("Charge_payer")
   from_Authorisation_payer  Authorisation[]  @relation("Authorisation_payer")
+  from_Claim_payer          Claim[]          @relation("Claim_payer")
+  from_Remittance_payer     Remittance[]     @relation("Remittance_payer")
 }
 
 model PreAdmissionScreen {
@@ -1647,6 +1678,10 @@ model Resident {
   from_MdsAssessment_resident            MdsAssessment[]            @relation("MdsAssessment_resident")
   from_PdpmClassification_resident       PdpmClassification[]       @relation("PdpmClassification_resident")
   from_PriorSnfDaysObservation_resident  PriorSnfDaysObservation[]  @relation("PriorSnfDaysObservation_resident")
+  from_AncillaryInvoice_resident         AncillaryInvoice[]         @relation("AncillaryInvoice_resident")
+  from_Claim_resident                    Claim[]                    @relation("Claim_resident")
+  from_ClaimLine_resident                ClaimLine[]                @relation("ClaimLine_resident")
+  from_RemittancePosting_resident        RemittancePosting[]        @relation("RemittancePosting_resident")
 
   @@index([communityId])
   @@index([currentStayId])
@@ -1720,6 +1755,8 @@ model Stay {
   from_Authorisation_stay              Authorisation[]            @relation("Authorisation_stay")
   from_MdsAssessment_stay              MdsAssessment[]            @relation("MdsAssessment_stay")
   from_PdpmClassification_stay         PdpmClassification[]       @relation("PdpmClassification_stay")
+  from_AncillaryInvoice_stay           AncillaryInvoice[]         @relation("AncillaryInvoice_stay")
+  from_Claim_stay                      Claim[]                    @relation("Claim_stay")
 
   @@index([residentId])
   @@index([communityId])
@@ -4381,6 +4418,361 @@ model ReferenceRate {
 
   @@unique([component, geography, effectiveFrom], map: "ReferenceRate_component_geo_from_key")
   @@index([mappingVersionId])
+}
+
+model AncillaryInvoice {
+  id                  String     @id @default(cuid())
+  community           Community? @relation("AncillaryInvoice_community", fields: [communityId], references: [id])
+  communityId         String?    @map("community")
+  resident            Resident?  @relation("AncillaryInvoice_resident", fields: [residentId], references: [id])
+  residentId          String?    @map("resident")
+  stay                Stay?      @relation("AncillaryInvoice_stay", fields: [stayId], references: [id])
+  stayId              String?    @map("stay")
+  vendor              String     @default("")
+  invoiceNumber       String     @default("")
+  invoiceDate         DateTime?  @postgresql.Date
+  serviceDate         DateTime?  @postgresql.Date
+  category            String
+  description         String     @default("")
+  amountMinor         BigInt
+  consolidatedBilling Boolean    @default(false)
+  claim               Claim?     @relation("AncillaryInvoice_claim", fields: [claimId], references: [id])
+  claimId             String?    @map("claim")
+  status              String     @default("received")
+  receivedBy          User?      @relation("AncillaryInvoice_receivedBy", fields: [receivedById], references: [id])
+  receivedById        String?    @map("receivedBy")
+  approvedBy          User?      @relation("AncillaryInvoice_approvedBy", fields: [approvedById], references: [id])
+  approvedById        String?    @map("approvedBy")
+  paidAt              DateTime?
+  version             Int        @default(0)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([residentId])
+  @@index([stayId])
+  @@index([vendor])
+  @@index([claimId])
+  @@index([receivedById])
+  @@index([approvedById])
+}
+
+model Claim {
+  id                          String              @id @default(cuid())
+  community                   Community?          @relation("Claim_community", fields: [communityId], references: [id])
+  communityId                 String?             @map("community")
+  resident                    Resident?           @relation("Claim_resident", fields: [residentId], references: [id])
+  residentId                  String?             @map("resident")
+  stay                        Stay?               @relation("Claim_stay", fields: [stayId], references: [id])
+  stayId                      String?             @map("stay")
+  payer                       Payer?              @relation("Claim_payer", fields: [payerId], references: [id])
+  payerId                     String?             @map("payer")
+  coverage                    CoveragePeriod?     @relation("Claim_coverage", fields: [coverageId], references: [id])
+  coverageId                  String?             @map("coverage")
+  reference                   String              @unique @default("")
+  periodFrom                  DateTime?           @postgresql.Date
+  periodTo                    DateTime?           @postgresql.Date
+  typeOfBill                  String              @default("")
+  frequencyCode               String              @default("")
+  occurrenceCodes             Json?               @default("[]")
+  occurrenceSpans             Json?               @default("[]")
+  valueCodes                  Json?               @default("[]")
+  conditionCodes              Json?               @default("[]")
+  diagnoses                   Json?               @default("{}")
+  totalChargesMinor           BigInt
+  paidMinor                   BigInt?             @default(0)
+  exportText                  String              @default("")
+  denial                      Json?
+  status                      String              @default("draft")
+  previousClaim               Claim?              @relation("Claim_previousClaim", fields: [previousClaimId], references: [id])
+  previousClaimId             String?             @map("previousClaim")
+  scrubberResult              Json?
+  exportHash                  String              @default("")
+  exportedAt                  DateTime?
+  exportedBy                  User?               @relation("Claim_exportedBy", fields: [exportedById], references: [id])
+  exportedById                String?             @map("exportedBy")
+  uploadedAt                  DateTime?
+  uploadedBy                  User?               @relation("Claim_uploadedBy", fields: [uploadedById], references: [id])
+  uploadedById                String?             @map("uploadedBy")
+  validatedBy                 User?               @relation("Claim_validatedBy", fields: [validatedById], references: [id])
+  validatedById               String?             @map("validatedBy")
+  releasedBy                  User?               @relation("Claim_releasedBy", fields: [releasedById], references: [id])
+  releasedById                String?             @map("releasedBy")
+  payerClaimNumber            String              @default("")
+  attendingNpi                String              @default("")
+  attendingName               String              @default("")
+  ackStatus                   String
+  denialStatus                String
+  lines                       ClaimLine[]         @relation("ClaimLine_claim")
+  postings                    RemittancePosting[] @relation("RemittancePosting_claim")
+  version                     Int                 @default(0)
+  createdAt                   DateTime            @default(now())
+  updatedAt                   DateTime            @default(now()) @updatedAt
+  from_AncillaryInvoice_claim AncillaryInvoice[]  @relation("AncillaryInvoice_claim")
+  from_Claim_previousClaim    Claim[]             @relation("Claim_previousClaim")
+
+  @@index([communityId])
+  @@index([residentId])
+  @@index([stayId])
+  @@index([payerId])
+  @@index([coverageId])
+  @@index([previousClaimId])
+  @@index([exportedById])
+  @@index([uploadedById])
+  @@index([validatedById])
+  @@index([releasedById])
+}
+
+model ClaimLine {
+  id          String     @id @default(cuid())
+  community   Community? @relation("ClaimLine_community", fields: [communityId], references: [id])
+  communityId String?    @map("community")
+  resident    Resident?  @relation("ClaimLine_resident", fields: [residentId], references: [id])
+  residentId  String?    @map("resident")
+  claim       Claim?     @relation("ClaimLine_claim", fields: [claimId], references: [id])
+  claimId     String?    @map("claim")
+  lineNumber  Int
+  revenueCode String     @default("")
+  hippsCode   String     @default("")
+  serviceFrom DateTime?  @postgresql.Date
+  serviceTo   DateTime?  @postgresql.Date
+  units       Int
+  chargeMinor BigInt
+  paidMinor   BigInt?    @default(0)
+  chargeIds   Json?      @default("[]")
+  createdAt   DateTime?  @default(now())
+
+  @@index([communityId])
+  @@index([residentId])
+  @@index([claimId])
+}
+
+model Remittance {
+  id             String              @id @default(cuid())
+  community      Community?          @relation("Remittance_community", fields: [communityId], references: [id])
+  communityId    String?             @map("community")
+  payer          Payer?              @relation("Remittance_payer", fields: [payerId], references: [id])
+  payerId        String?             @map("payer")
+  traceNumber    String              @default("")
+  paymentDate    DateTime?           @postgresql.Date
+  totalPaidMinor BigInt
+  fileHash       String              @default("")
+  rawText        String              @default("")
+  status         String              @default("imported")
+  exceptions     Json?               @default("[]")
+  claimCount     Int?                @default(0)
+  importedBy     User?               @relation("Remittance_importedBy", fields: [importedById], references: [id])
+  importedById   String?             @map("importedBy")
+  postedBy       User?               @relation("Remittance_postedBy", fields: [postedById], references: [id])
+  postedById     String?             @map("postedBy")
+  postedAt       DateTime?
+  postings       RemittancePosting[] @relation("RemittancePosting_remittance")
+  version        Int                 @default(0)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([payerId])
+  @@index([traceNumber])
+  @@index([importedById])
+  @@index([postedById])
+}
+
+model RemittancePosting {
+  id                         String      @id @default(cuid())
+  community                  Community?  @relation("RemittancePosting_community", fields: [communityId], references: [id])
+  communityId                String?     @map("community")
+  resident                   Resident?   @relation("RemittancePosting_resident", fields: [residentId], references: [id])
+  residentId                 String?     @map("resident")
+  remittance                 Remittance? @relation("RemittancePosting_remittance", fields: [remittanceId], references: [id])
+  remittanceId               String?     @map("remittance")
+  claim                      Claim?      @relation("RemittancePosting_claim", fields: [claimId], references: [id])
+  claimId                    String?     @map("claim")
+  paidMinor                  BigInt
+  contractualMinor           BigInt?     @default(0)
+  patientResponsibilityMinor BigInt?     @default(0)
+  otherMinor                 BigInt?     @default(0)
+  adjustments                Json?       @default("[]")
+  chargeIds                  Json?       @default("[]")
+  createdAt                  DateTime?   @default(now())
+
+  @@index([communityId])
+  @@index([residentId])
+  @@index([remittanceId])
+  @@index([claimId])
+}
+
+model JobCode {
+  id                       String        @id @default(cuid())
+  community                Community?    @relation("JobCode_community", fields: [communityId], references: [id])
+  communityId              String?       @map("community")
+  code                     String        @default("")
+  title                    String        @default("")
+  pbjJobTitleCode          String        @default("")
+  countsTowardNursing      Boolean       @default(false)
+  status                   String        @default("active")
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @default(now()) @updatedAt
+  from_StaffMember_jobCode StaffMember[] @relation("StaffMember_jobCode")
+
+  @@index([communityId])
+  @@index([code])
+}
+
+model NhsnExport {
+  id            String     @id @default(cuid())
+  community     Community? @relation("NhsnExport_community", fields: [communityId], references: [id])
+  communityId   String?    @map("community")
+  reference     String     @unique @default("")
+  weekStart     DateTime?  @postgresql.Date
+  weekEnd       DateTime?  @postgresql.Date
+  counts        Json?
+  problems      Json?      @default("[]")
+  csv           String     @default("")
+  csvHash       String     @default("")
+  templateNote  String     @default("")
+  status        String     @default("generated")
+  generatedBy   User?      @relation("NhsnExport_generatedBy", fields: [generatedById], references: [id])
+  generatedById String?    @map("generatedBy")
+  uploadedAt    DateTime?
+  confirmation  String     @default("")
+  version       Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([generatedById])
+}
+
+model PbjQuarter {
+  id                String     @id @default(cuid())
+  community         Community? @relation("PbjQuarter_community", fields: [communityId], references: [id])
+  communityId       String?    @map("community")
+  reference         String     @unique @default("")
+  federalFiscalYear Int
+  quarter           Int
+  startDate         DateTime?  @postgresql.Date
+  endDate           DateTime?  @postgresql.Date
+  dueOn             DateTime?  @postgresql.Date
+  status            String     @default("open")
+  validation        Json?
+  xml               String     @default("")
+  xmlHash           String     @default("")
+  exportedAt        DateTime?
+  exportedBy        User?      @relation("PbjQuarter_exportedBy", fields: [exportedById], references: [id])
+  exportedById      String?    @map("exportedBy")
+  submittedAt       DateTime?
+  reportNote        String     @default("")
+  version           Int        @default(0)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([exportedById])
+}
+
+model StaffMember {
+  id                              String           @id @default(cuid())
+  community                       Community?       @relation("StaffMember_community", fields: [communityId], references: [id])
+  communityId                     String?          @map("community")
+  user                            User?            @relation("StaffMember_user", fields: [userId], references: [id])
+  userId                          String?          @map("user")
+  name                            String           @default("")
+  employeeId                      String           @default("")
+  jobCode                         JobCode?         @relation("StaffMember_jobCode", fields: [jobCodeId], references: [id])
+  jobCodeId                       String?          @map("jobCode")
+  payType                         String
+  agency                          Boolean          @default(false)
+  hireDate                        DateTime?        @postgresql.Date
+  terminationDate                 DateTime?        @postgresql.Date
+  status                          String           @default("active")
+  version                         Int              @default(0)
+  createdAt                       DateTime         @default(now())
+  updatedAt                       DateTime         @default(now()) @updatedAt
+  from_TimeCorrection_staffMember TimeCorrection[] @relation("TimeCorrection_staffMember")
+  from_TimePunch_staffMember      TimePunch[]      @relation("TimePunch_staffMember")
+  from_Timecard_staffMember       Timecard[]       @relation("Timecard_staffMember")
+
+  @@index([communityId])
+  @@index([userId])
+  @@index([employeeId])
+  @@index([jobCodeId])
+}
+
+model TimeCorrection {
+  id                        String       @id @default(cuid())
+  community                 Community?   @relation("TimeCorrection_community", fields: [communityId], references: [id])
+  communityId               String?      @map("community")
+  staffMember               StaffMember? @relation("TimeCorrection_staffMember", fields: [staffMemberId], references: [id])
+  staffMemberId             String?      @map("staffMember")
+  kind                      String
+  observedAt                DateTime
+  reason                    String       @default("")
+  status                    String       @default("requested")
+  requestedBy               User?        @relation("TimeCorrection_requestedBy", fields: [requestedById], references: [id])
+  requestedById             String?      @map("requestedBy")
+  decidedBy                 User?        @relation("TimeCorrection_decidedBy", fields: [decidedById], references: [id])
+  decidedById               String?      @map("decidedBy")
+  decidedAt                 DateTime?
+  decisionNote              String       @default("")
+  version                   Int          @default(0)
+  createdAt                 DateTime     @default(now())
+  updatedAt                 DateTime     @default(now()) @updatedAt
+  from_TimePunch_correction TimePunch[]  @relation("TimePunch_correction")
+
+  @@index([communityId])
+  @@index([staffMemberId])
+  @@index([requestedById])
+  @@index([decidedById])
+}
+
+model TimePunch {
+  id            String          @id @default(cuid())
+  community     Community?      @relation("TimePunch_community", fields: [communityId], references: [id])
+  communityId   String?         @map("community")
+  staffMember   StaffMember?    @relation("TimePunch_staffMember", fields: [staffMemberId], references: [id])
+  staffMemberId String?         @map("staffMember")
+  kind          String
+  observedAt    DateTime
+  source        String
+  punchHash     String          @unique @default("")
+  batch         String          @default("")
+  correction    TimeCorrection? @relation("TimePunch_correction", fields: [correctionId], references: [id])
+  correctionId  String?         @map("correction")
+  recordedBy    User?           @relation("TimePunch_recordedBy", fields: [recordedById], references: [id])
+  recordedById  String?         @map("recordedBy")
+  createdAt     DateTime?       @default(now())
+
+  @@index([communityId])
+  @@index([staffMemberId])
+  @@index([correctionId])
+  @@index([recordedById])
+}
+
+model Timecard {
+  id            String       @id @default(cuid())
+  community     Community?   @relation("Timecard_community", fields: [communityId], references: [id])
+  communityId   String?      @map("community")
+  staffMember   StaffMember? @relation("Timecard_staffMember", fields: [staffMemberId], references: [id])
+  staffMemberId String?      @map("staffMember")
+  weekStart     DateTime?    @postgresql.Date
+  dayMinutes    Json?        @default("{}")
+  totalMinutes  Int?         @default(0)
+  issues        Json?        @default("[]")
+  status        String       @default("open")
+  submittedBy   User?        @relation("Timecard_submittedBy", fields: [submittedById], references: [id])
+  submittedById String?      @map("submittedBy")
+  approvedBy    User?        @relation("Timecard_approvedBy", fields: [approvedById], references: [id])
+  approvedById  String?      @map("approvedBy")
+  approvedAt    DateTime?
+  version       Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([staffMemberId])
+  @@index([submittedById])
+  @@index([approvedById])
 }
 
 enum UserKindType {

@@ -16596,6 +16596,1315 @@ input ReferenceRateCreateInput {
   updatedAt: DateTime
 }
 
+type AncillaryInvoice {
+  id: ID!
+  community: Community
+  resident: Resident
+  stay: Stay
+  vendor: String
+  invoiceNumber: String
+  invoiceDate: CalendarDay
+  serviceDate: CalendarDay
+  category: String
+  description: String
+  amountMinor: BigInt
+  consolidatedBilling: Boolean
+  claim: Claim
+  status: String
+  receivedBy: User
+  approvedBy: User
+  paidAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AncillaryInvoiceWhereUniqueInput {
+  id: ID
+}
+
+input AncillaryInvoiceWhereInput {
+  AND: [AncillaryInvoiceWhereInput!]
+  OR: [AncillaryInvoiceWhereInput!]
+  NOT: [AncillaryInvoiceWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  stay: StayWhereInput
+  vendor: StringFilter
+  invoiceNumber: StringFilter
+  invoiceDate: CalendarDayNullableFilter
+  serviceDate: CalendarDayNullableFilter
+  category: StringFilter
+  description: StringFilter
+  amountMinor: BigIntFilter
+  consolidatedBilling: BooleanFilter
+  claim: ClaimWhereInput
+  status: StringFilter
+  receivedBy: UserWhereInput
+  approvedBy: UserWhereInput
+  paidAt: DateTimeNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input AncillaryInvoiceOrderByInput {
+  id: OrderDirection
+  vendor: OrderDirection
+  invoiceNumber: OrderDirection
+  invoiceDate: OrderDirection
+  serviceDate: OrderDirection
+  category: OrderDirection
+  description: OrderDirection
+  amountMinor: OrderDirection
+  consolidatedBilling: OrderDirection
+  status: OrderDirection
+  paidAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input AncillaryInvoiceUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  stay: StayRelateToOneForUpdateInput
+  vendor: String
+  invoiceNumber: String
+  invoiceDate: CalendarDay
+  serviceDate: CalendarDay
+  category: String
+  description: String
+  amountMinor: BigInt
+  consolidatedBilling: Boolean
+  claim: ClaimRelateToOneForUpdateInput
+  status: String
+  receivedBy: UserRelateToOneForUpdateInput
+  approvedBy: UserRelateToOneForUpdateInput
+  paidAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ClaimRelateToOneForUpdateInput {
+  create: ClaimCreateInput
+  connect: ClaimWhereUniqueInput
+  disconnect: Boolean
+}
+
+input AncillaryInvoiceUpdateArgs {
+  where: AncillaryInvoiceWhereUniqueInput!
+  data: AncillaryInvoiceUpdateInput!
+}
+
+input AncillaryInvoiceCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  stay: StayRelateToOneForCreateInput
+  vendor: String
+  invoiceNumber: String
+  invoiceDate: CalendarDay
+  serviceDate: CalendarDay
+  category: String
+  description: String
+  amountMinor: BigInt
+  consolidatedBilling: Boolean
+  claim: ClaimRelateToOneForCreateInput
+  status: String
+  receivedBy: UserRelateToOneForCreateInput
+  approvedBy: UserRelateToOneForCreateInput
+  paidAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ClaimRelateToOneForCreateInput {
+  create: ClaimCreateInput
+  connect: ClaimWhereUniqueInput
+}
+
+type Claim {
+  id: ID!
+  community: Community
+  resident: Resident
+  stay: Stay
+  payer: Payer
+  coverage: CoveragePeriod
+  reference: String
+  periodFrom: CalendarDay
+  periodTo: CalendarDay
+  typeOfBill: String
+  frequencyCode: String
+  occurrenceCodes: JSON
+  occurrenceSpans: JSON
+  valueCodes: JSON
+  conditionCodes: JSON
+  diagnoses: JSON
+  totalChargesMinor: BigInt
+  paidMinor: BigInt
+  exportText: String
+  denial: JSON
+  status: String
+  previousClaim: Claim
+  scrubberResult: JSON
+  exportHash: String
+  exportedAt: DateTime
+  exportedBy: User
+  uploadedAt: DateTime
+  uploadedBy: User
+  validatedBy: User
+  releasedBy: User
+  payerClaimNumber: String
+  attendingNpi: String
+  attendingName: String
+  ackStatus: String
+  denialStatus: String
+  lines(where: ClaimLineWhereInput! = {}, orderBy: [ClaimLineOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ClaimLineWhereUniqueInput): [ClaimLine!]
+  linesCount(where: ClaimLineWhereInput! = {}): Int
+  postings(where: RemittancePostingWhereInput! = {}, orderBy: [RemittancePostingOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RemittancePostingWhereUniqueInput): [RemittancePosting!]
+  postingsCount(where: RemittancePostingWhereInput! = {}): Int
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ClaimWhereUniqueInput {
+  id: ID
+  reference: String
+}
+
+input ClaimWhereInput {
+  AND: [ClaimWhereInput!]
+  OR: [ClaimWhereInput!]
+  NOT: [ClaimWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  stay: StayWhereInput
+  payer: PayerWhereInput
+  coverage: CoveragePeriodWhereInput
+  reference: StringFilter
+  periodFrom: CalendarDayNullableFilter
+  periodTo: CalendarDayNullableFilter
+  typeOfBill: StringFilter
+  frequencyCode: StringFilter
+  totalChargesMinor: BigIntFilter
+  paidMinor: BigIntNullableFilter
+  exportText: StringFilter
+  status: StringFilter
+  previousClaim: ClaimWhereInput
+  exportHash: StringFilter
+  exportedAt: DateTimeNullableFilter
+  exportedBy: UserWhereInput
+  uploadedAt: DateTimeNullableFilter
+  uploadedBy: UserWhereInput
+  validatedBy: UserWhereInput
+  releasedBy: UserWhereInput
+  payerClaimNumber: StringFilter
+  attendingNpi: StringFilter
+  attendingName: StringFilter
+  ackStatus: StringFilter
+  denialStatus: StringFilter
+  lines: ClaimLineManyRelationFilter
+  postings: RemittancePostingManyRelationFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input ClaimLineManyRelationFilter {
+  every: ClaimLineWhereInput
+  some: ClaimLineWhereInput
+  none: ClaimLineWhereInput
+}
+
+input RemittancePostingManyRelationFilter {
+  every: RemittancePostingWhereInput
+  some: RemittancePostingWhereInput
+  none: RemittancePostingWhereInput
+}
+
+input ClaimOrderByInput {
+  id: OrderDirection
+  reference: OrderDirection
+  periodFrom: OrderDirection
+  periodTo: OrderDirection
+  typeOfBill: OrderDirection
+  frequencyCode: OrderDirection
+  totalChargesMinor: OrderDirection
+  paidMinor: OrderDirection
+  exportText: OrderDirection
+  status: OrderDirection
+  exportHash: OrderDirection
+  exportedAt: OrderDirection
+  uploadedAt: OrderDirection
+  payerClaimNumber: OrderDirection
+  attendingNpi: OrderDirection
+  attendingName: OrderDirection
+  ackStatus: OrderDirection
+  denialStatus: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input ClaimUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  stay: StayRelateToOneForUpdateInput
+  payer: PayerRelateToOneForUpdateInput
+  coverage: CoveragePeriodRelateToOneForUpdateInput
+  reference: String
+  periodFrom: CalendarDay
+  periodTo: CalendarDay
+  typeOfBill: String
+  frequencyCode: String
+  occurrenceCodes: JSON
+  occurrenceSpans: JSON
+  valueCodes: JSON
+  conditionCodes: JSON
+  diagnoses: JSON
+  totalChargesMinor: BigInt
+  paidMinor: BigInt
+  exportText: String
+  denial: JSON
+  status: String
+  previousClaim: ClaimRelateToOneForUpdateInput
+  scrubberResult: JSON
+  exportHash: String
+  exportedAt: DateTime
+  exportedBy: UserRelateToOneForUpdateInput
+  uploadedAt: DateTime
+  uploadedBy: UserRelateToOneForUpdateInput
+  validatedBy: UserRelateToOneForUpdateInput
+  releasedBy: UserRelateToOneForUpdateInput
+  payerClaimNumber: String
+  attendingNpi: String
+  attendingName: String
+  ackStatus: String
+  denialStatus: String
+  lines: ClaimLineRelateToManyForUpdateInput
+  postings: RemittancePostingRelateToManyForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ClaimLineRelateToManyForUpdateInput {
+  disconnect: [ClaimLineWhereUniqueInput!]
+  set: [ClaimLineWhereUniqueInput!]
+  create: [ClaimLineCreateInput!]
+  connect: [ClaimLineWhereUniqueInput!]
+}
+
+input RemittancePostingRelateToManyForUpdateInput {
+  disconnect: [RemittancePostingWhereUniqueInput!]
+  set: [RemittancePostingWhereUniqueInput!]
+  create: [RemittancePostingCreateInput!]
+  connect: [RemittancePostingWhereUniqueInput!]
+}
+
+input ClaimUpdateArgs {
+  where: ClaimWhereUniqueInput!
+  data: ClaimUpdateInput!
+}
+
+input ClaimCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  stay: StayRelateToOneForCreateInput
+  payer: PayerRelateToOneForCreateInput
+  coverage: CoveragePeriodRelateToOneForCreateInput
+  reference: String
+  periodFrom: CalendarDay
+  periodTo: CalendarDay
+  typeOfBill: String
+  frequencyCode: String
+  occurrenceCodes: JSON
+  occurrenceSpans: JSON
+  valueCodes: JSON
+  conditionCodes: JSON
+  diagnoses: JSON
+  totalChargesMinor: BigInt
+  paidMinor: BigInt
+  exportText: String
+  denial: JSON
+  status: String
+  previousClaim: ClaimRelateToOneForCreateInput
+  scrubberResult: JSON
+  exportHash: String
+  exportedAt: DateTime
+  exportedBy: UserRelateToOneForCreateInput
+  uploadedAt: DateTime
+  uploadedBy: UserRelateToOneForCreateInput
+  validatedBy: UserRelateToOneForCreateInput
+  releasedBy: UserRelateToOneForCreateInput
+  payerClaimNumber: String
+  attendingNpi: String
+  attendingName: String
+  ackStatus: String
+  denialStatus: String
+  lines: ClaimLineRelateToManyForCreateInput
+  postings: RemittancePostingRelateToManyForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ClaimLineRelateToManyForCreateInput {
+  create: [ClaimLineCreateInput!]
+  connect: [ClaimLineWhereUniqueInput!]
+}
+
+input RemittancePostingRelateToManyForCreateInput {
+  create: [RemittancePostingCreateInput!]
+  connect: [RemittancePostingWhereUniqueInput!]
+}
+
+type ClaimLine {
+  id: ID!
+  community: Community
+  resident: Resident
+  claim: Claim
+  lineNumber: Int
+  revenueCode: String
+  hippsCode: String
+  serviceFrom: CalendarDay
+  serviceTo: CalendarDay
+  units: Int
+  chargeMinor: BigInt
+  paidMinor: BigInt
+  chargeIds: JSON
+  createdAt: DateTime
+}
+
+input ClaimLineWhereUniqueInput {
+  id: ID
+}
+
+input ClaimLineWhereInput {
+  AND: [ClaimLineWhereInput!]
+  OR: [ClaimLineWhereInput!]
+  NOT: [ClaimLineWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  claim: ClaimWhereInput
+  lineNumber: IntFilter
+  revenueCode: StringFilter
+  hippsCode: StringFilter
+  serviceFrom: CalendarDayNullableFilter
+  serviceTo: CalendarDayNullableFilter
+  units: IntFilter
+  chargeMinor: BigIntFilter
+  paidMinor: BigIntNullableFilter
+  createdAt: DateTimeNullableFilter
+}
+
+input ClaimLineOrderByInput {
+  id: OrderDirection
+  lineNumber: OrderDirection
+  revenueCode: OrderDirection
+  hippsCode: OrderDirection
+  serviceFrom: OrderDirection
+  serviceTo: OrderDirection
+  units: OrderDirection
+  chargeMinor: OrderDirection
+  paidMinor: OrderDirection
+  createdAt: OrderDirection
+}
+
+input ClaimLineUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  claim: ClaimRelateToOneForUpdateInput
+  lineNumber: Int
+  revenueCode: String
+  hippsCode: String
+  serviceFrom: CalendarDay
+  serviceTo: CalendarDay
+  units: Int
+  chargeMinor: BigInt
+  paidMinor: BigInt
+  chargeIds: JSON
+  createdAt: DateTime
+}
+
+input ClaimLineUpdateArgs {
+  where: ClaimLineWhereUniqueInput!
+  data: ClaimLineUpdateInput!
+}
+
+input ClaimLineCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  claim: ClaimRelateToOneForCreateInput
+  lineNumber: Int
+  revenueCode: String
+  hippsCode: String
+  serviceFrom: CalendarDay
+  serviceTo: CalendarDay
+  units: Int
+  chargeMinor: BigInt
+  paidMinor: BigInt
+  chargeIds: JSON
+  createdAt: DateTime
+}
+
+type Remittance {
+  id: ID!
+  community: Community
+  payer: Payer
+  traceNumber: String
+  paymentDate: CalendarDay
+  totalPaidMinor: BigInt
+  fileHash: String
+  status: String
+  exceptions: JSON
+  claimCount: Int
+  importedBy: User
+  postedBy: User
+  postedAt: DateTime
+  postings(where: RemittancePostingWhereInput! = {}, orderBy: [RemittancePostingOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RemittancePostingWhereUniqueInput): [RemittancePosting!]
+  postingsCount(where: RemittancePostingWhereInput! = {}): Int
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input RemittanceWhereUniqueInput {
+  id: ID
+}
+
+input RemittanceWhereInput {
+  AND: [RemittanceWhereInput!]
+  OR: [RemittanceWhereInput!]
+  NOT: [RemittanceWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  payer: PayerWhereInput
+  traceNumber: StringFilter
+  paymentDate: CalendarDayNullableFilter
+  fileHash: StringFilter
+  status: StringFilter
+  claimCount: IntNullableFilter
+  importedBy: UserWhereInput
+  postedBy: UserWhereInput
+  postedAt: DateTimeNullableFilter
+  postings: RemittancePostingManyRelationFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input RemittanceOrderByInput {
+  id: OrderDirection
+  traceNumber: OrderDirection
+  paymentDate: OrderDirection
+  fileHash: OrderDirection
+  status: OrderDirection
+  claimCount: OrderDirection
+  postedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input RemittanceUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  payer: PayerRelateToOneForUpdateInput
+  traceNumber: String
+  paymentDate: CalendarDay
+  totalPaidMinor: BigInt
+  fileHash: String
+  status: String
+  exceptions: JSON
+  claimCount: Int
+  importedBy: UserRelateToOneForUpdateInput
+  postedBy: UserRelateToOneForUpdateInput
+  postedAt: DateTime
+  postings: RemittancePostingRelateToManyForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input RemittanceUpdateArgs {
+  where: RemittanceWhereUniqueInput!
+  data: RemittanceUpdateInput!
+}
+
+input RemittanceCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  payer: PayerRelateToOneForCreateInput
+  traceNumber: String
+  paymentDate: CalendarDay
+  totalPaidMinor: BigInt
+  fileHash: String
+  status: String
+  exceptions: JSON
+  claimCount: Int
+  importedBy: UserRelateToOneForCreateInput
+  postedBy: UserRelateToOneForCreateInput
+  postedAt: DateTime
+  postings: RemittancePostingRelateToManyForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type RemittancePosting {
+  id: ID!
+  community: Community
+  resident: Resident
+  remittance: Remittance
+  claim: Claim
+  paidMinor: BigInt
+  contractualMinor: BigInt
+  patientResponsibilityMinor: BigInt
+  otherMinor: BigInt
+  adjustments: JSON
+  chargeIds: JSON
+  createdAt: DateTime
+}
+
+input RemittancePostingWhereUniqueInput {
+  id: ID
+}
+
+input RemittancePostingWhereInput {
+  AND: [RemittancePostingWhereInput!]
+  OR: [RemittancePostingWhereInput!]
+  NOT: [RemittancePostingWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  remittance: RemittanceWhereInput
+  claim: ClaimWhereInput
+  paidMinor: BigIntFilter
+  contractualMinor: BigIntNullableFilter
+  patientResponsibilityMinor: BigIntNullableFilter
+  otherMinor: BigIntNullableFilter
+  createdAt: DateTimeNullableFilter
+}
+
+input RemittancePostingOrderByInput {
+  id: OrderDirection
+  paidMinor: OrderDirection
+  contractualMinor: OrderDirection
+  patientResponsibilityMinor: OrderDirection
+  otherMinor: OrderDirection
+  createdAt: OrderDirection
+}
+
+input RemittancePostingUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  remittance: RemittanceRelateToOneForUpdateInput
+  claim: ClaimRelateToOneForUpdateInput
+  paidMinor: BigInt
+  contractualMinor: BigInt
+  patientResponsibilityMinor: BigInt
+  otherMinor: BigInt
+  adjustments: JSON
+  chargeIds: JSON
+  createdAt: DateTime
+}
+
+input RemittanceRelateToOneForUpdateInput {
+  create: RemittanceCreateInput
+  connect: RemittanceWhereUniqueInput
+  disconnect: Boolean
+}
+
+input RemittancePostingUpdateArgs {
+  where: RemittancePostingWhereUniqueInput!
+  data: RemittancePostingUpdateInput!
+}
+
+input RemittancePostingCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  remittance: RemittanceRelateToOneForCreateInput
+  claim: ClaimRelateToOneForCreateInput
+  paidMinor: BigInt
+  contractualMinor: BigInt
+  patientResponsibilityMinor: BigInt
+  otherMinor: BigInt
+  adjustments: JSON
+  chargeIds: JSON
+  createdAt: DateTime
+}
+
+input RemittanceRelateToOneForCreateInput {
+  create: RemittanceCreateInput
+  connect: RemittanceWhereUniqueInput
+}
+
+type JobCode {
+  id: ID!
+  community: Community
+  code: String
+  title: String
+  pbjJobTitleCode: String
+  countsTowardNursing: Boolean
+  status: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input JobCodeWhereUniqueInput {
+  id: ID
+}
+
+input JobCodeWhereInput {
+  AND: [JobCodeWhereInput!]
+  OR: [JobCodeWhereInput!]
+  NOT: [JobCodeWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  code: StringFilter
+  title: StringFilter
+  pbjJobTitleCode: StringFilter
+  countsTowardNursing: BooleanFilter
+  status: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input JobCodeOrderByInput {
+  id: OrderDirection
+  code: OrderDirection
+  title: OrderDirection
+  pbjJobTitleCode: OrderDirection
+  countsTowardNursing: OrderDirection
+  status: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input JobCodeUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  code: String
+  title: String
+  pbjJobTitleCode: String
+  countsTowardNursing: Boolean
+  status: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input JobCodeUpdateArgs {
+  where: JobCodeWhereUniqueInput!
+  data: JobCodeUpdateInput!
+}
+
+input JobCodeCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  code: String
+  title: String
+  pbjJobTitleCode: String
+  countsTowardNursing: Boolean
+  status: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type NhsnExport {
+  id: ID!
+  community: Community
+  reference: String
+  weekStart: CalendarDay
+  weekEnd: CalendarDay
+  counts: JSON
+  problems: JSON
+  csvHash: String
+  templateNote: String
+  status: String
+  generatedBy: User
+  uploadedAt: DateTime
+  confirmation: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input NhsnExportWhereUniqueInput {
+  id: ID
+  reference: String
+}
+
+input NhsnExportWhereInput {
+  AND: [NhsnExportWhereInput!]
+  OR: [NhsnExportWhereInput!]
+  NOT: [NhsnExportWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  reference: StringFilter
+  weekStart: CalendarDayNullableFilter
+  weekEnd: CalendarDayNullableFilter
+  csvHash: StringFilter
+  templateNote: StringFilter
+  status: StringFilter
+  generatedBy: UserWhereInput
+  uploadedAt: DateTimeNullableFilter
+  confirmation: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input NhsnExportOrderByInput {
+  id: OrderDirection
+  reference: OrderDirection
+  weekStart: OrderDirection
+  weekEnd: OrderDirection
+  csvHash: OrderDirection
+  templateNote: OrderDirection
+  status: OrderDirection
+  uploadedAt: OrderDirection
+  confirmation: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input NhsnExportUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  reference: String
+  weekStart: CalendarDay
+  weekEnd: CalendarDay
+  counts: JSON
+  problems: JSON
+  csvHash: String
+  templateNote: String
+  status: String
+  generatedBy: UserRelateToOneForUpdateInput
+  uploadedAt: DateTime
+  confirmation: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input NhsnExportUpdateArgs {
+  where: NhsnExportWhereUniqueInput!
+  data: NhsnExportUpdateInput!
+}
+
+input NhsnExportCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  reference: String
+  weekStart: CalendarDay
+  weekEnd: CalendarDay
+  counts: JSON
+  problems: JSON
+  csvHash: String
+  templateNote: String
+  status: String
+  generatedBy: UserRelateToOneForCreateInput
+  uploadedAt: DateTime
+  confirmation: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type PbjQuarter {
+  id: ID!
+  community: Community
+  reference: String
+  federalFiscalYear: Int
+  quarter: Int
+  startDate: CalendarDay
+  endDate: CalendarDay
+  dueOn: CalendarDay
+  status: String
+  validation: JSON
+  xmlHash: String
+  exportedAt: DateTime
+  exportedBy: User
+  submittedAt: DateTime
+  reportNote: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PbjQuarterWhereUniqueInput {
+  id: ID
+  reference: String
+}
+
+input PbjQuarterWhereInput {
+  AND: [PbjQuarterWhereInput!]
+  OR: [PbjQuarterWhereInput!]
+  NOT: [PbjQuarterWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  reference: StringFilter
+  federalFiscalYear: IntFilter
+  quarter: IntFilter
+  startDate: CalendarDayNullableFilter
+  endDate: CalendarDayNullableFilter
+  dueOn: CalendarDayNullableFilter
+  status: StringFilter
+  xmlHash: StringFilter
+  exportedAt: DateTimeNullableFilter
+  exportedBy: UserWhereInput
+  submittedAt: DateTimeNullableFilter
+  reportNote: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input PbjQuarterOrderByInput {
+  id: OrderDirection
+  reference: OrderDirection
+  federalFiscalYear: OrderDirection
+  quarter: OrderDirection
+  startDate: OrderDirection
+  endDate: OrderDirection
+  dueOn: OrderDirection
+  status: OrderDirection
+  xmlHash: OrderDirection
+  exportedAt: OrderDirection
+  submittedAt: OrderDirection
+  reportNote: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input PbjQuarterUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  reference: String
+  federalFiscalYear: Int
+  quarter: Int
+  startDate: CalendarDay
+  endDate: CalendarDay
+  dueOn: CalendarDay
+  status: String
+  validation: JSON
+  xmlHash: String
+  exportedAt: DateTime
+  exportedBy: UserRelateToOneForUpdateInput
+  submittedAt: DateTime
+  reportNote: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PbjQuarterUpdateArgs {
+  where: PbjQuarterWhereUniqueInput!
+  data: PbjQuarterUpdateInput!
+}
+
+input PbjQuarterCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  reference: String
+  federalFiscalYear: Int
+  quarter: Int
+  startDate: CalendarDay
+  endDate: CalendarDay
+  dueOn: CalendarDay
+  status: String
+  validation: JSON
+  xmlHash: String
+  exportedAt: DateTime
+  exportedBy: UserRelateToOneForCreateInput
+  submittedAt: DateTime
+  reportNote: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type StaffMember {
+  id: ID!
+  community: Community
+  user: User
+  name: String
+  employeeId: String
+  jobCode: JobCode
+  payType: String
+  agency: Boolean
+  hireDate: CalendarDay
+  terminationDate: CalendarDay
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input StaffMemberWhereUniqueInput {
+  id: ID
+}
+
+input StaffMemberWhereInput {
+  AND: [StaffMemberWhereInput!]
+  OR: [StaffMemberWhereInput!]
+  NOT: [StaffMemberWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  user: UserWhereInput
+  name: StringFilter
+  employeeId: StringFilter
+  jobCode: JobCodeWhereInput
+  payType: StringFilter
+  agency: BooleanFilter
+  hireDate: CalendarDayNullableFilter
+  terminationDate: CalendarDayNullableFilter
+  status: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input StaffMemberOrderByInput {
+  id: OrderDirection
+  name: OrderDirection
+  employeeId: OrderDirection
+  payType: OrderDirection
+  agency: OrderDirection
+  hireDate: OrderDirection
+  terminationDate: OrderDirection
+  status: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input StaffMemberUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  user: UserRelateToOneForUpdateInput
+  name: String
+  employeeId: String
+  jobCode: JobCodeRelateToOneForUpdateInput
+  payType: String
+  agency: Boolean
+  hireDate: CalendarDay
+  terminationDate: CalendarDay
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input JobCodeRelateToOneForUpdateInput {
+  create: JobCodeCreateInput
+  connect: JobCodeWhereUniqueInput
+  disconnect: Boolean
+}
+
+input StaffMemberUpdateArgs {
+  where: StaffMemberWhereUniqueInput!
+  data: StaffMemberUpdateInput!
+}
+
+input StaffMemberCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  user: UserRelateToOneForCreateInput
+  name: String
+  employeeId: String
+  jobCode: JobCodeRelateToOneForCreateInput
+  payType: String
+  agency: Boolean
+  hireDate: CalendarDay
+  terminationDate: CalendarDay
+  status: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input JobCodeRelateToOneForCreateInput {
+  create: JobCodeCreateInput
+  connect: JobCodeWhereUniqueInput
+}
+
+type TimeCorrection {
+  id: ID!
+  community: Community
+  staffMember: StaffMember
+  kind: String
+  observedAt: DateTime
+  reason: String
+  status: String
+  requestedBy: User
+  decidedBy: User
+  decidedAt: DateTime
+  decisionNote: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input TimeCorrectionWhereUniqueInput {
+  id: ID
+}
+
+input TimeCorrectionWhereInput {
+  AND: [TimeCorrectionWhereInput!]
+  OR: [TimeCorrectionWhereInput!]
+  NOT: [TimeCorrectionWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  staffMember: StaffMemberWhereInput
+  kind: StringFilter
+  observedAt: DateTimeFilter
+  reason: StringFilter
+  status: StringFilter
+  requestedBy: UserWhereInput
+  decidedBy: UserWhereInput
+  decidedAt: DateTimeNullableFilter
+  decisionNote: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input TimeCorrectionOrderByInput {
+  id: OrderDirection
+  kind: OrderDirection
+  observedAt: OrderDirection
+  reason: OrderDirection
+  status: OrderDirection
+  decidedAt: OrderDirection
+  decisionNote: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input TimeCorrectionUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  staffMember: StaffMemberRelateToOneForUpdateInput
+  kind: String
+  observedAt: DateTime
+  reason: String
+  status: String
+  requestedBy: UserRelateToOneForUpdateInput
+  decidedBy: UserRelateToOneForUpdateInput
+  decidedAt: DateTime
+  decisionNote: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input StaffMemberRelateToOneForUpdateInput {
+  create: StaffMemberCreateInput
+  connect: StaffMemberWhereUniqueInput
+  disconnect: Boolean
+}
+
+input TimeCorrectionUpdateArgs {
+  where: TimeCorrectionWhereUniqueInput!
+  data: TimeCorrectionUpdateInput!
+}
+
+input TimeCorrectionCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  staffMember: StaffMemberRelateToOneForCreateInput
+  kind: String
+  observedAt: DateTime
+  reason: String
+  status: String
+  requestedBy: UserRelateToOneForCreateInput
+  decidedBy: UserRelateToOneForCreateInput
+  decidedAt: DateTime
+  decisionNote: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input StaffMemberRelateToOneForCreateInput {
+  create: StaffMemberCreateInput
+  connect: StaffMemberWhereUniqueInput
+}
+
+type TimePunch {
+  id: ID!
+  community: Community
+  staffMember: StaffMember
+  kind: String
+  observedAt: DateTime
+  source: String
+  punchHash: String
+  batch: String
+  correction: TimeCorrection
+  recordedBy: User
+  createdAt: DateTime
+}
+
+input TimePunchWhereUniqueInput {
+  id: ID
+  punchHash: String
+}
+
+input TimePunchWhereInput {
+  AND: [TimePunchWhereInput!]
+  OR: [TimePunchWhereInput!]
+  NOT: [TimePunchWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  staffMember: StaffMemberWhereInput
+  kind: StringFilter
+  observedAt: DateTimeFilter
+  source: StringFilter
+  punchHash: StringFilter
+  batch: StringFilter
+  correction: TimeCorrectionWhereInput
+  recordedBy: UserWhereInput
+  createdAt: DateTimeNullableFilter
+}
+
+input TimePunchOrderByInput {
+  id: OrderDirection
+  kind: OrderDirection
+  observedAt: OrderDirection
+  source: OrderDirection
+  punchHash: OrderDirection
+  batch: OrderDirection
+  createdAt: OrderDirection
+}
+
+input TimePunchUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  staffMember: StaffMemberRelateToOneForUpdateInput
+  kind: String
+  observedAt: DateTime
+  source: String
+  punchHash: String
+  batch: String
+  correction: TimeCorrectionRelateToOneForUpdateInput
+  recordedBy: UserRelateToOneForUpdateInput
+  createdAt: DateTime
+}
+
+input TimeCorrectionRelateToOneForUpdateInput {
+  create: TimeCorrectionCreateInput
+  connect: TimeCorrectionWhereUniqueInput
+  disconnect: Boolean
+}
+
+input TimePunchUpdateArgs {
+  where: TimePunchWhereUniqueInput!
+  data: TimePunchUpdateInput!
+}
+
+input TimePunchCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  staffMember: StaffMemberRelateToOneForCreateInput
+  kind: String
+  observedAt: DateTime
+  source: String
+  punchHash: String
+  batch: String
+  correction: TimeCorrectionRelateToOneForCreateInput
+  recordedBy: UserRelateToOneForCreateInput
+  createdAt: DateTime
+}
+
+input TimeCorrectionRelateToOneForCreateInput {
+  create: TimeCorrectionCreateInput
+  connect: TimeCorrectionWhereUniqueInput
+}
+
+type Timecard {
+  id: ID!
+  community: Community
+  staffMember: StaffMember
+  weekStart: CalendarDay
+  dayMinutes: JSON
+  totalMinutes: Int
+  issues: JSON
+  status: String
+  submittedBy: User
+  approvedBy: User
+  approvedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input TimecardWhereUniqueInput {
+  id: ID
+}
+
+input TimecardWhereInput {
+  AND: [TimecardWhereInput!]
+  OR: [TimecardWhereInput!]
+  NOT: [TimecardWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  staffMember: StaffMemberWhereInput
+  weekStart: CalendarDayNullableFilter
+  totalMinutes: IntNullableFilter
+  status: StringFilter
+  submittedBy: UserWhereInput
+  approvedBy: UserWhereInput
+  approvedAt: DateTimeNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input TimecardOrderByInput {
+  id: OrderDirection
+  weekStart: OrderDirection
+  totalMinutes: OrderDirection
+  status: OrderDirection
+  approvedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input TimecardUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  staffMember: StaffMemberRelateToOneForUpdateInput
+  weekStart: CalendarDay
+  dayMinutes: JSON
+  totalMinutes: Int
+  issues: JSON
+  status: String
+  submittedBy: UserRelateToOneForUpdateInput
+  approvedBy: UserRelateToOneForUpdateInput
+  approvedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input TimecardUpdateArgs {
+  where: TimecardWhereUniqueInput!
+  data: TimecardUpdateInput!
+}
+
+input TimecardCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  staffMember: StaffMemberRelateToOneForCreateInput
+  weekStart: CalendarDay
+  dayMinutes: JSON
+  totalMinutes: Int
+  issues: JSON
+  status: String
+  submittedBy: UserRelateToOneForCreateInput
+  approvedBy: UserRelateToOneForCreateInput
+  approvedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -17526,6 +18835,78 @@ type Mutation {
   updateReferenceRates(data: [ReferenceRateUpdateArgs!]!): [ReferenceRate]
   deleteReferenceRate(where: ReferenceRateWhereUniqueInput!): ReferenceRate
   deleteReferenceRates(where: [ReferenceRateWhereUniqueInput!]!): [ReferenceRate]
+  createAncillaryInvoice(data: AncillaryInvoiceCreateInput!): AncillaryInvoice
+  createAncillaryInvoices(data: [AncillaryInvoiceCreateInput!]!): [AncillaryInvoice]
+  updateAncillaryInvoice(where: AncillaryInvoiceWhereUniqueInput!, data: AncillaryInvoiceUpdateInput!): AncillaryInvoice
+  updateAncillaryInvoices(data: [AncillaryInvoiceUpdateArgs!]!): [AncillaryInvoice]
+  deleteAncillaryInvoice(where: AncillaryInvoiceWhereUniqueInput!): AncillaryInvoice
+  deleteAncillaryInvoices(where: [AncillaryInvoiceWhereUniqueInput!]!): [AncillaryInvoice]
+  createClaim(data: ClaimCreateInput!): Claim
+  createClaims(data: [ClaimCreateInput!]!): [Claim]
+  updateClaim(where: ClaimWhereUniqueInput!, data: ClaimUpdateInput!): Claim
+  updateClaims(data: [ClaimUpdateArgs!]!): [Claim]
+  deleteClaim(where: ClaimWhereUniqueInput!): Claim
+  deleteClaims(where: [ClaimWhereUniqueInput!]!): [Claim]
+  createClaimLine(data: ClaimLineCreateInput!): ClaimLine
+  createClaimLines(data: [ClaimLineCreateInput!]!): [ClaimLine]
+  updateClaimLine(where: ClaimLineWhereUniqueInput!, data: ClaimLineUpdateInput!): ClaimLine
+  updateClaimLines(data: [ClaimLineUpdateArgs!]!): [ClaimLine]
+  deleteClaimLine(where: ClaimLineWhereUniqueInput!): ClaimLine
+  deleteClaimLines(where: [ClaimLineWhereUniqueInput!]!): [ClaimLine]
+  createRemittance(data: RemittanceCreateInput!): Remittance
+  createRemittances(data: [RemittanceCreateInput!]!): [Remittance]
+  updateRemittance(where: RemittanceWhereUniqueInput!, data: RemittanceUpdateInput!): Remittance
+  updateRemittances(data: [RemittanceUpdateArgs!]!): [Remittance]
+  deleteRemittance(where: RemittanceWhereUniqueInput!): Remittance
+  deleteRemittances(where: [RemittanceWhereUniqueInput!]!): [Remittance]
+  createRemittancePosting(data: RemittancePostingCreateInput!): RemittancePosting
+  createRemittancePostings(data: [RemittancePostingCreateInput!]!): [RemittancePosting]
+  updateRemittancePosting(where: RemittancePostingWhereUniqueInput!, data: RemittancePostingUpdateInput!): RemittancePosting
+  updateRemittancePostings(data: [RemittancePostingUpdateArgs!]!): [RemittancePosting]
+  deleteRemittancePosting(where: RemittancePostingWhereUniqueInput!): RemittancePosting
+  deleteRemittancePostings(where: [RemittancePostingWhereUniqueInput!]!): [RemittancePosting]
+  createJobCode(data: JobCodeCreateInput!): JobCode
+  createJobCodes(data: [JobCodeCreateInput!]!): [JobCode]
+  updateJobCode(where: JobCodeWhereUniqueInput!, data: JobCodeUpdateInput!): JobCode
+  updateJobCodes(data: [JobCodeUpdateArgs!]!): [JobCode]
+  deleteJobCode(where: JobCodeWhereUniqueInput!): JobCode
+  deleteJobCodes(where: [JobCodeWhereUniqueInput!]!): [JobCode]
+  createNhsnExport(data: NhsnExportCreateInput!): NhsnExport
+  createNhsnExports(data: [NhsnExportCreateInput!]!): [NhsnExport]
+  updateNhsnExport(where: NhsnExportWhereUniqueInput!, data: NhsnExportUpdateInput!): NhsnExport
+  updateNhsnExports(data: [NhsnExportUpdateArgs!]!): [NhsnExport]
+  deleteNhsnExport(where: NhsnExportWhereUniqueInput!): NhsnExport
+  deleteNhsnExports(where: [NhsnExportWhereUniqueInput!]!): [NhsnExport]
+  createPbjQuarter(data: PbjQuarterCreateInput!): PbjQuarter
+  createPbjQuarters(data: [PbjQuarterCreateInput!]!): [PbjQuarter]
+  updatePbjQuarter(where: PbjQuarterWhereUniqueInput!, data: PbjQuarterUpdateInput!): PbjQuarter
+  updatePbjQuarters(data: [PbjQuarterUpdateArgs!]!): [PbjQuarter]
+  deletePbjQuarter(where: PbjQuarterWhereUniqueInput!): PbjQuarter
+  deletePbjQuarters(where: [PbjQuarterWhereUniqueInput!]!): [PbjQuarter]
+  createStaffMember(data: StaffMemberCreateInput!): StaffMember
+  createStaffMembers(data: [StaffMemberCreateInput!]!): [StaffMember]
+  updateStaffMember(where: StaffMemberWhereUniqueInput!, data: StaffMemberUpdateInput!): StaffMember
+  updateStaffMembers(data: [StaffMemberUpdateArgs!]!): [StaffMember]
+  deleteStaffMember(where: StaffMemberWhereUniqueInput!): StaffMember
+  deleteStaffMembers(where: [StaffMemberWhereUniqueInput!]!): [StaffMember]
+  createTimeCorrection(data: TimeCorrectionCreateInput!): TimeCorrection
+  createTimeCorrections(data: [TimeCorrectionCreateInput!]!): [TimeCorrection]
+  updateTimeCorrection(where: TimeCorrectionWhereUniqueInput!, data: TimeCorrectionUpdateInput!): TimeCorrection
+  updateTimeCorrections(data: [TimeCorrectionUpdateArgs!]!): [TimeCorrection]
+  deleteTimeCorrection(where: TimeCorrectionWhereUniqueInput!): TimeCorrection
+  deleteTimeCorrections(where: [TimeCorrectionWhereUniqueInput!]!): [TimeCorrection]
+  createTimePunch(data: TimePunchCreateInput!): TimePunch
+  createTimePunches(data: [TimePunchCreateInput!]!): [TimePunch]
+  updateTimePunch(where: TimePunchWhereUniqueInput!, data: TimePunchUpdateInput!): TimePunch
+  updateTimePunches(data: [TimePunchUpdateArgs!]!): [TimePunch]
+  deleteTimePunch(where: TimePunchWhereUniqueInput!): TimePunch
+  deleteTimePunches(where: [TimePunchWhereUniqueInput!]!): [TimePunch]
+  createTimecard(data: TimecardCreateInput!): Timecard
+  createTimecards(data: [TimecardCreateInput!]!): [Timecard]
+  updateTimecard(where: TimecardWhereUniqueInput!, data: TimecardUpdateInput!): Timecard
+  updateTimecards(data: [TimecardUpdateArgs!]!): [Timecard]
+  deleteTimecard(where: TimecardWhereUniqueInput!): Timecard
+  deleteTimecards(where: [TimecardWhereUniqueInput!]!): [Timecard]
   endSession: Boolean!
   authenticateUserWithPassword(email: String!, password: String!): UserAuthenticationWithPasswordResult
   createInitialUser(data: CreateInitialUserInput!): UserAuthenticationWithPasswordSuccess!
@@ -18081,6 +19462,42 @@ type Query {
   referenceRate(where: ReferenceRateWhereUniqueInput!): ReferenceRate
   referenceRates(where: ReferenceRateWhereInput! = {}, orderBy: [ReferenceRateOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ReferenceRateWhereUniqueInput): [ReferenceRate!]
   referenceRatesCount(where: ReferenceRateWhereInput! = {}): Int
+  ancillaryInvoice(where: AncillaryInvoiceWhereUniqueInput!): AncillaryInvoice
+  ancillaryInvoices(where: AncillaryInvoiceWhereInput! = {}, orderBy: [AncillaryInvoiceOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AncillaryInvoiceWhereUniqueInput): [AncillaryInvoice!]
+  ancillaryInvoicesCount(where: AncillaryInvoiceWhereInput! = {}): Int
+  claim(where: ClaimWhereUniqueInput!): Claim
+  claims(where: ClaimWhereInput! = {}, orderBy: [ClaimOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ClaimWhereUniqueInput): [Claim!]
+  claimsCount(where: ClaimWhereInput! = {}): Int
+  claimLine(where: ClaimLineWhereUniqueInput!): ClaimLine
+  claimLines(where: ClaimLineWhereInput! = {}, orderBy: [ClaimLineOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ClaimLineWhereUniqueInput): [ClaimLine!]
+  claimLinesCount(where: ClaimLineWhereInput! = {}): Int
+  remittance(where: RemittanceWhereUniqueInput!): Remittance
+  remittances(where: RemittanceWhereInput! = {}, orderBy: [RemittanceOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RemittanceWhereUniqueInput): [Remittance!]
+  remittancesCount(where: RemittanceWhereInput! = {}): Int
+  remittancePosting(where: RemittancePostingWhereUniqueInput!): RemittancePosting
+  remittancePostings(where: RemittancePostingWhereInput! = {}, orderBy: [RemittancePostingOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RemittancePostingWhereUniqueInput): [RemittancePosting!]
+  remittancePostingsCount(where: RemittancePostingWhereInput! = {}): Int
+  jobCode(where: JobCodeWhereUniqueInput!): JobCode
+  jobCodes(where: JobCodeWhereInput! = {}, orderBy: [JobCodeOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: JobCodeWhereUniqueInput): [JobCode!]
+  jobCodesCount(where: JobCodeWhereInput! = {}): Int
+  nhsnExport(where: NhsnExportWhereUniqueInput!): NhsnExport
+  nhsnExports(where: NhsnExportWhereInput! = {}, orderBy: [NhsnExportOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: NhsnExportWhereUniqueInput): [NhsnExport!]
+  nhsnExportsCount(where: NhsnExportWhereInput! = {}): Int
+  pbjQuarter(where: PbjQuarterWhereUniqueInput!): PbjQuarter
+  pbjQuarters(where: PbjQuarterWhereInput! = {}, orderBy: [PbjQuarterOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PbjQuarterWhereUniqueInput): [PbjQuarter!]
+  pbjQuartersCount(where: PbjQuarterWhereInput! = {}): Int
+  staffMember(where: StaffMemberWhereUniqueInput!): StaffMember
+  staffMembers(where: StaffMemberWhereInput! = {}, orderBy: [StaffMemberOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: StaffMemberWhereUniqueInput): [StaffMember!]
+  staffMembersCount(where: StaffMemberWhereInput! = {}): Int
+  timeCorrection(where: TimeCorrectionWhereUniqueInput!): TimeCorrection
+  timeCorrections(where: TimeCorrectionWhereInput! = {}, orderBy: [TimeCorrectionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TimeCorrectionWhereUniqueInput): [TimeCorrection!]
+  timeCorrectionsCount(where: TimeCorrectionWhereInput! = {}): Int
+  timePunch(where: TimePunchWhereUniqueInput!): TimePunch
+  timePunches(where: TimePunchWhereInput! = {}, orderBy: [TimePunchOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TimePunchWhereUniqueInput): [TimePunch!]
+  timePunchesCount(where: TimePunchWhereInput! = {}): Int
+  timecard(where: TimecardWhereUniqueInput!): Timecard
+  timecards(where: TimecardWhereInput! = {}, orderBy: [TimecardOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TimecardWhereUniqueInput): [Timecard!]
+  timecardsCount(where: TimecardWhereInput! = {}): Int
   keystone: KeystoneMeta!
   authenticatedItem: AuthenticatedItem
   validateUserPasswordResetToken(email: String!, token: String!): ValidateUserPasswordResetTokenResult

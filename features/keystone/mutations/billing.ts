@@ -16,6 +16,8 @@ import * as mcdApp from '../billing/medicaidApplication'
 import { minorOf } from '../lib/money'
 import * as mds from '../mds/service'
 import * as cov from '../coverage/service'
+import * as claims from '../claims/service'
+import * as pbj from '../pbj/service'
 import { actorFor } from './actorFor'
 import { assertCommunityAccess, assertHuman, authorize, runDomain } from './run'
 import { requireKey } from './op'
@@ -65,6 +67,14 @@ const TRUST_SIGN: Permission[] = ['canApproveTrust']
 const MDS: Permission[] = ['canManageAssessments']
 const MDS_SUBMIT: Permission[] = ['canSubmitRegulatory']
 const COVERAGE: Permission[] = ['canManageBilling', 'canManageAssessments']
+const CLAIMS: Permission[] = ['canManageClaims']
+const CLAIM_RELEASE: Permission[] = ['canReleaseClaims']
+const POSTING: Permission[] = ['canPostPayments']
+const TIME: Permission[] = ['canManageTimecards']
+const TIME_APPROVE: Permission[] = ['canApproveTimecards']
+const PEOPLE: Permission[] = ['canManagePeople']
+const REGULATORY: Permission[] = ['canSubmitRegulatory']
+const bigint = (v: unknown, f: string) => money(v, f)
 const byMds = byRecord('MdsAssessment', 'assessmentId')
 const byCoverage = async (tx: Tx, i: Input) => {
   const id = i.coverageId
@@ -206,6 +216,39 @@ export const HANDLERS: Record<string, Handler> = {
   'trust.convey': { permissions: TRUST_OP, community: byLedger, serializable: true, run: (u, a, i) => trust.conveyBalance(u, a, { ledgerId: i.ledgerId, conveyedTo: String(i.conveyedTo ?? ''), effectiveOn: i.effectiveOn }) },
   'trust.reconcile': { permissions: TRUST_OP, community: byRecord('TrustAccount', 'accountId'), serializable: true, run: (u, a, i) => trust.prepareReconciliation(u, a, { accountId: i.accountId, month: i.month, bankBalanceMinor: money(i.bankBalanceMinor, 'bank balance') }) },
   'trust.sign_reconciliation': { permissions: TRUST_SIGN, community: byRecord('TrustReconciliation', 'reconciliationId'), run: (u, a, i) => trust.signReconciliation(u, a, { reconciliationId: i.reconciliationId }) },
+  // Claims (Phase 4b). Nothing is transmitted: the 837I is a file a person uploads, and every response is a file a person uploads back.
+  'claim.billing_profile': { permissions: CLAIMS, community: byCommunity, run: (u, a, i) => claims.saveBillingProfile(u, a, { communityId: i.communityId, npi: i.npi, taxId: i.taxId, taxonomy: i.taxonomy, zip4: i.zip4, ccn: i.ccn, payerId: i.payerId, electronicPayerId: i.electronicPayerId }) },
+  'claim.create_month': { permissions: CLAIMS, community: byCommunity, serializable: true, run: (u, a, i) => claims.createClaimsForMonth(u, a, { communityId: i.communityId, month: String(i.month ?? '') }) },
+  'claim.validate': { permissions: CLAIMS, community: byRecord('Claim', 'claimId'), run: (u, a, i) => claims.validateClaim(u, a, { claimId: i.claimId }) },
+  'claim.release': { permissions: CLAIM_RELEASE, community: byRecord('Claim', 'claimId'), run: (u, a, i) => claims.releaseClaim(u, a, { claimId: i.claimId }) },
+  'claim.export': { permissions: CLAIMS, community: byRecord('Claim', 'claimId'), run: (u, a, i) => claims.exportClaim(u, a, { claimId: i.claimId }) },
+  'claim.mark_submitted': { permissions: CLAIMS, community: byRecord('Claim', 'claimId'), run: (u, a, i) => claims.markSubmitted(u, a, { claimId: i.claimId, exportHash: String(i.exportHash ?? '') }) },
+  'claim.cancel': { permissions: CLAIMS, community: byRecord('Claim', 'claimId'), run: (u, a, i) => claims.cancelClaim(u, a, { claimId: i.claimId, reason: String(i.reason ?? '') }) },
+  'claim.upload_ack': { permissions: CLAIMS, community: byCommunity, run: (u, a, i) => claims.recordAcknowledgement(u, a, { communityId: i.communityId, text: String(i.text ?? ''), claimId: i.claimId || null }) },
+  'claim.work_denial': { permissions: CLAIMS, community: byRecord('Claim', 'claimId'), run: (u, a, i) => claims.workDenial(u, a, { claimId: i.claimId, to: String(i.to ?? ''), note: String(i.note ?? '') }) },
+  'remittance.import': { permissions: POSTING, community: byCommunity, serializable: true, run: (u, a, i) => claims.importRemittance(u, a, { communityId: i.communityId, payerId: String(i.payerId ?? ''), text: String(i.text ?? '') }) },
+  'remittance.post': { permissions: POSTING, community: byRecord('Remittance', 'remittanceId'), serializable: true, run: (u, a, i) => claims.postRemittance(u, a, { remittanceId: i.remittanceId }) },
+  'ancillary.receive': { permissions: CLAIMS, community: byCommunity, run: (u, a, i) => claims.receiveInvoice(u, a, { communityId: i.communityId, stayId: i.stayId, vendor: String(i.vendor ?? ''), invoiceNumber: String(i.invoiceNumber ?? ''), invoiceDate: i.invoiceDate, serviceDate: i.serviceDate, category: String(i.category ?? 'other'), description: i.description, amountMinor: bigint(i.amountMinor, 'amount') }) },
+  'ancillary.match': { permissions: CLAIMS, community: byRecord('AncillaryInvoice', 'invoiceId'), run: (u, a, i) => claims.matchInvoice(u, a, { invoiceId: i.invoiceId }) },
+  'ancillary.approve': { permissions: CLAIM_RELEASE, community: byRecord('AncillaryInvoice', 'invoiceId'), run: (u, a, i) => claims.approveInvoice(u, a, { invoiceId: i.invoiceId }) },
+  'ancillary.pay': { permissions: POSTING, community: byRecord('AncillaryInvoice', 'invoiceId'), run: (u, a, i) => claims.payInvoice(u, a, { invoiceId: i.invoiceId }) },
+
+  // Workforce, PBJ and NHSN (Phase 4b)
+  'workforce.job_code': { permissions: PEOPLE, community: byCommunity, run: (u, a, i) => pbj.saveJobCode(u, a, { communityId: i.communityId, code: String(i.code ?? ''), title: String(i.title ?? ''), pbjJobTitleCode: i.pbjJobTitleCode || null, countsTowardNursing: Boolean(i.countsTowardNursing) }) },
+  'workforce.staff': { permissions: PEOPLE, community: byCommunity, run: (u, a, i) => pbj.saveStaffMember(u, a, { communityId: i.communityId, employeeId: String(i.employeeId ?? ''), name: String(i.name ?? ''), jobCodeId: i.jobCodeId, payType: String(i.payType ?? ''), agency: Boolean(i.agency), hireDate: i.hireDate || null, terminationDate: i.terminationDate || null, userId: i.userId || null }) },
+  'workforce.import_punches': { permissions: TIME, community: byCommunity, run: (u, a, i) => pbj.importPunches(u, a, { communityId: i.communityId, csv: String(i.csv ?? '') }) },
+  'workforce.request_correction': { permissions: TIME, community: byRecord('StaffMember', 'staffMemberId'), run: (u, a, i) => pbj.requestCorrection(u, a, { staffMemberId: i.staffMemberId, kind: String(i.kind ?? ''), observedAt: String(i.observedAt ?? ''), reason: String(i.reason ?? '') }) },
+  'workforce.decide_correction': { permissions: TIME_APPROVE, community: byRecord('TimeCorrection', 'correctionId'), run: (u, a, i) => pbj.decideCorrection(u, a, { correctionId: i.correctionId, decision: i.decision, note: i.note }) },
+  'timecard.build': { permissions: TIME, community: byRecord('StaffMember', 'staffMemberId'), run: (u, a, i) => pbj.buildTimecard(u, a, { staffMemberId: i.staffMemberId, weekStart: String(i.weekStart ?? '') }) },
+  'timecard.submit': { permissions: TIME, community: byRecord('Timecard', 'timecardId'), run: (u, a, i) => pbj.submitTimecard(u, a, { timecardId: i.timecardId }) },
+  'timecard.approve': { permissions: TIME_APPROVE, community: byRecord('Timecard', 'timecardId'), run: (u, a, i) => pbj.approveTimecard(u, a, { timecardId: i.timecardId }) },
+  'timecard.reopen': { permissions: TIME_APPROVE, community: byRecord('Timecard', 'timecardId'), run: (u, a, i) => pbj.reopenTimecard(u, a, { timecardId: i.timecardId, reason: String(i.reason ?? '') }) },
+  'pbj.open_quarter': { permissions: REGULATORY, community: byCommunity, run: (u, a, i) => pbj.openPbjQuarter(u, a, { communityId: i.communityId, date: String(i.date ?? '') }) },
+  'pbj.validate': { permissions: REGULATORY, community: byRecord('PbjQuarter', 'quarterId'), run: (u, a, i) => pbj.validatePbjQuarter(u, a, { quarterId: i.quarterId }) },
+  'pbj.mark_exported': { permissions: REGULATORY, community: byRecord('PbjQuarter', 'quarterId'), run: (u, a, i) => pbj.markPbjExported(u, a, { quarterId: i.quarterId }) },
+  'pbj.record_outcome': { permissions: REGULATORY, community: byRecord('PbjQuarter', 'quarterId'), run: (u, a, i) => pbj.recordPbjOutcome(u, a, { quarterId: i.quarterId, outcome: i.outcome, note: i.note }) },
+  'nhsn.generate': { permissions: REGULATORY, community: byCommunity, run: (u, a, i) => pbj.generateNhsnWeek(u, a, { communityId: i.communityId, weekStart: String(i.weekStart ?? ''), covidPositive: i.covidPositive === undefined || i.covidPositive === '' ? undefined : Number(i.covidPositive), fluPositive: i.fluPositive === undefined || i.fluPositive === '' ? undefined : Number(i.fluPositive) }) },
+  'nhsn.record': { permissions: REGULATORY, community: byRecord('NhsnExport', 'exportId'), run: (u, a, i) => pbj.recordNhsnUpload(u, a, { exportId: i.exportId, step: i.step, confirmation: i.confirmation }) },
 }
 
 /** All Phase 3 commands are for a signed-in person at the dashboard: an agent never moves money. */

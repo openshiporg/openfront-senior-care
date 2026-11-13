@@ -1,5 +1,5 @@
 import {
-  Receipt, Tags, CalendarRange, Calculator, ShieldCheck, Landmark, PiggyBank, Activity, AlertTriangle, BedDouble, Bell, Pill, Lock, ShieldPlus, Stethoscope, Sparkles, BookOpenCheck, CalendarClock, ClipboardCheck, ClipboardList, Hourglass, KeyRound, ListChecks, LucideIcon, Moon, Settings, Store, Users,
+  FileText, Receipt, Tags, CalendarRange, Calculator, ShieldCheck, Landmark, PiggyBank, Activity, AlertTriangle, BedDouble, Bell, Pill, Lock, ShieldPlus, Stethoscope, Sparkles, BookOpenCheck, CalendarClock, ClipboardCheck, ClipboardList, Hourglass, KeyRound, ListChecks, LucideIcon, Moon, Settings, Store, Users,
 } from 'lucide-react'
 
 export interface PlatformNavItem {
@@ -46,6 +46,9 @@ export const platformNavItems: PlatformNavItem[] = [
   { title: 'PDPM', href: '/platform/mds/pdpm', color: 'indigo', description: 'Current HIPPS and per diem across the variable per diem.', icon: Calculator, group: 'billing' },
   { title: 'Coverage', href: '/platform/mds/coverage', color: 'emerald', description: 'Part A days, NOMNC clock, MA authorisations and hospice.', icon: ShieldCheck, group: 'billing' },
   { title: 'Medicaid liability', href: '/platform/billing/medicaid', color: 'indigo', description: 'Patient liability with reply and appeal deadlines.', icon: Landmark, group: 'billing' },
+  { title: 'Claims', href: '/platform/claims', color: 'emerald', description: 'Part A claims, 837I files, 835 remittances and denials.', icon: FileText, group: 'billing' },
+  { title: 'Staffing and PBJ', href: '/platform/workforce', color: 'blue', description: 'Timecards, punch corrections and the PBJ quarter export.', icon: Users, group: 'billing' },
+  { title: 'NHSN weekly report', href: '/platform/nhsn', color: 'rose', description: 'Weekly respiratory vaccination and case CSV.', icon: ClipboardCheck, group: 'clinical' },
   { title: 'Resident funds', href: '/platform/trust', color: 'amber', description: 'Resident trust ledgers, withdrawals and reconciliation.', icon: PiggyBank, group: 'billing' },
 
   { title: 'Approvals', href: '/platform/approvals', color: 'amber', description: 'Maker-checker requests waiting for a second person.', icon: ClipboardCheck, group: 'standalone' },
@@ -63,7 +66,7 @@ export const SHIPPED_ROUTES = new Set<string>([
   '/platform/clinical', '/platform/emar', '/platform/counts', '/platform/incidents', '/platform/ipac', '/platform/tasks', '/platform/findings',
   '/platform/sales', '/platform/sales/waitlist', '/platform/sales/storefront',
   '/platform/billing', '/platform/billing/rates', '/platform/billing/medicaid', '/platform/trust',
-  '/platform/mds', '/platform/mds/pdpm', '/platform/mds/coverage',
+  '/platform/mds', '/platform/mds/pdpm', '/platform/mds/coverage', '/platform/claims', '/platform/workforce', '/platform/nhsn',
   '/platform/approvals', '/platform/compliance', '/platform/privacy/break-glass', '/platform/audit',
 ])
 
