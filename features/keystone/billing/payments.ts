@@ -27,7 +27,7 @@ export const HAND_METHODS = ['check', 'cash', 'other'] as const
 const CURRENCY = 'USD'
 
 let override: PaymentAdapter | null = null
-/** Tests swap in the deterministic fake; production uses Stripe test mode. */
+/** Tests swap in the deterministic fake; production uses Stripe (the mode follows the key). */
 export const usePaymentAdapter = (adapter: PaymentAdapter | null) => { override = adapter }
 const adapter = () => override ?? adapterFor('stripe')
 const processorReady = () => override !== null || cardConfigured()
@@ -234,7 +234,7 @@ async function recordOutcome(db: Db, actor: Actor, paymentId: string, result: Ch
   return done.value
 }
 
-/** Charges a saved card or bank account (Stripe test). Call it once per click; the key makes a repeat harmless. */
+/** Charges a saved card or bank account. Call it once per click; the key makes a repeat harmless. */
 export async function chargeStatement(db: Db, actor: Actor, input: { statementId: string; method: 'card' | 'ach'; amountMinor: bigint; tokenId: string; autopay?: boolean; idempotencyKey: string; instalment?: InstalmentCharge }) {
   const amount = positive(input.amountMinor, 'amount')
   if (!processorReady()) throw new DomainError(Codes.GUARD_FAILED, 'Card payments are not set up on this server. Record the payment by hand.', { reason: 'no_processor' })

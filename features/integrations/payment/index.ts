@@ -35,7 +35,8 @@ const STRIPE = 'https://api.stripe.com/v1'
 function stripeKey() {
   const key = process.env.STRIPE_SECRET_KEY ?? ''
   if (!key) throw new Error('Card payments are not set up on this server yet.')
-  if (!key.startsWith('sk_test_') && !key.startsWith('rk_test_')) throw new Error('Only Stripe test keys are accepted here.')
+  // The mode follows the key: a test key charges Stripe's test network, a live key charges for real. Same code path.
+  if (!/^(sk|rk)_(test|live)_/.test(key)) throw new Error('The card processor key on this server is not a Stripe secret key.')
   return key
 }
 
@@ -100,6 +101,8 @@ async function findIntent(input: ChargeInput): Promise<ChargeResult> {
 export const stripeAdapter: PaymentAdapter = {
   key: 'stripe',
   async charge(input) {
+    // A card is always one the person typed into the card form and Stripe saved; there is no default card.
+    if (!input.paymentMethod) return { outcome: 'failed', providerRef: null, message: 'Choose a saved card first.' }
     try {
       // A card saved on file belongs to a Stripe customer; the intent must name it (off-session).
       let customer = input.customer
@@ -109,7 +112,7 @@ export const stripeAdapter: PaymentAdapter = {
       }
       const { status, json } = await stripeCall('/payment_intents', 'POST', {
         amount: input.amountMinor.toString(), currency: input.currencyCode.toLowerCase(), confirm: 'true',
-        payment_method: input.paymentMethod || 'pm_card_visa',
+        payment_method: input.paymentMethod as string,
         ...(customer ? { customer, off_session: 'true' } : {}),
         'automatic_payment_methods[enabled]': 'true', 'automatic_payment_methods[allow_redirects]': 'never',
         description: input.description,
@@ -186,31 +189,39 @@ export const terminalAdapter: PaymentAdapter = {
 
 const ADAPTERS: Record<string, PaymentAdapter> = { stripe: stripeAdapter, manual: manualAdapter, terminal: terminalAdapter }
 export const adapterFor = (key: string): PaymentAdapter => ADAPTERS[key] ?? manualAdapter
-export const cardConfigured = () => /^(sk|rk)_test_/.test(process.env.STRIPE_SECRET_KEY ?? '')
+export const cardConfigured = () => /^(sk|rk)_(test|live)_/.test(process.env.STRIPE_SECRET_KEY ?? '')
 
 export type SavedCard = { ok: true; customer: string; paymentMethod: string; brand: string; last4: string } | { ok: false; message: string }
 
 /**
- * Keep a card on file for a resident's account (vet-clinic donor): a Stripe customer and a confirmed off-session SetupIntent, so the
- * card is checked and the cardholder's agreement is held by the processor. Card numbers never touch this app: the form takes a
- * PaymentMethod id from Stripe (with a test key, `pm_card_visa`).
+ * Keep a card on file for a resident. Step 1 (server): a Stripe customer and a SetupIntent; the browser gets only its client secret.
+ * The card number is typed into Stripe's own card field (Stripe Elements) and goes straight to Stripe, never through this app.
  */
-export async function saveCard(input: { idempotencyKey: string; name: string; email?: string; paymentMethod: string; metadata?: Record<string, string> }): Promise<SavedCard> {
+export async function startCardSetup(input: { idempotencyKey: string; name: string; metadata: Record<string, string> }): Promise<{ ok: true; clientSecret: string; setupIntentId: string } | { ok: false; message: string }> {
   try {
-    const meta = Object.fromEntries(Object.entries(input.metadata ?? {}).map(([k, v]) => [`metadata[${k}]`, v]))
-    const cus = await stripeCall('/customers', 'POST', { name: input.name.slice(0, 120), ...(input.email ? { email: input.email } : {}), ...meta }, `${input.idempotencyKey}:customer`)
+    const meta = Object.fromEntries(Object.entries(input.metadata).map(([k, v]) => [`metadata[${k}]`, v]))
+    const cus = await stripeCall('/customers', 'POST', { name: input.name.slice(0, 120), ...meta }, `${input.idempotencyKey}:customer`)
     if (cus.status >= 400 || !cus.json.id) return { ok: false, message: 'The card processor could not start saving the card.' }
-    const seti = await stripeCall('/setup_intents', 'POST', {
-      customer: cus.json.id, payment_method: input.paymentMethod, confirm: 'true', usage: 'off_session',
-      'automatic_payment_methods[enabled]': 'true', 'automatic_payment_methods[allow_redirects]': 'never', ...meta,
-    }, `${input.idempotencyKey}:setup`)
-    if (seti.status >= 400) return { ok: false, message: String(seti.json.error?.message ?? 'The card was not accepted.') }
-    if (seti.json.status !== 'succeeded') return { ok: false, message: 'The bank needs the cardholder to confirm this card. Try another card.' }
-    const pmId = String(seti.json.payment_method ?? '')
-    const pm = await stripeCall(`/payment_methods/${encodeURIComponent(pmId)}`, 'GET', null)
-    const card = pm.json.card as { brand?: string; last4?: string } | undefined
-    return { ok: true, customer: String(cus.json.id), paymentMethod: pmId, brand: card?.brand ?? 'card', last4: card?.last4 ?? '' }
+    const seti = await stripeCall('/setup_intents', 'POST', { customer: cus.json.id, usage: 'off_session', 'payment_method_types[0]': 'card', ...meta }, `${input.idempotencyKey}:setup`)
+    if (seti.status >= 400 || !seti.json.client_secret) return { ok: false, message: 'The card processor could not start saving the card.' }
+    return { ok: true, clientSecret: String(seti.json.client_secret), setupIntentId: String(seti.json.id) }
   } catch (error) {
-    return { ok: false, message: error instanceof Error && /set up|test keys/.test(error.message) ? error.message : 'The card processor did not answer. Try again in a moment.' }
+    return { ok: false, message: error instanceof Error && /secret key/.test(error.message) ? 'Card payments are not set up on this server.' : 'The card processor did not answer. Try again in a moment.' }
+  }
+}
+
+/** Step 2 (server): read the SetupIntent back from Stripe. Only a succeeded one for this resident becomes a saved card. */
+export async function readCardSetup(setupIntentId: string, expectMetadata: Record<string, string>): Promise<SavedCard> {
+  try {
+    const got = await stripeCall(`/setup_intents/${encodeURIComponent(setupIntentId)}`, 'GET', null)
+    if (got.status !== 200) return { ok: false, message: 'The card processor could not confirm the card.' }
+    const j = got.json
+    if (j.status !== 'succeeded' || typeof j.payment_method !== 'string' || typeof j.customer !== 'string') return { ok: false, message: 'The card was not accepted. Try another card.' }
+    for (const [k, v] of Object.entries(expectMetadata)) if (j.metadata?.[k] !== v) return { ok: false, message: 'This card was set up for someone else.' }
+    const pm = await stripeCall(`/payment_methods/${encodeURIComponent(j.payment_method)}`, 'GET', null)
+    const card = pm.json.card as { brand?: string; last4?: string } | undefined
+    return { ok: true, customer: j.customer, paymentMethod: j.payment_method, brand: card?.brand ?? 'card', last4: card?.last4 ?? '' }
+  } catch {
+    return { ok: false, message: 'The card processor did not answer. Try again in a moment.' }
   }
 }

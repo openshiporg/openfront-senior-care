@@ -17,7 +17,7 @@ import { minorOf } from '../lib/money'
 import { actorFor } from './actorFor'
 import { assertCommunityAccess, assertHuman, authorize, runDomain } from './run'
 import { requireKey } from './op'
-import { saveCard } from '../../integrations/payment'
+import { cardConfigured, readCardSetup, startCardSetup } from '../../integrations/payment'
 import { command } from '../lib/command'
 import { auditCreate } from '../lib/cas'
 
@@ -98,18 +98,29 @@ export const HANDLERS: Record<string, Handler> = {
     permissions: ['canManagePayments'], community: byStatement, run: async () => ({}),
     external: (db, a, i) => pay.chargeStatement(db, a, { statementId: i.statementId, method: i.method === 'ach' ? 'ach' : 'card', amountMinor: money(i.amountMinor, 'amount'), tokenId: i.tokenId, idempotencyKey: String(i.__key) }),
   },
-  // Keep a card on file for a resident (Stripe customer + SetupIntent); card numbers never touch this app
+  // Keep a card on file for a resident: card.setup makes the Stripe customer + SetupIntent, the browser confirms it with Stripe Elements,
+  // card.save reads it back from Stripe and stores the payment method id (never the number)
+  'card.setup': {
+    permissions: ['canManagePayments'], community: byRecord('Resident', 'residentId'), run: async () => ({}),
+    external: async (db, _a, i) => {
+      const resident = await db.resident.findUnique({ where: { id: String(i.residentId ?? '') }, select: { id: true, firstName: true, lastName: true } })
+      if (!resident) throw new DomainError(Codes.NOT_FOUND, 'Resident not found.')
+      const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY ?? ''
+      if (!cardConfigured() || !publishableKey) throw new DomainError(Codes.GUARD_FAILED, 'Card payments are not set up on this server. Record the payment by hand.', { reason: 'no_processor' })
+      const started = await startCardSetup({ idempotencyKey: String(i.__key), name: `${resident.firstName} ${resident.lastName}`.trim() || 'Resident account', metadata: { resident: resident.id } })
+      if (!started.ok) throw new DomainError(Codes.GUARD_FAILED, started.message, { reason: 'card_not_started' })
+      return { clientSecret: started.clientSecret, setupIntentId: started.setupIntentId, publishableKey }
+    },
+  },
   'card.save': {
     permissions: ['canManagePayments'], community: byRecord('Resident', 'residentId'), run: async () => ({}),
     external: async (db, a, i) => {
-      const resident = await db.resident.findUnique({ where: { id: String(i.residentId ?? '') }, select: { id: true, communityId: true, firstName: true, lastName: true } })
+      const resident = await db.resident.findUnique({ where: { id: String(i.residentId ?? '') }, select: { id: true, communityId: true } })
       if (!resident) throw new DomainError(Codes.NOT_FOUND, 'Resident not found.')
-      const pm = String(i.paymentMethodId ?? '').trim()
-      if (!/^pm_[A-Za-z0-9_]{3,100}$/.test(pm)) throw new DomainError(Codes.INVALID_INPUT, 'Enter the card token from the card form (it starts with pm_).', { field: 'paymentMethodId' })
-      const card = await saveCard({ idempotencyKey: String(i.__key), name: `${resident.firstName} ${resident.lastName}`.trim() || 'Resident account', paymentMethod: pm, metadata: { resident: resident.id } })
+      const card = await readCardSetup(String(i.setupIntentId ?? ''), { resident: resident.id })
       if (!card.ok) throw new DomainError(Codes.GUARD_FAILED, card.message, { reason: 'card_not_saved' })
       const autopay = i.autopay === true || i.autopay === 'true'
-      const done = await command(db, { name: 'card.save.record', actor: a, idempotencyKey: `${String(i.__key)}:record`, params: { residentId: resident.id, paymentMethod: card.paymentMethod, autopay } }, async uow => {
+      const done = await command(db, { name: 'card.save', actor: a, idempotencyKey: String(i.__key), params: { residentId: resident.id, paymentMethod: card.paymentMethod, autopay } }, async uow => {
         const token = await uow.tx.paymentMethodToken.create({ data: { communityId: resident.communityId, residentId: resident.id, provider: 'card', brand: card.brand, last4: card.last4, token: card.paymentMethod, autopay, status: 'active' } })
         auditCreate(uow, a, 'PaymentMethodToken', token.id, 'payment_method.saved', { brand: card.brand, last4: card.last4, autopay })
         return { tokenId: token.id, brand: card.brand, last4: card.last4 }

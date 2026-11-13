@@ -6,7 +6,7 @@ import { stripeAdapter } from '@/features/integrations/payment'
 export const dynamic = 'force-dynamic'
 
 /**
- * Card processor events (Stripe test). The signature is checked first; the event is then recorded once by its own id, so a
+ * Card processor events (Stripe). The signature is checked first; the event is then recorded once by its own id, so a
  * replay answers 200 and changes nothing. No queue and no retry loop here: the processor retries by itself.
  */
 export async function POST(request: Request) {

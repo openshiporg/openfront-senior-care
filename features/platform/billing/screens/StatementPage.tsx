@@ -1,3 +1,4 @@
+import { SaveCardAction } from '@/features/platform/components/SaveCardAction';
 import { notFound } from 'next/navigation';
 import { q, currentCommunity } from '../../lib/server';
 import { label, money, when } from '../../lib/format';
@@ -69,12 +70,7 @@ export default async function StatementPage({ params }: { params: Promise<{ id: 
                 { name: 'amountMinor', label: 'Amount', type: 'money', required: true, defaultValue: (Number(balance) / 100).toFixed(2) },
               ]}>Charge card on file</BillingAction>
             ) : null}
-            {cards && s.resident ? (
-              <BillingAction op="card.save" input={{ residentId: s.resident.id }} fields={[
-                { name: 'paymentMethodId', label: 'Card token from the Stripe card form (starts with pm_; Stripe test card: pm_card_visa)', required: true, placeholder: 'pm_card_visa' },
-                { name: 'autopay', label: 'Use for autopay', type: 'checkbox' },
-              ]}>Save a card</BillingAction>
-            ) : null}
+            {cards && s.resident ? <SaveCardAction residentId={s.resident.id}>Save a card</SaveCardAction> : null}
             {!activePlan ? (
               <BillingAction op="plan.create" input={{ statementId: s.id }} fields={[
                 { name: 'instalments', label: 'Number of monthly instalments (2 to 24)', required: true, defaultValue: '3' },
