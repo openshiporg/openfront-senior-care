@@ -26,14 +26,16 @@ describe('variable per diem and interrupted stays', () => {
   it('PT/OT factor steps down 0.02 per week from day 21 and NTA triples on days 1-3', () => {
     expect([1, 20, 21, 27, 28, 97, 98, 100].map(ptOtVpd)).toEqual(['1.00', '1.00', '0.98', '0.98', '0.96', '0.78', '0.76', '0.76'])
   })
-  it('a return within 3 days continues the day count; a longer gap restarts at day 1', () => {
-    // Left after day 10 (Mar 10), back Mar 13 (2 days out): interrupted, Mar 13 is day 11.
+  it('RAI ch. 2 window: discharge day L+1 and the 2 following days; L+4 or later is a new stay (day 1)', () => {
+    const seg = (back: string) => [{ from: '2026-03-01', to: '2026-03-10' }, { from: back, to: null }]
+    // L = Mar 10. L+2 and L+3 continue the count; L+4 restarts.
+    expect(isInterruptedStay('2026-03-10', '2026-03-12')).toBe(true)
+    expect(vpdDayNumber(seg('2026-03-12'), '2026-03-12')).toBe(11)
     expect(isInterruptedStay('2026-03-10', '2026-03-13')).toBe(true)
-    expect(vpdDayNumber([{ from: '2026-03-01', to: '2026-03-10' }, { from: '2026-03-13', to: null }], '2026-03-13')).toBe(11)
-    // Back on Mar 14 (3 days out): still interrupted. Back Mar 15 (4 days out): a new stay, day 1.
-    expect(isInterruptedStay('2026-03-10', '2026-03-14')).toBe(true)
-    expect(isInterruptedStay('2026-03-10', '2026-03-15')).toBe(false)
-    expect(vpdDayNumber([{ from: '2026-03-01', to: '2026-03-10' }, { from: '2026-03-15', to: null }], '2026-03-15')).toBe(1)
+    expect(vpdDayNumber(seg('2026-03-13'), '2026-03-13')).toBe(11)
+    expect(isInterruptedStay('2026-03-10', '2026-03-14')).toBe(false)
+    expect(vpdDayNumber(seg('2026-03-14'), '2026-03-14')).toBe(1)
+    expect(vpdDayNumber(seg('2026-03-15'), '2026-03-15')).toBe(1)
   })
 })
 

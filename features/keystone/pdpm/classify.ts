@@ -151,9 +151,12 @@ export function perDiem(result: Pick<PdpmResult, 'cmi' | 'aids'>, rates: PdpmRat
 }
 
 /**
- * Interrupted stay (RESEARCH §8.2, verify): a return to the same SNF within 3 consecutive calendar days after leaving continues the
- * day count of the variable per-diem schedule (no new 5-day assessment); a longer gap starts a new stay at day 1.
- * `stays` are the covered Part A stretches at this SNF ({from, to} inclusive, to=null for the open one). Returns the VPD day number.
+ * Interrupted stay. Reading used: CMS RAI Version 3.0 Manual ch. 2 (Assessments for the RAI), "Interrupted Stay": the interruption
+ * window is 3 consecutive calendar days that START WITH THE DAY OF DISCHARGE and the 2 FOLLOWING calendar days, ending at 11:59 pm
+ * on the third day. A stretch's `to` is the last covered Part A day L (midnight census), so the day of discharge is L+1 and the window
+ * is L+1..L+3: a return on L+3 or earlier continues the variable per-diem day count (no new 5-day assessment); a return on L+4 or
+ * later is a NEW stay (VPD day 1, NTA x3, new 5-day). `stays` are the covered Part A stretches at this SNF ({from, to} inclusive,
+ * to=null for the open one). Returns the VPD day number.
  */
 export const INTERRUPTED_STAY_DAYS = 3
 export type StaySegment = { from: string; to: string | null }
@@ -161,7 +164,7 @@ export function vpdDayNumber(stays: readonly StaySegment[], day: string): number
   let count = 0
   let prevEnd: string | null = null
   for (const s of [...stays].sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0))) {
-    if (prevEnd !== null && daysBetween(prevEnd, s.from) - 1 > INTERRUPTED_STAY_DAYS) count = 0
+    if (prevEnd !== null && !isInterruptedStay(prevEnd, s.from)) count = 0
     const end = s.to ?? day
     if (day >= s.from && day <= end) return count + daysBetween(s.from, day) + 1
     if (day < s.from) return null
@@ -170,6 +173,6 @@ export function vpdDayNumber(stays: readonly StaySegment[], day: string): number
   }
   return null
 }
-/** True when the return on `returnOn` after leaving on `leftOn` (last day present) is an interrupted stay. */
-export const isInterruptedStay = (leftOn: string, returnOn: string) => daysBetween(leftOn, returnOn) - 1 <= INTERRUPTED_STAY_DAYS
+/** True when the return on `returnOn` after leaving on `leftOn` (L = last covered day; the return must fall on L+1..L+3) is an interrupted stay. */
+export const isInterruptedStay = (leftOn: string, returnOn: string) => daysBetween(leftOn, returnOn) <= INTERRUPTED_STAY_DAYS
 const daysBetween = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000)

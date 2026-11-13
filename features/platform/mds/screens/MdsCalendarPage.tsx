@@ -6,6 +6,7 @@ import { label, when } from '../../lib/format';
 import { Page, Section, Row, Empty, Meta, Title, CommunityTabs, Count } from '../../components/ui';
 import { BillingAction } from '../../components/BillingAction';
 
+const residentName = (r: { firstName: string | null; lastName: string | null } | null) => (r && (r.firstName || r.lastName) ? [r.lastName, r.firstName].filter(Boolean).join(', ') : 'Resident');
 type Stay = { id: string; admittedAt: string | null; dischargedAt: string | null; resident: { id: string; firstName: string; lastName: string } | null; coverages: { startDate: string; endDate: string | null; status: string; payer: { kind: string } | null }[] };
 type Mds = { id: string; reference: string; kind: string; ardDate: string; status: string; hipps: string | null; correctionNumber: number; stay: { id: string } | null; resident: { firstName: string; lastName: string } | null };
 type Submission = { id: string; reference: string; status: string; recordCount: number; fileName: string; generatedAt: string | null; fvrSummary: { accepted?: number; rejected?: number; notFound?: number } | null };
@@ -51,7 +52,7 @@ export default async function MdsCalendarPage({ searchParams }: { searchParams?:
         {rows.length ? rows.map(({ stay, windows }) => (
           <Row key={stay.id}>
             <div className="min-w-0 flex-1 basis-72 space-y-0.5">
-              <Title>{stay.resident ? `${stay.resident.lastName}, ${stay.resident.firstName}` : 'Resident'}</Title>
+              <Title>{residentName(stay.resident)}</Title>
               <Meta>Entry {when(stay.admittedAt, tz, 'date')}{stay.coverages.some(c => c.payer?.kind === 'medicare_a' && !c.endDate) ? ' · Medicare Part A' : ''}</Meta>
               {windows.length ? windows.map(w => (
                 <p key={`${w.kind}-${w.ardFrom}`} className="text-xs">
@@ -74,7 +75,7 @@ export default async function MdsCalendarPage({ searchParams }: { searchParams?:
       <Section title="Records in progress">
         {inProgress.length ? inProgress.map(m => (
           <Row key={m.id} href={`/dashboard/platform/mds/${m.id}`}>
-            <Title status={m.status}>{m.resident ? `${m.resident.lastName}, ${m.resident.firstName}` : 'Resident'} · {label(m.kind)}</Title>
+            <Title status={m.status}>{residentName(m.resident)} · {label(m.kind)}</Title>
             <Meta>{m.reference} · ARD {when(m.ardDate, tz, 'date')}{m.correctionNumber ? ` · correction ${m.correctionNumber}` : ''}</Meta>
           </Row>
         )) : <Empty>No records in progress.</Empty>}
@@ -84,7 +85,7 @@ export default async function MdsCalendarPage({ searchParams }: { searchParams?:
         <Meta>The file is built here and uploaded to iQIES by a person. Paste the Final Validation Report back to record what was accepted.</Meta>
         {completed.map(m => (
           <Row key={m.id} href={`/dashboard/platform/mds/${m.id}`}>
-            <Title status={m.status}>{m.resident ? `${m.resident.lastName}, ${m.resident.firstName}` : 'Resident'} · {label(m.kind)}</Title>
+            <Title status={m.status}>{residentName(m.resident)} · {label(m.kind)}</Title>
             <Meta>{m.reference} · ARD {when(m.ardDate, tz, 'date')}{m.hipps ? ` · HIPPS ${m.hipps}` : ''}</Meta>
           </Row>
         ))}

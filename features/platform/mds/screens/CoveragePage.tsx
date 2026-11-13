@@ -7,6 +7,7 @@ import { label, when } from '../../lib/format';
 import { Page, Section, Row, Empty, Meta, Title, CommunityTabs } from '../../components/ui';
 import { BillingAction } from '../../components/BillingAction';
 
+const residentName = (r: { firstName: string | null; lastName: string | null } | null) => (r && (r.firstName || r.lastName) ? [r.lastName, r.firstName].filter(Boolean).join(', ') : 'Resident');
 type Coverage = {
   id: string; status: string; startDate: string; endDate: string | null; lastCoveredDay: string | null; qualifyingStayFrom: string | null; qualifyingStayTo: string | null; qualifyingStayHospital: string;
   qualifyingStayEvidence: { id: string } | null; qualifyingStayEvidenceNote: string; skilledCertSignedAt: string | null; skilledCertBy: string; hospiceAgency: string; hospiceRoomBoardBps: number | null;
@@ -61,7 +62,7 @@ export default async function CoveragePage({ searchParams }: { searchParams?: Pr
           const notice = current ? extra.noticeDeliveries.find(n => n.subjectId === current.id && n.deliveredAt) ?? null : null;
           const clocks = coverageClocks({ lastCoveredDay: day(current?.lastCoveredDay), noticeOn: day(notice?.deliveredAt), today, auth: auth ? { authFrom: day(auth.authFrom), authTo: day(auth.authTo), lastReviewOn: day(auth.reviews[0]?.reviewedOn), intervalDays: auth.reviewIntervalDays, status: auth.status } : null });
           const qs = current?.payer?.kind === 'medicare_a' ? qualifyingStay({ inpatientFrom: day(current.qualifyingStayFrom), inpatientTo: day(current.qualifyingStayTo), snfAdmission: day(current.startDate)!, hasEvidence: Boolean(current.qualifyingStayEvidence || current.qualifyingStayEvidenceNote) }) : null;
-          const name = stay.resident ? `${stay.resident.lastName}, ${stay.resident.firstName}` : 'Resident';
+          const name = residentName(stay.resident);
           return (
             <Row key={stay.id}>
               <div className="min-w-0 flex-1 basis-72 space-y-0.5">

@@ -59,7 +59,7 @@ export function ptOtVpd(day: number): string {
   return toScale(new Decimal(1).minus(new Decimal('0.02').times(block)), 2)
 }
 export const ntaVpd = (day: number) => (day <= 3 ? '3.00' : '1.00')
-export const VPD_VERIFY_NOTE = 'PT/OT adjustment 1.00 days 1-20, then -0.02 per 7-day block (0.98 on 21-27 ... 0.76 on 98-100); NTA x3 days 1-3. Interrupted-stay window 3 consecutive days is carried from RESEARCH §8.2 (verify).'
+export const VPD_VERIFY_NOTE = 'PT/OT adjustment 1.00 days 1-20, then -0.02 per 7-day block (0.98 on 21-27 ... 0.76 on 98-100); NTA x3 days 1-3. Interrupted-stay window: RAI Manual ch. 2, day of discharge plus the 2 following days; a return on L+4 or later is a new stay.'
 export const AIDS_NURSING_ADDON = '1.18'
 
 /** NTA conditions: key -> points (CMS deck pp 35-38). `source` documents the MDS item. */

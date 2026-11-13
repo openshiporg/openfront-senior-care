@@ -8,9 +8,9 @@ var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __esm = (fn, res) => function __init() {
   return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
 };
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
+var __export = (target, all2) => {
+  for (var name in all2)
+    __defProp(target, name, { get: all2[name], enumerable: true });
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
@@ -213,9 +213,9 @@ function requirePermission(actor, ...anyOf2) {
     throw new DomainError(Codes.NOT_AUTHORIZED, `This needs the ${anyOf2.join(" or ")} permission.`);
   }
 }
-function requireScope(actor, scope2) {
+function requireScope(actor, scope3) {
   if (actor.kind !== "agent") return;
-  if (!actor.scopes.has(scope2)) throw new DomainError(Codes.NOT_AUTHORIZED, `The agent has no active ${scope2} grant.`);
+  if (!actor.scopes.has(scope3)) throw new DomainError(Codes.NOT_AUTHORIZED, `The agent has no active ${scope3} grant.`);
 }
 var systemActor, principalKey, actorUserId, actorAgentId;
 var init_actor = __esm({
@@ -238,11 +238,15 @@ function dec(value) {
     if (!Number.isSafeInteger(value)) throw new Error(`Refusing float ${value}: pass the exact decimal as a string`);
     return new Decimal(value);
   }
-  const text17 = String(value).trim();
-  if (!DECIMAL_TEXT.test(text17)) throw new Error(`Not a decimal number: ${JSON.stringify(text17).slice(0, 40)}`);
-  return new Decimal(text17);
+  const text18 = String(value).trim();
+  if (!DECIMAL_TEXT.test(text18)) throw new Error(`Not a decimal number: ${JSON.stringify(text18).slice(0, 40)}`);
+  return new Decimal(text18);
 }
-var import_decimal, Decimal, DECIMAL_TEXT, plain, ZERO, ONE, BPS;
+function toScale(value, scale, rounding = Decimal.ROUND_HALF_EVEN) {
+  const places = typeof scale === "number" ? scale : Scale[scale];
+  return dec(value).toDecimalPlaces(places, rounding).toFixed(places);
+}
+var import_decimal, Decimal, Scale, DECIMAL_TEXT, plain, ZERO, ONE, BPS;
 var init_decimal = __esm({
   "features/keystone/lib/decimal.ts"() {
     "use strict";
@@ -253,6 +257,7 @@ var init_decimal = __esm({
       toExpNeg: -40,
       toExpPos: 60
     });
+    Scale = { px: 10, qty: 18, units: 8, nav: 10, rate: 12 };
     DECIMAL_TEXT = /^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/;
     plain = (value) => dec(value).toFixed();
     ZERO = new Decimal(0);
@@ -407,9 +412,9 @@ __export(common_exports, {
   qty: () => qty,
   ref: () => ref,
   residentFor: () => residentFor,
-  text: () => text16,
+  text: () => text17,
   userOf: () => userOf,
-  when: () => when7
+  when: () => when8
 });
 async function residentFor(tx, residentId) {
   if (typeof residentId !== "string" || !residentId) return invalid("Choose a resident.", "residentId");
@@ -454,7 +459,7 @@ async function createTask(uow, actor, input) {
   auditCreate(uow, actor, "Task", task.id, "task.created", { kind: task.kind, ownerRole: task.ownerRole, subjectId: task.subjectId });
   return { task, created: true };
 }
-var invalid, notFound, text16, oneOf, when7, num, qty, communityZone, ROLE_NAMES, ref, userOf;
+var invalid, notFound, text17, oneOf, when8, num, qty, communityZone, ROLE_NAMES, ref, userOf;
 var init_common = __esm({
   "features/keystone/lib/clinical/common.ts"() {
     "use strict";
@@ -469,7 +474,7 @@ var init_common = __esm({
     notFound = (what) => {
       throw new DomainError(Codes.NOT_FOUND, `${what} not found.`);
     };
-    text16 = (value, field, options = {}) => {
+    text17 = (value, field, options = {}) => {
       const v = typeof value === "string" ? value.trim() : "";
       if (!v) {
         if (options.required === false) return "";
@@ -483,7 +488,7 @@ var init_common = __esm({
       if (!allowed.includes(value)) invalid(`Choose a valid ${field}.`, field);
       return value;
     };
-    when7 = (value, field, fallback) => {
+    when8 = (value, field, fallback) => {
       if (value == null || value === "") {
         if (fallback) return fallback;
         return invalid(`${field} is required.`, field);
@@ -493,11 +498,11 @@ var init_common = __esm({
       return d;
     };
     num = (value, field, options = {}) => {
-      const n = typeof value === "number" ? value : Number(String(value ?? ""));
-      if (!Number.isFinite(n)) return invalid(`${field} must be a number.`, field);
-      if (options.min !== void 0 && n < options.min) invalid(`${field} must be at least ${options.min}.`, field);
-      if (options.max !== void 0 && n > options.max) invalid(`${field} must be at most ${options.max}.`, field);
-      return n;
+      const n2 = typeof value === "number" ? value : Number(String(value ?? ""));
+      if (!Number.isFinite(n2)) return invalid(`${field} must be a number.`, field);
+      if (options.min !== void 0 && n2 < options.min) invalid(`${field} must be at least ${options.min}.`, field);
+      if (options.max !== void 0 && n2 > options.max) invalid(`${field} must be at most ${options.max}.`, field);
+      return n2;
     };
     qty = (value, field) => {
       try {
@@ -531,7 +536,7 @@ module.exports = __toCommonJS(keystone_exports);
 
 // features/keystone/index.ts
 var import_auth = require("@keystone-6/auth");
-var import_core19 = require("@keystone-6/core");
+var import_core20 = require("@keystone-6/core");
 var import_config = require("dotenv/config");
 
 // features/keystone/models/User.ts
@@ -671,6 +676,22 @@ var LABELS = {
   hold_release: "Bed-hold released",
   leave_start: "Leave started",
   leave_end: "Returned from leave",
+  pps_5day: "PPS 5-day",
+  ipa: "Interim payment assessment",
+  obra_admission: "OBRA admission",
+  obra_quarterly: "OBRA quarterly",
+  obra_annual: "OBRA annual",
+  obra_significant_change: "Significant change",
+  pps_discharge: "PPS discharge",
+  discharge_return_anticipated: "Discharge, return anticipated",
+  discharge_return_not_anticipated: "Discharge, return not anticipated",
+  death_in_facility: "Death in facility",
+  entry: "Entry tracking",
+  nomnc: "NOMNC (CMS-10123)",
+  snfabn: "SNF ABN (CMS-10055)",
+  due_today: "Due today",
+  delivered_in_time: "Delivered in time",
+  delivered_late: "Delivered late",
   operations: "Operations",
   pub: "Public",
   op: "Operational",
@@ -851,7 +872,7 @@ function isMcpAccessToken(token) {
   return typeof token === "string" && token.startsWith(MCP_ACCESS_PREFIX) && token.length > MCP_ACCESS_PREFIX.length;
 }
 function storedScopes(value) {
-  return Array.isArray(value) ? MCP_SCOPES.filter((scope2) => value.includes(scope2)) : [];
+  return Array.isArray(value) ? MCP_SCOPES.filter((scope3) => value.includes(scope3)) : [];
 }
 
 // features/keystone/models/OAuthApp.ts
@@ -1214,12 +1235,12 @@ function assignedCommunities(session, context) {
   const hit = cache.get(session);
   if (hit) return hit;
   const promise = (async () => {
-    const today = /* @__PURE__ */ new Date();
+    const today2 = /* @__PURE__ */ new Date();
     const rows = await context.sudo().prisma.staffAssignment.findMany({
       where: {
         userId: session.itemId,
         status: "active",
-        OR: [{ effectiveTo: null }, { effectiveTo: { gte: today } }]
+        OR: [{ effectiveTo: null }, { effectiveTo: { gte: today2 } }]
       },
       select: { communityId: true }
     });
@@ -1234,9 +1255,9 @@ function communityWhere(path, ids) {
   return where;
 }
 var assignedFilter = (path) => async ({ session, context }) => {
-  const scope2 = await assignedCommunities(session, context);
-  if (scope2 === "all") return true;
-  return communityWhere(path, scope2);
+  const scope3 = await assignedCommunities(session, context);
+  if (scope3 === "all") return true;
+  return communityWhere(path, scope3);
 };
 var rule2 = (permission) => Array.isArray(permission) ? anyOf(...permission) : anyOf(permission);
 var sys2 = () => false;
@@ -1609,7 +1630,7 @@ var Document = (0, import_core7.list)({
   },
   fields: {
     title: (0, import_fields7.text)({ validation: { isRequired: true } }),
-    kind: choice(["admission_agreement", "residency_agreement", "notice", "bed_hold_policy", "authority", "advance_directive", "referral_packet", "pasrr", "photo", "floor_plan", "policy", "pack_source", "other"], "other"),
+    kind: choice(["admission_agreement", "residency_agreement", "notice", "bed_hold_policy", "authority", "advance_directive", "referral_packet", "pasrr", "photo", "floor_plan", "policy", "pack_source", "qualifying_stay", "mds_submission", "other"], "other"),
     community: (0, import_fields7.relationship)({ ref: "Community", ...readOnly }),
     resident: (0, import_fields7.relationship)({ ref: "Resident", ...readOnly }),
     phiTier: (0, import_fields7.select)({ type: "string", options: ["pub", "op", "dem", "clin", "sens", "ident", "fin"].map((value) => ({ label: label(value), value })), defaultValue: "op", validation: { isRequired: true }, ...readOnly }),
@@ -2024,8 +2045,8 @@ __export(residents_exports, {
   ResidentIdentifier: () => ResidentIdentifier,
   Stay: () => Stay
 });
-var import_core10 = require("@keystone-6/core");
-var import_fields10 = require("@keystone-6/core/fields");
+var import_core11 = require("@keystone-6/core");
+var import_fields11 = require("@keystone-6/core/fields");
 init_access();
 
 // features/keystone/models/phi.ts
@@ -2085,6 +2106,13 @@ function phiFields(listKey, spec) {
   }
   return out;
 }
+function phiGatedFields(listKey, spec) {
+  const gated = Object.fromEntries(Object.entries(spec).map(([key, [tier, factory, config2 = {}]]) => {
+    const gate = ({ session }) => tierAllows(session, tier);
+    return [key, [tier, factory, { ...config2, isFilterable: gate, isOrderable: gate }]];
+  }));
+  return phiFields(listKey, gated);
+}
 
 // features/keystone/models/residentAccess.ts
 init_access();
@@ -2092,10 +2120,10 @@ var sys3 = () => false;
 var ro = readOnly;
 var opt = (values) => ({ type: "string", options: values.map((value) => ({ label: label(value), value })) });
 var residentScope = (path, residentPath) => async ({ session, context }) => {
-  const scope2 = await assignedCommunities(session, context);
-  if (scope2 === "all") return true;
+  const scope3 = await assignedCommunities(session, context);
+  if (scope3 === "all") return true;
   const glass = [...await breakGlassResidents(session, context)];
-  const own = communityWhere(path, scope2);
+  const own = communityWhere(path, scope3);
   if (!glass.length) return own;
   let glassWhere = { id: { in: glass } };
   for (const key of [...residentPath].reverse()) glassWhere = { [key]: glassWhere };
@@ -2110,344 +2138,583 @@ var phiList = (key) => {
   return key;
 };
 
+// features/keystone/models/mds.ts
+var mds_exports = {};
+__export(mds_exports, {
+  Authorisation: () => Authorisation,
+  BenefitPeriodCounter: () => BenefitPeriodCounter,
+  ConcurrentReview: () => ConcurrentReview,
+  MDS_KINDS: () => MDS_KINDS,
+  MdsAssessment: () => MdsAssessment,
+  MdsSubmission: () => MdsSubmission,
+  PdpmClassification: () => PdpmClassification,
+  PdpmMappingVersion: () => PdpmMappingVersion,
+  PriorSnfDaysObservation: () => PriorSnfDaysObservation,
+  ReferenceRate: () => ReferenceRate,
+  coverageDepthFields: () => coverageDepthFields
+});
+var import_core10 = require("@keystone-6/core");
+var import_fields10 = require("@keystone-6/core/fields");
+init_access();
+var MDS_READ = ["canReadClinical", "canManageAssessments"];
+var PDPM_READ = ["canReadClinical", "canManageAssessments", "canReadBilling"];
+var SUBMIT_READ = ["canSubmitRegulatory", "canManageAssessments"];
+var COVERAGE_READ = ["canReadBilling", "canManageBilling", "canManageAssessments"];
+var rl = (read) => residentList(["community"], ["resident"], read);
+var scope = () => ({
+  resident: (0, import_fields10.relationship)({ ref: "Resident", ...ro }),
+  community: (0, import_fields10.relationship)({ ref: "Community", ...ro }),
+  stay: (0, import_fields10.relationship)({ ref: "Stay", ...ro })
+});
+var day = () => (0, import_fields10.calendarDay)({ ...ro });
+var when = () => (0, import_fields10.timestamp)({ ...ro });
+var by = () => (0, import_fields10.relationship)({ ref: "User", ...ro });
+var staffRead2 = { operation: { query: isStaff, create: () => false, update: () => false, delete: () => false } };
+var MDS_KINDS = [
+  "obra_admission",
+  "obra_quarterly",
+  "obra_annual",
+  "obra_significant_change",
+  "pps_5day",
+  "ipa",
+  "discharge_return_anticipated",
+  "discharge_return_not_anticipated",
+  "pps_discharge",
+  "entry",
+  "death_in_facility"
+];
+var MdsAssessment = (0, import_core10.list)({
+  access: rl(MDS_READ),
+  ui: { labelField: "reference", listView: { initialColumns: ["reference", "kind", "resident", "ardDate", "status", "hipps"] } },
+  fields: {
+    ...scope(),
+    reference: systemText({ indexed: "unique", required: true }),
+    kind: fixedChoice(MDS_KINDS),
+    ardDate: (0, import_fields10.calendarDay)({ ...ro, validation: { isRequired: true } }),
+    itemSet: (0, import_fields10.relationship)({ ref: "AssessmentTemplate", ...ro }),
+    itemSetVersion: systemText(),
+    ...phiGatedFields("MdsAssessment", {
+      items: ["clin", import_fields10.json, ro],
+      caaTriggers: ["clin", import_fields10.json, ro],
+      editResults: ["clin", import_fields10.json, ro],
+      hipps: ["fin", import_fields10.text, ro]
+    }),
+    signatures: (0, import_fields10.json)({ ...ro, defaultValue: [], ui: { ...ro.ui, description: "Section signatures (Z0400): who attested which sections and when. Append-only." } }),
+    status: lifecycle(["in_progress", "completed", "exported", "accepted", "rejected", "superseded", "entered_in_error"], "in_progress"),
+    completedAt: when(),
+    completedBy: by(),
+    correctionOf: (0, import_fields10.relationship)({ ref: "MdsAssessment", ...ro }),
+    correctionNumber: (0, import_fields10.integer)({ defaultValue: 0, ...ro }),
+    correctionReason: systemText(),
+    submission: (0, import_fields10.relationship)({ ref: "MdsSubmission.assessments", ...ro }),
+    acceptedAt: when(),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+phiList("MdsAssessment");
+var PdpmClassification = (0, import_core10.list)({
+  access: rl(PDPM_READ),
+  ui: { labelField: "hipps", listView: { initialColumns: ["hipps", "resident", "effectiveFrom", "status"] } },
+  fields: {
+    ...scope(),
+    assessment: (0, import_fields10.relationship)({ ref: "MdsAssessment", ...ro }),
+    mappingVersion: (0, import_fields10.relationship)({ ref: "PdpmMappingVersion", ...ro }),
+    indicator: fixedChoice(["five_day", "ipa", "obra"]),
+    effectiveFrom: (0, import_fields10.calendarDay)({ ...ro, validation: { isRequired: true } }),
+    ...phiGatedFields("PdpmClassification", {
+      hipps: ["fin", import_fields10.text, ro],
+      groups: ["clin", import_fields10.json, ro],
+      cmi: ["fin", import_fields10.json, ro],
+      functionScores: ["clin", import_fields10.json, ro]
+    }),
+    inputHash: systemText(),
+    status: lifecycle(["current", "superseded"], "current"),
+    supersededBy: (0, import_fields10.relationship)({ ref: "PdpmClassification", ...ro }),
+    ...trackingFields
+  }
+});
+phiList("PdpmClassification");
+var MdsSubmission = (0, import_core10.list)({
+  access: residentList(["community"], [], SUBMIT_READ),
+  ui: { labelField: "reference", listView: { initialColumns: ["reference", "status", "recordCount", "generatedAt", "fvrParsedAt"] } },
+  fields: {
+    community: (0, import_fields10.relationship)({ ref: "Community", ...ro }),
+    reference: systemText({ indexed: "unique", required: true }),
+    assessments: (0, import_fields10.relationship)({ ref: "MdsAssessment.submission", many: true, ...ro }),
+    recordCount: (0, import_fields10.integer)({ defaultValue: 0, ...ro }),
+    ...phiGatedFields("MdsSubmission", { payload: ["clin", import_fields10.json, ro], fvr: ["clin", import_fields10.json, ro] }),
+    fileHash: systemText(),
+    fileName: systemText(),
+    status: lifecycle(["generated", "uploaded", "accepted", "partially_accepted", "rejected"], "generated"),
+    generatedAt: when(),
+    generatedBy: by(),
+    uploadedAt: when(),
+    uploadedBy: by(),
+    fvrParsedAt: when(),
+    fvrSummary: (0, import_fields10.json)({ ...ro }),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+phiList("MdsSubmission");
+var PdpmMappingVersion = (0, import_core10.list)({
+  access: staffRead2,
+  ui: { labelField: "code", listView: { initialColumns: ["code", "effectiveFrom", "effectiveTo", "status"] } },
+  fields: {
+    code: systemText({ indexed: "unique", required: true }),
+    effectiveFrom: day(),
+    effectiveTo: day(),
+    tables: (0, import_fields10.json)({ ...ro, ui: { ...ro.ui, description: "CMIs, group tables and NTA points as decimal strings." } }),
+    sourceNote: systemText(),
+    verifyNote: systemText(),
+    status: lifecycle(["active", "retired"], "active"),
+    ...trackingFields
+  }
+});
+var ReferenceRate = (0, import_core10.list)({
+  access: staffRead2,
+  ui: { labelField: "component", listView: { initialColumns: ["component", "geography", "rate", "effectiveFrom", "effectiveTo"] } },
+  fields: {
+    mappingVersion: (0, import_fields10.relationship)({ ref: "PdpmMappingVersion", ...ro }),
+    component: fixedChoice(["pt", "ot", "slp", "nursing", "nta", "non_case_mix", "wage_index", "snf_coinsurance"]),
+    geography: systemText({ required: true }),
+    rate: rate({ required: true }),
+    laborShare: factor(),
+    effectiveFrom: day(),
+    effectiveTo: day(),
+    sourceNote: systemText(),
+    verifyNote: systemText(),
+    ...trackingFields
+  }
+});
+var PriorSnfDaysObservation = (0, import_core10.list)({
+  access: rl(COVERAGE_READ),
+  ui: { listView: { initialColumns: ["resident", "source", "daysUsed", "asOf"] } },
+  fields: {
+    resident: (0, import_fields10.relationship)({ ref: "Resident", ...ro }),
+    community: (0, import_fields10.relationship)({ ref: "Community", ...ro }),
+    source: fixedChoice(["hets", "cwf_manual", "hospital_record", "resident_report"]),
+    ...phiGatedFields("PriorSnfDaysObservation", { daysUsed: ["fin", import_fields10.integer, { ...ro, validation: { isRequired: true } }] }),
+    asOf: day(),
+    spellStart: day(),
+    document: (0, import_fields10.relationship)({ ref: "Document", ...ro }),
+    note: systemText(),
+    recordedBy: by(),
+    ...trackingFields
+  }
+});
+phiList("PriorSnfDaysObservation");
+var BenefitPeriodCounter = (0, import_core10.list)({
+  access: rl(COVERAGE_READ),
+  ui: { listView: { initialColumns: ["resident", "spellStart", "fullDaysUsed", "coinsuranceDaysUsed", "computedAt"] } },
+  fields: {
+    resident: (0, import_fields10.relationship)({ ref: "Resident", ...ro }),
+    community: (0, import_fields10.relationship)({ ref: "Community", ...ro }),
+    spellStart: day(),
+    spellEnd: day(),
+    ...phiGatedFields("BenefitPeriodCounter", {
+      fullDaysUsed: ["fin", import_fields10.integer, { ...ro, defaultValue: 0 }],
+      coinsuranceDaysUsed: ["fin", import_fields10.integer, { ...ro, defaultValue: 0 }],
+      priorDaysUsed: ["fin", import_fields10.integer, { ...ro, defaultValue: 0 }]
+    }),
+    lastCoveredDay: day(),
+    derivedFromHash: systemText(),
+    computedAt: when(),
+    ...trackingFields
+  }
+});
+phiList("BenefitPeriodCounter");
+var Authorisation = (0, import_core10.list)({
+  access: rl(COVERAGE_READ),
+  ui: { labelField: "reference", listView: { initialColumns: ["reference", "resident", "payer", "authFrom", "authTo", "status"] } },
+  fields: {
+    ...scope(),
+    reference: systemText({ indexed: "unique", required: true }),
+    coverage: (0, import_fields10.relationship)({ ref: "CoveragePeriod", ...ro }),
+    payer: (0, import_fields10.relationship)({ ref: "Payer", ...ro }),
+    ...phiGatedFields("Authorisation", { payerAuthNumber: ["ident", import_fields10.text, ro], levelOfCare: ["fin", import_fields10.text, ro] }),
+    requestedOn: day(),
+    authFrom: day(),
+    authTo: day(),
+    reviewIntervalDays: (0, import_fields10.integer)({ defaultValue: 7, ...ro }),
+    status: lifecycle(["requested", "approved", "denied", "ended"], "requested"),
+    reviews: (0, import_fields10.relationship)({ ref: "ConcurrentReview.authorisation", many: true, ...ro }),
+    note: systemText(),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+phiList("Authorisation");
+var ConcurrentReview = (0, import_core10.list)({
+  access: rl(COVERAGE_READ),
+  ui: { listView: { initialColumns: ["authorisation", "reviewedOn", "outcome", "newAuthTo"] } },
+  fields: {
+    resident: (0, import_fields10.relationship)({ ref: "Resident", ...ro }),
+    community: (0, import_fields10.relationship)({ ref: "Community", ...ro }),
+    authorisation: (0, import_fields10.relationship)({ ref: "Authorisation.reviews", ...ro }),
+    reviewedOn: day(),
+    outcome: fixedChoice(["continued", "extended", "last_covered_day_set", "denied"]),
+    newAuthTo: day(),
+    reviewer: systemText(),
+    ...phiGatedFields("ConcurrentReview", { note: ["clin", import_fields10.text, ro] }),
+    recordedBy: by(),
+    ...trackingFields
+  }
+});
+phiList("ConcurrentReview");
+var coverageDepthFields = {
+  skilledCertSignedAt: (0, import_fields10.calendarDay)({ ...ro }),
+  skilledCertBy: systemText(),
+  qualifyingStayHospital: systemText(),
+  qualifyingStayEvidence: (0, import_fields10.relationship)({ ref: "Document", ...ro }),
+  qualifyingStayEvidenceNote: systemText(),
+  lastCoveredDay: (0, import_fields10.calendarDay)({ ...ro }),
+  hospiceAgency: systemText(),
+  hospiceElectionOn: (0, import_fields10.calendarDay)({ ...ro }),
+  hospiceRoomBoardBps: (0, import_fields10.integer)({ ...ro, ui: { ...ro.ui, description: "Share of the Medicaid room-and-board rate the hospice passes through, in basis points (9500 = 95%)." } }),
+  endOverrideReason: (0, import_fields10.select)({ ...opt(["resident_refused_notice", "death", "emergency_transfer", "other"]), ...ro })
+};
+
 // features/keystone/models/residents.ts
 var sys4 = () => false;
 var CODE_STATUSES = ["full_code", "dnr", "dnr_cc", "dnr_cca", "comfort"];
-var Resident = (0, import_core10.list)({
+var Resident = (0, import_core11.list)({
   access: residentList(["community"], []),
   ui: { labelField: "reference", listView: { initialColumns: ["reference", "lastName", "firstName", "community", "status"] } },
   fields: {
     reference: systemText({ indexed: "unique", required: true }),
-    community: (0, import_fields10.relationship)({ ref: "Community", ...ro, ui: { ...ro.ui, description: "The community of the current (or last) stay." } }),
+    community: (0, import_fields11.relationship)({ ref: "Community", ...ro, ui: { ...ro.ui, description: "The community of the current (or last) stay." } }),
     ...phiFields("Resident", {
-      firstName: ["dem", import_fields10.text, { ...ro, validation: { isRequired: true } }],
-      middleName: ["dem", import_fields10.text, ro],
-      lastName: ["dem", import_fields10.text, { ...ro, validation: { isRequired: true } }],
-      preferredName: ["dem", import_fields10.text, ro],
-      dateOfBirth: ["dem", import_fields10.calendarDay, ro],
-      sex: ["dem", import_fields10.select, { ...opt(["female", "male", "unknown"]), ...ro }],
-      genderIdentity: ["dem", import_fields10.text, ro],
-      pronouns: ["dem", import_fields10.text, ro],
-      primaryLanguage: ["dem", import_fields10.text, ro],
-      interpreterNeeded: ["dem", import_fields10.checkbox, { defaultValue: false, ...ro }],
-      maritalStatus: ["dem", import_fields10.text, ro],
-      religion: ["dem", import_fields10.text, ro],
-      veteran: ["dem", import_fields10.checkbox, { defaultValue: false, ...ro }],
-      codeStatus: ["clin", import_fields10.select, { ...opt(CODE_STATUSES), ...ro, ui: { ...ro.ui, description: "Projection of the active code-status order or verified directive. Ohio DNR Comfort Care codes (verify)." } }],
-      capacityStatus: ["sens", import_fields10.select, { ...opt(["has_capacity", "lacks_capacity", "fluctuating", "unknown"]), defaultValue: "unknown", ...ro }],
-      fallRisk: ["clin", import_fields10.text, ro],
-      elopementRisk: ["clin", import_fields10.text, ro]
+      firstName: ["dem", import_fields11.text, { ...ro, validation: { isRequired: true } }],
+      middleName: ["dem", import_fields11.text, ro],
+      lastName: ["dem", import_fields11.text, { ...ro, validation: { isRequired: true } }],
+      preferredName: ["dem", import_fields11.text, ro],
+      dateOfBirth: ["dem", import_fields11.calendarDay, ro],
+      sex: ["dem", import_fields11.select, { ...opt(["female", "male", "unknown"]), ...ro }],
+      genderIdentity: ["dem", import_fields11.text, ro],
+      pronouns: ["dem", import_fields11.text, ro],
+      primaryLanguage: ["dem", import_fields11.text, ro],
+      interpreterNeeded: ["dem", import_fields11.checkbox, { defaultValue: false, ...ro }],
+      maritalStatus: ["dem", import_fields11.text, ro],
+      religion: ["dem", import_fields11.text, ro],
+      veteran: ["dem", import_fields11.checkbox, { defaultValue: false, ...ro }],
+      codeStatus: ["clin", import_fields11.select, { ...opt(CODE_STATUSES), ...ro, ui: { ...ro.ui, description: "Projection of the active code-status order or verified directive. Ohio DNR Comfort Care codes (verify)." } }],
+      capacityStatus: ["sens", import_fields11.select, { ...opt(["has_capacity", "lacks_capacity", "fluctuating", "unknown"]), defaultValue: "unknown", ...ro }],
+      fallRisk: ["clin", import_fields11.text, ro],
+      elopementRisk: ["clin", import_fields11.text, ro]
     }),
     status: lifecycle(["prospective", "current", "former", "deceased"], "current"),
-    identifiers: (0, import_fields10.relationship)({ ref: "ResidentIdentifier.resident", many: true, ...ro }),
-    representatives: (0, import_fields10.relationship)({ ref: "Representative.resident", many: true, ...ro }),
-    advanceDirectives: (0, import_fields10.relationship)({ ref: "AdvanceDirective.resident", many: true, ...ro }),
-    allergies: (0, import_fields10.relationship)({ ref: "Allergy.resident", many: true, ...ro }),
-    diagnoses: (0, import_fields10.relationship)({ ref: "Diagnosis.resident", many: true, ...ro }),
-    stays: (0, import_fields10.relationship)({ ref: "Stay.resident", many: true, ...ro }),
-    currentStay: (0, import_fields10.relationship)({ ref: "Stay", ...ro }),
-    synthetic: (0, import_fields10.checkbox)({ defaultValue: false, ...ro }),
+    identifiers: (0, import_fields11.relationship)({ ref: "ResidentIdentifier.resident", many: true, ...ro }),
+    representatives: (0, import_fields11.relationship)({ ref: "Representative.resident", many: true, ...ro }),
+    advanceDirectives: (0, import_fields11.relationship)({ ref: "AdvanceDirective.resident", many: true, ...ro }),
+    allergies: (0, import_fields11.relationship)({ ref: "Allergy.resident", many: true, ...ro }),
+    diagnoses: (0, import_fields11.relationship)({ ref: "Diagnosis.resident", many: true, ...ro }),
+    stays: (0, import_fields11.relationship)({ ref: "Stay.resident", many: true, ...ro }),
+    currentStay: (0, import_fields11.relationship)({ ref: "Stay", ...ro }),
+    synthetic: (0, import_fields11.checkbox)({ defaultValue: false, ...ro }),
     version: versionField(),
     ...trackingFields
   }
 });
 phiList("Resident");
-var ResidentIdentifier = (0, import_core10.list)({
+var ResidentIdentifier = (0, import_core11.list)({
   access: residentList(["resident", "community"]),
   ui: { labelField: "display" },
   fields: {
-    resident: (0, import_fields10.relationship)({ ref: "Resident.identifiers", ...ro }),
+    resident: (0, import_fields11.relationship)({ ref: "Resident.identifiers", ...ro }),
     kind: fixedChoice(["mrn", "medicare_mbi", "medicaid_id", "ma_member_id", "ssn_last4", "incumbent_ehr_id", "pharmacy_patient_id", "other"]),
     issuer: systemText({ required: true }),
     ...phiFields("ResidentIdentifier", {
-      display: ["ident", import_fields10.text, ro],
-      valueEncrypted: ["ident", import_fields10.text, { access: { create: sys4, update: sys4 }, graphql: { omit: true }, ui: { createView: { fieldMode: "hidden" }, itemView: { fieldMode: "hidden" } } }]
+      display: ["ident", import_fields11.text, ro],
+      valueEncrypted: ["ident", import_fields11.text, { access: { create: sys4, update: sys4 }, graphql: { omit: true }, ui: { createView: { fieldMode: "hidden" }, itemView: { fieldMode: "hidden" } } }]
     }),
-    valueHash: (0, import_fields10.text)({ access: { read: sys4, create: sys4, update: sys4 }, graphql: { omit: true }, ui: { createView: { fieldMode: "hidden" }, itemView: { fieldMode: "hidden" } }, validation: { isRequired: true } }),
-    effectiveFrom: (0, import_fields10.calendarDay)({ ...ro }),
-    effectiveTo: (0, import_fields10.calendarDay)({ ...ro }),
+    valueHash: (0, import_fields11.text)({ access: { read: sys4, create: sys4, update: sys4 }, graphql: { omit: true }, ui: { createView: { fieldMode: "hidden" }, itemView: { fieldMode: "hidden" } }, validation: { isRequired: true } }),
+    effectiveFrom: (0, import_fields11.calendarDay)({ ...ro }),
+    effectiveTo: (0, import_fields11.calendarDay)({ ...ro }),
     ...trackingFields
   }
 });
-var Contact = (0, import_core10.list)({
+var Contact = (0, import_core11.list)({
   access: {
     operation: { query: isStaff, create: sys4, update: sys4, delete: sys4 },
     filter: { query: async ({ session, context }) => {
-      const scope2 = await assignedCommunities(session, context);
-      if (scope2 === "all") return true;
-      return { OR: [{ community: { id: { in: scope2 } } }] };
+      const scope3 = await assignedCommunities(session, context);
+      if (scope3 === "all") return true;
+      return { OR: [{ community: { id: { in: scope3 } } }] };
     } }
   },
   ui: { labelField: "reference" },
   fields: {
     reference: systemText({ indexed: "unique", required: true }),
-    community: (0, import_fields10.relationship)({ ref: "Community", ...ro }),
+    community: (0, import_fields11.relationship)({ ref: "Community", ...ro }),
     ...phiFields("Contact", {
-      firstName: ["dem", import_fields10.text, { ...ro, validation: { isRequired: true } }],
-      lastName: ["dem", import_fields10.text, ro],
-      email: ["dem", import_fields10.text, ro],
-      phone: ["dem", import_fields10.text, ro],
-      address: ["dem", import_fields10.json, ro],
-      preferredChannel: ["dem", import_fields10.select, { ...opt(["phone", "email", "text", "mail", "portal"]), defaultValue: "phone", ...ro }]
+      firstName: ["dem", import_fields11.text, { ...ro, validation: { isRequired: true } }],
+      lastName: ["dem", import_fields11.text, ro],
+      email: ["dem", import_fields11.text, ro],
+      phone: ["dem", import_fields11.text, ro],
+      address: ["dem", import_fields11.json, ro],
+      preferredChannel: ["dem", import_fields11.select, { ...opt(["phone", "email", "text", "mail", "portal"]), defaultValue: "phone", ...ro }]
     }),
-    consentToContact: (0, import_fields10.checkbox)({ defaultValue: false, ...ro }),
-    synthetic: (0, import_fields10.checkbox)({ defaultValue: false, ...ro }),
+    consentToContact: (0, import_fields11.checkbox)({ defaultValue: false, ...ro }),
+    synthetic: (0, import_fields11.checkbox)({ defaultValue: false, ...ro }),
     ...trackingFields
   }
 });
 phiList("Contact");
 var REPRESENTATIVE_ROLES = ["self", "healthcare_poa", "financial_responsible", "guardian", "family", "emergency_contact", "hospice_contact", "personal_representative_hipaa"];
-var Representative = (0, import_core10.list)({
+var Representative = (0, import_core11.list)({
   access: residentList(["resident", "community"]),
   ui: { labelField: "reference", listView: { initialColumns: ["reference", "resident", "contact", "roles", "contactPriority"] } },
   fields: {
     reference: systemText({ indexed: "unique", required: true }),
-    resident: (0, import_fields10.relationship)({ ref: "Resident.representatives", ...ro }),
-    contact: (0, import_fields10.relationship)({ ref: "Contact", ...ro }),
-    self: (0, import_fields10.checkbox)({ defaultValue: false, ...ro }),
-    roles: (0, import_fields10.json)({ ...ro, defaultValue: [] }),
-    authorityDocument: (0, import_fields10.relationship)({ ref: "Document", ...ro }),
-    authorityVerifiedBy: (0, import_fields10.relationship)({ ref: "User", ...ro }),
-    authorityVerifiedAt: (0, import_fields10.timestamp)({ ...ro }),
-    effectiveFrom: (0, import_fields10.calendarDay)({ ...ro }),
-    effectiveTo: (0, import_fields10.calendarDay)({ ...ro }),
-    contactPriority: (0, import_fields10.integer)({ defaultValue: 1, ...ro }),
-    portalAccount: (0, import_fields10.relationship)({ ref: "PortalAccount.representatives", ...ro }),
+    resident: (0, import_fields11.relationship)({ ref: "Resident.representatives", ...ro }),
+    contact: (0, import_fields11.relationship)({ ref: "Contact", ...ro }),
+    self: (0, import_fields11.checkbox)({ defaultValue: false, ...ro }),
+    roles: (0, import_fields11.json)({ ...ro, defaultValue: [] }),
+    authorityDocument: (0, import_fields11.relationship)({ ref: "Document", ...ro }),
+    authorityVerifiedBy: (0, import_fields11.relationship)({ ref: "User", ...ro }),
+    authorityVerifiedAt: (0, import_fields11.timestamp)({ ...ro }),
+    effectiveFrom: (0, import_fields11.calendarDay)({ ...ro }),
+    effectiveTo: (0, import_fields11.calendarDay)({ ...ro }),
+    contactPriority: (0, import_fields11.integer)({ defaultValue: 1, ...ro }),
+    portalAccount: (0, import_fields11.relationship)({ ref: "PortalAccount.representatives", ...ro }),
     status: lifecycle(["active", "ended"]),
     version: versionField(),
     ...trackingFields
   }
 });
 phiList("Representative");
-var AdvanceDirective = (0, import_core10.list)({
+var AdvanceDirective = (0, import_core11.list)({
   access: residentList(["resident", "community"]),
   fields: {
-    resident: (0, import_fields10.relationship)({ ref: "Resident.advanceDirectives", ...ro }),
+    resident: (0, import_fields11.relationship)({ ref: "Resident.advanceDirectives", ...ro }),
     ...phiFields("AdvanceDirective", {
-      kind: ["clin", import_fields10.select, { ...opt(["living_will", "healthcare_poa", "polst", "dnr", "ohio_dnr_cc", "ohio_dnr_cca", "other"]), validation: { isRequired: true }, ...ro }],
-      note: ["clin", import_fields10.text, ro]
+      kind: ["clin", import_fields11.select, { ...opt(["living_will", "healthcare_poa", "polst", "dnr", "ohio_dnr_cc", "ohio_dnr_cca", "other"]), validation: { isRequired: true }, ...ro }],
+      note: ["clin", import_fields11.text, ro]
     }),
-    document: (0, import_fields10.relationship)({ ref: "Document", ...ro }),
-    effectiveAt: (0, import_fields10.timestamp)({ ...ro }),
-    revokedAt: (0, import_fields10.timestamp)({ ...ro }),
-    verifiedBy: (0, import_fields10.relationship)({ ref: "User", ...ro }),
+    document: (0, import_fields11.relationship)({ ref: "Document", ...ro }),
+    effectiveAt: (0, import_fields11.timestamp)({ ...ro }),
+    revokedAt: (0, import_fields11.timestamp)({ ...ro }),
+    verifiedBy: (0, import_fields11.relationship)({ ref: "User", ...ro }),
     ...trackingFields
   }
 });
 phiList("AdvanceDirective");
-var Allergy = (0, import_core10.list)({
+var Allergy = (0, import_core11.list)({
   access: residentList(["resident", "community"]),
   fields: {
-    resident: (0, import_fields10.relationship)({ ref: "Resident.allergies", ...ro }),
+    resident: (0, import_fields11.relationship)({ ref: "Resident.allergies", ...ro }),
     ...phiFields("Allergy", {
-      substance: ["clin", import_fields10.text, { ...ro, validation: { isRequired: true } }],
-      reaction: ["clin", import_fields10.text, ro],
-      severity: ["clin", import_fields10.select, { ...opt(["mild", "moderate", "severe", "unknown"]), defaultValue: "unknown", ...ro }]
+      substance: ["clin", import_fields11.text, { ...ro, validation: { isRequired: true } }],
+      reaction: ["clin", import_fields11.text, ro],
+      severity: ["clin", import_fields11.select, { ...opt(["mild", "moderate", "severe", "unknown"]), defaultValue: "unknown", ...ro }]
     }),
     status: lifecycle(["active", "inactive", "entered_in_error"]),
-    recordedBy: (0, import_fields10.relationship)({ ref: "User", ...ro }),
+    recordedBy: (0, import_fields11.relationship)({ ref: "User", ...ro }),
     ...trackingFields
   }
 });
 phiList("Allergy");
-var Diagnosis = (0, import_core10.list)({
+var Diagnosis = (0, import_core11.list)({
   access: residentList(["resident", "community"]),
   fields: {
-    resident: (0, import_fields10.relationship)({ ref: "Resident.diagnoses", ...ro }),
+    resident: (0, import_fields11.relationship)({ ref: "Resident.diagnoses", ...ro }),
     ...phiFields("Diagnosis", {
-      icd10: ["clin", import_fields10.text, { ...ro, validation: { isRequired: true } }],
-      description: ["clin", import_fields10.text, ro],
-      rank: ["clin", import_fields10.select, { ...opt(["primary", "admitting", "secondary"]), defaultValue: "secondary", ...ro }]
+      icd10: ["clin", import_fields11.text, { ...ro, validation: { isRequired: true } }],
+      description: ["clin", import_fields11.text, ro],
+      rank: ["clin", import_fields11.select, { ...opt(["primary", "admitting", "secondary"]), defaultValue: "secondary", ...ro }]
     }),
-    onsetDate: (0, import_fields10.calendarDay)({ ...ro }),
-    resolvedDate: (0, import_fields10.calendarDay)({ ...ro }),
+    onsetDate: (0, import_fields11.calendarDay)({ ...ro }),
+    resolvedDate: (0, import_fields11.calendarDay)({ ...ro }),
     status: lifecycle(["active", "resolved", "entered_in_error"]),
     ...trackingFields
   }
 });
 phiList("Diagnosis");
-var PreAdmissionScreen = (0, import_core10.list)({
+var PreAdmissionScreen = (0, import_core11.list)({
   access: residentList(["resident", "community"]),
   fields: {
-    resident: (0, import_fields10.relationship)({ ref: "Resident", ...ro }),
-    prospect: (0, import_fields10.relationship)({ ref: "Prospect", ...ro }),
+    resident: (0, import_fields11.relationship)({ ref: "Resident", ...ro }),
+    prospect: (0, import_fields11.relationship)({ ref: "Prospect", ...ro }),
     kind: fixedChoice(["pasrr_level1", "pasrr_level2", "al_physician_report", "al_resident_assessment", "tb_screen"]),
     ...phiFields("PreAdmissionScreen", {
-      result: ["clin", import_fields10.text, ro]
+      result: ["clin", import_fields11.text, ro]
     }),
-    document: (0, import_fields10.relationship)({ ref: "Document", ...ro }),
-    completedAt: (0, import_fields10.timestamp)({ ...ro }),
-    expiresAt: (0, import_fields10.timestamp)({ ...ro }),
+    document: (0, import_fields11.relationship)({ ref: "Document", ...ro }),
+    completedAt: (0, import_fields11.timestamp)({ ...ro }),
+    expiresAt: (0, import_fields11.timestamp)({ ...ro }),
     ...trackingFields
   }
 });
 phiList("PreAdmissionScreen");
 var ADMISSION_SOURCES = ["acute_hospital", "community_home", "another_nursing_facility", "assisted_living", "psychiatric_hospital", "irf", "ltch", "hospice", "other"];
 var DISCHARGE_DISPOSITIONS = ["community_home", "acute_hospital", "another_nursing_facility", "assisted_living", "psychiatric_hospital", "irf", "ltch", "hospice", "deceased", "other"];
-var Stay = (0, import_core10.list)({
+var Stay = (0, import_core11.list)({
   access: residentList(["community"]),
   ui: { labelField: "reference", listView: { initialColumns: ["reference", "resident", "setting", "status", "presence", "admittedAt"] } },
   fields: {
     reference: systemText({ indexed: "unique", required: true }),
-    resident: (0, import_fields10.relationship)({ ref: "Resident.stays", ...ro }),
-    community: (0, import_fields10.relationship)({ ref: "Community", ...ro }),
+    resident: (0, import_fields11.relationship)({ ref: "Resident.stays", ...ro }),
+    community: (0, import_fields11.relationship)({ ref: "Community", ...ro }),
     setting: fixedChoice(SETTINGS),
     status: lifecycle(["pre_admit", "admitted", "discharged", "deceased"], "pre_admit"),
     presence: lifecycle(["not_admitted", "in_house", "on_leave_hold", "on_leave_no_hold", "gone"], "not_admitted"),
-    admittedAt: (0, import_fields10.timestamp)({ ...ro }),
-    dischargedAt: (0, import_fields10.timestamp)({ ...ro }),
-    admissionSource: (0, import_fields10.select)({ ...opt(ADMISSION_SOURCES), ...ro }),
-    dischargeDisposition: (0, import_fields10.select)({ ...opt(DISCHARGE_DISPOSITIONS), ...ro }),
-    priorStay: (0, import_fields10.relationship)({ ref: "Stay", ...ro }),
-    currentBed: (0, import_fields10.relationship)({ ref: "Bed", ...ro }),
-    currentApartment: (0, import_fields10.relationship)({ ref: "Apartment", ...ro }),
-    heldBed: (0, import_fields10.relationship)({ ref: "Bed", ...ro }),
-    agreement: (0, import_fields10.relationship)({ ref: "Document", ...ro }),
-    events: (0, import_fields10.relationship)({ ref: "CensusEvent.stay", many: true, ...ro }),
-    coverage: (0, import_fields10.relationship)({ ref: "CoveragePeriod.stay", many: true, ...ro }),
-    leaveDaysUsedThisYear: (0, import_fields10.integer)({ defaultValue: 0, ...ro }),
-    projection: (0, import_fields10.json)({ ...ro, ui: { ...ro.ui, description: "The census fold (lib/censusProjection.ts); a rebuild from CensusEvents must match projectionHash." } }),
+    admittedAt: (0, import_fields11.timestamp)({ ...ro }),
+    dischargedAt: (0, import_fields11.timestamp)({ ...ro }),
+    admissionSource: (0, import_fields11.select)({ ...opt(ADMISSION_SOURCES), ...ro }),
+    dischargeDisposition: (0, import_fields11.select)({ ...opt(DISCHARGE_DISPOSITIONS), ...ro }),
+    priorStay: (0, import_fields11.relationship)({ ref: "Stay", ...ro }),
+    currentBed: (0, import_fields11.relationship)({ ref: "Bed", ...ro }),
+    currentApartment: (0, import_fields11.relationship)({ ref: "Apartment", ...ro }),
+    heldBed: (0, import_fields11.relationship)({ ref: "Bed", ...ro }),
+    agreement: (0, import_fields11.relationship)({ ref: "Document", ...ro }),
+    events: (0, import_fields11.relationship)({ ref: "CensusEvent.stay", many: true, ...ro }),
+    coverage: (0, import_fields11.relationship)({ ref: "CoveragePeriod.stay", many: true, ...ro }),
+    leaveDaysUsedThisYear: (0, import_fields11.integer)({ defaultValue: 0, ...ro }),
+    projection: (0, import_fields11.json)({ ...ro, ui: { ...ro.ui, description: "The census fold (lib/censusProjection.ts); a rebuild from CensusEvents must match projectionHash." } }),
     placementReason: systemText(),
     initialPayerKind: systemText(),
-    projectionVersion: (0, import_fields10.integer)({ defaultValue: 0, ...ro }),
+    projectionVersion: (0, import_fields11.integer)({ defaultValue: 0, ...ro }),
     projectionHash: systemText(),
     lastEventHash: systemText(),
-    synthetic: (0, import_fields10.checkbox)({ defaultValue: false, ...ro }),
+    synthetic: (0, import_fields11.checkbox)({ defaultValue: false, ...ro }),
     version: versionField(),
     ...trackingFields
   }
 });
 phiList("Stay");
 var CENSUS_EVENT_KINDS = ["admission", "readmission", "room_change", "leave_start", "hold_release", "leave_end", "coverage_change", "discharge", "death", "correction"];
-var CensusEvent = (0, import_core10.list)({
+var CensusEvent = (0, import_core11.list)({
   access: residentList(["stay", "community"], ["stay", "resident"]),
   ui: { labelField: "kind", listView: { initialColumns: ["stay", "seq", "kind", "effectiveAt", "recordedAt", "actor"], initialSort: { field: "recordedAt", direction: "DESC" } } },
   fields: {
-    stay: (0, import_fields10.relationship)({ ref: "Stay.events", ...ro }),
-    seq: (0, import_fields10.integer)({ ...ro, validation: { isRequired: true } }),
+    stay: (0, import_fields11.relationship)({ ref: "Stay.events", ...ro }),
+    seq: (0, import_fields11.integer)({ ...ro, validation: { isRequired: true } }),
     kind: fixedChoice(CENSUS_EVENT_KINDS),
-    effectiveAt: (0, import_fields10.timestamp)({ ...ro, validation: { isRequired: true } }),
-    observedAt: (0, import_fields10.timestamp)({ ...ro }),
-    recordedAt: (0, import_fields10.timestamp)({ ...ro, defaultValue: { kind: "now" } }),
-    fromBed: (0, import_fields10.relationship)({ ref: "Bed", ...ro }),
-    toBed: (0, import_fields10.relationship)({ ref: "Bed", ...ro }),
-    fromApartment: (0, import_fields10.relationship)({ ref: "Apartment", ...ro }),
-    toApartment: (0, import_fields10.relationship)({ ref: "Apartment", ...ro }),
-    leaveKind: (0, import_fields10.select)({ ...opt(["hospital", "therapeutic", "other"]), ...ro }),
-    coverage: (0, import_fields10.relationship)({ ref: "CoveragePeriod", ...ro }),
-    holdElected: (0, import_fields10.checkbox)({ defaultValue: false, ...ro }),
-    holdPaidBy: (0, import_fields10.select)({ ...opt(["medicaid", "private", "none"]), ...ro }),
-    dischargeDisposition: (0, import_fields10.select)({ ...opt(DISCHARGE_DISPOSITIONS), ...ro }),
-    initiatedBy: (0, import_fields10.select)({ ...opt(["resident", "facility"]), ...ro }),
-    voidsEvent: (0, import_fields10.relationship)({ ref: "CensusEvent", ...ro }),
+    effectiveAt: (0, import_fields11.timestamp)({ ...ro, validation: { isRequired: true } }),
+    observedAt: (0, import_fields11.timestamp)({ ...ro }),
+    recordedAt: (0, import_fields11.timestamp)({ ...ro, defaultValue: { kind: "now" } }),
+    fromBed: (0, import_fields11.relationship)({ ref: "Bed", ...ro }),
+    toBed: (0, import_fields11.relationship)({ ref: "Bed", ...ro }),
+    fromApartment: (0, import_fields11.relationship)({ ref: "Apartment", ...ro }),
+    toApartment: (0, import_fields11.relationship)({ ref: "Apartment", ...ro }),
+    leaveKind: (0, import_fields11.select)({ ...opt(["hospital", "therapeutic", "other"]), ...ro }),
+    coverage: (0, import_fields11.relationship)({ ref: "CoveragePeriod", ...ro }),
+    holdElected: (0, import_fields11.checkbox)({ defaultValue: false, ...ro }),
+    holdPaidBy: (0, import_fields11.select)({ ...opt(["medicaid", "private", "none"]), ...ro }),
+    dischargeDisposition: (0, import_fields11.select)({ ...opt(DISCHARGE_DISPOSITIONS), ...ro }),
+    initiatedBy: (0, import_fields11.select)({ ...opt(["resident", "facility"]), ...ro }),
+    voidsEvent: (0, import_fields11.relationship)({ ref: "CensusEvent", ...ro }),
     correctionReason: systemText(),
-    approval: (0, import_fields10.relationship)({ ref: "ApprovalRequest", ...ro }),
-    notices: (0, import_fields10.relationship)({ ref: "NoticeDelivery.censusEvent", many: true, ...ro }),
-    detail: (0, import_fields10.json)({ ...ro }),
-    actor: (0, import_fields10.relationship)({ ref: "User", ...ro }),
-    actorAgent: (0, import_fields10.relationship)({ ref: "AgentIdentity", ...ro }),
+    approval: (0, import_fields11.relationship)({ ref: "ApprovalRequest", ...ro }),
+    notices: (0, import_fields11.relationship)({ ref: "NoticeDelivery.censusEvent", many: true, ...ro }),
+    detail: (0, import_fields11.json)({ ...ro }),
+    actor: (0, import_fields11.relationship)({ ref: "User", ...ro }),
+    actorAgent: (0, import_fields11.relationship)({ ref: "AgentIdentity", ...ro }),
     idempotencyKey: systemText({ indexed: "unique", required: true }),
     prevHash: systemText({ required: true }),
     hash: systemText({ required: true })
   }
 });
 phiList("CensusEvent");
-var CensusDay = (0, import_core10.list)({
+var CensusDay = (0, import_core11.list)({
   access: residentList(["community"], ["stay", "resident"]),
   ui: { listView: { initialColumns: ["date", "stay", "presence", "unit", "billableForPayer"] } },
   fields: {
-    community: (0, import_fields10.relationship)({ ref: "Community", ...ro }),
-    stay: (0, import_fields10.relationship)({ ref: "Stay", ...ro }),
-    date: (0, import_fields10.calendarDay)({ ...ro, validation: { isRequired: true } }),
+    community: (0, import_fields11.relationship)({ ref: "Community", ...ro }),
+    stay: (0, import_fields11.relationship)({ ref: "Stay", ...ro }),
+    date: (0, import_fields11.calendarDay)({ ...ro, validation: { isRequired: true } }),
     setting: systemText(),
-    bed: (0, import_fields10.relationship)({ ref: "Bed", ...ro }),
-    apartment: (0, import_fields10.relationship)({ ref: "Apartment", ...ro }),
-    unit: (0, import_fields10.relationship)({ ref: "Unit", ...ro }),
+    bed: (0, import_fields11.relationship)({ ref: "Bed", ...ro }),
+    apartment: (0, import_fields11.relationship)({ ref: "Apartment", ...ro }),
+    unit: (0, import_fields11.relationship)({ ref: "Unit", ...ro }),
     presence: systemText({ required: true }),
-    primaryCoverage: (0, import_fields10.relationship)({ ref: "CoveragePeriod", ...ro }),
+    primaryCoverage: (0, import_fields11.relationship)({ ref: "CoveragePeriod", ...ro }),
     payerKind: systemText(),
-    billableForPayer: (0, import_fields10.checkbox)({ defaultValue: true, ...ro }),
-    snapshotRun: (0, import_fields10.relationship)({ ref: "JobRun", ...ro }),
-    supersededBy: (0, import_fields10.relationship)({ ref: "CensusDay", ...ro })
+    billableForPayer: (0, import_fields11.checkbox)({ defaultValue: true, ...ro }),
+    snapshotRun: (0, import_fields11.relationship)({ ref: "JobRun", ...ro }),
+    supersededBy: (0, import_fields11.relationship)({ ref: "CensusDay", ...ro })
   }
 });
 phiList("CensusDay");
-var CensusSignoff = (0, import_core10.list)({
+var CensusSignoff = (0, import_core11.list)({
   access: {
     operation: { query: isStaff, create: sys4, update: sys4, delete: sys4 },
     filter: { query: async ({ session, context }) => {
-      const scope2 = await assignedCommunities(session, context);
-      return scope2 === "all" ? true : communityWhere(["community"], scope2);
+      const scope3 = await assignedCommunities(session, context);
+      return scope3 === "all" ? true : communityWhere(["community"], scope3);
     } }
   },
   ui: { listView: { initialColumns: ["date", "community", "unit", "signedBy", "signedAt"] } },
   fields: {
-    community: (0, import_fields10.relationship)({ ref: "Community", ...ro }),
-    unit: (0, import_fields10.relationship)({ ref: "Unit", ...ro, ui: { ...ro.ui, description: "Empty = the whole community." } }),
-    date: (0, import_fields10.calendarDay)({ ...ro, validation: { isRequired: true } }),
-    totals: (0, import_fields10.json)({ ...ro }),
-    run: (0, import_fields10.relationship)({ ref: "JobRun", ...ro }),
-    signedBy: (0, import_fields10.relationship)({ ref: "User", ...ro }),
-    signedAt: (0, import_fields10.timestamp)({ ...ro }),
+    community: (0, import_fields11.relationship)({ ref: "Community", ...ro }),
+    unit: (0, import_fields11.relationship)({ ref: "Unit", ...ro, ui: { ...ro.ui, description: "Empty = the whole community." } }),
+    date: (0, import_fields11.calendarDay)({ ...ro, validation: { isRequired: true } }),
+    totals: (0, import_fields11.json)({ ...ro }),
+    run: (0, import_fields11.relationship)({ ref: "JobRun", ...ro }),
+    signedBy: (0, import_fields11.relationship)({ ref: "User", ...ro }),
+    signedAt: (0, import_fields11.timestamp)({ ...ro }),
     note: systemText()
   }
 });
-var NoticeDelivery = (0, import_core10.list)({
+var NoticeDelivery = (0, import_core11.list)({
   access: residentList(["resident", "community"]),
   ui: { labelField: "kind", listView: { initialColumns: ["kind", "resident", "method", "deliveredAt", "acknowledgement", "copyToOmbudsmanAt"] } },
   fields: {
     kind: fixedChoice(["bed_hold_policy", "bed_hold_at_transfer", "transfer_discharge", "room_change", "rate_change", "nomnc", "snfabn", "denc", "trust_quarterly", "ssi_threshold", "privacy_practices", "other"]),
     subjectType: systemText(),
     subjectId: systemText({ indexed: true }),
-    resident: (0, import_fields10.relationship)({ ref: "Resident", ...ro }),
-    censusEvent: (0, import_fields10.relationship)({ ref: "CensusEvent.notices", ...ro }),
-    recipientRepresentative: (0, import_fields10.relationship)({ ref: "Representative", ...ro }),
-    method: (0, import_fields10.select)({ ...opt(["in_person", "mail", "email", "portal", "phone_then_mail"]), validation: { isRequired: true }, ...ro }),
-    deliveredAt: (0, import_fields10.timestamp)({ ...ro }),
-    deliveredBy: (0, import_fields10.relationship)({ ref: "User", ...ro }),
-    document: (0, import_fields10.relationship)({ ref: "Document", ...ro }),
-    acknowledgement: (0, import_fields10.select)({ ...opt(["signed", "refused_witnessed", "not_required"]), defaultValue: "not_required", ...ro }),
-    witness: (0, import_fields10.relationship)({ ref: "User", ...ro }),
-    copyToOmbudsmanAt: (0, import_fields10.timestamp)({ ...ro }),
+    resident: (0, import_fields11.relationship)({ ref: "Resident", ...ro }),
+    censusEvent: (0, import_fields11.relationship)({ ref: "CensusEvent.notices", ...ro }),
+    recipientRepresentative: (0, import_fields11.relationship)({ ref: "Representative", ...ro }),
+    method: (0, import_fields11.select)({ ...opt(["in_person", "mail", "email", "portal", "phone_then_mail"]), validation: { isRequired: true }, ...ro }),
+    deliveredAt: (0, import_fields11.timestamp)({ ...ro }),
+    deliveredBy: (0, import_fields11.relationship)({ ref: "User", ...ro }),
+    document: (0, import_fields11.relationship)({ ref: "Document", ...ro }),
+    acknowledgement: (0, import_fields11.select)({ ...opt(["signed", "refused_witnessed", "not_required"]), defaultValue: "not_required", ...ro }),
+    witness: (0, import_fields11.relationship)({ ref: "User", ...ro }),
+    copyToOmbudsmanAt: (0, import_fields11.timestamp)({ ...ro }),
     note: systemText(),
     ...trackingFields
   }
 });
 phiList("NoticeDelivery");
 var PAYER_KINDS = ["medicare_a", "medicare_advantage", "medicaid_ffs", "medicaid_mco", "private_pay", "commercial", "ltc_insurance", "va", "hospice_agency", "other"];
-var Payer = (0, import_core10.list)({
+var Payer = (0, import_core11.list)({
   access: {
     operation: { query: isStaff, create: (a) => a.session?.data?.role?.canManageBilling === true, update: (a) => a.session?.data?.role?.canManageBilling === true, delete: sys4 }
   },
   ui: { labelField: "name" },
   fields: {
-    name: (0, import_fields10.text)({ validation: { isRequired: true } }),
+    name: (0, import_fields11.text)({ validation: { isRequired: true } }),
     kind: choice(PAYER_KINDS, "private_pay"),
-    payerId: (0, import_fields10.text)(),
+    payerId: (0, import_fields11.text)(),
     dayCountingRule: choice(["count_admit_not_discharge", "count_both", "count_neither"], "count_admit_not_discharge"),
-    timelyFilingDays: (0, import_fields10.integer)(),
+    timelyFilingDays: (0, import_fields11.integer)(),
     claimFormat: choice(["837i", "invoice", "none"], "invoice"),
-    contact: (0, import_fields10.json)({ defaultValue: {} }),
+    contact: (0, import_fields11.json)({ defaultValue: {} }),
     ...trackingFields
   }
 });
-var CoveragePeriod = (0, import_core10.list)({
+var CoveragePeriod = (0, import_core11.list)({
   access: residentList(["stay", "community"], ["stay", "resident"]),
   ui: { listView: { initialColumns: ["stay", "payer", "rank", "startDate", "endDate", "status"] } },
   fields: {
-    stay: (0, import_fields10.relationship)({ ref: "Stay.coverage", ...ro }),
-    payer: (0, import_fields10.relationship)({ ref: "Payer", ...ro }),
+    stay: (0, import_fields11.relationship)({ ref: "Stay.coverage", ...ro }),
+    payer: (0, import_fields11.relationship)({ ref: "Payer", ...ro }),
     rank: fixedChoice(["primary", "secondary", "tertiary"]),
-    startDate: (0, import_fields10.calendarDay)({ ...ro, validation: { isRequired: true } }),
-    endDate: (0, import_fields10.calendarDay)({ ...ro }),
+    startDate: (0, import_fields11.calendarDay)({ ...ro, validation: { isRequired: true } }),
+    endDate: (0, import_fields11.calendarDay)({ ...ro }),
     status: lifecycle(["pending", "active", "ending", "ended", "denied", "retro_approved"], "active"),
     ...phiFields("CoveragePeriod", {
-      levelCode: ["fin", import_fields10.text, ro],
-      memberReference: ["ident", import_fields10.text, ro]
+      levelCode: ["fin", import_fields11.text, ro],
+      memberReference: ["ident", import_fields11.text, ro]
     }),
-    qualifyingStayFrom: (0, import_fields10.calendarDay)({ ...ro }),
-    qualifyingStayTo: (0, import_fields10.calendarDay)({ ...ro }),
-    endReason: (0, import_fields10.select)({ ...opt(["skilled_need_ended", "benefit_exhausted", "discharge", "payer_change", "death", "other"]), ...ro }),
+    qualifyingStayFrom: (0, import_fields11.calendarDay)({ ...ro }),
+    qualifyingStayTo: (0, import_fields11.calendarDay)({ ...ro }),
+    endReason: (0, import_fields11.select)({ ...opt(["skilled_need_ended", "benefit_exhausted", "discharge", "payer_change", "death", "hospice_revoked", "other"]), ...ro }),
+    ...coverageDepthFields,
     version: versionField(),
     ...trackingFields
   }
@@ -2479,261 +2746,261 @@ __export(sales_exports, {
   TourSlot: () => TourSlot,
   WaitlistEntry: () => WaitlistEntry
 });
-var import_core11 = require("@keystone-6/core");
-var import_fields11 = require("@keystone-6/core/fields");
+var import_core12 = require("@keystone-6/core");
+var import_fields12 = require("@keystone-6/core/fields");
 init_access();
 var ro2 = readOnly;
 var sys5 = () => false;
 var opt2 = (values) => ({ type: "string", options: values.map((value) => ({ label: label(value), value })) });
 var salesRead = ["canReadSales", "canManageSales"];
 var LEAD_STATUSES = ["new", "contacted", "tour_scheduled", "toured", "assessment_scheduled", "assessed", "deposit_received", "move_in_scheduled", "moved_in", "waitlisted", "nurture", "lost"];
-var Inquiry = (0, import_core11.list)({
+var Inquiry = (0, import_core12.list)({
   access: scopedGoverned([...salesRead], ["community"]),
   ui: { labelField: "publicCode", listView: { initialColumns: ["publicCode", "community", "source", "createdAt", "lead"] } },
   fields: {
     publicCode: systemText({ indexed: "unique", required: true }),
-    community: (0, import_fields11.relationship)({ ref: "Community", ...ro2 }),
+    community: (0, import_fields12.relationship)({ ref: "Community", ...ro2 }),
     source: fixedChoice(["website", "phone", "walk_in", "referral_agency", "hospital", "resident_referral", "other"]),
     ...phiFields("Inquiry", {
-      contactName: ["dem", import_fields11.text, ro2],
-      contactEmail: ["dem", import_fields11.text, ro2],
-      contactPhone: ["dem", import_fields11.text, ro2],
-      relationship: ["dem", import_fields11.text, ro2],
-      message: ["dem", import_fields11.text, ro2]
+      contactName: ["dem", import_fields12.text, ro2],
+      contactEmail: ["dem", import_fields12.text, ro2],
+      contactPhone: ["dem", import_fields12.text, ro2],
+      relationship: ["dem", import_fields12.text, ro2],
+      message: ["dem", import_fields12.text, ro2]
     }),
-    consentToContact: (0, import_fields11.checkbox)({ defaultValue: false, ...ro2 }),
-    utm: (0, import_fields11.json)({ ...ro2 }),
-    lead: (0, import_fields11.relationship)({ ref: "Lead", ...ro2 }),
+    consentToContact: (0, import_fields12.checkbox)({ defaultValue: false, ...ro2 }),
+    utm: (0, import_fields12.json)({ ...ro2 }),
+    lead: (0, import_fields12.relationship)({ ref: "Lead", ...ro2 }),
     ...trackingFields
   }
 });
-var ReferralSource = (0, import_core11.list)({
+var ReferralSource = (0, import_core12.list)({
   access: scopedManaged([...salesRead], "canManageSales", ["community"]),
   ui: { labelField: "name" },
   fields: {
-    community: (0, import_fields11.relationship)({ ref: "Community" }),
-    name: (0, import_fields11.text)({ validation: { isRequired: true } }),
+    community: (0, import_fields12.relationship)({ ref: "Community" }),
+    name: (0, import_fields12.text)({ validation: { isRequired: true } }),
     kind: choice(["hospital", "physician", "placement_agency", "ccrc", "other"], "hospital"),
-    feeTerms: (0, import_fields11.json)({ defaultValue: {} }),
-    contact: (0, import_fields11.json)({ defaultValue: {} }),
+    feeTerms: (0, import_fields12.json)({ defaultValue: {} }),
+    contact: (0, import_fields12.json)({ defaultValue: {} }),
     ...trackingFields
   }
 });
-var Lead = (0, import_core11.list)({
+var Lead = (0, import_core12.list)({
   access: scopedGoverned([...salesRead], ["community"]),
   ui: { labelField: "reference", listView: { initialColumns: ["reference", "community", "status", "owner", "nextActionAt"] } },
   fields: {
     reference: systemText({ indexed: "unique", required: true }),
-    community: (0, import_fields11.relationship)({ ref: "Community", ...ro2 }),
-    owner: (0, import_fields11.relationship)({ ref: "User", ...ro2 }),
-    primaryContact: (0, import_fields11.relationship)({ ref: "Contact", ...ro2 }),
-    prospects: (0, import_fields11.relationship)({ ref: "Prospect.lead", many: true, ...ro2 }),
+    community: (0, import_fields12.relationship)({ ref: "Community", ...ro2 }),
+    owner: (0, import_fields12.relationship)({ ref: "User", ...ro2 }),
+    primaryContact: (0, import_fields12.relationship)({ ref: "Contact", ...ro2 }),
+    prospects: (0, import_fields12.relationship)({ ref: "Prospect.lead", many: true, ...ro2 }),
     status: lifecycle(LEAD_STATUSES),
-    lostReason: (0, import_fields11.select)({ ...opt2(["chose_competitor", "care_needs_exceed", "cost", "stayed_home", "deceased", "no_response", "other"]), ...ro2 }),
-    nextActionAt: (0, import_fields11.timestamp)({ ...ro2 }),
-    referralSource: (0, import_fields11.relationship)({ ref: "ReferralSource", ...ro2 }),
-    activities: (0, import_fields11.relationship)({ ref: "SalesActivity.lead", many: true, ...ro2 }),
-    tours: (0, import_fields11.relationship)({ ref: "Tour.lead", many: true, ...ro2 }),
-    synthetic: (0, import_fields11.checkbox)({ defaultValue: false, ...ro2 }),
+    lostReason: (0, import_fields12.select)({ ...opt2(["chose_competitor", "care_needs_exceed", "cost", "stayed_home", "deceased", "no_response", "other"]), ...ro2 }),
+    nextActionAt: (0, import_fields12.timestamp)({ ...ro2 }),
+    referralSource: (0, import_fields12.relationship)({ ref: "ReferralSource", ...ro2 }),
+    activities: (0, import_fields12.relationship)({ ref: "SalesActivity.lead", many: true, ...ro2 }),
+    tours: (0, import_fields12.relationship)({ ref: "Tour.lead", many: true, ...ro2 }),
+    synthetic: (0, import_fields12.checkbox)({ defaultValue: false, ...ro2 }),
     version: versionField(),
     ...trackingFields
   }
 });
-var Prospect = (0, import_core11.list)({
+var Prospect = (0, import_core12.list)({
   access: scopedGoverned([...salesRead], ["community"]),
   ui: { labelField: "reference" },
   fields: {
     reference: systemText({ indexed: "unique", required: true }),
-    community: (0, import_fields11.relationship)({ ref: "Community", ...ro2 }),
-    lead: (0, import_fields11.relationship)({ ref: "Lead.prospects", ...ro2 }),
+    community: (0, import_fields12.relationship)({ ref: "Community", ...ro2 }),
+    lead: (0, import_fields12.relationship)({ ref: "Lead.prospects", ...ro2 }),
     ...phiFields("Prospect", {
-      firstName: ["dem", import_fields11.text, ro2],
-      lastName: ["dem", import_fields11.text, ro2],
-      dateOfBirth: ["dem", import_fields11.calendarDay, ro2],
-      careNotes: ["clin", import_fields11.text, ro2]
+      firstName: ["dem", import_fields12.text, ro2],
+      lastName: ["dem", import_fields12.text, ro2],
+      dateOfBirth: ["dem", import_fields12.calendarDay, ro2],
+      careNotes: ["clin", import_fields12.text, ro2]
     }),
-    desiredSetting: (0, import_fields11.select)({ ...opt2(SETTINGS), ...ro2 }),
-    desiredMoveIn: (0, import_fields11.calendarDay)({ ...ro2 }),
-    convertedResident: (0, import_fields11.relationship)({ ref: "Resident", ...ro2 }),
-    synthetic: (0, import_fields11.checkbox)({ defaultValue: false, ...ro2 }),
+    desiredSetting: (0, import_fields12.select)({ ...opt2(SETTINGS), ...ro2 }),
+    desiredMoveIn: (0, import_fields12.calendarDay)({ ...ro2 }),
+    convertedResident: (0, import_fields12.relationship)({ ref: "Resident", ...ro2 }),
+    synthetic: (0, import_fields12.checkbox)({ defaultValue: false, ...ro2 }),
     ...trackingFields
   }
 });
-var Referral = (0, import_core11.list)({
+var Referral = (0, import_core12.list)({
   access: scopedGoverned([...salesRead, "canAdmitDischarge"], ["community"]),
   ui: { labelField: "reference", listView: { initialColumns: ["reference", "community", "source", "status", "responseDueAt"] } },
   fields: {
     reference: systemText({ indexed: "unique", required: true }),
-    community: (0, import_fields11.relationship)({ ref: "Community", ...ro2 }),
-    source: (0, import_fields11.relationship)({ ref: "ReferralSource", ...ro2 }),
-    receivedAt: (0, import_fields11.timestamp)({ ...ro2 }),
-    prospect: (0, import_fields11.relationship)({ ref: "Prospect", ...ro2 }),
-    packet: (0, import_fields11.relationship)({ ref: "Document", many: true, ...ro2 }),
-    expectedPayer: (0, import_fields11.select)({ ...opt2(["medicare_a", "medicare_advantage", "medicaid", "medicaid_pending", "private_pay", "commercial", "hospice", "other"]), ...ro2 }),
+    community: (0, import_fields12.relationship)({ ref: "Community", ...ro2 }),
+    source: (0, import_fields12.relationship)({ ref: "ReferralSource", ...ro2 }),
+    receivedAt: (0, import_fields12.timestamp)({ ...ro2 }),
+    prospect: (0, import_fields12.relationship)({ ref: "Prospect", ...ro2 }),
+    packet: (0, import_fields12.relationship)({ ref: "Document", many: true, ...ro2 }),
+    expectedPayer: (0, import_fields12.select)({ ...opt2(["medicare_a", "medicare_advantage", "medicaid", "medicaid_pending", "private_pay", "commercial", "hospice", "other"]), ...ro2 }),
     ...phiFields("Referral", {
-      clinicalSummary: ["clin", import_fields11.text, ro2]
+      clinicalSummary: ["clin", import_fields12.text, ro2]
     }),
-    pasrrLevel1: (0, import_fields11.relationship)({ ref: "Document", ...ro2 }),
-    pasrrLevel2Required: (0, import_fields11.checkbox)({ defaultValue: false, ...ro2 }),
+    pasrrLevel1: (0, import_fields12.relationship)({ ref: "Document", ...ro2 }),
+    pasrrLevel2Required: (0, import_fields12.checkbox)({ defaultValue: false, ...ro2 }),
     status: lifecycle(["received", "clinical_review", "payer_check", "accepted", "declined", "admitted", "withdrawn"]),
-    declineReason: (0, import_fields11.select)({ ...opt2(["no_bed", "clinical_needs", "payer", "pasrr", "family_choice", "other"]), ...ro2 }),
-    responseDueAt: (0, import_fields11.timestamp)({ ...ro2 }),
+    declineReason: (0, import_fields12.select)({ ...opt2(["no_bed", "clinical_needs", "payer", "pasrr", "family_choice", "other"]), ...ro2 }),
+    responseDueAt: (0, import_fields12.timestamp)({ ...ro2 }),
     version: versionField(),
     ...trackingFields
   }
 });
-var TourSlot = (0, import_core11.list)({
+var TourSlot = (0, import_core12.list)({
   access: scopedManaged([...salesRead], "canManageSales", ["community"]),
   ui: { labelField: "startsAt", listView: { initialColumns: ["community", "startsAt", "endsAt", "capacity", "host"] } },
   fields: {
-    community: (0, import_fields11.relationship)({ ref: "Community" }),
-    startsAt: (0, import_fields11.timestamp)({ validation: { isRequired: true } }),
-    endsAt: (0, import_fields11.timestamp)({ validation: { isRequired: true } }),
-    capacity: (0, import_fields11.integer)({ defaultValue: 2, validation: { isRequired: true, min: 1, max: 20 } }),
+    community: (0, import_fields12.relationship)({ ref: "Community" }),
+    startsAt: (0, import_fields12.timestamp)({ validation: { isRequired: true } }),
+    endsAt: (0, import_fields12.timestamp)({ validation: { isRequired: true } }),
+    capacity: (0, import_fields12.integer)({ defaultValue: 2, validation: { isRequired: true, min: 1, max: 20 } }),
     kind: choice(["in_person", "virtual", "either"], "either"),
-    host: (0, import_fields11.relationship)({ ref: "User" }),
-    tours: (0, import_fields11.relationship)({ ref: "Tour.slot", many: true, ...ro2 }),
+    host: (0, import_fields12.relationship)({ ref: "User" }),
+    tours: (0, import_fields12.relationship)({ ref: "Tour.slot", many: true, ...ro2 }),
     ...trackingFields
   }
 });
-var Tour = (0, import_core11.list)({
+var Tour = (0, import_core12.list)({
   access: scopedGoverned([...salesRead], ["community"]),
   ui: { labelField: "publicCode", listView: { initialColumns: ["publicCode", "slot", "lead", "kind", "status"] } },
   fields: {
     publicCode: systemText({ indexed: "unique", required: true }),
-    community: (0, import_fields11.relationship)({ ref: "Community", ...ro2 }),
-    slot: (0, import_fields11.relationship)({ ref: "TourSlot.tours", ...ro2 }),
-    lead: (0, import_fields11.relationship)({ ref: "Lead.tours", ...ro2 }),
+    community: (0, import_fields12.relationship)({ ref: "Community", ...ro2 }),
+    slot: (0, import_fields12.relationship)({ ref: "TourSlot.tours", ...ro2 }),
+    lead: (0, import_fields12.relationship)({ ref: "Lead.tours", ...ro2 }),
     kind: fixedChoice(["in_person", "virtual"]),
     status: lifecycle(["requested", "confirmed", "completed", "no_show", "cancelled"]),
-    guestTokenHash: (0, import_fields11.text)({ access: { read: sys5, create: sys5, update: sys5 }, graphql: { omit: true }, ui: { createView: { fieldMode: "hidden" }, itemView: { fieldMode: "hidden" } } }),
-    holdExpiresAt: (0, import_fields11.timestamp)({ ...ro2 }),
-    ...phiFields("Tour", { notes: ["dem", import_fields11.text, ro2] }),
+    guestTokenHash: (0, import_fields12.text)({ access: { read: sys5, create: sys5, update: sys5 }, graphql: { omit: true }, ui: { createView: { fieldMode: "hidden" }, itemView: { fieldMode: "hidden" } } }),
+    holdExpiresAt: (0, import_fields12.timestamp)({ ...ro2 }),
+    ...phiFields("Tour", { notes: ["dem", import_fields12.text, ro2] }),
     version: versionField(),
     ...trackingFields
   }
 });
-var WaitlistEntry = (0, import_core11.list)({
+var WaitlistEntry = (0, import_core12.list)({
   access: scopedGoverned([...salesRead], ["community"]),
   ui: { labelField: "reference", listView: { initialColumns: ["reference", "community", "setting", "apartmentType", "priority", "status", "offerExpiresAt"] } },
   fields: {
     reference: systemText({ indexed: "unique", required: true }),
-    community: (0, import_fields11.relationship)({ ref: "Community", ...ro2 }),
-    prospect: (0, import_fields11.relationship)({ ref: "Prospect", ...ro2 }),
-    lead: (0, import_fields11.relationship)({ ref: "Lead", ...ro2 }),
-    apartmentType: (0, import_fields11.relationship)({ ref: "ApartmentType", ...ro2 }),
-    setting: (0, import_fields11.select)({ ...opt2(SETTINGS), ...ro2 }),
-    priority: (0, import_fields11.integer)({ defaultValue: 100, ...ro2 }),
-    priorityReason: (0, import_fields11.select)({ ...opt2(["internal_transfer", "continuing_care", "date_order", "other"]), defaultValue: "date_order", ...ro2 }),
+    community: (0, import_fields12.relationship)({ ref: "Community", ...ro2 }),
+    prospect: (0, import_fields12.relationship)({ ref: "Prospect", ...ro2 }),
+    lead: (0, import_fields12.relationship)({ ref: "Lead", ...ro2 }),
+    apartmentType: (0, import_fields12.relationship)({ ref: "ApartmentType", ...ro2 }),
+    setting: (0, import_fields12.select)({ ...opt2(SETTINGS), ...ro2 }),
+    priority: (0, import_fields12.integer)({ defaultValue: 100, ...ro2 }),
+    priorityReason: (0, import_fields12.select)({ ...opt2(["internal_transfer", "continuing_care", "date_order", "other"]), defaultValue: "date_order", ...ro2 }),
     status: lifecycle(["active", "offered", "accepted", "declined", "expired", "converted", "withdrawn"]),
-    offeredReservation: (0, import_fields11.relationship)({ ref: "PlaceReservation", ...ro2 }),
-    offerExpiresAt: (0, import_fields11.timestamp)({ ...ro2 }),
+    offeredReservation: (0, import_fields12.relationship)({ ref: "PlaceReservation", ...ro2 }),
+    offerExpiresAt: (0, import_fields12.timestamp)({ ...ro2 }),
     version: versionField(),
     ...trackingFields
   }
 });
-var SalesActivity = (0, import_core11.list)({
+var SalesActivity = (0, import_core12.list)({
   access: scopedGoverned([...salesRead], ["lead", "community"]),
   fields: {
-    lead: (0, import_fields11.relationship)({ ref: "Lead.activities", ...ro2 }),
+    lead: (0, import_fields12.relationship)({ ref: "Lead.activities", ...ro2 }),
     kind: fixedChoice(["call", "email", "text", "tour", "assessment", "note"]),
-    at: (0, import_fields11.timestamp)({ ...ro2, defaultValue: { kind: "now" } }),
-    by: (0, import_fields11.relationship)({ ref: "User", ...ro2 }),
-    ...phiFields("SalesActivity", { summary: ["dem", import_fields11.text, ro2] }),
+    at: (0, import_fields12.timestamp)({ ...ro2, defaultValue: { kind: "now" } }),
+    by: (0, import_fields12.relationship)({ ref: "User", ...ro2 }),
+    ...phiFields("SalesActivity", { summary: ["dem", import_fields12.text, ro2] }),
     ...trackingFields
   }
 });
-var StorefrontSite = (0, import_core11.list)({
+var StorefrontSite = (0, import_core12.list)({
   access: {
     operation: { query: isStaff, create: anyOf("canManageStorefront"), update: anyOf("canManageStorefront"), delete: sys5 },
     filter: { query: assignedFilter(["community"]), update: assignedFilter(["community"]) }
   },
   ui: { labelField: "heroTitle" },
   fields: {
-    community: (0, import_fields11.relationship)({ ref: "Community.storefront" }),
-    published: (0, import_fields11.checkbox)({ defaultValue: false }),
-    heroTitle: (0, import_fields11.text)({ validation: { isRequired: true } }),
-    heroBody: (0, import_fields11.text)({ ui: { displayMode: "textarea" } }),
-    amenities: (0, import_fields11.json)({ defaultValue: [] }),
-    diningCopy: (0, import_fields11.text)({ ui: { displayMode: "textarea" } }),
-    activitiesCopy: (0, import_fields11.text)({ ui: { displayMode: "textarea" } }),
-    careLevelsCopy: (0, import_fields11.text)({ ui: { displayMode: "textarea" } }),
-    gallery: (0, import_fields11.relationship)({ ref: "Document", many: true }),
-    staffBios: (0, import_fields11.relationship)({ ref: "StaffBio.site", many: true }),
-    faq: (0, import_fields11.json)({ defaultValue: [] }),
-    showCmsRatings: (0, import_fields11.checkbox)({ defaultValue: false }),
-    acceptedPayers: (0, import_fields11.json)({ defaultValue: [] }),
-    seo: (0, import_fields11.json)({ defaultValue: {} }),
-    tourBookingEnabled: (0, import_fields11.checkbox)({ defaultValue: true }),
-    waitlistEnabled: (0, import_fields11.checkbox)({ defaultValue: true }),
+    community: (0, import_fields12.relationship)({ ref: "Community.storefront" }),
+    published: (0, import_fields12.checkbox)({ defaultValue: false }),
+    heroTitle: (0, import_fields12.text)({ validation: { isRequired: true } }),
+    heroBody: (0, import_fields12.text)({ ui: { displayMode: "textarea" } }),
+    amenities: (0, import_fields12.json)({ defaultValue: [] }),
+    diningCopy: (0, import_fields12.text)({ ui: { displayMode: "textarea" } }),
+    activitiesCopy: (0, import_fields12.text)({ ui: { displayMode: "textarea" } }),
+    careLevelsCopy: (0, import_fields12.text)({ ui: { displayMode: "textarea" } }),
+    gallery: (0, import_fields12.relationship)({ ref: "Document", many: true }),
+    staffBios: (0, import_fields12.relationship)({ ref: "StaffBio.site", many: true }),
+    faq: (0, import_fields12.json)({ defaultValue: [] }),
+    showCmsRatings: (0, import_fields12.checkbox)({ defaultValue: false }),
+    acceptedPayers: (0, import_fields12.json)({ defaultValue: [] }),
+    seo: (0, import_fields12.json)({ defaultValue: {} }),
+    tourBookingEnabled: (0, import_fields12.checkbox)({ defaultValue: true }),
+    waitlistEnabled: (0, import_fields12.checkbox)({ defaultValue: true }),
     ...trackingFields
   }
 });
-var StaffBio = (0, import_core11.list)({
+var StaffBio = (0, import_core12.list)({
   access: {
     operation: { query: isStaff, create: anyOf("canManageStorefront"), update: anyOf("canManageStorefront"), delete: anyOf("canManageStorefront") },
     filter: { query: assignedFilter(["site", "community"]) }
   },
   ui: { labelField: "name" },
   fields: {
-    site: (0, import_fields11.relationship)({ ref: "StorefrontSite.staffBios" }),
-    name: (0, import_fields11.text)({ validation: { isRequired: true } }),
-    title: (0, import_fields11.text)(),
-    bio: (0, import_fields11.text)({ ui: { displayMode: "textarea" } }),
-    photo: (0, import_fields11.relationship)({ ref: "Document" }),
-    sortOrder: (0, import_fields11.integer)({ defaultValue: 0 }),
-    consentDocument: (0, import_fields11.relationship)({ ref: "Document", ui: { description: "The staff member agreed to appear on the public site." } }),
+    site: (0, import_fields12.relationship)({ ref: "StorefrontSite.staffBios" }),
+    name: (0, import_fields12.text)({ validation: { isRequired: true } }),
+    title: (0, import_fields12.text)(),
+    bio: (0, import_fields12.text)({ ui: { displayMode: "textarea" } }),
+    photo: (0, import_fields12.relationship)({ ref: "Document" }),
+    sortOrder: (0, import_fields12.integer)({ defaultValue: 0 }),
+    consentDocument: (0, import_fields12.relationship)({ ref: "Document", ui: { description: "The staff member agreed to appear on the public site." } }),
     ...trackingFields
   }
 });
-var PublishedPrice = (0, import_core11.list)({
+var PublishedPrice = (0, import_core12.list)({
   access: {
     operation: { query: isStaff, create: anyOf("canManageStorefront"), update: anyOf("canManageStorefront"), delete: sys5 },
     filter: { query: assignedFilter(["community"]), update: assignedFilter(["community"]) }
   },
   ui: { labelField: "label", listView: { initialColumns: ["label", "community", "fromMinor", "toMinor", "status"] } },
   fields: {
-    community: (0, import_fields11.relationship)({ ref: "Community" }),
-    apartmentType: (0, import_fields11.relationship)({ ref: "ApartmentType" }),
-    setting: (0, import_fields11.select)({ ...opt2(SETTINGS) }),
-    label: (0, import_fields11.text)({ validation: { isRequired: true } }),
+    community: (0, import_fields12.relationship)({ ref: "Community" }),
+    apartmentType: (0, import_fields12.relationship)({ ref: "ApartmentType" }),
+    setting: (0, import_fields12.select)({ ...opt2(SETTINGS) }),
+    label: (0, import_fields12.text)({ validation: { isRequired: true } }),
     fromMinor: minor({ required: true, description: "Starting monthly (or daily for nursing) price in cents." }),
     toMinor: minor(),
     period: choice(["month", "day"], "month"),
     communityFeeMinor: minor(),
-    disclaimer: (0, import_fields11.text)({ ui: { displayMode: "textarea" } }),
+    disclaimer: (0, import_fields12.text)({ ui: { displayMode: "textarea" } }),
     status: lifecycle(["draft", "published", "retired"], "draft"),
-    publishedAt: (0, import_fields11.timestamp)({ ...ro2 }),
+    publishedAt: (0, import_fields12.timestamp)({ ...ro2 }),
     version: versionField(),
     ...trackingFields
   }
 });
-var AvailabilitySnapshot = (0, import_core11.list)({
+var AvailabilitySnapshot = (0, import_core12.list)({
   access: { operation: { query: isStaff, create: sys5, update: sys5, delete: sys5 } },
   ui: { listView: { initialColumns: ["community", "apartmentType", "setting", "availableCount", "computedAt"] } },
   fields: {
-    community: (0, import_fields11.relationship)({ ref: "Community", ...ro2 }),
-    apartmentType: (0, import_fields11.relationship)({ ref: "ApartmentType", ...ro2 }),
+    community: (0, import_fields12.relationship)({ ref: "Community", ...ro2 }),
+    apartmentType: (0, import_fields12.relationship)({ ref: "ApartmentType", ...ro2 }),
     setting: systemText(),
     snapshotKey: systemText({ indexed: "unique", required: true }),
-    availableCount: (0, import_fields11.integer)({ defaultValue: 0, ...ro2 }),
-    waitlistOpen: (0, import_fields11.checkbox)({ defaultValue: true, ...ro2 }),
-    computedAt: (0, import_fields11.timestamp)({ ...ro2 })
+    availableCount: (0, import_fields12.integer)({ defaultValue: 0, ...ro2 }),
+    waitlistOpen: (0, import_fields12.checkbox)({ defaultValue: true, ...ro2 }),
+    computedAt: (0, import_fields12.timestamp)({ ...ro2 })
   }
 });
-var JobPosting = (0, import_core11.list)({
+var JobPosting = (0, import_core12.list)({
   access: {
     operation: { query: isStaff, create: anyOf("canManageStorefront", "canManagePeople"), update: anyOf("canManageStorefront", "canManagePeople"), delete: sys5 },
     filter: { query: assignedFilter(["community"]) }
   },
   ui: { labelField: "title" },
   fields: {
-    community: (0, import_fields11.relationship)({ ref: "Community" }),
-    title: (0, import_fields11.text)({ validation: { isRequired: true } }),
-    role: (0, import_fields11.text)(),
+    community: (0, import_fields12.relationship)({ ref: "Community" }),
+    title: (0, import_fields12.text)({ validation: { isRequired: true } }),
+    role: (0, import_fields12.text)(),
     employmentType: choice(["full_time", "part_time", "prn", "contract"], "full_time"),
-    payRange: (0, import_fields11.json)({ defaultValue: {} }),
-    body: (0, import_fields11.text)({ ui: { displayMode: "textarea" } }),
+    payRange: (0, import_fields12.json)({ defaultValue: {} }),
+    body: (0, import_fields12.text)({ ui: { displayMode: "textarea" } }),
     status: choice(["draft", "published", "closed"], "draft"),
     ...trackingFields
   }
@@ -2754,42 +3021,42 @@ var SCOPE_AUTHORITY = {
   trust_balance: ["self", "financial_responsible", "guardian"]
 };
 var MFA_SCOPES = /* @__PURE__ */ new Set(["care_summary", "messages", "documents", "trust_balance", "statements", "payments"]);
-var PortalAccount = (0, import_core11.list)({
+var PortalAccount = (0, import_core12.list)({
   access: { operation: { query: anyOf("canManageRepresentatives", "canApprovePortalScopes"), create: sys5, update: sys5, delete: sys5 } },
   ui: { labelField: "reference", listView: { initialColumns: ["reference", "contact", "status", "mfaEnrolled", "invitationExpiresAt"] } },
   fields: {
     reference: systemText({ indexed: "unique", required: true }),
-    user: (0, import_fields11.relationship)({ ref: "User.portalAccount", ...ro2 }),
-    contact: (0, import_fields11.relationship)({ ref: "Contact", ...ro2 }),
-    community: (0, import_fields11.relationship)({ ref: "Community", ...ro2 }),
-    representatives: (0, import_fields11.relationship)({ ref: "Representative.portalAccount", many: true, ...ro2 }),
+    user: (0, import_fields12.relationship)({ ref: "User.portalAccount", ...ro2 }),
+    contact: (0, import_fields12.relationship)({ ref: "Contact", ...ro2 }),
+    community: (0, import_fields12.relationship)({ ref: "Community", ...ro2 }),
+    representatives: (0, import_fields12.relationship)({ ref: "Representative.portalAccount", many: true, ...ro2 }),
     status: lifecycle(["invited", "active", "suspended", "revoked"]),
-    invitedBy: (0, import_fields11.relationship)({ ref: "User", ...ro2 }),
-    invitationTokenHash: (0, import_fields11.text)({ access: { read: sys5, create: sys5, update: sys5 }, graphql: { omit: true }, ui: { createView: { fieldMode: "hidden" }, itemView: { fieldMode: "hidden" } } }),
-    invitationExpiresAt: (0, import_fields11.timestamp)({ ...ro2 }),
-    acceptedAt: (0, import_fields11.timestamp)({ ...ro2 }),
-    mfaEnrolled: (0, import_fields11.checkbox)({ defaultValue: false, ...ro2 }),
-    sessionEpoch: (0, import_fields11.integer)({ defaultValue: 0, ...ro2, ui: { ...ro2.ui, description: "Bumped on revocation so existing portal sessions stop working." } }),
-    grants: (0, import_fields11.relationship)({ ref: "PortalScopeGrant.account", many: true, ...ro2 }),
+    invitedBy: (0, import_fields12.relationship)({ ref: "User", ...ro2 }),
+    invitationTokenHash: (0, import_fields12.text)({ access: { read: sys5, create: sys5, update: sys5 }, graphql: { omit: true }, ui: { createView: { fieldMode: "hidden" }, itemView: { fieldMode: "hidden" } } }),
+    invitationExpiresAt: (0, import_fields12.timestamp)({ ...ro2 }),
+    acceptedAt: (0, import_fields12.timestamp)({ ...ro2 }),
+    mfaEnrolled: (0, import_fields12.checkbox)({ defaultValue: false, ...ro2 }),
+    sessionEpoch: (0, import_fields12.integer)({ defaultValue: 0, ...ro2, ui: { ...ro2.ui, description: "Bumped on revocation so existing portal sessions stop working." } }),
+    grants: (0, import_fields12.relationship)({ ref: "PortalScopeGrant.account", many: true, ...ro2 }),
     version: versionField(),
     ...trackingFields
   }
 });
-var PortalScopeGrant = (0, import_core11.list)({
+var PortalScopeGrant = (0, import_core12.list)({
   access: { operation: { query: anyOf("canManageRepresentatives", "canApprovePortalScopes"), create: sys5, update: sys5, delete: sys5 } },
   ui: { labelField: "scope", listView: { initialColumns: ["account", "resident", "scope", "status", "grantedAt"] } },
   fields: {
-    account: (0, import_fields11.relationship)({ ref: "PortalAccount.grants", ...ro2 }),
-    resident: (0, import_fields11.relationship)({ ref: "Resident", ...ro2 }),
-    representative: (0, import_fields11.relationship)({ ref: "Representative", ...ro2 }),
+    account: (0, import_fields12.relationship)({ ref: "PortalAccount.grants", ...ro2 }),
+    resident: (0, import_fields12.relationship)({ ref: "Resident", ...ro2 }),
+    representative: (0, import_fields12.relationship)({ ref: "Representative", ...ro2 }),
     scope: fixedChoice(PORTAL_SCOPES),
     authorityBasis: fixedChoice(AUTHORITY_BASES),
-    consentDocument: (0, import_fields11.relationship)({ ref: "Document", ...ro2 }),
+    consentDocument: (0, import_fields12.relationship)({ ref: "Document", ...ro2 }),
     status: lifecycle(["proposed", "granted", "revoked"]),
-    proposedBy: (0, import_fields11.relationship)({ ref: "User", ...ro2 }),
-    grantedBy: (0, import_fields11.relationship)({ ref: "User", ...ro2 }),
-    grantedAt: (0, import_fields11.timestamp)({ ...ro2 }),
-    revokedAt: (0, import_fields11.timestamp)({ ...ro2 }),
+    proposedBy: (0, import_fields12.relationship)({ ref: "User", ...ro2 }),
+    grantedBy: (0, import_fields12.relationship)({ ref: "User", ...ro2 }),
+    grantedAt: (0, import_fields12.timestamp)({ ...ro2 }),
+    revokedAt: (0, import_fields12.timestamp)({ ...ro2 }),
     revokeReason: systemText(),
     version: versionField(),
     ...trackingFields
@@ -2824,162 +3091,162 @@ __export(clinical_exports, {
   Wound: () => Wound,
   WoundAssessment: () => WoundAssessment,
   choice: () => choice,
-  rl: () => rl,
-  scope: () => scope,
+  rl: () => rl2,
+  scope: () => scope2,
   stamps: () => stamps
 });
-var import_core12 = require("@keystone-6/core");
-var import_fields12 = require("@keystone-6/core/fields");
+var import_core13 = require("@keystone-6/core");
+var import_fields13 = require("@keystone-6/core/fields");
 var CLINICAL = ["canReadClinical"];
-var rl = (read = CLINICAL) => residentList(["community"], ["resident"], read);
-var scope = () => ({
-  resident: (0, import_fields12.relationship)({ ref: "Resident", ...ro }),
-  community: (0, import_fields12.relationship)({ ref: "Community", ...ro })
+var rl2 = (read = CLINICAL) => residentList(["community"], ["resident"], read);
+var scope2 = () => ({
+  resident: (0, import_fields13.relationship)({ ref: "Resident", ...ro }),
+  community: (0, import_fields13.relationship)({ ref: "Community", ...ro })
 });
 var stamps = () => ({ version: versionField(), ...trackingFields });
-var when = (description) => (0, import_fields12.timestamp)({ ...ro, ...description ? { ui: { ...ro.ui, description } } : {} });
-var by = () => (0, import_fields12.relationship)({ ref: "User", ...ro });
+var when2 = (description) => (0, import_fields13.timestamp)({ ...ro, ...description ? { ui: { ...ro.ui, description } } : {} });
+var by2 = () => (0, import_fields13.relationship)({ ref: "User", ...ro });
 var textarea = { ...ro, ui: { ...ro.ui, displayMode: "textarea" } };
 var NOTE_KINDS = ["nursing", "physician", "social_services", "therapy", "dietary", "activity", "late_entry", "other"];
-var ProgressNote = (0, import_core12.list)({
-  access: rl(),
+var ProgressNote = (0, import_core13.list)({
+  access: rl2(),
   ui: { labelField: "kind", listView: { initialColumns: ["kind", "resident", "status", "eventAt", "author"] } },
   fields: {
-    ...scope(),
+    ...scope2(),
     kind: fixedChoice(NOTE_KINDS),
-    ...phiFields("ProgressNote", { body: ["clin", import_fields12.text, textarea] }),
+    ...phiFields("ProgressNote", { body: ["clin", import_fields13.text, textarea] }),
     status: lifecycle(["draft", "signed", "amended", "entered_in_error"]),
-    eventAt: when("When the thing happened (a late entry differs from the time it was written)."),
-    lateEntry: (0, import_fields12.checkbox)({ defaultValue: false, ...ro }),
-    author: by(),
-    signedBy: by(),
-    signedAt: when(),
-    amends: (0, import_fields12.relationship)({ ref: "ProgressNote", ...ro }),
-    amendedBy: (0, import_fields12.relationship)({ ref: "ProgressNote", ...ro }),
+    eventAt: when2("When the thing happened (a late entry differs from the time it was written)."),
+    lateEntry: (0, import_fields13.checkbox)({ defaultValue: false, ...ro }),
+    author: by2(),
+    signedBy: by2(),
+    signedAt: when2(),
+    amends: (0, import_fields13.relationship)({ ref: "ProgressNote", ...ro }),
+    amendedBy: (0, import_fields13.relationship)({ ref: "ProgressNote", ...ro }),
     errorReason: systemText(),
     ...stamps()
   }
 });
 phiList("ProgressNote");
 var VITAL_KINDS = ["temperature", "pulse", "respirations", "systolic_bp", "diastolic_bp", "spo2", "weight", "pain", "blood_glucose"];
-var VitalSign = (0, import_core12.list)({
-  access: rl(["canReadClinical", "canChartPointOfCare"]),
+var VitalSign = (0, import_core13.list)({
+  access: rl2(["canReadClinical", "canChartPointOfCare"]),
   ui: { labelField: "kind", listView: { initialColumns: ["kind", "value", "unit", "resident", "takenAt"] } },
   fields: {
-    ...scope(),
+    ...scope2(),
     kind: fixedChoice(VITAL_KINDS),
     ...phiFields("VitalSign", { value: ["clin", measurement, { ...ro, validation: { isRequired: true } }] }),
     unit: systemText({ required: true }),
-    takenAt: when(),
-    recordedBy: by(),
+    takenAt: when2(),
+    recordedBy: by2(),
     ...stamps()
   }
 });
 phiList("VitalSign");
-var IntakeRecord = (0, import_core12.list)({
-  access: rl(["canReadClinical", "canChartPointOfCare"]),
+var IntakeRecord = (0, import_core13.list)({
+  access: rl2(["canReadClinical", "canChartPointOfCare"]),
   ui: { labelField: "kind", listView: { initialColumns: ["kind", "amountMl", "percentEaten", "resident", "at"] } },
   fields: {
-    ...scope(),
+    ...scope2(),
     kind: fixedChoice(["fluid", "meal", "supplement", "tube_feed"]),
-    ...phiFields("IntakeRecord", { amountMl: ["clin", measurement, ro], percentEaten: ["clin", import_fields12.integer, ro] }),
-    at: when(),
-    recordedBy: by(),
+    ...phiFields("IntakeRecord", { amountMl: ["clin", measurement, ro], percentEaten: ["clin", import_fields13.integer, ro] }),
+    at: when2(),
+    recordedBy: by2(),
     ...stamps()
   }
 });
 phiList("IntakeRecord");
-var AdlRecord = (0, import_core12.list)({
-  access: rl(["canReadClinical", "canChartPointOfCare"]),
+var AdlRecord = (0, import_core13.list)({
+  access: rl2(["canReadClinical", "canChartPointOfCare"]),
   ui: { labelField: "activity", listView: { initialColumns: ["activity", "level", "resident", "at"] } },
   fields: {
-    ...scope(),
+    ...scope2(),
     activity: fixedChoice(["bed_mobility", "transfer", "walking", "dressing", "eating", "toileting", "bathing", "hygiene", "continence"]),
-    level: (0, import_fields12.select)({ ...opt(["independent", "supervision", "limited_assist", "extensive_assist", "total_dependence", "did_not_occur"]), validation: { isRequired: true }, ...ro }),
-    at: when(),
-    recordedBy: by(),
-    pocTaskSlot: (0, import_fields12.relationship)({ ref: "PocTaskSlot", ...ro }),
+    level: (0, import_fields13.select)({ ...opt(["independent", "supervision", "limited_assist", "extensive_assist", "total_dependence", "did_not_occur"]), validation: { isRequired: true }, ...ro }),
+    at: when2(),
+    recordedBy: by2(),
+    pocTaskSlot: (0, import_fields13.relationship)({ ref: "PocTaskSlot", ...ro }),
     ...stamps()
   }
 });
 phiList("AdlRecord");
-var Wound = (0, import_core12.list)({
-  access: rl(),
+var Wound = (0, import_core13.list)({
+  access: rl2(),
   ui: { labelField: "site", listView: { initialColumns: ["site", "kind", "status", "resident", "firstNotedAt"] } },
   fields: {
-    ...scope(),
-    ...phiFields("Wound", { site: ["clin", import_fields12.text, { ...ro, validation: { isRequired: true } }] }),
+    ...scope2(),
+    ...phiFields("Wound", { site: ["clin", import_fields13.text, { ...ro, validation: { isRequired: true } }] }),
     kind: fixedChoice(["pressure_injury", "skin_tear", "venous", "arterial", "diabetic", "surgical", "other"]),
     status: lifecycle(["open", "healing", "healed", "entered_in_error"]),
-    firstNotedAt: when(),
-    lastAssessedAt: when(),
+    firstNotedAt: when2(),
+    lastAssessedAt: when2(),
     currentStage: systemText(),
-    assessmentIntervalDays: (0, import_fields12.integer)({ defaultValue: 7, ...ro }),
-    assessments: (0, import_fields12.relationship)({ ref: "WoundAssessment.wound", many: true, ...ro }),
+    assessmentIntervalDays: (0, import_fields13.integer)({ defaultValue: 7, ...ro }),
+    assessments: (0, import_fields13.relationship)({ ref: "WoundAssessment.wound", many: true, ...ro }),
     ...stamps()
   }
 });
 phiList("Wound");
-var WoundAssessment = (0, import_core12.list)({
-  access: rl(),
+var WoundAssessment = (0, import_core13.list)({
+  access: rl2(),
   ui: { labelField: "stage", listView: { initialColumns: ["wound", "stage", "lengthCm", "widthCm", "assessedAt"] } },
   fields: {
-    ...scope(),
-    wound: (0, import_fields12.relationship)({ ref: "Wound.assessments", ...ro }),
-    stage: (0, import_fields12.select)({ ...opt(["1", "2", "3", "4", "unstageable", "deep_tissue", "not_applicable"]), ...ro }),
+    ...scope2(),
+    wound: (0, import_fields13.relationship)({ ref: "Wound.assessments", ...ro }),
+    stage: (0, import_fields13.select)({ ...opt(["1", "2", "3", "4", "unstageable", "deep_tissue", "not_applicable"]), ...ro }),
     ...phiFields("WoundAssessment", {
       lengthCm: ["clin", measurement, ro],
       widthCm: ["clin", measurement, ro],
       depthCm: ["clin", measurement, ro],
-      description: ["clin", import_fields12.text, textarea]
+      description: ["clin", import_fields13.text, textarea]
     }),
-    photos: (0, import_fields12.json)({ ...ro, ui: { ...ro.ui, description: "Document ids of wound photos." } }),
-    assessedAt: when(),
-    assessedBy: by(),
+    photos: (0, import_fields13.json)({ ...ro, ui: { ...ro.ui, description: "Document ids of wound photos." } }),
+    assessedAt: when2(),
+    assessedBy: by2(),
     ...stamps()
   }
 });
 phiList("WoundAssessment");
-var BehaviourEpisode = (0, import_core12.list)({
-  access: rl(["canReadSensitiveClinical"]),
+var BehaviourEpisode = (0, import_core13.list)({
+  access: rl2(["canReadSensitiveClinical"]),
   ui: { labelField: "kind", listView: { initialColumns: ["kind", "resident", "startedAt", "severity"] } },
   fields: {
-    ...scope(),
+    ...scope2(),
     kind: fixedChoice(["wandering", "verbal", "physical", "resistance_to_care", "sundowning", "self_injury", "other"]),
-    ...phiFields("BehaviourEpisode", { antecedent: ["sens", import_fields12.text, textarea], intervention: ["sens", import_fields12.text, textarea], outcome: ["sens", import_fields12.text, textarea] }),
-    severity: (0, import_fields12.select)({ ...opt(["mild", "moderate", "severe"]), defaultValue: "mild", ...ro }),
-    startedAt: when(),
-    durationMinutes: (0, import_fields12.integer)({ ...ro }),
-    recordedBy: by(),
+    ...phiFields("BehaviourEpisode", { antecedent: ["sens", import_fields13.text, textarea], intervention: ["sens", import_fields13.text, textarea], outcome: ["sens", import_fields13.text, textarea] }),
+    severity: (0, import_fields13.select)({ ...opt(["mild", "moderate", "severe"]), defaultValue: "mild", ...ro }),
+    startedAt: when2(),
+    durationMinutes: (0, import_fields13.integer)({ ...ro }),
+    recordedBy: by2(),
     ...stamps()
   }
 });
 phiList("BehaviourEpisode");
-var PhysicianVisit = (0, import_core12.list)({
-  access: rl(),
+var PhysicianVisit = (0, import_core13.list)({
+  access: rl2(),
   ui: { labelField: "kind", listView: { initialColumns: ["kind", "resident", "visitedAt", "physicianName"] } },
   fields: {
-    ...scope(),
+    ...scope2(),
     kind: fixedChoice(["physician", "nurse_practitioner", "physician_assistant", "telehealth"]),
     physicianName: systemText({ required: true }),
-    visitedAt: when(),
-    ...phiFields("PhysicianVisit", { summary: ["clin", import_fields12.text, textarea] }),
-    note: (0, import_fields12.relationship)({ ref: "ProgressNote", ...ro }),
-    recordedBy: by(),
+    visitedAt: when2(),
+    ...phiFields("PhysicianVisit", { summary: ["clin", import_fields13.text, textarea] }),
+    note: (0, import_fields13.relationship)({ ref: "ProgressNote", ...ro }),
+    recordedBy: by2(),
     ...stamps()
   }
 });
 phiList("PhysicianVisit");
-var AssessmentTemplate = (0, import_core12.list)({
+var AssessmentTemplate = (0, import_core13.list)({
   access: scopedlessRead(),
   ui: { labelField: "name", listView: { initialColumns: ["code", "name", "templateVersion", "scorer", "status"] } },
   fields: {
     code: systemText({ indexed: true, required: true }),
     name: systemText({ required: true }),
-    templateVersion: (0, import_fields12.integer)({ defaultValue: 1, ...ro }),
-    scorer: fixedChoice(["sum"]),
-    definition: (0, import_fields12.json)({ ...ro, ui: { ...ro.ui, description: "Items with options and points, score bands and the source note. Validated by the template meta-schema before it is stored." } }),
-    settings: (0, import_fields12.json)({ ...ro }),
+    templateVersion: (0, import_fields13.integer)({ defaultValue: 1, ...ro }),
+    scorer: fixedChoice(["sum", "mds"]),
+    definition: (0, import_fields13.json)({ ...ro, ui: { ...ro.ui, description: "Items with options and points, score bands and the source note. Validated by the template meta-schema before it is stored." } }),
+    settings: (0, import_fields13.json)({ ...ro }),
     sourceNote: systemText(),
     verifyNote: systemText(),
     status: lifecycle(["active", "retired"], "active"),
@@ -2989,145 +3256,145 @@ var AssessmentTemplate = (0, import_core12.list)({
 function scopedlessRead() {
   return { operation: { query: ({ session }) => Boolean(session?.data?.role?.canAccessDashboard), create: () => false, update: () => false, delete: () => false } };
 }
-var Assessment = (0, import_core12.list)({
-  access: rl(["canReadClinical", "canManageAssessments"]),
+var Assessment = (0, import_core13.list)({
+  access: rl2(["canReadClinical", "canManageAssessments"]),
   ui: { labelField: "templateCode", listView: { initialColumns: ["templateCode", "resident", "score", "band", "status", "completedAt"] } },
   fields: {
-    ...scope(),
-    template: (0, import_fields12.relationship)({ ref: "AssessmentTemplate", ...ro }),
+    ...scope2(),
+    template: (0, import_fields13.relationship)({ ref: "AssessmentTemplate", ...ro }),
     templateCode: systemText({ indexed: true, required: true }),
-    templateVersion: (0, import_fields12.integer)({ ...ro }),
-    ...phiFields("Assessment", { answers: ["clin", import_fields12.json, ro], band: ["clin", import_fields12.text, ro], score: ["clin", import_fields12.integer, ro] }),
+    templateVersion: (0, import_fields13.integer)({ ...ro }),
+    ...phiFields("Assessment", { answers: ["clin", import_fields13.json, ro], band: ["clin", import_fields13.text, ro], score: ["clin", import_fields13.integer, ro] }),
     status: lifecycle(["in_progress", "completed", "entered_in_error"], "completed"),
-    completedAt: when(),
-    completedBy: by(),
+    completedAt: when2(),
+    completedBy: by2(),
     ...stamps()
   }
 });
 phiList("Assessment");
-var CarePlan = (0, import_core12.list)({
-  access: rl(["canReadClinical", "canManageCarePlans"]),
+var CarePlan = (0, import_core13.list)({
+  access: rl2(["canReadClinical", "canManageCarePlans"]),
   ui: { labelField: "reference", listView: { initialColumns: ["reference", "kind", "status", "resident", "revision", "signedAt"] } },
   fields: {
-    ...scope(),
+    ...scope2(),
     reference: systemText({ indexed: "unique", required: true }),
     kind: fixedChoice(["baseline", "comprehensive", "service_plan"]),
     status: lifecycle(["draft", "active", "superseded", "entered_in_error"]),
-    revision: (0, import_fields12.integer)({ defaultValue: 1, ...ro }),
-    supersedes: (0, import_fields12.relationship)({ ref: "CarePlan", ...ro }),
-    items: (0, import_fields12.relationship)({ ref: "CarePlanItem.carePlan", many: true, ...ro }),
-    basedOnAssessment: (0, import_fields12.relationship)({ ref: "Assessment", ...ro }),
-    proposal: (0, import_fields12.relationship)({ ref: "Proposal", ...ro }),
-    startedAt: when(),
-    signedBy: by(),
-    signedAt: when(),
+    revision: (0, import_fields13.integer)({ defaultValue: 1, ...ro }),
+    supersedes: (0, import_fields13.relationship)({ ref: "CarePlan", ...ro }),
+    items: (0, import_fields13.relationship)({ ref: "CarePlanItem.carePlan", many: true, ...ro }),
+    basedOnAssessment: (0, import_fields13.relationship)({ ref: "Assessment", ...ro }),
+    proposal: (0, import_fields13.relationship)({ ref: "Proposal", ...ro }),
+    startedAt: when2(),
+    signedBy: by2(),
+    signedAt: when2(),
     ...stamps()
   }
 });
 phiList("CarePlan");
-var CarePlanItem = (0, import_core12.list)({
-  access: rl(["canReadClinical", "canManageCarePlans"]),
+var CarePlanItem = (0, import_core13.list)({
+  access: rl2(["canReadClinical", "canManageCarePlans"]),
   ui: { labelField: "text", listView: { initialColumns: ["kind", "text", "frequency", "resident"] } },
   fields: {
-    ...scope(),
-    carePlan: (0, import_fields12.relationship)({ ref: "CarePlan.items", ...ro }),
+    ...scope2(),
+    carePlan: (0, import_fields13.relationship)({ ref: "CarePlan.items", ...ro }),
     kind: fixedChoice(["focus", "goal", "intervention"]),
-    parent: (0, import_fields12.relationship)({ ref: "CarePlanItem", ...ro }),
-    ...phiFields("CarePlanItem", { text: ["clin", import_fields12.text, { ...textarea, validation: { isRequired: true } }] }),
-    discipline: (0, import_fields12.select)({ ...opt(["nursing", "cna", "dietary", "therapy", "social_services", "activities"]), defaultValue: "nursing", ...ro }),
-    frequency: (0, import_fields12.select)({ ...opt(["once", "every_shift", "daily", "twice_daily", "weekly", "as_needed"]), defaultValue: "as_needed", ...ro }),
-    targetDate: (0, import_fields12.calendarDay)({ ...ro }),
+    parent: (0, import_fields13.relationship)({ ref: "CarePlanItem", ...ro }),
+    ...phiFields("CarePlanItem", { text: ["clin", import_fields13.text, { ...textarea, validation: { isRequired: true } }] }),
+    discipline: (0, import_fields13.select)({ ...opt(["nursing", "cna", "dietary", "therapy", "social_services", "activities"]), defaultValue: "nursing", ...ro }),
+    frequency: (0, import_fields13.select)({ ...opt(["once", "every_shift", "daily", "twice_daily", "weekly", "as_needed"]), defaultValue: "as_needed", ...ro }),
+    targetDate: (0, import_fields13.calendarDay)({ ...ro }),
     status: lifecycle(["active", "met", "discontinued"], "active"),
     ...stamps()
   }
 });
 phiList("CarePlanItem");
-var PocTaskSlot = (0, import_core12.list)({
-  access: rl(["canReadClinical", "canChartPointOfCare"]),
+var PocTaskSlot = (0, import_core13.list)({
+  access: rl2(["canReadClinical", "canChartPointOfCare"]),
   ui: { labelField: "label", listView: { initialColumns: ["label", "resident", "dueAt", "status"] } },
   fields: {
-    ...scope(),
-    item: (0, import_fields12.relationship)({ ref: "CarePlanItem", ...ro }),
+    ...scope2(),
+    item: (0, import_fields13.relationship)({ ref: "CarePlanItem", ...ro }),
     label: systemText({ required: true }),
-    dueAt: when(),
+    dueAt: when2(),
     slotKey: systemText({ indexed: "unique", required: true }),
     status: lifecycle(["pending", "done", "not_done"]),
-    doneAt: when(),
-    doneBy: by(),
+    doneAt: when2(),
+    doneBy: by2(),
     ...stamps()
   }
 });
 phiList("PocTaskSlot");
 var ORDER_KINDS = ["medication", "treatment", "diet", "lab", "therapy", "code_status", "activity", "monitoring", "other"];
-var Order = (0, import_core12.list)({
-  access: rl(["canReadClinical", "canEnterOrders", "canAdministerMeds"]),
+var Order = (0, import_core13.list)({
+  access: rl2(["canReadClinical", "canEnterOrders", "canAdministerMeds"]),
   ui: { labelField: "summary", listView: { initialColumns: ["kind", "summary", "resident", "status", "source", "startAt"] } },
   fields: {
-    ...scope(),
+    ...scope2(),
     reference: systemText({ indexed: "unique", required: true }),
     kind: fixedChoice(ORDER_KINDS),
-    ...phiFields("Order", { summary: ["clin", import_fields12.text, { ...ro, validation: { isRequired: true } }], instructions: ["clin", import_fields12.text, textarea] }),
+    ...phiFields("Order", { summary: ["clin", import_fields13.text, { ...ro, validation: { isRequired: true } }], instructions: ["clin", import_fields13.text, textarea] }),
     source: fixedChoice(["written", "electronic", "verbal", "telephone"]),
-    readBack: (0, import_fields12.checkbox)({ defaultValue: false, ...ro }),
+    readBack: (0, import_fields13.checkbox)({ defaultValue: false, ...ro }),
     status: lifecycle(["active", "discontinued", "completed", "entered_in_error"], "active"),
-    startAt: when(),
-    stopAt: when(),
-    enteredBy: by(),
-    prescriber: by(),
+    startAt: when2(),
+    stopAt: when2(),
+    enteredBy: by2(),
+    prescriber: by2(),
     prescriberName: systemText(),
-    needsCountersign: (0, import_fields12.checkbox)({ defaultValue: false, ...ro }),
-    countersignedBy: by(),
-    countersignedAt: when(),
+    needsCountersign: (0, import_fields13.checkbox)({ defaultValue: false, ...ro }),
+    countersignedBy: by2(),
+    countersignedAt: when2(),
     discontinuedReason: systemText(),
     allergyOverride: systemText(),
-    medication: (0, import_fields12.relationship)({ ref: "MedicationOrderDetail.order", ...ro }),
+    medication: (0, import_fields13.relationship)({ ref: "MedicationOrderDetail.order", ...ro }),
     ...stamps()
   }
 });
 phiList("Order");
-var MedicationOrderDetail = (0, import_core12.list)({
-  access: rl(["canReadClinical", "canEnterOrders", "canAdministerMeds"]),
+var MedicationOrderDetail = (0, import_core13.list)({
+  access: rl2(["canReadClinical", "canEnterOrders", "canAdministerMeds"]),
   ui: { labelField: "drugName", listView: { initialColumns: ["drugName", "dose", "route", "resident", "prn"] } },
   fields: {
-    ...scope(),
-    order: (0, import_fields12.relationship)({ ref: "Order.medication", ...ro }),
-    reference: (0, import_fields12.relationship)({ ref: "MedicationReference", ...ro }),
+    ...scope2(),
+    order: (0, import_fields13.relationship)({ ref: "Order.medication", ...ro }),
+    reference: (0, import_fields13.relationship)({ ref: "MedicationReference", ...ro }),
     drugName: systemText({ required: true }),
     dose: measurement({ required: true }),
     doseUnit: systemText({ required: true }),
-    route: (0, import_fields12.select)({ ...opt(["oral", "sublingual", "topical", "subcutaneous", "intramuscular", "inhaled", "ophthalmic", "rectal", "transdermal"]), ...ro }),
-    prn: (0, import_fields12.checkbox)({ defaultValue: false, ...ro }),
+    route: (0, import_fields13.select)({ ...opt(["oral", "sublingual", "topical", "subcutaneous", "intramuscular", "inhaled", "ophthalmic", "rectal", "transdermal"]), ...ro }),
+    prn: (0, import_fields13.checkbox)({ defaultValue: false, ...ro }),
     prnReason: systemText(),
-    prnMinIntervalMinutes: (0, import_fields12.integer)({ ...ro }),
-    prnFollowUpMinutes: (0, import_fields12.integer)({ defaultValue: 60, ...ro }),
-    times: (0, import_fields12.json)({ ...ro, ui: { ...ro.ui, description: 'Local administration times, e.g. ["08:00","20:00"].' } }),
-    holdParameters: (0, import_fields12.json)({ ...ro, ui: { ...ro.ui, description: 'e.g. { "vital": "systolic_bp", "op": "lt", "value": 100 }. Hold the dose when the latest value trips it.' } }),
-    controlled: (0, import_fields12.checkbox)({ defaultValue: false, ...ro }),
+    prnMinIntervalMinutes: (0, import_fields13.integer)({ ...ro }),
+    prnFollowUpMinutes: (0, import_fields13.integer)({ defaultValue: 60, ...ro }),
+    times: (0, import_fields13.json)({ ...ro, ui: { ...ro.ui, description: 'Local administration times, e.g. ["08:00","20:00"].' } }),
+    holdParameters: (0, import_fields13.json)({ ...ro, ui: { ...ro.ui, description: 'e.g. { "vital": "systolic_bp", "op": "lt", "value": 100 }. Hold the dose when the latest value trips it.' } }),
+    controlled: (0, import_fields13.checkbox)({ defaultValue: false, ...ro }),
     ...stamps()
   }
 });
 phiList("MedicationOrderDetail");
 var TASK_KINDS = ["general", "post_fall_huddle", "neuro_checks", "hydration", "wound_assessment", "infection_review", "prn_followup", "incident_form", "countersign", "incident_follow_up", "count_discrepancy", "escalation", "care_plan_review", "finding"];
-var Task = (0, import_core12.list)({
+var Task = (0, import_core13.list)({
   access: scopedGoverned("canAccessDashboard", ["community"]),
   ui: { labelField: "title", listView: { initialColumns: ["title", "kind", "status", "ownerRole", "assignee", "dueAt"] } },
   fields: {
-    community: (0, import_fields12.relationship)({ ref: "Community", ...ro }),
-    resident: (0, import_fields12.relationship)({ ref: "Resident", ...ro }),
+    community: (0, import_fields13.relationship)({ ref: "Community", ...ro }),
+    resident: (0, import_fields13.relationship)({ ref: "Resident", ...ro }),
     kind: fixedChoice(TASK_KINDS),
     title: systemText({ required: true }),
     detail: systemText(),
     dedupeKey: systemText({ indexed: "unique" }),
     status: lifecycle(["open", "in_progress", "done", "cancelled"]),
     ownerRole: systemText(),
-    assignee: (0, import_fields12.relationship)({ ref: "User", ...ro }),
-    dueAt: when(),
-    escalateAt: when("Past this time the task shows as escalated to the role above."),
+    assignee: (0, import_fields13.relationship)({ ref: "User", ...ro }),
+    dueAt: when2(),
+    escalateAt: when2("Past this time the task shows as escalated to the role above."),
     escalationOwnerRole: systemText(),
     subjectType: systemText(),
     subjectId: systemText({ indexed: true }),
-    completedBy: by(),
-    completedAt: when(),
+    completedBy: by2(),
+    completedAt: when2(),
     createdByWorkflow: systemText(),
     ...stamps()
   }
@@ -3154,12 +3421,12 @@ __export(medications_exports, {
   ShiftCount: () => ShiftCount,
   ShiftCountEntry: () => ShiftCountEntry
 });
-var import_core13 = require("@keystone-6/core");
-var import_fields13 = require("@keystone-6/core/fields");
+var import_core14 = require("@keystone-6/core");
+var import_fields14 = require("@keystone-6/core/fields");
 var MEDS = ["canAdministerMeds", "canManagePharmacy", "canResolveCountDiscrepancy", "canReadClinical"];
 var BALANCE_READERS = ["canResolveCountDiscrepancy", "canManagePharmacy"];
 var seesBalance = ({ session }) => BALANCE_READERS.some((p) => session?.data?.role?.[p] === true);
-var hiddenQty = (options = {}) => (0, import_fields13.decimal)({
+var hiddenQty = (options = {}) => (0, import_fields14.decimal)({
   precision: 14,
   scale: 3,
   validation: { isRequired: options.required ?? false },
@@ -3168,32 +3435,32 @@ var hiddenQty = (options = {}) => (0, import_fields13.decimal)({
   isOrderable: seesBalance,
   ui: { ...ro.ui, ...options.description ? { description: options.description } : {} }
 });
-var when2 = () => (0, import_fields13.timestamp)({ ...ro });
-var by2 = () => (0, import_fields13.relationship)({ ref: "User", ...ro });
+var when3 = () => (0, import_fields14.timestamp)({ ...ro });
+var by3 = () => (0, import_fields14.relationship)({ ref: "User", ...ro });
 var DRUG_SCHEDULES = ["none", "ii", "iii", "iv", "v"];
-var MedicationReference = (0, import_core13.list)({
+var MedicationReference = (0, import_core14.list)({
   access: {
     operation: { query: ({ session }) => Boolean(session?.data?.role?.canAccessDashboard), create: ({ session }) => Boolean(session?.data?.role?.canManagePharmacy), update: ({ session }) => Boolean(session?.data?.role?.canManagePharmacy), delete: () => false }
   },
   ui: { labelField: "name", listView: { initialColumns: ["name", "strength", "form", "schedule", "status"] } },
   fields: {
-    name: (0, import_fields13.text)({ validation: { isRequired: true } }),
-    genericName: (0, import_fields13.text)(),
-    strength: (0, import_fields13.text)(),
-    form: (0, import_fields13.text)(),
-    ndc: (0, import_fields13.text)({ isIndexed: true }),
-    schedule: (0, import_fields13.select)({ ...opt(DRUG_SCHEDULES), defaultValue: "none", validation: { isRequired: true } }),
-    highAlert: (0, import_fields13.checkbox)({ defaultValue: false }),
-    status: (0, import_fields13.select)({ ...opt(["active", "retired"]), defaultValue: "active", validation: { isRequired: true } }),
-    source: (0, import_fields13.select)({ ...opt(["manual", "pharmacy_feed"]), defaultValue: "manual", validation: { isRequired: true } }),
+    name: (0, import_fields14.text)({ validation: { isRequired: true } }),
+    genericName: (0, import_fields14.text)(),
+    strength: (0, import_fields14.text)(),
+    form: (0, import_fields14.text)(),
+    ndc: (0, import_fields14.text)({ isIndexed: true }),
+    schedule: (0, import_fields14.select)({ ...opt(DRUG_SCHEDULES), defaultValue: "none", validation: { isRequired: true } }),
+    highAlert: (0, import_fields14.checkbox)({ defaultValue: false }),
+    status: (0, import_fields14.select)({ ...opt(["active", "retired"]), defaultValue: "active", validation: { isRequired: true } }),
+    source: (0, import_fields14.select)({ ...opt(["manual", "pharmacy_feed"]), defaultValue: "manual", validation: { isRequired: true } }),
     ...stamps()
   }
 });
-var PharmacyRelationship = (0, import_core13.list)({
+var PharmacyRelationship = (0, import_core14.list)({
   access: scopedGoverned(["canManagePharmacy", "canAdministerMeds"], ["community"]),
   ui: { labelField: "name", listView: { initialColumns: ["name", "adapter", "phone", "status"] } },
   fields: {
-    community: (0, import_fields13.relationship)({ ref: "Community", ...ro }),
+    community: (0, import_fields14.relationship)({ ref: "Community", ...ro }),
     name: systemText({ required: true }),
     adapter: fixedChoice(["manual"]),
     phone: systemText(),
@@ -3202,157 +3469,157 @@ var PharmacyRelationship = (0, import_core13.list)({
   }
 });
 var SUPPLY_KINDS = ["resident", "house_stock", "ekit"];
-var MedicationSupply = (0, import_core13.list)({
+var MedicationSupply = (0, import_core14.list)({
   access: scopedGoverned(MEDS, ["community"]),
   ui: { labelField: "label", listView: { initialColumns: ["label", "kind", "balance", "unit", "controlled", "status"] } },
   fields: {
-    community: (0, import_fields13.relationship)({ ref: "Community", ...ro }),
-    resident: (0, import_fields13.relationship)({ ref: "Resident", ...ro }),
-    reference: (0, import_fields13.relationship)({ ref: "MedicationReference", ...ro }),
-    unitLocation: (0, import_fields13.relationship)({ ref: "Unit", ...ro }),
+    community: (0, import_fields14.relationship)({ ref: "Community", ...ro }),
+    resident: (0, import_fields14.relationship)({ ref: "Resident", ...ro }),
+    reference: (0, import_fields14.relationship)({ ref: "MedicationReference", ...ro }),
+    unitLocation: (0, import_fields14.relationship)({ ref: "Unit", ...ro }),
     label: systemText({ required: true }),
     kind: fixedChoice(SUPPLY_KINDS),
     lot: systemText(),
-    expiresOn: (0, import_fields13.timestamp)({ ...ro }),
-    controlled: (0, import_fields13.checkbox)({ defaultValue: false, ...ro }),
+    expiresOn: (0, import_fields14.timestamp)({ ...ro }),
+    controlled: (0, import_fields14.checkbox)({ defaultValue: false, ...ro }),
     unit: systemText({ required: true }),
     balance: hiddenQty({ required: true, description: "Hidden from counting nurses (blind count). DON and pharmacy only." }),
     status: lifecycle(["active", "quarantined", "destroyed", "empty"], "active"),
-    movements: (0, import_fields13.relationship)({ ref: "MedicationSupplyMovement.supply", many: true, ...ro }),
+    movements: (0, import_fields14.relationship)({ ref: "MedicationSupplyMovement.supply", many: true, ...ro }),
     ...stamps()
   }
 });
 var MOVEMENT_KINDS = ["receive", "administer", "waste", "transfer_out", "transfer_in", "destroy", "adjust", "count_adjust", "return_to_pharmacy"];
-var MedicationSupplyMovement = (0, import_core13.list)({
+var MedicationSupplyMovement = (0, import_core14.list)({
   // The ledger adds up to the balance, so it is closed to counters as a whole, not just balanceAfter.
   access: scopedGoverned(BALANCE_READERS, ["community"]),
   ui: { labelField: "kind", listView: { initialColumns: ["kind", "quantity", "balanceAfter", "supply", "at"] } },
   fields: {
-    community: (0, import_fields13.relationship)({ ref: "Community", ...ro }),
-    supply: (0, import_fields13.relationship)({ ref: "MedicationSupply.movements", ...ro }),
-    seq: (0, import_fields13.integer)({ ...ro }),
+    community: (0, import_fields14.relationship)({ ref: "Community", ...ro }),
+    supply: (0, import_fields14.relationship)({ ref: "MedicationSupply.movements", ...ro }),
+    seq: (0, import_fields14.integer)({ ...ro }),
     kind: fixedChoice(MOVEMENT_KINDS),
     quantity: medQty({ required: true, description: "Signed: negative takes stock out." }),
     balanceAfter: hiddenQty({ required: true }),
     /** An administer from a supply under an open count discrepancy (SM §9.5). The DB refuses one without this flag. */
-    emergency: (0, import_fields13.checkbox)({ defaultValue: false, ...ro }),
+    emergency: (0, import_fields14.checkbox)({ defaultValue: false, ...ro }),
     emergencyReason: systemText(),
-    at: when2(),
-    actor: by2(),
-    witness: by2(),
+    at: when3(),
+    actor: by3(),
+    witness: by3(),
     reason: systemText(),
-    administration: (0, import_fields13.relationship)({ ref: "MedicationAdministration.movement", ...ro }),
-    createdAt: (0, import_fields13.timestamp)({ defaultValue: { kind: "now" }, ...ro })
+    administration: (0, import_fields14.relationship)({ ref: "MedicationAdministration.movement", ...ro }),
+    createdAt: (0, import_fields14.timestamp)({ defaultValue: { kind: "now" }, ...ro })
   }
 });
-var MedicationDestruction = (0, import_core13.list)({
+var MedicationDestruction = (0, import_core14.list)({
   access: scopedGoverned(MEDS, ["community"]),
   ui: { labelField: "method", listView: { initialColumns: ["supply", "quantity", "method", "destroyedAt"] } },
   fields: {
-    community: (0, import_fields13.relationship)({ ref: "Community", ...ro }),
-    supply: (0, import_fields13.relationship)({ ref: "MedicationSupply", ...ro }),
+    community: (0, import_fields14.relationship)({ ref: "Community", ...ro }),
+    supply: (0, import_fields14.relationship)({ ref: "MedicationSupply", ...ro }),
     quantity: medQty({ required: true }),
     method: systemText({ required: true }),
-    destroyedAt: when2(),
-    destroyedBy: by2(),
-    witness: by2(),
-    movement: (0, import_fields13.relationship)({ ref: "MedicationSupplyMovement", ...ro }),
+    destroyedAt: when3(),
+    destroyedBy: by3(),
+    witness: by3(),
+    movement: (0, import_fields14.relationship)({ ref: "MedicationSupplyMovement", ...ro }),
     ...stamps()
   }
 });
 var SLOT_STATUSES = ["scheduled", "given", "held", "refused", "missed", "not_given"];
-var AdministrationSlot = (0, import_core13.list)({
-  access: rl(["canAdministerMeds", "canReadClinical"]),
+var AdministrationSlot = (0, import_core14.list)({
+  access: rl2(["canAdministerMeds", "canReadClinical"]),
   ui: { labelField: "drugName", listView: { initialColumns: ["drugName", "resident", "scheduledFor", "status"] } },
   fields: {
-    ...scope(),
-    detail: (0, import_fields13.relationship)({ ref: "MedicationOrderDetail", ...ro }),
-    order: (0, import_fields13.relationship)({ ref: "Order", ...ro }),
+    ...scope2(),
+    detail: (0, import_fields14.relationship)({ ref: "MedicationOrderDetail", ...ro }),
+    order: (0, import_fields14.relationship)({ ref: "Order", ...ro }),
     drugName: systemText({ required: true }),
     slotKey: systemText({ indexed: "unique", required: true }),
-    scheduledFor: when2(),
-    windowBefore: (0, import_fields13.integer)({ defaultValue: 60, ...ro }),
-    windowAfter: (0, import_fields13.integer)({ defaultValue: 60, ...ro }),
+    scheduledFor: when3(),
+    windowBefore: (0, import_fields14.integer)({ defaultValue: 60, ...ro }),
+    windowAfter: (0, import_fields14.integer)({ defaultValue: 60, ...ro }),
     status: lifecycle(SLOT_STATUSES),
-    settledAt: when2(),
+    settledAt: when3(),
     ...stamps()
   }
 });
 phiList("AdministrationSlot");
 var ADMIN_OUTCOMES = ["given", "held", "refused", "missed", "not_given"];
-var MedicationAdministration = (0, import_core13.list)({
-  access: rl(["canAdministerMeds", "canReadClinical"]),
+var MedicationAdministration = (0, import_core14.list)({
+  access: rl2(["canAdministerMeds", "canReadClinical"]),
   ui: { labelField: "outcome", listView: { initialColumns: ["outcome", "drugName", "resident", "administeredAt", "timing"] } },
   fields: {
-    ...scope(),
-    slot: (0, import_fields13.relationship)({ ref: "AdministrationSlot", ...ro }),
-    detail: (0, import_fields13.relationship)({ ref: "MedicationOrderDetail", ...ro }),
+    ...scope2(),
+    slot: (0, import_fields14.relationship)({ ref: "AdministrationSlot", ...ro }),
+    detail: (0, import_fields14.relationship)({ ref: "MedicationOrderDetail", ...ro }),
     drugName: systemText({ required: true }),
     outcome: fixedChoice(ADMIN_OUTCOMES),
-    prn: (0, import_fields13.checkbox)({ defaultValue: false, ...ro }),
+    prn: (0, import_fields14.checkbox)({ defaultValue: false, ...ro }),
     ...phiFields("MedicationAdministration", {
       doseGiven: ["clin", medQty, ro],
-      reason: ["clin", import_fields13.text, ro],
-      note: ["clin", import_fields13.text, ro]
+      reason: ["clin", import_fields14.text, ro],
+      note: ["clin", import_fields14.text, ro]
     }),
     doseUnit: systemText(),
-    administeredAt: when2(),
-    recordedAt: when2(),
-    lateEntry: (0, import_fields13.checkbox)({ defaultValue: false, ...ro }),
-    timing: (0, import_fields13.select)({ ...opt(["on_time", "early", "late", "not_scheduled"]), ...ro }),
-    identityCheck: (0, import_fields13.select)({ ...opt(["barcode", "photo", "two_identifiers"]), ...ro }),
-    holdVital: (0, import_fields13.json)({ ...ro }),
-    administeredBy: by2(),
-    witness: by2(),
-    supply: (0, import_fields13.relationship)({ ref: "MedicationSupply", ...ro }),
-    movement: (0, import_fields13.relationship)({ ref: "MedicationSupplyMovement.administration", many: true, ...ro }),
-    followUpDueAt: when2(),
-    followUpOf: (0, import_fields13.relationship)({ ref: "MedicationAdministration", ...ro }),
-    createdAt: (0, import_fields13.timestamp)({ defaultValue: { kind: "now" }, ...ro })
+    administeredAt: when3(),
+    recordedAt: when3(),
+    lateEntry: (0, import_fields14.checkbox)({ defaultValue: false, ...ro }),
+    timing: (0, import_fields14.select)({ ...opt(["on_time", "early", "late", "not_scheduled"]), ...ro }),
+    identityCheck: (0, import_fields14.select)({ ...opt(["barcode", "photo", "two_identifiers"]), ...ro }),
+    holdVital: (0, import_fields14.json)({ ...ro }),
+    administeredBy: by3(),
+    witness: by3(),
+    supply: (0, import_fields14.relationship)({ ref: "MedicationSupply", ...ro }),
+    movement: (0, import_fields14.relationship)({ ref: "MedicationSupplyMovement.administration", many: true, ...ro }),
+    followUpDueAt: when3(),
+    followUpOf: (0, import_fields14.relationship)({ ref: "MedicationAdministration", ...ro }),
+    createdAt: (0, import_fields14.timestamp)({ defaultValue: { kind: "now" }, ...ro })
   }
 });
 phiList("MedicationAdministration");
-var PrnFollowUp = (0, import_core13.list)({
-  access: rl(["canAdministerMeds", "canReadClinical"]),
+var PrnFollowUp = (0, import_core14.list)({
+  access: rl2(["canAdministerMeds", "canReadClinical"]),
   ui: { labelField: "status", listView: { initialColumns: ["resident", "dueAt", "status", "effect"] } },
   fields: {
-    ...scope(),
-    administration: (0, import_fields13.relationship)({ ref: "MedicationAdministration", ...ro }),
-    dueAt: when2(),
+    ...scope2(),
+    administration: (0, import_fields14.relationship)({ ref: "MedicationAdministration", ...ro }),
+    dueAt: when3(),
     status: lifecycle(["open", "done", "missed"]),
-    effect: (0, import_fields13.select)({ ...opt(["effective", "partly_effective", "not_effective", "adverse_reaction"]), ...ro }),
-    recordedBy: by2(),
-    recordedAt: when2(),
+    effect: (0, import_fields14.select)({ ...opt(["effective", "partly_effective", "not_effective", "adverse_reaction"]), ...ro }),
+    recordedBy: by3(),
+    recordedAt: when3(),
     ...stamps()
   }
 });
 phiList("PrnFollowUp");
-var ShiftCount = (0, import_core13.list)({
+var ShiftCount = (0, import_core14.list)({
   access: scopedGoverned(["canAdministerMeds", "canResolveCountDiscrepancy"], ["community"]),
   ui: { labelField: "reference", listView: { initialColumns: ["reference", "unit", "status", "startedAt"] } },
   fields: {
-    community: (0, import_fields13.relationship)({ ref: "Community", ...ro }),
-    unit: (0, import_fields13.relationship)({ ref: "Unit", ...ro }),
+    community: (0, import_fields14.relationship)({ ref: "Community", ...ro }),
+    unit: (0, import_fields14.relationship)({ ref: "Unit", ...ro }),
     reference: systemText({ indexed: "unique", required: true }),
     shift: fixedChoice(["day", "evening", "night"]),
     status: lifecycle(["open", "matched", "discrepancy", "resolved"]),
-    outgoing: by2(),
-    incoming: by2(),
-    startedAt: when2(),
-    completedAt: when2(),
-    entries: (0, import_fields13.relationship)({ ref: "ShiftCountEntry.shiftCount", many: true, ...ro }),
+    outgoing: by3(),
+    incoming: by3(),
+    startedAt: when3(),
+    completedAt: when3(),
+    entries: (0, import_fields14.relationship)({ ref: "ShiftCountEntry.shiftCount", many: true, ...ro }),
     ...stamps()
   }
 });
-var ShiftCountEntry = (0, import_core13.list)({
+var ShiftCountEntry = (0, import_core14.list)({
   // A counter sees only their own entries, so neither nurse can read the other's number before both submit.
   access: (() => {
-    const base = scopedGoverned(["canAdministerMeds", "canResolveCountDiscrepancy"], ["community"]);
+    const base2 = scopedGoverned(["canAdministerMeds", "canResolveCountDiscrepancy"], ["community"]);
     return {
-      ...base,
+      ...base2,
       filter: {
         query: async (args) => {
-          const scoped3 = await base.filter.query(args);
+          const scoped3 = await base2.filter.query(args);
           if (seesBalance(args)) return scoped3;
           const own = { countedBy: { id: { equals: args.session?.itemId ?? "" } } };
           return scoped3 === true ? own : { AND: [scoped3, own] };
@@ -3362,38 +3629,38 @@ var ShiftCountEntry = (0, import_core13.list)({
   })(),
   ui: { labelField: "role", listView: { initialColumns: ["shiftCount", "supply", "role", "counted", "countedBy"] } },
   fields: {
-    community: (0, import_fields13.relationship)({ ref: "Community", ...ro }),
-    shiftCount: (0, import_fields13.relationship)({ ref: "ShiftCount.entries", ...ro }),
-    supply: (0, import_fields13.relationship)({ ref: "MedicationSupply", ...ro }),
+    community: (0, import_fields14.relationship)({ ref: "Community", ...ro }),
+    shiftCount: (0, import_fields14.relationship)({ ref: "ShiftCount.entries", ...ro }),
+    supply: (0, import_fields14.relationship)({ ref: "MedicationSupply", ...ro }),
     role: fixedChoice(["outgoing", "incoming"]),
     counted: medQty({ required: true }),
-    countedBy: by2(),
-    at: when2(),
-    createdAt: (0, import_fields13.timestamp)({ defaultValue: { kind: "now" }, ...ro })
+    countedBy: by3(),
+    at: when3(),
+    createdAt: (0, import_fields14.timestamp)({ defaultValue: { kind: "now" }, ...ro })
   }
 });
-var CountDiscrepancy = (0, import_core13.list)({
+var CountDiscrepancy = (0, import_core14.list)({
   access: scopedGoverned(BALANCE_READERS, ["community"]),
   ui: { labelField: "status", listView: { initialColumns: ["supply", "expected", "outgoingCounted", "incomingCounted", "status"] } },
   fields: {
-    community: (0, import_fields13.relationship)({ ref: "Community", ...ro }),
-    shiftCount: (0, import_fields13.relationship)({ ref: "ShiftCount", ...ro }),
-    supply: (0, import_fields13.relationship)({ ref: "MedicationSupply", ...ro }),
+    community: (0, import_fields14.relationship)({ ref: "Community", ...ro }),
+    shiftCount: (0, import_fields14.relationship)({ ref: "ShiftCount", ...ro }),
+    supply: (0, import_fields14.relationship)({ ref: "MedicationSupply", ...ro }),
     expected: hiddenQty({ required: true }),
     outgoingCounted: medQty({ required: true }),
     incomingCounted: medQty({ required: true }),
     status: lifecycle(["open", "resolved"]),
     resolution: fixedChoiceText2(),
     resolutionNote: systemText(),
-    resolvedBy: by2(),
-    resolvedAt: when2(),
-    adjustment: (0, import_fields13.relationship)({ ref: "MedicationSupplyMovement", ...ro }),
-    incident: (0, import_fields13.relationship)({ ref: "Incident", ...ro }),
+    resolvedBy: by3(),
+    resolvedAt: when3(),
+    adjustment: (0, import_fields14.relationship)({ ref: "MedicationSupplyMovement", ...ro }),
+    incident: (0, import_fields14.relationship)({ ref: "Incident", ...ro }),
     ...stamps()
   }
 });
 function fixedChoiceText2() {
-  return (0, import_fields13.select)({ ...opt(["recount_matched", "documentation_error", "loss_suspected", "found"]), ...ro });
+  return (0, import_fields14.select)({ ...opt(["recount_matched", "documentation_error", "loss_suspected", "found"]), ...ro });
 }
 
 // features/keystone/models/safety.ts
@@ -3410,171 +3677,171 @@ __export(safety_exports, {
   PrecautionOrder: () => PrecautionOrder,
   RegulatoryReport: () => RegulatoryReport
 });
-var import_core14 = require("@keystone-6/core");
-var import_fields14 = require("@keystone-6/core/fields");
-var when3 = () => (0, import_fields14.timestamp)({ ...ro });
-var by3 = () => (0, import_fields14.relationship)({ ref: "User", ...ro });
+var import_core15 = require("@keystone-6/core");
+var import_fields15 = require("@keystone-6/core/fields");
+var when4 = () => (0, import_fields15.timestamp)({ ...ro });
+var by4 = () => (0, import_fields15.relationship)({ ref: "User", ...ro });
 var textarea2 = { ...ro, ui: { ...ro.ui, displayMode: "textarea" } };
 var INCIDENT_KINDS = ["fall", "medication_error", "elopement", "injury_unknown_source", "alleged_abuse", "alleged_neglect", "misappropriation", "resident_to_resident", "skin", "choking", "infection", "controlled_substance_discrepancy", "other"];
-var Incident = (0, import_core14.list)({
-  access: rl(["canReportIncident", "canReadIncidents", "canInvestigateIncidents"]),
+var Incident = (0, import_core15.list)({
+  access: rl2(["canReportIncident", "canReadIncidents", "canInvestigateIncidents"]),
   ui: { labelField: "reference", listView: { initialColumns: ["reference", "kind", "status", "severity", "resident", "occurredAt"] } },
   fields: {
-    ...scope(),
+    ...scope2(),
     reference: systemText({ indexed: "unique", required: true }),
     kind: fixedChoice(INCIDENT_KINDS),
-    ...phiFields("Incident", { description: ["clin", import_fields14.text, textarea2], location: ["clin", import_fields14.text, ro] }),
-    severity: (0, import_fields14.select)({ ...opt(["no_injury", "minor", "moderate", "major", "death"]), defaultValue: "no_injury", ...ro }),
+    ...phiFields("Incident", { description: ["clin", import_fields15.text, textarea2], location: ["clin", import_fields15.text, ro] }),
+    severity: (0, import_fields15.select)({ ...opt(["no_injury", "minor", "moderate", "major", "death"]), defaultValue: "no_injury", ...ro }),
     status: lifecycle(["reported", "under_investigation", "closed", "entered_in_error"]),
-    occurredAt: when3(),
-    discoveredAt: when3(),
-    reportedAt: when3(),
-    reportedBy: by3(),
-    witnessed: (0, import_fields14.checkbox)({ defaultValue: false, ...ro }),
-    headStrike: (0, import_fields14.checkbox)({ defaultValue: false, ...ro }),
-    allegedAbuseOrSbi: (0, import_fields14.checkbox)({ defaultValue: false, ...ro }),
-    allegedOther: (0, import_fields14.checkbox)({ defaultValue: false, ...ro }),
-    reportableDecision: (0, import_fields14.select)({ ...opt(["reportable", "not_reportable", "pending"]), defaultValue: "pending", ...ro }),
-    downgradedBy: by3(),
+    occurredAt: when4(),
+    discoveredAt: when4(),
+    reportedAt: when4(),
+    reportedBy: by4(),
+    witnessed: (0, import_fields15.checkbox)({ defaultValue: false, ...ro }),
+    headStrike: (0, import_fields15.checkbox)({ defaultValue: false, ...ro }),
+    allegedAbuseOrSbi: (0, import_fields15.checkbox)({ defaultValue: false, ...ro }),
+    allegedOther: (0, import_fields15.checkbox)({ defaultValue: false, ...ro }),
+    reportableDecision: (0, import_fields15.select)({ ...opt(["reportable", "not_reportable", "pending"]), defaultValue: "pending", ...ro }),
+    downgradedBy: by4(),
     downgradeReason: systemText(),
-    source: (0, import_fields14.select)({ ...opt(["staff", "workflow"]), defaultValue: "staff", ...ro }),
-    sourceNote: (0, import_fields14.relationship)({ ref: "ProgressNote", ...ro }),
-    parties: (0, import_fields14.relationship)({ ref: "IncidentParty.incident", many: true, ...ro }),
-    investigations: (0, import_fields14.relationship)({ ref: "IncidentInvestigation.incident", many: true, ...ro }),
-    reports: (0, import_fields14.relationship)({ ref: "RegulatoryReport.incident", many: true, ...ro }),
-    closedAt: when3(),
+    source: (0, import_fields15.select)({ ...opt(["staff", "workflow"]), defaultValue: "staff", ...ro }),
+    sourceNote: (0, import_fields15.relationship)({ ref: "ProgressNote", ...ro }),
+    parties: (0, import_fields15.relationship)({ ref: "IncidentParty.incident", many: true, ...ro }),
+    investigations: (0, import_fields15.relationship)({ ref: "IncidentInvestigation.incident", many: true, ...ro }),
+    reports: (0, import_fields15.relationship)({ ref: "RegulatoryReport.incident", many: true, ...ro }),
+    closedAt: when4(),
     ...stamps()
   }
 });
 phiList("Incident");
-var IncidentParty = (0, import_core14.list)({
-  access: rl(["canReportIncident", "canReadIncidents", "canInvestigateIncidents"]),
+var IncidentParty = (0, import_core15.list)({
+  access: rl2(["canReportIncident", "canReadIncidents", "canInvestigateIncidents"]),
   ui: { labelField: "role", listView: { initialColumns: ["role", "name", "incident"] } },
   fields: {
-    ...scope(),
-    incident: (0, import_fields14.relationship)({ ref: "Incident.parties", ...ro }),
+    ...scope2(),
+    incident: (0, import_fields15.relationship)({ ref: "Incident.parties", ...ro }),
     role: fixedChoice(["involved_resident", "witness", "staff_involved", "alleged_perpetrator", "family_notified", "physician_notified"]),
     name: systemText({ required: true }),
-    resident: (0, import_fields14.relationship)({ ref: "Resident", ...ro }),
-    notifiedAt: when3(),
+    resident: (0, import_fields15.relationship)({ ref: "Resident", ...ro }),
+    notifiedAt: when4(),
     ...stamps()
   }
 });
 phiList("IncidentParty");
-var IncidentInvestigation = (0, import_core14.list)({
-  access: rl(["canInvestigateIncidents", "canReadIncidents"]),
+var IncidentInvestigation = (0, import_core15.list)({
+  access: rl2(["canInvestigateIncidents", "canReadIncidents"]),
   ui: { labelField: "status", listView: { initialColumns: ["incident", "status", "investigator", "startedAt"] } },
   fields: {
-    ...scope(),
-    incident: (0, import_fields14.relationship)({ ref: "Incident.investigations", ...ro }),
-    ...phiFields("IncidentInvestigation", { findings: ["clin", import_fields14.text, textarea2], rootCause: ["clin", import_fields14.text, textarea2], interventions: ["clin", import_fields14.text, textarea2] }),
+    ...scope2(),
+    incident: (0, import_fields15.relationship)({ ref: "Incident.investigations", ...ro }),
+    ...phiFields("IncidentInvestigation", { findings: ["clin", import_fields15.text, textarea2], rootCause: ["clin", import_fields15.text, textarea2], interventions: ["clin", import_fields15.text, textarea2] }),
     status: lifecycle(["open", "completed"]),
-    investigator: by3(),
-    startedAt: when3(),
-    completedAt: when3(),
+    investigator: by4(),
+    startedAt: when4(),
+    completedAt: when4(),
     ...stamps()
   }
 });
 phiList("IncidentInvestigation");
-var RegulatoryReport = (0, import_core14.list)({
-  access: rl(["canReadIncidents", "canInvestigateIncidents", "canSubmitRegulatory"]),
+var RegulatoryReport = (0, import_core15.list)({
+  access: rl2(["canReadIncidents", "canInvestigateIncidents", "canSubmitRegulatory"]),
   ui: { labelField: "kind", listView: { initialColumns: ["kind", "incident", "status", "submittedAt"] } },
   fields: {
-    ...scope(),
-    incident: (0, import_fields14.relationship)({ ref: "Incident.reports", ...ro }),
+    ...scope2(),
+    incident: (0, import_fields15.relationship)({ ref: "Incident.reports", ...ro }),
     kind: fixedChoice(["f609_initial", "f609_followup", "state_self_report"]),
     status: lifecycle(["draft", "submitted"]),
-    body: (0, import_fields14.json)({ ...ro }),
-    channel: (0, import_fields14.select)({ ...opt(["state_portal", "phone", "fax", "other"]), ...ro }),
+    body: (0, import_fields15.json)({ ...ro }),
+    channel: (0, import_fields15.select)({ ...opt(["state_portal", "phone", "fax", "other"]), ...ro }),
     confirmation: systemText(),
-    submittedAt: when3(),
-    submittedBy: by3(),
+    submittedAt: when4(),
+    submittedBy: by4(),
     ruleNote: systemText(),
     ...stamps()
   }
 });
 phiList("RegulatoryReport");
-var InfectionCase = (0, import_core14.list)({
-  access: rl(["canManageInfectionControl", "canReadClinical"]),
+var InfectionCase = (0, import_core15.list)({
+  access: rl2(["canManageInfectionControl", "canReadClinical"]),
   ui: { labelField: "syndrome", listView: { initialColumns: ["syndrome", "resident", "status", "onsetAt", "criteriaMet"] } },
   fields: {
-    ...scope(),
+    ...scope2(),
     syndrome: fixedChoice(["uti", "respiratory", "skin_soft_tissue", "gastroenteritis", "covid19", "influenza", "cdiff", "other"]),
     status: lifecycle(["suspected", "confirmed", "ruled_out", "resolved"]),
-    onsetAt: when3(),
-    ...phiFields("InfectionCase", { criteria: ["clin", import_fields14.json, ro], organism: ["clin", import_fields14.text, ro] }),
-    criteriaMet: (0, import_fields14.checkbox)({ defaultValue: false, ...ro }),
+    onsetAt: when4(),
+    ...phiFields("InfectionCase", { criteria: ["clin", import_fields15.json, ro], organism: ["clin", import_fields15.text, ro] }),
+    criteriaMet: (0, import_fields15.checkbox)({ defaultValue: false, ...ro }),
     criteriaSet: systemText(),
-    cultureAt: when3(),
-    outbreak: (0, import_fields14.relationship)({ ref: "Outbreak.cases", ...ro }),
+    cultureAt: when4(),
+    outbreak: (0, import_fields15.relationship)({ ref: "Outbreak.cases", ...ro }),
     ...stamps()
   }
 });
 phiList("InfectionCase");
-var PrecautionOrder = (0, import_core14.list)({
-  access: rl(["canManageInfectionControl", "canReadClinical"]),
+var PrecautionOrder = (0, import_core15.list)({
+  access: rl2(["canManageInfectionControl", "canReadClinical"]),
   ui: { labelField: "kind", listView: { initialColumns: ["kind", "resident", "status", "startedAt", "reviewOn"] } },
   fields: {
-    ...scope(),
+    ...scope2(),
     kind: fixedChoice(["standard", "contact", "droplet", "airborne", "enhanced_barrier"]),
-    case: (0, import_fields14.relationship)({ ref: "InfectionCase", ...ro }),
+    case: (0, import_fields15.relationship)({ ref: "InfectionCase", ...ro }),
     status: lifecycle(["active", "ended"]),
-    startedAt: when3(),
-    endedAt: when3(),
-    reviewOn: (0, import_fields14.calendarDay)({ ...ro }),
+    startedAt: when4(),
+    endedAt: when4(),
+    reviewOn: (0, import_fields15.calendarDay)({ ...ro }),
     reason: systemText(),
     ...stamps()
   }
 });
 phiList("PrecautionOrder");
-var AntibioticCourse = (0, import_core14.list)({
-  access: rl(["canManageInfectionControl", "canReadClinical"]),
+var AntibioticCourse = (0, import_core15.list)({
+  access: rl2(["canManageInfectionControl", "canReadClinical"]),
   ui: { labelField: "drugName", listView: { initialColumns: ["drugName", "resident", "status", "startedAt", "timeoutDueAt"] } },
   fields: {
-    ...scope(),
+    ...scope2(),
     drugName: systemText({ required: true }),
     indication: systemText(),
-    order: (0, import_fields14.relationship)({ ref: "Order", ...ro }),
-    case: (0, import_fields14.relationship)({ ref: "InfectionCase", ...ro }),
-    startedAt: when3(),
-    plannedDays: (0, import_fields14.integer)({ ...ro }),
-    timeoutDueAt: when3(),
-    timeoutOutcome: (0, import_fields14.select)({ ...opt(["continue", "narrow", "stop", "change"]), ...ro }),
-    timeoutAt: when3(),
-    timeoutBy: by3(),
+    order: (0, import_fields15.relationship)({ ref: "Order", ...ro }),
+    case: (0, import_fields15.relationship)({ ref: "InfectionCase", ...ro }),
+    startedAt: when4(),
+    plannedDays: (0, import_fields15.integer)({ ...ro }),
+    timeoutDueAt: when4(),
+    timeoutOutcome: (0, import_fields15.select)({ ...opt(["continue", "narrow", "stop", "change"]), ...ro }),
+    timeoutAt: when4(),
+    timeoutBy: by4(),
     status: lifecycle(["active", "completed", "stopped"]),
     ...stamps()
   }
 });
 phiList("AntibioticCourse");
-var Outbreak = (0, import_core14.list)({
+var Outbreak = (0, import_core15.list)({
   access: scopedGoverned(["canManageInfectionControl", "canDeclareOutbreak"], ["community"]),
   ui: { labelField: "name", listView: { initialColumns: ["name", "status", "declaredAt", "organism"] } },
   fields: {
-    community: (0, import_fields14.relationship)({ ref: "Community", ...ro }),
+    community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
     name: systemText({ required: true }),
     organism: systemText(),
-    unit: (0, import_fields14.relationship)({ ref: "Unit", ...ro }),
+    unit: (0, import_fields15.relationship)({ ref: "Unit", ...ro }),
     status: lifecycle(["declared", "contained", "closed"], "declared"),
-    declaredAt: when3(),
-    declaredBy: by3(),
-    closedAt: when3(),
-    cases: (0, import_fields14.relationship)({ ref: "InfectionCase.outbreak", many: true, ...ro }),
+    declaredAt: when4(),
+    declaredBy: by4(),
+    closedAt: when4(),
+    cases: (0, import_fields15.relationship)({ ref: "InfectionCase.outbreak", many: true, ...ro }),
     ...stamps()
   }
 });
-var Immunisation = (0, import_core14.list)({
-  access: rl(["canManageInfectionControl", "canReadClinical"]),
+var Immunisation = (0, import_core15.list)({
+  access: rl2(["canManageInfectionControl", "canReadClinical"]),
   ui: { labelField: "vaccine", listView: { initialColumns: ["vaccine", "resident", "status", "givenAt"] } },
   fields: {
-    ...scope(),
+    ...scope2(),
     vaccine: fixedChoice(["influenza", "covid19", "pneumococcal", "rsv", "tdap", "hepatitis_b", "other"]),
     status: lifecycle(["offered", "accepted", "declined", "given", "contraindicated"]),
-    offeredAt: when3(),
-    decidedAt: when3(),
-    givenAt: when3(),
+    offeredAt: when4(),
+    decidedAt: when4(),
+    givenAt: when4(),
     lot: systemText(),
-    recordedBy: by3(),
+    recordedBy: by4(),
     ...stamps()
   }
 });
@@ -3593,129 +3860,129 @@ __export(workflows_exports, {
   WorkflowRun: () => WorkflowRun,
   WorkflowVersion: () => WorkflowVersion
 });
-var import_core15 = require("@keystone-6/core");
-var import_fields15 = require("@keystone-6/core/fields");
-var when4 = () => (0, import_fields15.timestamp)({ ...ro });
-var by4 = () => (0, import_fields15.relationship)({ ref: "User", ...ro });
-var WorkflowDefinition = (0, import_core15.list)({
+var import_core16 = require("@keystone-6/core");
+var import_fields16 = require("@keystone-6/core/fields");
+var when5 = () => (0, import_fields16.timestamp)({ ...ro });
+var by5 = () => (0, import_fields16.relationship)({ ref: "User", ...ro });
+var WorkflowDefinition = (0, import_core16.list)({
   access: scopedGoverned(["canReadFindings", "canManageWorkflows"], ["community"]),
   ui: { labelField: "name", listView: { initialColumns: ["name", "code", "origin", "status"] } },
   fields: {
-    community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
+    community: (0, import_fields16.relationship)({ ref: "Community", ...ro }),
     code: systemText({ indexed: true, required: true }),
     name: systemText({ required: true }),
     description: systemText(),
     origin: fixedChoice(["library", "staff_described"]),
     status: lifecycle(["active", "archived"], "active"),
-    versions: (0, import_fields15.relationship)({ ref: "WorkflowVersion.definition", many: true, ...ro }),
+    versions: (0, import_fields16.relationship)({ ref: "WorkflowVersion.definition", many: true, ...ro }),
     ...stamps()
   }
 });
-var WorkflowVersion = (0, import_core15.list)({
+var WorkflowVersion = (0, import_core16.list)({
   access: scopedGoverned(["canReadFindings", "canManageWorkflows"], ["community"]),
   ui: { labelField: "versionNumber", listView: { initialColumns: ["definition", "versionNumber", "status", "policyVersion"] } },
   fields: {
-    community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
-    definition: (0, import_fields15.relationship)({ ref: "WorkflowDefinition.versions", ...ro }),
-    versionNumber: (0, import_fields15.integer)({ ...ro }),
-    graph: (0, import_fields15.json)({ ...ro, ui: { ...ro.ui, description: "Nodes drawn only from the block catalogue (lib/workflows/blocks.ts)." } }),
+    community: (0, import_fields16.relationship)({ ref: "Community", ...ro }),
+    definition: (0, import_fields16.relationship)({ ref: "WorkflowDefinition.versions", ...ro }),
+    versionNumber: (0, import_fields16.integer)({ ...ro }),
+    graph: (0, import_fields16.json)({ ...ro, ui: { ...ro.ui, description: "Nodes drawn only from the block catalogue (lib/workflows/blocks.ts)." } }),
     graphHash: systemText({ required: true }),
     policyVersion: systemText({ required: true }),
-    policy: (0, import_fields15.json)({ ...ro, ui: { ...ro.ui, description: "Operator-tunable parameters, such as the daily fluid threshold." } }),
+    policy: (0, import_fields16.json)({ ...ro, ui: { ...ro.ui, description: "Operator-tunable parameters, such as the daily fluid threshold." } }),
     // SM §15.1: draft → proposed → dry_run_reviewed → (approved) active → paused → retired. dry_run_ok is the library's reviewed state.
     status: lifecycle(["draft", "proposed", "dry_run_reviewed", "dry_run_ok", "pending_activation", "active", "paused", "retired"]),
-    dryRun: (0, import_fields15.json)({ ...ro, ui: { ...ro.ui, description: "The last dry run over history: would-be findings per day, samples and the diff. Nothing was written." } }),
-    dryRunAt: when4(),
-    createdByInference: (0, import_fields15.relationship)({ ref: "InferenceCall", ...ro }),
+    dryRun: (0, import_fields16.json)({ ...ro, ui: { ...ro.ui, description: "The last dry run over history: would-be findings per day, samples and the diff. Nothing was written." } }),
+    dryRunAt: when5(),
+    createdByInference: (0, import_fields16.relationship)({ ref: "InferenceCall", ...ro }),
     description: systemText(),
     /** The plain-language job a person described (staff_described only). */
-    request: (0, import_fields15.text)({ ...ro, ui: { ...ro.ui, displayMode: "textarea" } }),
-    proposedBy: by4(),
-    proposedByAgent: (0, import_fields15.relationship)({ ref: "AgentIdentity", ...ro }),
-    reviewedBy: by4(),
-    reviewedAt: when4(),
+    request: (0, import_fields16.text)({ ...ro, ui: { ...ro.ui, displayMode: "textarea" } }),
+    proposedBy: by5(),
+    proposedByAgent: (0, import_fields16.relationship)({ ref: "AgentIdentity", ...ro }),
+    reviewedBy: by5(),
+    reviewedAt: when5(),
     reviewNote: systemText(),
-    activations: (0, import_fields15.relationship)({ ref: "WorkflowActivation.workflowVersion", many: true, ...ro }),
+    activations: (0, import_fields16.relationship)({ ref: "WorkflowActivation.workflowVersion", many: true, ...ro }),
     ...stamps()
   }
 });
-var WorkflowActivation = (0, import_core15.list)({
+var WorkflowActivation = (0, import_core16.list)({
   access: scopedGoverned(["canReadFindings", "canManageWorkflows"], ["community"]),
   ui: { labelField: "status", listView: { initialColumns: ["workflowVersion", "status", "activatedAt"] } },
   fields: {
-    community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
-    workflowVersion: (0, import_fields15.relationship)({ ref: "WorkflowVersion.activations", ...ro }),
+    community: (0, import_fields16.relationship)({ ref: "Community", ...ro }),
+    workflowVersion: (0, import_fields16.relationship)({ ref: "WorkflowVersion.activations", ...ro }),
     status: lifecycle(["active", "paused", "ended"]),
-    approvals: (0, import_fields15.json)({ ...ro }),
-    activatedAt: when4(),
-    activatedBy: by4(),
+    approvals: (0, import_fields16.json)({ ...ro }),
+    activatedAt: when5(),
+    activatedBy: by5(),
     ...stamps()
   }
 });
-var WorkflowRun = (0, import_core15.list)({
+var WorkflowRun = (0, import_core16.list)({
   access: scopedGoverned(["canReadFindings", "canManageWorkflows"], ["community"]),
   ui: { labelField: "windowKey", listView: { initialColumns: ["windowKey", "trigger", "status", "findingsOpened", "startedAt"] } },
   fields: {
-    community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
-    workflowVersion: (0, import_fields15.relationship)({ ref: "WorkflowVersion", ...ro }),
+    community: (0, import_fields16.relationship)({ ref: "Community", ...ro }),
+    workflowVersion: (0, import_fields16.relationship)({ ref: "WorkflowVersion", ...ro }),
     windowKey: systemText({ indexed: "unique", required: true }),
     trigger: fixedChoice(["page_load", "run_now", "source_change", "dry_run", "recheck"]),
     status: lifecycle(["running", "succeeded", "failed"], "running"),
-    startedAt: when4(),
-    finishedAt: when4(),
-    findingsOpened: (0, import_fields15.integer)({ defaultValue: 0, ...ro }),
-    findingsResolved: (0, import_fields15.integer)({ defaultValue: 0, ...ro }),
-    summary: (0, import_fields15.json)({ ...ro }),
+    startedAt: when5(),
+    finishedAt: when5(),
+    findingsOpened: (0, import_fields16.integer)({ defaultValue: 0, ...ro }),
+    findingsResolved: (0, import_fields16.integer)({ defaultValue: 0, ...ro }),
+    summary: (0, import_fields16.json)({ ...ro }),
     ...stamps()
   }
 });
-var Finding = (0, import_core15.list)({
+var Finding = (0, import_core16.list)({
   access: scopedGoverned(["canReadFindings"], ["community"]),
   ui: { labelField: "title", listView: { initialColumns: ["title", "status", "severity", "resident", "createdAt"] } },
   fields: {
-    community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
-    resident: (0, import_fields15.relationship)({ ref: "Resident", ...ro }),
-    workflowVersion: (0, import_fields15.relationship)({ ref: "WorkflowVersion", ...ro }),
-    run: (0, import_fields15.relationship)({ ref: "WorkflowRun", ...ro }),
+    community: (0, import_fields16.relationship)({ ref: "Community", ...ro }),
+    resident: (0, import_fields16.relationship)({ ref: "Resident", ...ro }),
+    workflowVersion: (0, import_fields16.relationship)({ ref: "WorkflowVersion", ...ro }),
+    run: (0, import_fields16.relationship)({ ref: "WorkflowRun", ...ro }),
     workflowCode: systemText({ indexed: true, required: true }),
     dedupeKey: systemText({ indexed: "unique", required: true }),
     title: systemText({ required: true }),
     detail: systemText(),
-    severity: (0, import_fields15.select)({ ...opt(["info", "warning", "urgent"]), defaultValue: "warning", ...ro }),
+    severity: (0, import_fields16.select)({ ...opt(["info", "warning", "urgent"]), defaultValue: "warning", ...ro }),
     // resolved: the condition no longer holds. resolved_by_evidence: a re-check found the record that satisfies the rule (SM §15.4).
     status: lifecycle(["open", "resolved", "resolved_by_evidence", "dismissed"]),
-    evidence: (0, import_fields15.relationship)({ ref: "EvidenceRef.finding", many: true, ...ro }),
-    task: (0, import_fields15.relationship)({ ref: "Task", ...ro }),
-    proposal: (0, import_fields15.relationship)({ ref: "Proposal", ...ro }),
-    resolvedAt: when4(),
+    evidence: (0, import_fields16.relationship)({ ref: "EvidenceRef.finding", many: true, ...ro }),
+    task: (0, import_fields16.relationship)({ ref: "Task", ...ro }),
+    proposal: (0, import_fields16.relationship)({ ref: "Proposal", ...ro }),
+    resolvedAt: when5(),
     resolutionNote: systemText(),
-    dismissedBy: by4(),
+    dismissedBy: by5(),
     ...stamps()
   }
 });
-var EvidenceRef = (0, import_core15.list)({
+var EvidenceRef = (0, import_core16.list)({
   access: scopedGoverned(["canReadFindings"], ["community"]),
   ui: { labelField: "recordType", listView: { initialColumns: ["finding", "recordType", "recordId", "quote"] } },
   fields: {
-    community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
-    finding: (0, import_fields15.relationship)({ ref: "Finding.evidence", ...ro }),
+    community: (0, import_fields16.relationship)({ ref: "Community", ...ro }),
+    finding: (0, import_fields16.relationship)({ ref: "Finding.evidence", ...ro }),
     recordType: systemText({ required: true }),
     recordId: systemText({ required: true }),
     /** cause: why the finding opened. resolution: the record a re-check found that satisfies the rule. */
-    role: (0, import_fields15.select)({ ...opt(["cause", "resolution"]), defaultValue: "cause", ...ro }),
+    role: (0, import_fields16.select)({ ...opt(["cause", "resolution"]), defaultValue: "cause", ...ro }),
     /** Character offsets into the source text (a progress note body), so the passage can be shown exactly. */
-    spanStart: (0, import_fields15.integer)({ ...ro }),
-    spanEnd: (0, import_fields15.integer)({ ...ro }),
-    quote: (0, import_fields15.text)({ ...ro }),
+    spanStart: (0, import_fields16.integer)({ ...ro }),
+    spanEnd: (0, import_fields16.integer)({ ...ro }),
+    quote: (0, import_fields16.text)({ ...ro }),
     ...stamps()
   }
 });
-var ExtractedFact = (0, import_core15.list)({
+var ExtractedFact = (0, import_core16.list)({
   access: scopedGoverned(["canManageWorkflows"], ["community"]),
   ui: { labelField: "extractor", listView: { initialColumns: ["extractor", "sourceType", "outcome", "createdAt"] } },
   fields: {
-    community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
-    resident: (0, import_fields15.relationship)({ ref: "Resident", ...ro }),
+    community: (0, import_fields16.relationship)({ ref: "Community", ...ro }),
+    resident: (0, import_fields16.relationship)({ ref: "Resident", ...ro }),
     extractor: systemText({ required: true }),
     sourceType: systemText({ required: true }),
     sourceId: systemText({ indexed: true, required: true }),
@@ -3723,12 +3990,12 @@ var ExtractedFact = (0, import_core15.list)({
     /** extractor + source + digest: one extraction per version of the text. */
     cacheKey: systemText({ indexed: "unique", required: true }),
     outcome: fixedChoice(["found", "none", "unclear", "refused"]),
-    facts: (0, import_fields15.json)({ ...ro, ui: { ...ro.ui, description: "Typed facts with character spans into the source text." } }),
-    inferenceCall: (0, import_fields15.relationship)({ ref: "InferenceCall", ...ro }),
+    facts: (0, import_fields16.json)({ ...ro, ui: { ...ro.ui, description: "Typed facts with character spans into the source text." } }),
+    inferenceCall: (0, import_fields16.relationship)({ ref: "InferenceCall", ...ro }),
     ...stamps()
   }
 });
-var InferenceProvider = (0, import_core15.list)({
+var InferenceProvider = (0, import_core16.list)({
   access: governed(["canManageIntegrations", "canManageWorkflows"]),
   ui: { labelField: "key", listView: { initialColumns: ["key", "adapter", "mode", "status", "isDefault"] } },
   fields: {
@@ -3738,39 +4005,39 @@ var InferenceProvider = (0, import_core15.list)({
     mode: fixedChoice(["self_hosted", "baa_hosted", "no_phi"]),
     endpoint: systemText(),
     model: systemText(),
-    processorRegistration: (0, import_fields15.relationship)({ ref: "ProcessorRegistration", ...ro }),
-    isDefault: (0, import_fields15.checkbox)({ defaultValue: false, ...ro }),
+    processorRegistration: (0, import_fields16.relationship)({ ref: "ProcessorRegistration", ...ro }),
+    isDefault: (0, import_fields16.checkbox)({ defaultValue: false, ...ro }),
     status: lifecycle(["draft", "active", "suspended"], "draft"),
     ...stamps()
   }
 });
-var InferenceCall = (0, import_core15.list)({
+var InferenceCall = (0, import_core16.list)({
   access: scopedGoverned(["canManageWorkflows", "canReadFindings"], ["community"]),
   ui: { labelField: "purpose", listView: { initialColumns: ["purpose", "provider", "mode", "outcome", "at"] } },
   fields: {
-    community: (0, import_fields15.relationship)({ ref: "Community", ...ro }),
+    community: (0, import_fields16.relationship)({ ref: "Community", ...ro }),
     purpose: fixedChoice(["extract", "summarise", "draft_note", "classify", "workflow_build", "workflow_step"]),
     provider: systemText({ required: true }),
-    inferenceProvider: (0, import_fields15.relationship)({ ref: "InferenceProvider", ...ro }),
+    inferenceProvider: (0, import_fields16.relationship)({ ref: "InferenceProvider", ...ro }),
     providerClass: fixedChoice(["self_hosted", "baa_hosted", "other"]),
     mode: fixedChoice(["self_hosted", "baa_hosted", "no_phi", "none"]),
     model: systemText(),
     outcome: fixedChoice(["ok", "refused_policy", "error", "timeout", "invalid_output"]),
     policyAtCall: systemText(),
     deidentification: fixedChoice(["none", "identifiers_removed", "safe_harbor"]),
-    dataCategories: (0, import_fields15.json)({ ...ro }),
-    syntheticOnly: (0, import_fields15.checkbox)({ defaultValue: false, ...ro }),
+    dataCategories: (0, import_fields16.json)({ ...ro }),
+    syntheticOnly: (0, import_fields16.checkbox)({ defaultValue: false, ...ro }),
     inputHash: systemText({ required: true }),
     outputHash: systemText(),
-    inputTokens: (0, import_fields15.integer)({ ...ro }),
-    outputTokens: (0, import_fields15.integer)({ ...ro }),
-    latencyMs: (0, import_fields15.integer)({ ...ro }),
+    inputTokens: (0, import_fields16.integer)({ ...ro }),
+    outputTokens: (0, import_fields16.integer)({ ...ro }),
+    latencyMs: (0, import_fields16.integer)({ ...ro }),
     reason: systemText(),
-    workflowRun: (0, import_fields15.relationship)({ ref: "WorkflowRun", ...ro }),
-    agentRun: (0, import_fields15.relationship)({ ref: "AgentRun", ...ro }),
+    workflowRun: (0, import_fields16.relationship)({ ref: "WorkflowRun", ...ro }),
+    agentRun: (0, import_fields16.relationship)({ ref: "AgentRun", ...ro }),
     principal: systemText(),
-    at: when4(),
-    actor: by4(),
+    at: when5(),
+    actor: by5(),
     ...stamps()
   }
 });
@@ -3804,8 +4071,8 @@ __export(billing_exports, {
   ResidentCredit: () => ResidentCredit,
   Statement: () => Statement
 });
-var import_core16 = require("@keystone-6/core");
-var import_fields16 = require("@keystone-6/core/fields");
+var import_core17 = require("@keystone-6/core");
+var import_fields17 = require("@keystone-6/core/fields");
 init_access();
 var RATE_KINDS = ["apartment_rent", "room_daily", "care_level", "second_person", "med_management", "community_fee", "bed_hold_daily", "ancillary"];
 var CHARGE_KINDS = ["rent", "second_person", "room_board", "care_level", "per_diem_claim", "coinsurance", "patient_liability", "ancillary", "bed_hold", "community_fee", "late_fee", "adjustment", "deposit_application"];
@@ -3814,85 +4081,85 @@ var DEPOSIT_KINDS = ["security", "pet", "reservation", "community_fee", "other"]
 var BILLING_READ = ["canReadBilling"];
 var RATES_READ = ["canReadBilling", "canManageRates"];
 var PAYMENTS_READ = ["canReadBilling", "canManagePayments", "canPostPayments"];
-var community = () => (0, import_fields16.relationship)({ ref: "Community", ...ro });
-var resident = () => (0, import_fields16.relationship)({ ref: "Resident", ...ro });
-var by5 = () => (0, import_fields16.relationship)({ ref: "User", ...ro });
-var when5 = () => (0, import_fields16.timestamp)({ ...ro });
-var day = () => (0, import_fields16.calendarDay)({ ...ro });
-var money = (required = true) => (0, import_fields16.bigInt)({ validation: { isRequired: required }, ...ro });
+var community = () => (0, import_fields17.relationship)({ ref: "Community", ...ro });
+var resident = () => (0, import_fields17.relationship)({ ref: "Resident", ...ro });
+var by6 = () => (0, import_fields17.relationship)({ ref: "User", ...ro });
+var when6 = () => (0, import_fields17.timestamp)({ ...ro });
+var day2 = () => (0, import_fields17.calendarDay)({ ...ro });
+var money = (required = true) => (0, import_fields17.bigInt)({ validation: { isRequired: required }, ...ro });
 var finOk = ({ session }) => tierAllows(session, "fin");
 var fin = { validation: { isRequired: true }, isFilterable: finOk, isOrderable: finOk, ...ro };
 var scoped = (read) => residentList(["community"], ["resident"], read);
-var CareLevel = (0, import_core16.list)({
+var CareLevel = (0, import_core17.list)({
   access: scopedGoverned(RATES_READ, ["community"]),
   ui: { labelField: "name", listView: { initialColumns: ["name", "minPoints", "maxPoints", "status"] } },
   fields: {
     community: community(),
-    code: (0, import_fields16.text)({ validation: { isRequired: true } }),
-    name: (0, import_fields16.text)({ validation: { isRequired: true } }),
+    code: (0, import_fields17.text)({ validation: { isRequired: true } }),
+    name: (0, import_fields17.text)({ validation: { isRequired: true } }),
     setting: fixedChoice(["assisted_living", "memory_care"]),
-    minPoints: (0, import_fields16.integer)({ ...ro, validation: { isRequired: true } }),
-    maxPoints: (0, import_fields16.integer)({ ...ro, validation: { isRequired: true } }),
+    minPoints: (0, import_fields17.integer)({ ...ro, validation: { isRequired: true } }),
+    maxPoints: (0, import_fields17.integer)({ ...ro, validation: { isRequired: true } }),
     status: lifecycle(["active", "retired"], "active"),
     version: versionField(),
     ...trackingFields
   }
 });
-var RateSchedule = (0, import_core16.list)({
+var RateSchedule = (0, import_core17.list)({
   access: scopedGoverned(RATES_READ, ["community"]),
   ui: { labelField: "name", listView: { initialColumns: ["name", "setting", "effectiveFrom", "status"] } },
   fields: {
     community: community(),
-    name: (0, import_fields16.text)({ validation: { isRequired: true } }),
+    name: (0, import_fields17.text)({ validation: { isRequired: true } }),
     setting: fixedChoice(["assisted_living", "memory_care", "independent_living", "nursing_facility"]),
-    effectiveFrom: day(),
-    noticeDays: (0, import_fields16.integer)({ ...ro, defaultValue: 30, validation: { isRequired: true } }),
+    effectiveFrom: day2(),
+    noticeDays: (0, import_fields17.integer)({ ...ro, defaultValue: 30, validation: { isRequired: true } }),
     status: lifecycle(["draft", "published", "retired"], "draft"),
-    publishedAt: when5(),
-    approval: (0, import_fields16.relationship)({ ref: "ApprovalRequest", ...ro }),
-    lines: (0, import_fields16.relationship)({ ref: "RateLine.schedule", many: true, ...ro }),
+    publishedAt: when6(),
+    approval: (0, import_fields17.relationship)({ ref: "ApprovalRequest", ...ro }),
+    lines: (0, import_fields17.relationship)({ ref: "RateLine.schedule", many: true, ...ro }),
     version: versionField(),
     ...trackingFields
   }
 });
-var RateLine = (0, import_core16.list)({
+var RateLine = (0, import_core17.list)({
   access: scopedGoverned(RATES_READ, ["schedule", "community"]),
   ui: { labelField: "kind", listView: { initialColumns: ["schedule", "kind", "apartmentType", "careLevel", "amountMinor", "per"] } },
   fields: {
-    schedule: (0, import_fields16.relationship)({ ref: "RateSchedule.lines", ...ro }),
+    schedule: (0, import_fields17.relationship)({ ref: "RateSchedule.lines", ...ro }),
     kind: fixedChoice(RATE_KINDS),
-    apartmentType: (0, import_fields16.relationship)({ ref: "ApartmentType", ...ro }),
-    careLevel: (0, import_fields16.relationship)({ ref: "CareLevel", ...ro }),
+    apartmentType: (0, import_fields17.relationship)({ ref: "ApartmentType", ...ro }),
+    careLevel: (0, import_fields17.relationship)({ ref: "CareLevel", ...ro }),
     amountMinor: money(),
     per: fixedChoice(["month", "day", "each"]),
     proration: fixedChoice(["actual_days_in_month", "thirty_day_month", "daily"]),
     ...trackingFields
   }
 });
-var ChargeItem = (0, import_core16.list)({
+var ChargeItem = (0, import_core17.list)({
   access: scopedGoverned(RATES_READ, ["community"]),
   ui: { labelField: "name" },
   fields: {
     community: community(),
-    code: (0, import_fields16.text)({ validation: { isRequired: true } }),
-    name: (0, import_fields16.text)({ validation: { isRequired: true } }),
+    code: (0, import_fields17.text)({ validation: { isRequired: true } }),
+    name: (0, import_fields17.text)({ validation: { isRequired: true } }),
     kind: fixedChoice(["ancillary", "community_fee", "late_fee"]),
     unitPriceMinor: money(),
     status: lifecycle(["active", "retired"], "active"),
     ...trackingFields
   }
 });
-var CareLevelAssignment = (0, import_core16.list)({
+var CareLevelAssignment = (0, import_core17.list)({
   access: scoped(BILLING_READ),
   ui: { labelField: "points", listView: { initialColumns: ["resident", "careLevel", "points", "effectiveFrom", "status"] } },
   fields: {
     community: community(),
     resident: resident(),
-    stay: (0, import_fields16.relationship)({ ref: "Stay", ...ro }),
-    careLevel: (0, import_fields16.relationship)({ ref: "CareLevel", ...ro }),
-    points: (0, import_fields16.integer)({ ...ro, validation: { isRequired: true } }),
-    effectiveFrom: day(),
-    noticeDeliveredOn: day(),
+    stay: (0, import_fields17.relationship)({ ref: "Stay", ...ro }),
+    careLevel: (0, import_fields17.relationship)({ ref: "CareLevel", ...ro }),
+    points: (0, import_fields17.integer)({ ...ro, validation: { isRequired: true } }),
+    effectiveFrom: day2(),
+    noticeDeliveredOn: day2(),
     /** 'points' (from the assessment) or 'manual' (with a reason). Append-only: a correction supersedes the row. */
     source: systemText(),
     reason: systemText(),
@@ -3902,63 +4169,63 @@ var CareLevelAssignment = (0, import_core16.list)({
   }
 });
 phiList("CareLevelAssignment");
-var BillingPeriod = (0, import_core16.list)({
+var BillingPeriod = (0, import_core17.list)({
   access: scopedGoverned(BILLING_READ, ["community"]),
   ui: { labelField: "month", listView: { initialColumns: ["month", "status", "statementCount", "closedAt"] } },
   fields: {
     community: community(),
-    month: day(),
+    month: day2(),
     status: lifecycle(["open", "closed"], "open"),
     derivationHash: systemText(),
-    statementCount: (0, import_fields16.integer)({ ...ro, defaultValue: 0 }),
-    closedAt: when5(),
-    closedBy: by5(),
+    statementCount: (0, import_fields17.integer)({ ...ro, defaultValue: 0 }),
+    closedAt: when6(),
+    closedBy: by6(),
     version: versionField(),
     ...trackingFields
   }
 });
-var Charge = (0, import_core16.list)({
+var Charge = (0, import_core17.list)({
   access: scoped(BILLING_READ),
   ui: { labelField: "description", listView: { initialColumns: ["date", "resident", "kind", "amountMinor", "status"] } },
   fields: {
     community: community(),
     resident: resident(),
-    stay: (0, import_fields16.relationship)({ ref: "Stay", ...ro }),
-    period: (0, import_fields16.relationship)({ ref: "BillingPeriod", ...ro }),
-    date: day(),
+    stay: (0, import_fields17.relationship)({ ref: "Stay", ...ro }),
+    period: (0, import_fields17.relationship)({ ref: "BillingPeriod", ...ro }),
+    date: day2(),
     kind: fixedChoice(CHARGE_KINDS),
     responsibility: fixedChoice(["resident", "payer"]),
-    payerKey: (0, import_fields16.text)({ ...ro, isIndexed: true, validation: { isRequired: true } }),
-    payer: (0, import_fields16.relationship)({ ref: "Payer", ...ro }),
+    payerKey: (0, import_fields17.text)({ ...ro, isIndexed: true, validation: { isRequired: true } }),
+    payer: (0, import_fields17.relationship)({ ref: "Payer", ...ro }),
     description: systemText(),
-    ...phiFields("Charge", { amountMinor: ["fin", import_fields16.bigInt, fin] }),
+    ...phiFields("Charge", { amountMinor: ["fin", import_fields17.bigInt, fin] }),
     source: fixedChoice(["derived", "manual"]),
     status: lifecycle(["open", "posted", "superseded", "voided"], "open"),
-    supersededBy: (0, import_fields16.relationship)({ ref: "Charge", ...ro }),
-    adjustsCharge: (0, import_fields16.relationship)({ ref: "Charge", ...ro }),
-    derivation: (0, import_fields16.json)({ ...ro }),
+    supersededBy: (0, import_fields17.relationship)({ ref: "Charge", ...ro }),
+    adjustsCharge: (0, import_fields17.relationship)({ ref: "Charge", ...ro }),
+    derivation: (0, import_fields17.json)({ ...ro }),
     derivationHash: systemText(),
-    createdAt: (0, import_fields16.timestamp)({ defaultValue: { kind: "now" }, ...ro })
+    createdAt: (0, import_fields17.timestamp)({ defaultValue: { kind: "now" }, ...ro })
   }
 });
 phiList("Charge");
-var Statement = (0, import_core16.list)({
+var Statement = (0, import_core17.list)({
   access: scoped(BILLING_READ),
   ui: { labelField: "number", listView: { initialColumns: ["number", "resident", "period", "totalMinor", "paidMinor", "status"] } },
   fields: {
     community: community(),
     resident: resident(),
-    period: (0, import_fields16.relationship)({ ref: "BillingPeriod", ...ro }),
+    period: (0, import_fields17.relationship)({ ref: "BillingPeriod", ...ro }),
     number: systemText({ indexed: "unique", required: true }),
     status: lifecycle(["issued", "paid", "void"], "issued"),
-    issuedAt: when5(),
-    dueOn: day(),
+    issuedAt: when6(),
+    dueOn: day2(),
     ...phiFields("Statement", {
-      totalMinor: ["fin", import_fields16.bigInt, fin],
-      paidMinor: ["fin", import_fields16.bigInt, { ...fin, defaultValue: 0n }],
+      totalMinor: ["fin", import_fields17.bigInt, fin],
+      paidMinor: ["fin", import_fields17.bigInt, { ...fin, defaultValue: 0n }],
       /** Posted adjustments and write-offs (BalanceAdjustment); the balance is total − paid − adjusted. */
-      adjustedMinor: ["fin", import_fields16.bigInt, { ...fin, defaultValue: 0n }],
-      lines: ["fin", import_fields16.json, { ...ro }]
+      adjustedMinor: ["fin", import_fields17.bigInt, { ...fin, defaultValue: 0n }],
+      lines: ["fin", import_fields17.json, { ...ro }]
     }),
     chargeHash: systemText(),
     version: versionField(),
@@ -3967,7 +4234,7 @@ var Statement = (0, import_core16.list)({
 });
 phiList("Statement");
 var canSeeTokens = ({ session }) => permissions.canManagePayments({ session });
-var PaymentMethodToken = (0, import_core16.list)({
+var PaymentMethodToken = (0, import_core17.list)({
   access: scoped(PAYMENTS_READ),
   ui: { labelField: "last4" },
   fields: {
@@ -3976,233 +4243,233 @@ var PaymentMethodToken = (0, import_core16.list)({
     provider: systemText(),
     brand: systemText(),
     last4: systemText(),
-    token: (0, import_fields16.text)({ access: { read: canSeeTokens, create: () => false, update: () => false }, isFilterable: canSeeTokens, isOrderable: canSeeTokens, ui: ro.ui }),
-    autopay: (0, import_fields16.checkbox)({ defaultValue: false, ...ro }),
+    token: (0, import_fields17.text)({ access: { read: canSeeTokens, create: () => false, update: () => false }, isFilterable: canSeeTokens, isOrderable: canSeeTokens, ui: ro.ui }),
+    autopay: (0, import_fields17.checkbox)({ defaultValue: false, ...ro }),
     status: lifecycle(["active", "removed"], "active"),
     version: versionField(),
     ...trackingFields
   }
 });
 phiList("PaymentMethodToken");
-var Payment = (0, import_core16.list)({
+var Payment = (0, import_core17.list)({
   access: scoped(PAYMENTS_READ),
   ui: { labelField: "idempotencyKey", listView: { initialColumns: ["resident", "statement", "method", "amountMinor", "status", "settledAt"] } },
   fields: {
     community: community(),
     resident: resident(),
-    statement: (0, import_fields16.relationship)({ ref: "Statement", ...ro }),
+    statement: (0, import_fields17.relationship)({ ref: "Statement", ...ro }),
     method: fixedChoice(PAYMENT_METHODS),
     status: lifecycle(["pending", "unknown", "succeeded", "failed"], "pending"),
-    ...phiFields("Payment", { amountMinor: ["fin", import_fields16.bigInt, fin] }),
+    ...phiFields("Payment", { amountMinor: ["fin", import_fields17.bigInt, fin] }),
     currency: systemText(),
     idempotencyKey: systemText({ indexed: "unique", required: true }),
     providerRef: systemText({ indexed: true }),
-    token: (0, import_fields16.relationship)({ ref: "PaymentMethodToken", ...ro }),
+    token: (0, import_fields17.relationship)({ ref: "PaymentMethodToken", ...ro }),
     reference: systemText(),
     failureCode: systemText(),
-    autopay: (0, import_fields16.checkbox)({ defaultValue: false, ...ro }),
-    initiatedBy: by5(),
-    initiatedAt: when5(),
-    settledAt: when5(),
-    lastCheckedAt: when5(),
+    autopay: (0, import_fields17.checkbox)({ defaultValue: false, ...ro }),
+    initiatedBy: by6(),
+    initiatedAt: when6(),
+    settledAt: when6(),
+    lastCheckedAt: when6(),
     version: versionField(),
     ...trackingFields
   }
 });
 phiList("Payment");
-var PaymentAllocation = (0, import_core16.list)({
+var PaymentAllocation = (0, import_core17.list)({
   access: scoped(PAYMENTS_READ),
   fields: {
     community: community(),
     resident: resident(),
-    payment: (0, import_fields16.relationship)({ ref: "Payment", ...ro }),
-    statement: (0, import_fields16.relationship)({ ref: "Statement", ...ro }),
-    ...phiFields("PaymentAllocation", { amountMinor: ["fin", import_fields16.bigInt, fin] }),
-    appliedAt: when5()
+    payment: (0, import_fields17.relationship)({ ref: "Payment", ...ro }),
+    statement: (0, import_fields17.relationship)({ ref: "Statement", ...ro }),
+    ...phiFields("PaymentAllocation", { amountMinor: ["fin", import_fields17.bigInt, fin] }),
+    appliedAt: when6()
   }
 });
 phiList("PaymentAllocation");
-var PaymentEvent = (0, import_core16.list)({
+var PaymentEvent = (0, import_core17.list)({
   access: scopedGoverned(["canManagePayments"], ["community"]),
   fields: {
     community: community(),
     providerEventId: systemText({ indexed: "unique", required: true }),
     type: systemText(),
-    payment: (0, import_fields16.relationship)({ ref: "Payment", ...ro }),
+    payment: (0, import_fields17.relationship)({ ref: "Payment", ...ro }),
     outcome: systemText(),
-    receivedAt: when5()
+    receivedAt: when6()
   }
 });
-var Refund = (0, import_core16.list)({
+var Refund = (0, import_core17.list)({
   access: scoped(PAYMENTS_READ),
   ui: { labelField: "reason", listView: { initialColumns: ["resident", "payment", "amountMinor", "status"] } },
   fields: {
     community: community(),
     resident: resident(),
-    payment: (0, import_fields16.relationship)({ ref: "Payment", ...ro }),
-    deposit: (0, import_fields16.relationship)({ ref: "Deposit", ...ro }),
-    credit: (0, import_fields16.relationship)({ ref: "ResidentCredit", ...ro }),
-    ...phiFields("Refund", { amountMinor: ["fin", import_fields16.bigInt, fin] }),
+    payment: (0, import_fields17.relationship)({ ref: "Payment", ...ro }),
+    deposit: (0, import_fields17.relationship)({ ref: "Deposit", ...ro }),
+    credit: (0, import_fields17.relationship)({ ref: "ResidentCredit", ...ro }),
+    ...phiFields("Refund", { amountMinor: ["fin", import_fields17.bigInt, fin] }),
     reason: systemText({ required: true }),
     status: lifecycle(["requested", "pending_approval", "issued", "rejected"], "requested"),
-    approval: (0, import_fields16.relationship)({ ref: "ApprovalRequest", ...ro }),
+    approval: (0, import_fields17.relationship)({ ref: "ApprovalRequest", ...ro }),
     refundRef: systemText(),
-    requestedBy: by5(),
-    issuedAt: when5(),
+    requestedBy: by6(),
+    issuedAt: when6(),
     version: versionField(),
     ...trackingFields
   }
 });
 phiList("Refund");
-var Deposit = (0, import_core16.list)({
+var Deposit = (0, import_core17.list)({
   access: scoped(BILLING_READ),
   ui: { labelField: "kind", listView: { initialColumns: ["resident", "kind", "amountMinor", "status", "receivedOn"] } },
   fields: {
     community: community(),
     resident: resident(),
     kind: fixedChoice(DEPOSIT_KINDS),
-    ...phiFields("Deposit", { amountMinor: ["fin", import_fields16.bigInt, fin] }),
+    ...phiFields("Deposit", { amountMinor: ["fin", import_fields17.bigInt, fin] }),
     method: fixedChoice(PAYMENT_METHODS),
     status: lifecycle(["held", "applied", "refunded", "forfeited"], "held"),
-    receivedOn: day(),
-    appliedPayment: (0, import_fields16.relationship)({ ref: "Payment", ...ro }),
-    resolvedAt: when5(),
+    receivedOn: day2(),
+    appliedPayment: (0, import_fields17.relationship)({ ref: "Payment", ...ro }),
+    resolvedAt: when6(),
     note: systemText(),
     version: versionField(),
     ...trackingFields
   }
 });
 phiList("Deposit");
-var MedicaidLiability = (0, import_core16.list)({
+var MedicaidLiability = (0, import_core17.list)({
   access: scoped(BILLING_READ),
   ui: { labelField: "month", listView: { initialColumns: ["resident", "month", "liabilityMinor", "status"] } },
   fields: {
     community: community(),
     resident: resident(),
-    stay: (0, import_fields16.relationship)({ ref: "Stay", ...ro }),
-    month: day(),
-    ...phiFields("MedicaidLiability", { liabilityMinor: ["fin", import_fields16.bigInt, fin] }),
+    stay: (0, import_fields17.relationship)({ ref: "Stay", ...ro }),
+    month: day2(),
+    ...phiFields("MedicaidLiability", { liabilityMinor: ["fin", import_fields17.bigInt, fin] }),
     status: lifecycle(["expected", "determined", "appealed", "superseded"], "expected"),
-    noticeReceivedOn: day(),
-    infoRequestedOn: day(),
-    infoRespondedOn: day(),
-    appealFiledOn: day(),
-    supersededBy: (0, import_fields16.relationship)({ ref: "MedicaidLiability", ...ro }),
+    noticeReceivedOn: day2(),
+    infoRequestedOn: day2(),
+    infoRespondedOn: day2(),
+    appealFiledOn: day2(),
+    supersededBy: (0, import_fields17.relationship)({ ref: "MedicaidLiability", ...ro }),
     note: systemText(),
     version: versionField(),
     ...trackingFields
   }
 });
 phiList("MedicaidLiability");
-var ResidentCredit = (0, import_core16.list)({
+var ResidentCredit = (0, import_core17.list)({
   access: scoped(PAYMENTS_READ),
   ui: { labelField: "status", listView: { initialColumns: ["resident", "payment", "amountMinor", "remainingMinor", "status"] } },
   fields: {
     community: community(),
     resident: resident(),
-    payment: (0, import_fields16.relationship)({ ref: "Payment", ...ro }),
-    ...phiFields("ResidentCredit", { amountMinor: ["fin", import_fields16.bigInt, fin], remainingMinor: ["fin", import_fields16.bigInt, fin] }),
+    payment: (0, import_fields17.relationship)({ ref: "Payment", ...ro }),
+    ...phiFields("ResidentCredit", { amountMinor: ["fin", import_fields17.bigInt, fin], remainingMinor: ["fin", import_fields17.bigInt, fin] }),
     status: lifecycle(["open", "closed"], "open"),
     version: versionField(),
     ...trackingFields
   }
 });
 phiList("ResidentCredit");
-var BalanceAdjustment = (0, import_core16.list)({
+var BalanceAdjustment = (0, import_core17.list)({
   access: scoped(BILLING_READ),
   ui: { labelField: "kind", listView: { initialColumns: ["resident", "statement", "kind", "amountMinor", "status"] } },
   fields: {
     community: community(),
     resident: resident(),
-    statement: (0, import_fields16.relationship)({ ref: "Statement", ...ro }),
+    statement: (0, import_fields17.relationship)({ ref: "Statement", ...ro }),
     kind: fixedChoice(["adjustment", "write_off"]),
-    ...phiFields("BalanceAdjustment", { amountMinor: ["fin", import_fields16.bigInt, fin] }),
+    ...phiFields("BalanceAdjustment", { amountMinor: ["fin", import_fields17.bigInt, fin] }),
     reason: systemText({ required: true }),
     status: lifecycle(["pending_approval", "posted", "rejected", "superseded"], "pending_approval"),
-    approval: (0, import_fields16.relationship)({ ref: "ApprovalRequest", ...ro }),
-    supersedes: (0, import_fields16.relationship)({ ref: "BalanceAdjustment", ...ro }),
-    requestedBy: by5(),
-    postedAt: when5(),
+    approval: (0, import_fields17.relationship)({ ref: "ApprovalRequest", ...ro }),
+    supersedes: (0, import_fields17.relationship)({ ref: "BalanceAdjustment", ...ro }),
+    requestedBy: by6(),
+    postedAt: when6(),
     version: versionField(),
     ...trackingFields
   }
 });
 phiList("BalanceAdjustment");
-var PaymentPlan = (0, import_core16.list)({
+var PaymentPlan = (0, import_core17.list)({
   access: scoped(PAYMENTS_READ),
   ui: { labelField: "reference", listView: { initialColumns: ["reference", "resident", "statement", "totalMinor", "instalmentCount", "status"] } },
   fields: {
     community: community(),
     resident: resident(),
-    statement: (0, import_fields16.relationship)({ ref: "Statement", ...ro }),
+    statement: (0, import_fields17.relationship)({ ref: "Statement", ...ro }),
     reference: systemText({ indexed: "unique", required: true }),
-    ...phiFields("PaymentPlan", { totalMinor: ["fin", import_fields16.bigInt, fin] }),
-    instalmentCount: (0, import_fields16.integer)({ ...ro, validation: { isRequired: true } }),
+    ...phiFields("PaymentPlan", { totalMinor: ["fin", import_fields17.bigInt, fin] }),
+    instalmentCount: (0, import_fields17.integer)({ ...ro, validation: { isRequired: true } }),
     status: lifecycle(["active", "cancelled"], "active"),
     cancelledReason: systemText(),
-    createdBy: by5(),
-    instalments: (0, import_fields16.relationship)({ ref: "PaymentPlanInstalment.plan", many: true, ...ro }),
+    createdBy: by6(),
+    instalments: (0, import_fields17.relationship)({ ref: "PaymentPlanInstalment.plan", many: true, ...ro }),
     version: versionField(),
     ...trackingFields
   }
 });
 phiList("PaymentPlan");
-var PaymentPlanInstalment = (0, import_core16.list)({
+var PaymentPlanInstalment = (0, import_core17.list)({
   access: scoped(PAYMENTS_READ),
   ui: { labelField: "number", listView: { initialColumns: ["plan", "number", "dueOn", "amountMinor", "payment"] } },
   fields: {
     community: community(),
     resident: resident(),
-    plan: (0, import_fields16.relationship)({ ref: "PaymentPlan.instalments", ...ro }),
-    number: (0, import_fields16.integer)({ ...ro, validation: { isRequired: true } }),
-    dueOn: day(),
-    ...phiFields("PaymentPlanInstalment", { amountMinor: ["fin", import_fields16.bigInt, fin] }),
+    plan: (0, import_fields17.relationship)({ ref: "PaymentPlan.instalments", ...ro }),
+    number: (0, import_fields17.integer)({ ...ro, validation: { isRequired: true } }),
+    dueOn: day2(),
+    ...phiFields("PaymentPlanInstalment", { amountMinor: ["fin", import_fields17.bigInt, fin] }),
     /** The latest attempt. Paid, in flight or declined is read from it. */
-    payment: (0, import_fields16.relationship)({ ref: "Payment", ...ro }),
-    attempts: (0, import_fields16.integer)({ ...ro, defaultValue: 0 }),
+    payment: (0, import_fields17.relationship)({ ref: "Payment", ...ro }),
+    attempts: (0, import_fields17.integer)({ ...ro, defaultValue: 0 }),
     version: versionField(),
     ...trackingFields
   }
 });
 phiList("PaymentPlanInstalment");
-var MedicaidApplication = (0, import_core16.list)({
+var MedicaidApplication = (0, import_core17.list)({
   access: scoped(BILLING_READ),
   ui: { labelField: "reference", listView: { initialColumns: ["reference", "resident", "status", "submittedOn", "infoDueOn", "appealDueOn"] } },
   fields: {
     community: community(),
     resident: resident(),
-    stay: (0, import_fields16.relationship)({ ref: "Stay", ...ro }),
+    stay: (0, import_fields17.relationship)({ ref: "Stay", ...ro }),
     reference: systemText({ indexed: "unique", required: true }),
     state: systemText(),
     caseworker: systemText(),
     status: lifecycle(["preparing", "submitted", "info_requested", "approved", "denied", "appealed"], "preparing"),
     /** The first day Medicaid is asked to cover: charges from here are pending AR until the decision. */
-    requestedFrom: day(),
-    submittedOn: day(),
-    infoRequestedOn: day(),
-    infoDueOn: day(),
-    infoRespondedOn: day(),
-    decisionOn: day(),
-    effectiveOn: day(),
-    appealDueOn: day(),
-    appealFiledOn: day(),
+    requestedFrom: day2(),
+    submittedOn: day2(),
+    infoRequestedOn: day2(),
+    infoDueOn: day2(),
+    infoRespondedOn: day2(),
+    decisionOn: day2(),
+    effectiveOn: day2(),
+    appealDueOn: day2(),
+    appealFiledOn: day2(),
     note: systemText(),
     version: versionField(),
     ...trackingFields
   }
 });
 phiList("MedicaidApplication");
-var PatientLiabilitySchedule = (0, import_core16.list)({
+var PatientLiabilitySchedule = (0, import_core17.list)({
   access: scoped(BILLING_READ),
   ui: { labelField: "effectiveFrom", listView: { initialColumns: ["resident", "monthlyAmountMinor", "personalNeedsAllowanceMinor", "effectiveFrom", "effectiveTo", "status"] } },
   fields: {
     community: community(),
     resident: resident(),
-    stay: (0, import_fields16.relationship)({ ref: "Stay", ...ro }),
-    application: (0, import_fields16.relationship)({ ref: "MedicaidApplication", ...ro }),
-    ...phiFields("PatientLiabilitySchedule", { monthlyAmountMinor: ["fin", import_fields16.bigInt, fin], personalNeedsAllowanceMinor: ["fin", import_fields16.bigInt, fin] }),
-    effectiveFrom: day(),
-    effectiveTo: day(),
+    stay: (0, import_fields17.relationship)({ ref: "Stay", ...ro }),
+    application: (0, import_fields17.relationship)({ ref: "MedicaidApplication", ...ro }),
+    ...phiFields("PatientLiabilitySchedule", { monthlyAmountMinor: ["fin", import_fields17.bigInt, fin], personalNeedsAllowanceMinor: ["fin", import_fields17.bigInt, fin] }),
+    effectiveFrom: day2(),
+    effectiveTo: day2(),
     status: lifecycle(["draft", "effective", "superseded"], "draft"),
     note: systemText(),
     version: versionField(),
@@ -4226,25 +4493,25 @@ __export(trust_exports, {
   TrustStatement: () => TrustStatement,
   TrustTransaction: () => TrustTransaction
 });
-var import_core17 = require("@keystone-6/core");
-var import_fields17 = require("@keystone-6/core/fields");
+var import_core18 = require("@keystone-6/core");
+var import_fields18 = require("@keystone-6/core/fields");
 var TRUST_BUCKETS = ["bank_control", "client_liability", "bank_fee", "suspense"];
 var TRUST_TX_KINDS = ["deposit", "withdrawal", "interest", "bank_fee", "reversal", "conveyance"];
 var TRUST_READ = ["canReadTrust"];
-var community2 = () => (0, import_fields17.relationship)({ ref: "Community", ...ro });
-var resident2 = () => (0, import_fields17.relationship)({ ref: "Resident", ...ro });
-var by6 = () => (0, import_fields17.relationship)({ ref: "User", ...ro });
-var when6 = () => (0, import_fields17.timestamp)({ ...ro });
-var day2 = () => (0, import_fields17.calendarDay)({ ...ro });
+var community2 = () => (0, import_fields18.relationship)({ ref: "Community", ...ro });
+var resident2 = () => (0, import_fields18.relationship)({ ref: "Resident", ...ro });
+var by7 = () => (0, import_fields18.relationship)({ ref: "User", ...ro });
+var when7 = () => (0, import_fields18.timestamp)({ ...ro });
+var day3 = () => (0, import_fields18.calendarDay)({ ...ro });
 var finOk2 = ({ session }) => tierAllows(session, "fin");
 var fin2 = { validation: { isRequired: true }, isFilterable: finOk2, isOrderable: finOk2, ...ro };
 var scoped2 = () => residentList(["community"], ["resident"], TRUST_READ);
-var TrustAccount = (0, import_core17.list)({
+var TrustAccount = (0, import_core18.list)({
   access: scopedGoverned(TRUST_READ, ["community"]),
   ui: { labelField: "name", listView: { initialColumns: ["name", "bankName", "status"] } },
   fields: {
     community: community2(),
-    name: (0, import_fields17.text)({ validation: { isRequired: true } }),
+    name: (0, import_fields18.text)({ validation: { isRequired: true } }),
     bankName: systemText(),
     last4: systemText(),
     status: lifecycle(["active", "closed"], "active"),
@@ -4252,159 +4519,159 @@ var TrustAccount = (0, import_core17.list)({
     ...trackingFields
   }
 });
-var ResidentTrustLedger = (0, import_core17.list)({
+var ResidentTrustLedger = (0, import_core18.list)({
   access: scoped2(),
   ui: { labelField: "reference", listView: { initialColumns: ["reference", "resident", "account", "status", "closedOn", "conveyedOn"] } },
   fields: {
     community: community2(),
     resident: resident2(),
-    account: (0, import_fields17.relationship)({ ref: "TrustAccount", ...ro }),
+    account: (0, import_fields18.relationship)({ ref: "TrustAccount", ...ro }),
     reference: systemText({ indexed: "unique", required: true }),
     status: lifecycle(["open", "closed", "conveyed"], "open"),
-    closedOn: day2(),
-    closedReason: (0, import_fields17.select)({ type: "string", options: ["discharge", "death", "transfer"].map((value) => ({ label: label(value), value })), ...ro }),
-    conveyedOn: day2(),
+    closedOn: day3(),
+    closedReason: (0, import_fields18.select)({ type: "string", options: ["discharge", "death", "transfer"].map((value) => ({ label: label(value), value })), ...ro }),
+    conveyedOn: day3(),
     conveyedTo: systemText(),
-    consentOnFile: (0, import_fields17.checkbox)({ defaultValue: false, ...ro }),
+    consentOnFile: (0, import_fields18.checkbox)({ defaultValue: false, ...ro }),
     version: versionField(),
     ...trackingFields
   }
 });
 phiList("ResidentTrustLedger");
-var TrustTransaction = (0, import_core17.list)({
+var TrustTransaction = (0, import_core18.list)({
   access: scoped2(),
   ui: { labelField: "reference", listView: { initialColumns: ["reference", "resident", "kind", "amountMinor", "status", "preparedBy", "signedBy"] } },
   fields: {
     community: community2(),
     resident: resident2(),
-    ledger: (0, import_fields17.relationship)({ ref: "ResidentTrustLedger", ...ro }),
-    account: (0, import_fields17.relationship)({ ref: "TrustAccount", ...ro }),
+    ledger: (0, import_fields18.relationship)({ ref: "ResidentTrustLedger", ...ro }),
+    account: (0, import_fields18.relationship)({ ref: "TrustAccount", ...ro }),
     reference: systemText({ indexed: "unique", required: true }),
     kind: fixedChoice(TRUST_TX_KINDS),
-    ...phiFields("TrustTransaction", { amountMinor: ["fin", import_fields17.bigInt, fin2] }),
+    ...phiFields("TrustTransaction", { amountMinor: ["fin", import_fields18.bigInt, fin2] }),
     purpose: systemText(),
     status: lifecycle(["pending_signature", "posted", "rejected"], "posted"),
-    preparedBy: by6(),
-    signedBy: by6(),
-    approval: (0, import_fields17.relationship)({ ref: "ApprovalRequest", ...ro }),
-    reverses: (0, import_fields17.relationship)({ ref: "TrustTransaction", ...ro }),
-    effectiveOn: day2(),
-    postedAt: when6(),
-    lines: (0, import_fields17.relationship)({ ref: "TrustLedgerLine.transaction", many: true, ...ro }),
+    preparedBy: by7(),
+    signedBy: by7(),
+    approval: (0, import_fields18.relationship)({ ref: "ApprovalRequest", ...ro }),
+    reverses: (0, import_fields18.relationship)({ ref: "TrustTransaction", ...ro }),
+    effectiveOn: day3(),
+    postedAt: when7(),
+    lines: (0, import_fields18.relationship)({ ref: "TrustLedgerLine.transaction", many: true, ...ro }),
     version: versionField(),
     ...trackingFields
   }
 });
 phiList("TrustTransaction");
-var TrustLedgerLine = (0, import_core17.list)({
+var TrustLedgerLine = (0, import_core18.list)({
   access: scoped2(),
   ui: { labelField: "bucket", listView: { initialColumns: ["transaction", "bucket", "side", "amountMinor", "effectiveOn"] } },
   fields: {
     community: community2(),
     resident: resident2(),
-    transaction: (0, import_fields17.relationship)({ ref: "TrustTransaction.lines", ...ro }),
-    ledger: (0, import_fields17.relationship)({ ref: "ResidentTrustLedger", ...ro }),
-    account: (0, import_fields17.relationship)({ ref: "TrustAccount", ...ro }),
+    transaction: (0, import_fields18.relationship)({ ref: "TrustTransaction.lines", ...ro }),
+    ledger: (0, import_fields18.relationship)({ ref: "ResidentTrustLedger", ...ro }),
+    account: (0, import_fields18.relationship)({ ref: "TrustAccount", ...ro }),
     bucket: fixedChoice(TRUST_BUCKETS),
     side: fixedChoice(["debit", "credit"]),
-    ...phiFields("TrustLedgerLine", { amountMinor: ["fin", import_fields17.bigInt, fin2] }),
-    effectiveOn: day2(),
-    createdAt: (0, import_fields17.timestamp)({ defaultValue: { kind: "now" }, ...ro })
+    ...phiFields("TrustLedgerLine", { amountMinor: ["fin", import_fields18.bigInt, fin2] }),
+    effectiveOn: day3(),
+    createdAt: (0, import_fields18.timestamp)({ defaultValue: { kind: "now" }, ...ro })
   }
 });
 phiList("TrustLedgerLine");
-var TrustReconciliation = (0, import_core17.list)({
+var TrustReconciliation = (0, import_core18.list)({
   access: scopedGoverned(TRUST_READ, ["community"]),
   ui: { labelField: "month", listView: { initialColumns: ["account", "month", "status", "bankBalanceMinor", "bookBalanceMinor", "residentTotalMinor"] } },
   fields: {
     community: community2(),
-    account: (0, import_fields17.relationship)({ ref: "TrustAccount", ...ro }),
-    month: day2(),
-    bankBalanceMinor: (0, import_fields17.bigInt)({ ...ro, validation: { isRequired: true } }),
-    bookBalanceMinor: (0, import_fields17.bigInt)({ ...ro, validation: { isRequired: true } }),
-    residentTotalMinor: (0, import_fields17.bigInt)({ ...ro, validation: { isRequired: true } }),
-    differenceMinor: (0, import_fields17.bigInt)({ ...ro, validation: { isRequired: true } }),
+    account: (0, import_fields18.relationship)({ ref: "TrustAccount", ...ro }),
+    month: day3(),
+    bankBalanceMinor: (0, import_fields18.bigInt)({ ...ro, validation: { isRequired: true } }),
+    bookBalanceMinor: (0, import_fields18.bigInt)({ ...ro, validation: { isRequired: true } }),
+    residentTotalMinor: (0, import_fields18.bigInt)({ ...ro, validation: { isRequired: true } }),
+    differenceMinor: (0, import_fields18.bigInt)({ ...ro, validation: { isRequired: true } }),
     status: lifecycle(["tied", "untied", "signed"], "untied"),
-    detail: (0, import_fields17.json)({ ...ro }),
-    preparedBy: by6(),
-    signedBy: by6(),
-    signedAt: when6(),
+    detail: (0, import_fields18.json)({ ...ro }),
+    preparedBy: by7(),
+    signedBy: by7(),
+    signedAt: when7(),
     version: versionField(),
     ...trackingFields
   }
 });
-var TrustAuthorisation = (0, import_core17.list)({
+var TrustAuthorisation = (0, import_core18.list)({
   access: scoped2(),
   ui: { labelField: "signedOn", listView: { initialColumns: ["resident", "representative", "signedOn", "status"] } },
   fields: {
     community: community2(),
     resident: resident2(),
-    ledger: (0, import_fields17.relationship)({ ref: "ResidentTrustLedger", ...ro }),
-    representative: (0, import_fields17.relationship)({ ref: "Representative", ...ro }),
-    signedOn: day2(),
-    kinds: (0, import_fields17.json)({ ...ro, defaultValue: [] }),
-    ...phiFields("TrustAuthorisation", { perWithdrawalLimitMinor: ["fin", import_fields17.bigInt, { isFilterable: finOk2, isOrderable: finOk2, ...ro }] }),
-    document: (0, import_fields17.relationship)({ ref: "Document", ...ro }),
+    ledger: (0, import_fields18.relationship)({ ref: "ResidentTrustLedger", ...ro }),
+    representative: (0, import_fields18.relationship)({ ref: "Representative", ...ro }),
+    signedOn: day3(),
+    kinds: (0, import_fields18.json)({ ...ro, defaultValue: [] }),
+    ...phiFields("TrustAuthorisation", { perWithdrawalLimitMinor: ["fin", import_fields18.bigInt, { isFilterable: finOk2, isOrderable: finOk2, ...ro }] }),
+    document: (0, import_fields18.relationship)({ ref: "Document", ...ro }),
     status: lifecycle(["pending_approval", "active", "rejected", "revoked"], "pending_approval"),
-    approval: (0, import_fields17.relationship)({ ref: "ApprovalRequest", ...ro }),
+    approval: (0, import_fields18.relationship)({ ref: "ApprovalRequest", ...ro }),
     revokedReason: systemText(),
-    recordedBy: by6(),
+    recordedBy: by7(),
     version: versionField(),
     ...trackingFields
   }
 });
 phiList("TrustAuthorisation");
-var TrustStatement = (0, import_core17.list)({
+var TrustStatement = (0, import_core18.list)({
   access: scoped2(),
   ui: { labelField: "quarter", listView: { initialColumns: ["resident", "quarter", "openingMinor", "closingMinor", "generatedAt"] } },
   fields: {
     community: community2(),
     resident: resident2(),
-    ledger: (0, import_fields17.relationship)({ ref: "ResidentTrustLedger", ...ro }),
-    quarter: day2(),
+    ledger: (0, import_fields18.relationship)({ ref: "ResidentTrustLedger", ...ro }),
+    quarter: day3(),
     ...phiFields("TrustStatement", {
-      openingMinor: ["fin", import_fields17.bigInt, fin2],
-      inMinor: ["fin", import_fields17.bigInt, fin2],
-      outMinor: ["fin", import_fields17.bigInt, fin2],
-      closingMinor: ["fin", import_fields17.bigInt, fin2],
-      lines: ["fin", import_fields17.json, { ...ro }]
+      openingMinor: ["fin", import_fields18.bigInt, fin2],
+      inMinor: ["fin", import_fields18.bigInt, fin2],
+      outMinor: ["fin", import_fields18.bigInt, fin2],
+      closingMinor: ["fin", import_fields18.bigInt, fin2],
+      lines: ["fin", import_fields18.json, { ...ro }]
     }),
-    generatedBy: by6(),
-    generatedAt: when6()
+    generatedBy: by7(),
+    generatedAt: when7()
   }
 });
 phiList("TrustStatement");
-var SuretyBond = (0, import_core17.list)({
+var SuretyBond = (0, import_core18.list)({
   access: scopedGoverned(TRUST_READ, ["community"]),
   ui: { labelField: "bondNumber", listView: { initialColumns: ["account", "carrier", "bondNumber", "amountMinor", "expiresOn", "status"] } },
   fields: {
     community: community2(),
-    account: (0, import_fields17.relationship)({ ref: "TrustAccount", ...ro }),
+    account: (0, import_fields18.relationship)({ ref: "TrustAccount", ...ro }),
     carrier: systemText({ required: true }),
     bondNumber: systemText({ required: true }),
-    amountMinor: (0, import_fields17.bigInt)({ ...ro, validation: { isRequired: true } }),
-    effectiveFrom: day2(),
-    expiresOn: day2(),
+    amountMinor: (0, import_fields18.bigInt)({ ...ro, validation: { isRequired: true } }),
+    effectiveFrom: day3(),
+    expiresOn: day3(),
     status: lifecycle(["active", "replaced"], "active"),
-    replacedBy: (0, import_fields17.relationship)({ ref: "SuretyBond", ...ro }),
-    recordedBy: by6(),
+    replacedBy: (0, import_fields18.relationship)({ ref: "SuretyBond", ...ro }),
+    recordedBy: by7(),
     version: versionField(),
     ...trackingFields
   }
 });
-var InterestAllocationRun = (0, import_core17.list)({
+var InterestAllocationRun = (0, import_core18.list)({
   access: scopedGoverned(TRUST_READ, ["community"]),
   ui: { labelField: "month", listView: { initialColumns: ["account", "month", "interestMinor", "method"] } },
   fields: {
     community: community2(),
-    account: (0, import_fields17.relationship)({ ref: "TrustAccount", ...ro }),
-    month: day2(),
-    interestMinor: (0, import_fields17.bigInt)({ ...ro, validation: { isRequired: true } }),
+    account: (0, import_fields18.relationship)({ ref: "TrustAccount", ...ro }),
+    month: day3(),
+    interestMinor: (0, import_fields18.bigInt)({ ...ro, validation: { isRequired: true } }),
     method: systemText(),
     residualRule: systemText(),
-    allocations: (0, import_fields17.json)({ ...ro }),
-    postedBy: by6(),
-    createdAt: (0, import_fields17.timestamp)({ defaultValue: { kind: "now" }, ...ro })
+    allocations: (0, import_fields18.json)({ ...ro }),
+    postedBy: by7(),
+    createdAt: (0, import_fields18.timestamp)({ defaultValue: { kind: "now" }, ...ro })
   }
 });
 
@@ -4418,6 +4685,7 @@ var { NOTE_KINDS: _nk, VITAL_KINDS: _vk, ORDER_KINDS: _ok, TASK_KINDS: _tk, rl: 
 var { DRUG_SCHEDULES: _ds, SUPPLY_KINDS: _sk, MOVEMENT_KINDS: _mk, SLOT_STATUSES: _ss, ADMIN_OUTCOMES: _ao, BALANCE_READERS: _br, ...medicationLists } = medications_exports;
 var { INCIDENT_KINDS: _ik, ...safetyLists } = safety_exports;
 var { RATE_KINDS: _rk, CHARGE_KINDS: _chk, PAYMENT_METHODS: _pm, DEPOSIT_KINDS: _dk, ...billingLists } = billing_exports;
+var { MDS_KINDS: _mdsk, coverageDepthFields: _cdf, ...mdsLists } = mds_exports;
 var { TRUST_BUCKETS: _tb, TRUST_TX_KINDS: _ttk, ...trustLists } = trust_exports;
 var models = {
   User,
@@ -4434,7 +4702,8 @@ var models = {
   ...safetyLists,
   ...workflows_exports,
   ...billingLists,
-  ...trustLists
+  ...trustLists,
+  ...mdsLists
 };
 
 // features/keystone/index.ts
@@ -4512,7 +4781,7 @@ function canonicalize(value) {
   throw new Error(`Canonical JSON cannot hold a ${typeof value}`);
 }
 var canonicalJson = (value) => JSON.stringify(canonicalize(value));
-var sha256 = (text17) => (0, import_node_crypto2.createHash)("sha256").update(text17).digest("hex");
+var sha256 = (text18) => (0, import_node_crypto2.createHash)("sha256").update(text18).digest("hex");
 var payloadHash = (value) => sha256(canonicalJson(value));
 var toJsonValue = (value) => canonicalize(value);
 
@@ -4783,9 +5052,9 @@ function previousWorkingDay(calendar, date3) {
   while (!isWorkingDay(calendar, d)) d = addDays(d, -1);
   return d;
 }
-function addWorkingDays(calendar, date3, n) {
+function addWorkingDays(calendar, date3, n2) {
   let d = date3;
-  for (let i = 0; i < Math.abs(n); i += 1) d = n > 0 ? nextWorkingDay(calendar, d) : previousWorkingDay(calendar, d);
+  for (let i = 0; i < Math.abs(n2); i += 1) d = n2 > 0 ? nextWorkingDay(calendar, d) : previousWorkingDay(calendar, d);
   return d;
 }
 var zoneParts = (timeZone, at) => Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).formatToParts(new Date(at)).map((p) => [p.type, p.value]));
@@ -4801,9 +5070,9 @@ function zonedInstant(timeZone, date3, hhmm) {
     const p = zoneParts(timeZone, guess);
     const local = Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day), Number(p.hour) % 24, Number(p.minute), Number(p.second));
     const target = Date.UTC(Number(date3.slice(0, 4)), Number(date3.slice(5, 7)) - 1, Number(date3.slice(8, 10)), h, m);
-    const diff = target - local;
-    if (diff === 0) break;
-    guess += diff;
+    const diff2 = target - local;
+    if (diff2 === 0) break;
+    guess += diff2;
   }
   return new Date(guess);
 }
@@ -5037,7 +5306,7 @@ var PACKS = [US_FED_PACK, US_OH_PACK];
 
 // features/keystone/seed/platform.ts
 var UNUSABLE_PASSWORD_HASH = "$2a$10$3dITCbIvf5zFA.1U8KZDhOHC3EEexi3KYy5ysZK1cRF6LHMm0H.ya";
-var day3 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var day4 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 var seedMeta = { metadata: { seed: true } };
 async function seedOperatorPlatform(uow, actor) {
   const { tx } = uow;
@@ -5045,7 +5314,7 @@ async function seedOperatorPlatform(uow, actor) {
   for (const pack of PACKS) {
     let row = await tx.jurisdictionPack.findUnique({ where: { code: pack.code } });
     if (!row) {
-      row = await tx.jurisdictionPack.create({ data: { id: pack.id, code: pack.code, name: pack.name, packVersion: pack.packVersion, effectiveFrom: day3(pack.effectiveFrom), status: "active", rules: pack.rules, sourceNote: pack.sourceNote } });
+      row = await tx.jurisdictionPack.create({ data: { id: pack.id, code: pack.code, name: pack.name, packVersion: pack.packVersion, effectiveFrom: day4(pack.effectiveFrom), status: "active", rules: pack.rules, sourceNote: pack.sourceNote } });
       auditCreate(uow, actor, "JurisdictionPack", row.id, "pack.loaded", { code: pack.code, packVersion: pack.packVersion }, seedMeta);
       created.packs += 1;
     }
@@ -5061,14 +5330,14 @@ async function seedOperatorPlatform(uow, actor) {
   }
   let calendar = await tx.holidayCalendar.findUnique({ where: { code: US_FED.code } });
   if (!calendar) {
-    calendar = await tx.holidayCalendar.create({ data: { id: "seed_calendar_us_fed", code: US_FED.code, name: "US federal holidays (observed)", timeZone: US_FED.timeZone, weekendDays: US_FED.weekendDays, coverageThrough: day3(US_FED.coverageThrough), source: US_FED_SOURCE } });
+    calendar = await tx.holidayCalendar.create({ data: { id: "seed_calendar_us_fed", code: US_FED.code, name: "US federal holidays (observed)", timeZone: US_FED.timeZone, weekendDays: US_FED.weekendDays, coverageThrough: day4(US_FED.coverageThrough), source: US_FED_SOURCE } });
     auditCreate(uow, actor, "HolidayCalendar", calendar.id, "calendar.created", { code: US_FED.code, coverageThrough: US_FED.coverageThrough }, seedMeta);
     created.calendars += 1;
   }
   const haveDays = new Set((await tx.holidayDate.findMany({ where: { calendarId: calendar.id }, select: { date: true } })).map((d) => d.date.toISOString().slice(0, 10)));
   const days = US_FED_HOLIDAYS.filter(([date3]) => !haveDays.has(date3));
   if (days.length) {
-    await tx.holidayDate.createMany({ data: days.map(([date3, name]) => ({ calendarId: calendar.id, date: day3(date3), name })) });
+    await tx.holidayDate.createMany({ data: days.map(([date3, name]) => ({ calendarId: calendar.id, date: day4(date3), name })) });
     created.holidays = days.length;
   }
   if (!await tx.operatorSettings.findUnique({ where: { id: 1 } })) {
@@ -5095,7 +5364,7 @@ async function seedOperatorPlatform(uow, actor) {
     const rule3 = US_OH_PACK.rules.medicaidBedHold ?? {};
     const policy = await tx.bedHoldPolicy.upsert({
       where: { id: "seed_bed_hold_policy_maple_ridge" },
-      create: { id: "seed_bed_hold_policy_maple_ridge", name: "Maple Ridge bed-hold policy", communityId: community3.id, jurisdictionPackId: "seed_pack_us_oh", medicaidHoldDaysPerYear: rule3.daysPerCalendarYear, medicaidHoldPaid: true, medicaidHoldRateRule: rule3.rateRule, therapeuticLeaveDaysPerYear: rule3.daysPerCalendarYear, privateHoldDailyRateMinor: 31500n, ruleRef: rule3.ruleRef, verifyNote: `${rule3.verifyNote} Private hold charge is the operator's contract rate.`, effectiveFrom: day3("2026-01-01") },
+      create: { id: "seed_bed_hold_policy_maple_ridge", name: "Maple Ridge bed-hold policy", communityId: community3.id, jurisdictionPackId: "seed_pack_us_oh", medicaidHoldDaysPerYear: rule3.daysPerCalendarYear, medicaidHoldPaid: true, medicaidHoldRateRule: rule3.rateRule, therapeuticLeaveDaysPerYear: rule3.daysPerCalendarYear, privateHoldDailyRateMinor: 31500n, ruleRef: rule3.ruleRef, verifyNote: `${rule3.verifyNote} Private hold charge is the operator's contract rate.`, effectiveFrom: day4("2026-01-01") },
       update: {}
     });
     await tx.community.update({ where: { id: community3.id }, data: { bedHoldPolicyId: policy.id } });
@@ -5150,7 +5419,7 @@ async function seedOperatorPlatform(uow, actor) {
   for (const user of assignees) {
     const exists = await tx.staffAssignment.findFirst({ where: { userId: user.id, communityId: community3.id } });
     if (exists) continue;
-    const row = await tx.staffAssignment.create({ data: { userId: user.id, communityId: community3.id, effectiveFrom: day3("2026-01-01"), status: "active" } });
+    const row = await tx.staffAssignment.create({ data: { userId: user.id, communityId: community3.id, effectiveFrom: day4("2026-01-01"), status: "active" } });
     auditCreate(uow, actor, "StaffAssignment", row.id, "staff_assignment.created", { userId: user.id, communityId: community3.id }, seedMeta);
     created.assignments += 1;
   }
@@ -5341,12 +5610,12 @@ var fail = (message, details = {}) => {
 function leaveDaysByYear(timeZone, from, to) {
   const out = {};
   if (to.getTime() <= from.getTime()) return out;
-  let day15 = localDate(timeZone, from);
+  let day19 = localDate(timeZone, from);
   const last = localDate(timeZone, to);
-  for (let i = 0; i < 800 && day15 <= last; i += 1) {
-    const midnight = zonedInstant(timeZone, day15, "23:59").getTime();
-    if (midnight >= from.getTime() && midnight < to.getTime()) out[day15.slice(0, 4)] = (out[day15.slice(0, 4)] ?? 0) + 1;
-    day15 = addDays(day15, 1);
+  for (let i = 0; i < 800 && day19 <= last; i += 1) {
+    const midnight = zonedInstant(timeZone, day19, "23:59").getTime();
+    if (midnight >= from.getTime() && midnight < to.getTime()) out[day19.slice(0, 4)] = (out[day19.slice(0, 4)] ?? 0) + 1;
+    day19 = addDays(day19, 1);
   }
   return out;
 }
@@ -6045,7 +6314,7 @@ ${canonicalJson(body)}`)) return { ok: false, brokenAtSeq: row.seq };
 init_actor();
 init_errors();
 var DATE2 = /^\d{4}-\d{2}-\d{2}$/;
-var day4 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var day5 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 async function timeZoneOf(tx, communityId) {
   const community3 = await tx.community.findUnique({ where: { id: communityId }, select: { timeZone: true } });
   if (!community3) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
@@ -6054,7 +6323,7 @@ async function timeZoneOf(tx, communityId) {
 async function deriveCensusDay(tx, communityId, date3) {
   if (!DATE2.test(date3)) throw new DomainError(Codes.INVALID_INPUT, "Date must be YYYY-MM-DD.", { field: "date" });
   const timeZone = await timeZoneOf(tx, communityId);
-  const dayStart = day4(date3);
+  const dayStart = day5(date3);
   const stays = await tx.stay.findMany({
     where: { communityId, admittedAt: { not: null }, OR: [{ dischargedAt: null }, { dischargedAt: { gte: new Date(dayStart.getTime() - 864e5) } }] },
     select: { id: true, setting: true, residentId: true }
@@ -6073,9 +6342,9 @@ async function deriveCensusDay(tx, communityId, date3) {
   const eventsByStay = /* @__PURE__ */ new Map();
   for (const row of eventRows) {
     if (voided.has(row.id) || !row.stayId) continue;
-    const list16 = eventsByStay.get(row.stayId) ?? [];
-    list16.push({ seq: list16.length + 1, kind: row.kind, effectiveAt: row.effectiveAt, toBedId: row.toBedId, toApartmentId: row.toApartmentId, leaveKind: row.leaveKind, holdElected: row.holdElected, holdPaidBy: row.holdPaidBy, dischargeDisposition: row.dischargeDisposition });
-    eventsByStay.set(row.stayId, list16);
+    const list17 = eventsByStay.get(row.stayId) ?? [];
+    list17.push({ seq: list17.length + 1, kind: row.kind, effectiveAt: row.effectiveAt, toBedId: row.toBedId, toApartmentId: row.toApartmentId, leaveKind: row.leaveKind, holdElected: row.holdElected, holdPaidBy: row.holdPaidBy, dischargeDisposition: row.dischargeDisposition });
+    eventsByStay.set(row.stayId, list17);
   }
   const coverageByStay = /* @__PURE__ */ new Map();
   for (const row of coverages) if (row.stayId && !coverageByStay.has(row.stayId)) coverageByStay.set(row.stayId, { id: row.id, payerKind: row.payer?.kind ?? "uncovered" });
@@ -6113,7 +6382,7 @@ async function deriveCensusRange(tx, communityId, dates) {
   if (!dates.length) return out;
   const first = [...dates].sort()[0];
   const stays = await tx.stay.findMany({
-    where: { communityId, admittedAt: { not: null }, OR: [{ dischargedAt: null }, { dischargedAt: { gte: new Date(day4(first).getTime() - 864e5) } }] },
+    where: { communityId, admittedAt: { not: null }, OR: [{ dischargedAt: null }, { dischargedAt: { gte: new Date(day5(first).getTime() - 864e5) } }] },
     select: { id: true, setting: true }
   });
   const stayIds = stays.map((stay) => stay.id);
@@ -6130,9 +6399,9 @@ async function deriveCensusRange(tx, communityId, dates) {
   const eventsByStay = /* @__PURE__ */ new Map();
   for (const row of eventRows) {
     if (voided.has(row.id) || !row.stayId) continue;
-    const list16 = eventsByStay.get(row.stayId) ?? [];
-    list16.push({ seq: list16.length + 1, kind: row.kind, effectiveAt: row.effectiveAt, toBedId: row.toBedId, toApartmentId: row.toApartmentId, leaveKind: row.leaveKind, holdElected: row.holdElected, holdPaidBy: row.holdPaidBy, dischargeDisposition: row.dischargeDisposition });
-    eventsByStay.set(row.stayId, list16);
+    const list17 = eventsByStay.get(row.stayId) ?? [];
+    list17.push({ seq: list17.length + 1, kind: row.kind, effectiveAt: row.effectiveAt, toBedId: row.toBedId, toApartmentId: row.toApartmentId, leaveKind: row.leaveKind, holdElected: row.holdElected, holdPaidBy: row.holdPaidBy, dischargeDisposition: row.dischargeDisposition });
+    eventsByStay.set(row.stayId, list17);
   }
   const projectedByDate = /* @__PURE__ */ new Map();
   const bedIds = /* @__PURE__ */ new Set();
@@ -6153,7 +6422,7 @@ async function deriveCensusRange(tx, communityId, dates) {
   const unitOfBed = new Map(beds.map((bed) => [bed.id, bed.room?.unitId ?? null]));
   const unitOfApartment = new Map(apartments.map((apartment) => [apartment.id, apartment.unitId]));
   for (const date3 of dates) {
-    const start = day4(date3).getTime();
+    const start = day5(date3).getTime();
     const rows = [];
     for (const { stay, projection } of projectedByDate.get(date3) ?? []) {
       const bedId2 = projection.presence === "in_house" ? projection.currentBedId : projection.heldBedId;
@@ -6172,11 +6441,11 @@ async function snapshotCensusDay(uow, actor, input) {
   const timeZone = await timeZoneOf(uow.tx, input.communityId);
   if (input.date > localDate(timeZone, uow.now)) throw new DomainError(Codes.INVALID_INPUT, "The census day has not happened yet.", { field: "date" });
   const derived = await deriveCensusDay(uow.tx, input.communityId, input.date);
-  const existing = await uow.tx.censusDay.findMany({ where: { communityId: input.communityId, date: day4(input.date), supersededById: null } });
+  const existing = await uow.tx.censusDay.findMany({ where: { communityId: input.communityId, date: day5(input.date), supersededById: null } });
   const byStay = new Map(existing.map((row) => [row.stayId, row]));
   let written = 0;
   let superseded = 0;
-  const rowData = (row) => ({ communityId: input.communityId, stayId: row.stayId, date: day4(input.date), setting: row.setting, bedId: row.bedId, apartmentId: row.apartmentId, unitId: row.unitId, presence: row.presence, primaryCoverageId: row.coverageId, payerKind: row.payerKind, billableForPayer: row.payerKind !== "uncovered", snapshotRunId: input.runId ?? null });
+  const rowData = (row) => ({ communityId: input.communityId, stayId: row.stayId, date: day5(input.date), setting: row.setting, bedId: row.bedId, apartmentId: row.apartmentId, unitId: row.unitId, presence: row.presence, primaryCoverageId: row.coverageId, payerKind: row.payerKind, billableForPayer: row.payerKind !== "uncovered", snapshotRunId: input.runId ?? null });
   const fresh = derived.rows.filter((row) => !byStay.has(row.stayId));
   if (fresh.length) {
     await uow.tx.censusDay.createMany({ data: fresh.map(rowData) });
@@ -6188,7 +6457,7 @@ async function snapshotCensusDay(uow, actor, input) {
     byStay.delete(row.stayId);
     const same = prior.presence === row.presence && prior.bedId === row.bedId && prior.apartmentId === row.apartmentId && prior.unitId === row.unitId && prior.primaryCoverageId === row.coverageId;
     if (same) continue;
-    const created = await uow.tx.censusDay.create({ data: { communityId: input.communityId, stayId: row.stayId, date: day4(input.date), setting: row.setting, bedId: row.bedId, apartmentId: row.apartmentId, unitId: row.unitId, presence: row.presence, primaryCoverageId: row.coverageId, payerKind: row.payerKind, billableForPayer: row.payerKind !== "uncovered", snapshotRunId: input.runId ?? null } });
+    const created = await uow.tx.censusDay.create({ data: { communityId: input.communityId, stayId: row.stayId, date: day5(input.date), setting: row.setting, bedId: row.bedId, apartmentId: row.apartmentId, unitId: row.unitId, presence: row.presence, primaryCoverageId: row.coverageId, payerKind: row.payerKind, billableForPayer: row.payerKind !== "uncovered", snapshotRunId: input.runId ?? null } });
     written += 1;
     if (prior) {
       await uow.tx.censusDay.update({ where: { id: prior.id }, data: { supersededById: created.id } });
@@ -6196,7 +6465,7 @@ async function snapshotCensusDay(uow, actor, input) {
     }
   }
   for (const stale of byStay.values()) {
-    const tombstone = await uow.tx.censusDay.create({ data: { communityId: input.communityId, stayId: stale.stayId, date: day4(input.date), setting: stale.setting, presence: "absent", payerKind: stale.payerKind, billableForPayer: false, snapshotRunId: input.runId ?? null } });
+    const tombstone = await uow.tx.censusDay.create({ data: { communityId: input.communityId, stayId: stale.stayId, date: day5(input.date), setting: stale.setting, presence: "absent", payerKind: stale.payerKind, billableForPayer: false, snapshotRunId: input.runId ?? null } });
     await uow.tx.censusDay.update({ where: { id: stale.id }, data: { supersededById: tombstone.id } });
     superseded += 1;
   }
@@ -6210,7 +6479,7 @@ async function signOffCensusDay(uow, actor, input) {
   const closed = await closedThrough(uow.tx, input.communityId);
   if (closed && input.date <= closed) throw new DomainError(Codes.GUARD_FAILED, `The census through ${closed} is already signed off.`, { reason: "closed_period" });
   const snapshot = await snapshotCensusDay(uow, actor, { communityId: input.communityId, date: input.date });
-  const signoff = await uow.tx.censusSignoff.create({ data: { communityId: input.communityId, date: day4(input.date), totals: snapshot.totals, signedById: actor.userId, signedAt: uow.now, note: input.note?.trim() ?? "" } });
+  const signoff = await uow.tx.censusSignoff.create({ data: { communityId: input.communityId, date: day5(input.date), totals: snapshot.totals, signedById: actor.userId, signedAt: uow.now, note: input.note?.trim() ?? "" } });
   uow.audit({ eventType: "census.signed_off", entityType: "CensusSignoff", entityId: signoff.id, actorUserId: actor.userId, after: { communityId: input.communityId, date: input.date, totals: snapshot.totals } });
   return { signoffId: signoff.id, date: input.date, totals: snapshot.totals };
 }
@@ -6377,8 +6646,8 @@ function publicTokenMatches(token, storedHash) {
 
 // features/keystone/lib/portal.ts
 var INVITE_DAYS = 7;
-function authorityFor(roles, scope2) {
-  const allowed = SCOPE_AUTHORITY[scope2];
+function authorityFor(roles, scope3) {
+  const allowed = SCOPE_AUTHORITY[scope3];
   for (const basis of allowed) if (roles.includes(basis)) return basis;
   return null;
 }
@@ -6890,13 +7159,13 @@ var GIVEN = [...GIVEN_NAMES, ...MORE_GIVEN];
 var REP_GIVEN = ["Karen", "Michael", "Susan", "David", "Lisa", "Robert", "Julie", "Brian", "Denise", "Mark", "Angela", "Kevin", "Tamara", "Steven", "Rachel", "Gregory", "Monica", "Jeffrey", "Heather", "Scott", "Nicole", "Timothy", "Erin", "Douglas"];
 var FAMILY_MAIL_DOMAINS = ["gmail.com", "yahoo.com", "outlook.com"];
 var slug = (value) => value.toLowerCase().normalize("NFD").replace(/[^a-z]/g, "");
-var familyEmail = (first, last, n) => `${slug(first)}.${slug(last)}${n * 37 % 89 + 11}@${FAMILY_MAIL_DOMAINS[n % 3]}`;
+var familyEmail = (first, last, n2) => `${slug(first)}.${slug(last)}${n2 * 37 % 89 + 11}@${FAMILY_MAIL_DOMAINS[n2 % 3]}`;
 var FAMILY_AREAS = ["614", "614", "380", "614", "740", "216", "513", "614", "937", "412", "614", "317"];
 var FAMILY_EXCHANGES = ["214", "237", "262", "268", "291", "316", "337", "351", "404", "418", "431", "459", "476", "488", "523", "561", "575", "732", "777", "865", "891", "946"];
-var familyPhone = (n) => {
-  const area = FAMILY_AREAS[n % FAMILY_AREAS.length];
-  const exchange = FAMILY_EXCHANGES[(n * 7 + 3) % FAMILY_EXCHANGES.length];
-  const line = String((n * 7919 + 2741) % 9e3 + 1e3);
+var familyPhone = (n2) => {
+  const area = FAMILY_AREAS[n2 % FAMILY_AREAS.length];
+  const exchange = FAMILY_EXCHANGES[(n2 * 7 + 3) % FAMILY_EXCHANGES.length];
+  const line = String((n2 * 7919 + 2741) % 9e3 + 1e3);
   return `(${area}) ${exchange}-${line}`;
 };
 var MBI_ALPHA = "ACDEFGHJKMNPQRTUVWXY";
@@ -6904,9 +7173,9 @@ var MBI_ALNUM = `0123456789${MBI_ALPHA}`;
 var memberNumber = (kind, seed) => {
   let h = 2166136261;
   for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
-  const next = (n) => {
+  const next = (n2) => {
     h = Math.imul(h ^ h >>> 15, 2246822519) >>> 0;
-    return h % n;
+    return h % n2;
   };
   if (kind === "mbi") {
     const pattern = ["C", "A", "AN", "N", "A", "AN", "N", "A", "A", "N", "N"];
@@ -6932,7 +7201,7 @@ var MC_REASONS = [
   "Frontotemporal dementia; needs a structured, secured setting per the neurologist's recommendation and family consent."
 ];
 var bedId = (unit, room, label2) => `seed_room_${unit.toLowerCase()}_${room}_${label2.toLowerCase()}`;
-var aptId = (unit, n) => `seed_apartment_${unit.toLowerCase()}_${n}`;
+var aptId = (unit, n2) => `seed_apartment_${unit.toLowerCase()}_${n2}`;
 var NAMED_BEDS = { eleanor: bedId("BIR", "112", "A"), harold: bedId("CED", "204", "B"), dolores: bedId("CED", "210", "A"), clarence: bedId("WIL", "226", "A"), walter: bedId("ASP", "318", "A") };
 var ISOLATION_BED = bedId("ASP", "305", "A");
 var NAMED_APTS = { ruth: aptId("HAR", 6), marguerite: aptId("MEA", 30) };
@@ -7018,23 +7287,23 @@ function buildCensusPlan(options) {
   const P = PRESETS[preset];
   const tz = options.timeZone ?? COMMUNITY.timeZone;
   const T = new Date(Math.floor(options.anchor.getTime() / 6e4) * 6e4);
-  const today = localDate(tz, T);
+  const today2 = localDate(tz, T);
   const prefix = planPrefix(preset);
   const at = (dayOffset, hhmm) => {
-    const instant = zonedInstant(tz, addDays(today, dayOffset), hhmm);
+    const instant = zonedInstant(tz, addDays(today2, dayOffset), hhmm);
     if (instant.getTime() > T.getTime()) throw new Error(`Seed plan: day ${dayOffset} ${hhmm} is after the anchor`);
     return instant;
   };
-  const date3 = (dayOffset) => addDays(today, dayOffset);
+  const date3 = (dayOffset) => addDays(today2, dayOffset);
   const plus = (instant, minutes) => new Date(instant.getTime() + minutes * 6e4);
   const steps = [];
   const acts = [];
   let seq = 0;
-  const schedule = (when8, run) => acts.push({ at: when8, seq: seq++, run });
+  const schedule = (when9, run) => acts.push({ at: when9, seq: seq++, run });
   const key = (kind, id) => `${prefix}:${kind}:${id}`;
-  const emit = (kind, id, actor, when8, input) => {
+  const emit = (kind, id, actor, when9, input) => {
     const k = key(kind, id);
-    steps.push({ key: k, kind, actor, at: when8.toISOString(), input });
+    steps.push({ key: k, kind, actor, at: when9.toISOString(), input });
     return k;
   };
   const ref2 = (stepKey, field) => ({ $ref: stepKey, field });
@@ -7122,38 +7391,38 @@ function buildCensusPlan(options) {
       schedule(plus(effective2, 20 * 60), () => emit("agreement", r.code, PATEL, plus(effective2, 20 * 60), { stay: ref2(key("admit", r.code), "stayId"), resident: ref2(key("admit", r.code), "residentId"), signedAt: plus(effective2, 20 * 60).toISOString(), note: "Signed by the representative at the care conference." }));
     }
   }));
-  const readyLater = (placeId, when8, unit, apartment = false) => schedule(when8, () => {
+  const readyLater = (placeId, when9, unit, apartment = false) => schedule(when9, () => {
     if (apartment) {
       const apt = places.apt(placeId);
       if (apt.status !== "turnover") return;
       apt.status = "available";
-      emit("place_ready", placeId + "_" + when8.getTime(), LINDQVIST, when8, { apartmentId: placeId, note: "Apartment turned over: deep clean, paint touch-up and safety check done." });
+      emit("place_ready", placeId + "_" + when9.getTime(), LINDQVIST, when9, { apartmentId: placeId, note: "Apartment turned over: deep clean, paint touch-up and safety check done." });
     } else {
       const bed = places.bed(placeId);
       if (bed.status !== "cleaning") return;
       bed.status = "available";
-      emit("place_ready", placeId + "_" + when8.getTime(), nurseFor(unit), when8, { bedId: placeId, note: "Terminal clean done; bed made up." });
+      emit("place_ready", placeId + "_" + when9.getTime(), nurseFor(unit), when9, { bedId: placeId, note: "Terminal clean done; bed made up." });
     }
   });
-  const discharge = (code, when8, input) => schedule(when8, () => {
+  const discharge = (code, when9, input) => schedule(when9, () => {
     const place = places.release(code);
     const unit = places.beds.get(place)?.unit;
-    emit("discharge", code, PATEL, when8, { stay: ref2(key("admit", code), "stayId"), disposition: input.disposition, initiatedBy: input.facility ? "facility" : "resident", effectiveAt: when8.toISOString(), noticeException: input.noticeException ?? null });
-    if (!input.keepDirty) readyLater(place, plus(when8, unit ? 180 : 3 * 1440), unit ?? "", !unit);
+    emit("discharge", code, PATEL, when9, { stay: ref2(key("admit", code), "stayId"), disposition: input.disposition, initiatedBy: input.facility ? "facility" : "resident", effectiveAt: when9.toISOString(), noticeException: input.noticeException ?? null });
+    if (!input.keepDirty) readyLater(place, plus(when9, unit ? 180 : 3 * 1440), unit ?? "", !unit);
   });
-  const death = (code, when8, pronouncedBy) => schedule(when8, () => {
+  const death = (code, when9, pronouncedBy) => schedule(when9, () => {
     const place = places.release(code);
     const unit = places.beds.get(place)?.unit ?? "";
-    emit("death", code, RAMOS, when8, { stay: ref2(key("admit", code), "stayId"), effectiveAt: when8.toISOString(), pronouncedBy });
-    readyLater(place, plus(when8, 7 * 60), unit);
+    emit("death", code, RAMOS, when9, { stay: ref2(key("admit", code), "stayId"), effectiveAt: when9.toISOString(), pronouncedBy });
+    readyLater(place, plus(when9, 7 * 60), unit);
   });
-  const roomNotice = (code, when8, note) => emit("notice", `room_change_${code}_${when8.getTime()}`, BROOKS, when8, { stay: ref2(key("admit", code), "stayId"), kind: "room_change", method: "in_person", deliveredAt: when8.toISOString(), acknowledgement: "signed", note });
+  const roomNotice = (code, when9, note) => emit("notice", `room_change_${code}_${when9.getTime()}`, BROOKS, when9, { stay: ref2(key("admit", code), "stayId"), kind: "room_change", method: "in_person", deliveredAt: when9.toISOString(), acknowledgement: "signed", note });
   const movedFrom = /* @__PURE__ */ new Map();
-  const moveRoom = (id, when8, pick2, reason) => schedule(plus(when8, -18 * 60), () => {
+  const moveRoom = (id, when9, pick2, reason) => schedule(plus(when9, -18 * 60), () => {
     const { code, units, prefer } = pick2();
     used.add(code);
-    roomNotice(code, plus(when8, -18 * 60), `Room change discussed with the resident and representative: ${reason.toLowerCase()}`);
-    schedule(when8, () => {
+    roomNotice(code, plus(when9, -18 * 60), `Room change discussed with the resident and representative: ${reason.toLowerCase()}`);
+    schedule(when9, () => {
       const from = places.where.get(code);
       const to = places.freeBed(units, places.sex.get(code) ?? null, { prefer });
       const fromBed = places.bed(from.bed);
@@ -7161,8 +7430,8 @@ function buildCensusPlan(options) {
       fromBed.occupant = null;
       places.where.delete(code);
       places.occupyBed(code, to);
-      emit("room_change", id, nurseFor(fromBed.unit), when8, { stay: ref2(key("admit", code), "stayId"), toBedId: to, effectiveAt: when8.toISOString(), reason });
-      readyLater(fromBed.id, plus(when8, 150), fromBed.unit);
+      emit("room_change", id, nurseFor(fromBed.unit), when9, { stay: ref2(key("admit", code), "stayId"), toBedId: to, effectiveAt: when9.toISOString(), reason });
+      readyLater(fromBed.id, plus(when9, 150), fromBed.unit);
       movedFrom.set(id, fromBed.id);
     });
   });
@@ -7189,8 +7458,8 @@ function buildCensusPlan(options) {
       noticeAtTransfer: { method: "phone_then_mail", deliveredAt: plan.start.toISOString(), acknowledgement: "not_required", note: plan.hold === "none" ? "Bed-hold notice given; the representative declined the hold." : "Bed-hold notice explained by phone; written copy mailed to the representative." }
     });
     if (plan.ombudsmanCopy) {
-      const when8 = plus(plan.start, 2 * 1440 + 120);
-      schedule(when8, () => emit("notice", `ombudsman_${id}`, BROOKS, when8, { stay: ref2(key("admit", plan.code), "stayId"), censusEvent: ref2(startKey, "eventId"), kind: "other", method: "email", deliveredAt: when8.toISOString(), copyToOmbudsmanAt: when8.toISOString(), note: "Transfer notice copy sent to the regional Long-Term Care Ombudsman." }));
+      const when9 = plus(plan.start, 2 * 1440 + 120);
+      schedule(when9, () => emit("notice", `ombudsman_${id}`, BROOKS, when9, { stay: ref2(key("admit", plan.code), "stayId"), censusEvent: ref2(startKey, "eventId"), kind: "other", method: "email", deliveredAt: when9.toISOString(), copyToOmbudsmanAt: when9.toISOString(), note: "Transfer notice copy sent to the regional Long-Term Care Ombudsman." }));
     }
     if (plan.end) {
       const end = plan.end;
@@ -7246,9 +7515,9 @@ function buildCensusPlan(options) {
     b.reps = a.reps;
     if (a.sex === b.sex) b.sex = a.sex === "female" ? "male" : "female";
     places.sex.set(b.code, b.sex);
-    const when8 = at(-(300 + c * 140), "11:00");
-    admit({ r: a, when: when8, place: { aptUnit: "MEA", aptType: "seed_apt_companion" }, source: "community_home", agreement: "same" });
-    admit({ r: b, when: plus(when8, 5), place: { companionOf: a.code }, source: "community_home", agreement: "same" });
+    const when9 = at(-(300 + c * 140), "11:00");
+    admit({ r: a, when: when9, place: { aptUnit: "MEA", aptType: "seed_apt_companion" }, source: "community_home", agreement: "same" });
+    admit({ r: b, when: plus(when9, 5), place: { companionOf: a.code }, source: "community_home", agreement: "same" });
     al.push(a, b);
   }
   for (let i = 0; i < P.alSingles; i += 1) {
@@ -7272,23 +7541,23 @@ function buildCensusPlan(options) {
   }
   const homeDispositions = ["community_home", "community_home", "assisted_living", "community_home"];
   for (let k = 0; k < P.birchBeforeDischarged; k += 1) {
-    const day15 = -58 + Math.round(k * 54 / Math.max(1, P.birchBeforeDischarged - 1));
+    const day19 = -58 + Math.round(k * 54 / Math.max(1, P.birchBeforeDischarged - 1));
     const r = birchBefore[k];
     ending.add(r.code);
-    discharge(r.code, at(day15, `${10 + k % 3}:30`), { disposition: homeDispositions[k % homeDispositions.length] });
+    discharge(r.code, at(day19, `${10 + k % 3}:30`), { disposition: homeDispositions[k % homeDispositions.length] });
   }
   const birchNew = [];
   for (let j = 0; j < P.birchAdmits; j += 1) {
-    const day15 = -57 + Math.round(j * 56 / Math.max(1, P.birchAdmits - 1));
+    const day19 = -57 + Math.round(j * 56 / Math.max(1, P.birchAdmits - 1));
     const r = remember(newPerson(j % 3 === 1 ? "medicare_advantage" : "medicare_a"));
-    birchNew.push({ r, day: day15 });
+    birchNew.push({ r, day: day19 });
     const last = j === P.birchAdmits - 1;
-    admit({ r, when: at(day15, `${15 + j % 4}:${String(j * 17 % 60).padStart(2, "0")}`), place: { units: ["BIR"] }, source: "acute_hospital", agreement: last ? "none" : "later", qualifying: r.payer === "medicare_a" });
+    admit({ r, when: at(day19, `${15 + j % 4}:${String(j * 17 % 60).padStart(2, "0")}`), place: { units: ["BIR"] }, source: "acute_hospital", agreement: last ? "none" : "later", qualifying: r.payer === "medicare_a" });
   }
   for (let j = 0; j < P.birchAdmitsDischarged; j += 1) {
-    const { r, day: day15 } = birchNew[j];
+    const { r, day: day19 } = birchNew[j];
     ending.add(r.code);
-    discharge(r.code, at(day15 + 21, "11:15"), { disposition: "community_home" });
+    discharge(r.code, at(day19 + 21, "11:15"), { disposition: "community_home" });
   }
   const toLongTerm = birchNew.find((entry, j) => j >= P.birchAdmitsDischarged && entry.day <= -29);
   used.add(toLongTerm.r.code);
@@ -7369,21 +7638,21 @@ function buildCensusPlan(options) {
   mc.push(mcNew);
   admit({ r: mcNew, when: at(-15, "10:40"), place: { aptUnit: "HAR" }, source: "assisted_living", agreement: "later" });
   const slot = (id, startsAt, openedAt) => schedule(openedAt, () => emit("tour_slots", id, PATEL, openedAt, { slots: [{ startsAt: startsAt.toISOString(), minutes: 45, capacity: 2, kind: "either" }] }));
-  const phoneLead = (id, when8, input) => {
+  const phoneLead = (id, when9, input) => {
     const [first, ...rest] = input.contactName.split(" ");
-    schedule(when8, () => emit("inquiry_phone", id, PATEL, when8, { contactName: input.contactName, contactEmail: familyEmail(first, rest.join(""), input.n), contactPhone: familyPhone(input.n), relationship: input.relationship, message: input.message, forWhomFirstName: input.forWhom[0], forWhomLastName: input.forWhom[1], desiredSetting: input.setting, consentToContact: true, source: input.source ?? "phone", referralSourceId: input.referralSourceId ?? null }));
+    schedule(when9, () => emit("inquiry_phone", id, PATEL, when9, { contactName: input.contactName, contactEmail: familyEmail(first, rest.join(""), input.n), contactPhone: familyPhone(input.n), relationship: input.relationship, message: input.message, forWhomFirstName: input.forWhom[0], forWhomLastName: input.forWhom[1], desiredSetting: input.setting, consentToContact: true, source: input.source ?? "phone", referralSourceId: input.referralSourceId ?? null }));
     return key("inquiry_phone", id);
   };
-  const activity = (id, lead, when8, kind, summary) => schedule(when8, () => emit("activity", id, PATEL, when8, { lead: ref2(lead, "leadId"), kind, summary, at: when8.toISOString() }));
+  const activity = (id, lead, when9, kind, summary) => schedule(when9, () => emit("activity", id, PATEL, when9, { lead: ref2(lead, "leadId"), kind, summary, at: when9.toISOString() }));
   const tour = (id, lead, startsAt, bookedAt, outcome) => {
     slot(`slot_${id}`, startsAt, plus(bookedAt, -30));
     schedule(bookedAt, () => emit("tour_schedule", id, PATEL, bookedAt, { lead: ref2(lead, "leadId"), slotStartsAt: startsAt.toISOString(), kind: "in_person", notes: "Booked by phone." }));
     if (outcome) {
-      const when8 = outcome === "cancelled" ? plus(startsAt, -1440) : plus(startsAt, 75);
-      schedule(when8, () => emit("tour_move", id, PATEL, when8, { tour: ref2(key("tour_schedule", id), "tourId"), to: outcome, reason: outcome === "cancelled" ? "Family rescheduling after a hospital stay." : null }));
+      const when9 = outcome === "cancelled" ? plus(startsAt, -1440) : plus(startsAt, 75);
+      schedule(when9, () => emit("tour_move", id, PATEL, when9, { tour: ref2(key("tour_schedule", id), "tourId"), to: outcome, reason: outcome === "cancelled" ? "Family rescheduling after a hospital stay." : null }));
     }
   };
-  const leadMove = (id, lead, when8, to, lostReason = null, note = null) => schedule(when8, () => emit("lead_move", id, PATEL, when8, { lead: ref2(lead, "leadId"), to, lostReason, note }));
+  const leadMove = (id, lead, when9, to, lostReason = null, note = null) => schedule(when9, () => emit("lead_move", id, PATEL, when9, { lead: ref2(lead, "leadId"), to, lostReason, note }));
   const agnesLead = phoneLead("agnes", at(-40, "10:15"), { contactName: "Janet Whitfield", relationship: "Daughter", forWhom: ["Agnes", "Whitfield"], setting: "assisted_living", message: "Mother is 86 and no longer safe living alone after a fall; wants a one-bedroom.", n: 61 });
   activity("agnes_call", agnesLead, at(-40, "10:40"), "call", "Discussed care needs, pricing and the one-bedroom waitlist. Tour booked.");
   tour("agnes", agnesLead, at(-35, "14:00"), at(-38, "09:00"), "completed");
@@ -7408,7 +7677,7 @@ function buildCensusPlan(options) {
   const eleanorRef = key("referral", "eleanor");
   const refAt = at(-10, "13:20");
   schedule(refAt, () => emit("referral", "eleanor", PATEL, refAt, { sourceId: "seed_referral_source_scioto_ridge", firstName: "Eleanor", lastName: "Whitcombe", dateOfBirth: "1938-09-21", desiredSetting: "nursing_facility", expectedPayer: "medicare_a", clinicalSummary: "Right hip fracture after a fall at home; ORIF on hospital day 1. Weight bearing as tolerated. Needs PT/OT five days a week, pain management and wound checks.", pasrrLevel1: { completedAt: at(-11, "16:00").toISOString(), result: "Level I negative: Level II not required." }, responseHours: 4, receivedAt: refAt.toISOString() }));
-  const referralMove = (id, refKey, when8, to, extra = {}) => schedule(when8, () => emit("referral_move", id, PATEL, when8, { referral: ref2(refKey, "referralId"), to, ...extra }));
+  const referralMove = (id, refKey, when9, to, extra = {}) => schedule(when9, () => emit("referral_move", id, PATEL, when9, { referral: ref2(refKey, "referralId"), to, ...extra }));
   referralMove("eleanor_review", eleanorRef, at(-10, "13:50"), "clinical_review");
   referralMove("eleanor_payer", eleanorRef, at(-10, "14:30"), "payer_check");
   const eleanorAccept = at(-10, "15:10");
@@ -7463,9 +7732,9 @@ function buildCensusPlan(options) {
       { id: "web_4", day: -1, time: "12:05", name: "Douglas Pellegrino", forWhom: ["Ethel", "Pellegrino"], setting: "memory_care", message: "Mom has dementia and is getting lost. What does memory care cost?" }
     ];
     web.forEach((w, i) => {
-      const when8 = at(w.day, w.time);
+      const when9 = at(w.day, w.time);
       const [first, ...rest] = w.name.split(" ");
-      schedule(when8, () => emit("inquiry_web", w.id, PUBLIC, when8, { communitySlug: COMMUNITY.slug, contactName: w.name, contactEmail: familyEmail(first, rest.join(""), 70 + i), contactPhone: familyPhone(70 + i), relationship: "Family", message: w.message, forWhomFirstName: w.forWhom[0], forWhomLastName: w.forWhom[1], desiredSetting: w.setting, consentToContact: true, website: "" }));
+      schedule(when9, () => emit("inquiry_web", w.id, PUBLIC, when9, { communitySlug: COMMUNITY.slug, contactName: w.name, contactEmail: familyEmail(first, rest.join(""), 70 + i), contactPhone: familyPhone(70 + i), relationship: "Family", message: w.message, forWhomFirstName: w.forWhom[0], forWhomLastName: w.forWhom[1], desiredSetting: w.setting, consentToContact: true, website: "" }));
     });
     const contacted = [
       ["call_1", -12, "Karen Zielinski", ["Doris", "Zielinski"], "assisted_living", "Asked about respite stays while the family travels."],
@@ -7474,16 +7743,16 @@ function buildCensusPlan(options) {
       ["call_4", -5, "Kevin Dawkins", ["Earl", "Dawkins"], "independent_living", "Couple selling their house in spring; wants a waitlist position."],
       ["call_5", -4, "Denise Fairbanks", ["Virginia", "Fairbanks"], "assisted_living", "Price comparison with two other communities."]
     ];
-    contacted.forEach(([id, day15, name, forWhom, setting, message], i) => {
-      const lead = phoneLead(id, at(day15, "11:20"), { contactName: name, relationship: "Son or daughter", forWhom: [forWhom[0], forWhom[1]], setting, message, n: 80 + i });
-      activity(`${id}_email`, lead, at(day15, "15:05"), "email", "Sent the brochure, pricing sheet and the dining menu.");
+    contacted.forEach(([id, day19, name, forWhom, setting, message], i) => {
+      const lead = phoneLead(id, at(day19, "11:20"), { contactName: name, relationship: "Son or daughter", forWhom: [forWhom[0], forWhom[1]], setting, message, n: 80 + i });
+      activity(`${id}_email`, lead, at(day19, "15:05"), "email", "Sent the brochure, pricing sheet and the dining menu.");
     });
     const futureSlots = [];
     for (let d = 1; d <= 14; d += 1) {
-      const day15 = date3(d);
-      const weekday2 = (/* @__PURE__ */ new Date(`${day15}T12:00:00Z`)).getUTCDay();
+      const day19 = date3(d);
+      const weekday2 = (/* @__PURE__ */ new Date(`${day19}T12:00:00Z`)).getUTCDay();
       if (weekday2 === 0) continue;
-      for (const time2 of weekday2 === 6 ? ["11:00"] : ["10:00", "14:00"]) futureSlots.push({ startsAt: zonedInstant(tz, day15, time2).toISOString(), minutes: 45, capacity: 2, kind: "either" });
+      for (const time2 of weekday2 === 6 ? ["11:00"] : ["10:00", "14:00"]) futureSlots.push({ startsAt: zonedInstant(tz, day19, time2).toISOString(), minutes: 45, capacity: 2, kind: "either" });
     }
     schedule(T, () => emit("tour_slots", "next_two_weeks", PATEL, T, { slots: futureSlots.slice(0, 60) }));
     const upcoming = [
@@ -7491,8 +7760,8 @@ function buildCensusPlan(options) {
       ["tour_2", -4, "Julie Thibodeaux", ["Lorraine", "Thibodeaux"], "memory_care", 3],
       ["tour_3", -3, "Gregory Jessup", ["Raymond", "Jessup"], "independent_living", 6]
     ];
-    upcoming.forEach(([id, day15, name, forWhom, setting, slotIndex], i) => {
-      const lead = phoneLead(id, at(day15, "10:05"), { contactName: name, relationship: "Family", forWhom: [forWhom[0], forWhom[1]], setting, message: "Wants to see the apartments and have lunch in the dining room.", n: 90 + i });
+    upcoming.forEach(([id, day19, name, forWhom, setting, slotIndex], i) => {
+      const lead = phoneLead(id, at(day19, "10:05"), { contactName: name, relationship: "Family", forWhom: [forWhom[0], forWhom[1]], setting, message: "Wants to see the apartments and have lunch in the dining room.", n: 90 + i });
       const s = futureSlots[slotIndex];
       schedule(T, () => emit("tour_schedule", id, PATEL, T, { lead: ref2(lead, "leadId"), slotStartsAt: s.startsAt, kind: "in_person", notes: "Lunch in the bistro after the tour." }));
     });
@@ -7529,22 +7798,22 @@ function buildCensusPlan(options) {
   const portal = portalCandidates.filter((_, i) => i % stride === 0).slice(0, P.portalAccounts);
   portal.forEach((r, i) => {
     const admittedDay = Math.ceil((admittedAt.get(r.code).getTime() - T.getTime()) / 864e5) - 1;
-    let day15 = Math.max(-50 + Math.floor(i * 44 / Math.max(1, portal.length)), admittedDay + 2);
+    let day19 = Math.max(-50 + Math.floor(i * 44 / Math.max(1, portal.length)), admittedDay + 2);
     const pending = i >= portal.length - Math.max(1, Math.round(P.portalAccounts / 8));
-    if (pending || day15 > -2) day15 = -2;
-    const inviteAt = at(day15, "10:00");
+    if (pending || day19 > -2) day19 = -2;
+    const inviteAt = at(day19, "10:00");
     const rep = r.reps[0];
     schedule(inviteAt, () => emit("invite", r.code, BROOKS, inviteAt, { resident: ref2(key("admit", r.code), "residentId"), priority: rep.contactPriority }));
     if (pending) return;
-    const acceptAt2 = at(day15, "20:30");
+    const acceptAt2 = at(day19, "20:30");
     schedule(acceptAt2, () => emit("accept", r.code, PUBLIC, acceptAt2, { account: ref2(key("invite", r.code), "accountId") }));
     const roles = rep.roles;
     const scopes = roles.includes("guardian") ? ["updates", "calendar", "care_summary", "documents", "statements", "trust_balance"] : roles.includes("healthcare_poa") && roles.includes("financial_responsible") ? ["updates", "calendar", "documents", "care_summary", "statements"] : roles.includes("healthcare_poa") ? ["updates", "calendar", "documents", "care_summary"] : ["updates", "calendar", "statements", "payments"];
-    const proposeAt = at(day15 + 1, "09:15");
+    const proposeAt = at(day19 + 1, "09:15");
     schedule(proposeAt, () => emit("scope_propose", r.code, PATEL, proposeAt, { resident: ref2(key("admit", r.code), "residentId"), priority: rep.contactPriority, scopes }));
     const awaiting = i >= portal.length - Math.max(1, Math.round(P.portalAccounts / 10)) - Math.max(1, Math.round(P.portalAccounts / 8));
-    if (!awaiting && day15 + 1 <= -1) {
-      const grantAt = at(day15 + 1, "13:40");
+    if (!awaiting && day19 + 1 <= -1) {
+      const grantAt = at(day19 + 1, "13:40");
       schedule(grantAt, () => emit("scope_grant", r.code, BROOKS, grantAt, { proposals: ref2(key("scope_propose", r.code), "grantIds") }));
     }
   });
@@ -7567,8 +7836,8 @@ function buildCensusPlan(options) {
     schedule(endAt, () => emit("break_glass_end", "rapid_response", LINDQVIST, endAt, { grant: ref2(key("break_glass_open", "rapid_response"), "grantId") }));
   });
   for (let d = -(P.signOffDays + 1); d <= -2; d += 1) {
-    const when8 = at(d + 1, "09:30");
-    schedule(when8, () => emit("sign_off", date3(d), LINDQVIST, when8, { date: date3(d), note: d === -9 ? "Reconciled with the Birch hospital transfer log." : null }));
+    const when9 = at(d + 1, "09:30");
+    schedule(when9, () => emit("sign_off", date3(d), LINDQVIST, when9, { date: date3(d), note: d === -9 ? "Reconciled with the Birch hospital transfer log." : null }));
   }
   schedule(T, () => emit("snapshot", date3(-1), SCHEDULER, T, { date: date3(-1) }));
   schedule(T, () => emit("clock_sweep", "anchor", SCHEDULER, T, {}));
@@ -7591,7 +7860,7 @@ function buildCensusPlan(options) {
   const residential = {};
   for (const unit of RESIDENTIAL_UNITS) {
     const apts = [...places.apts.values()].filter((apt) => apt.unit === unit.code);
-    residential[unit.code] = { residents: apts.reduce((n, apt) => n + apt.occupants.length, 0), occupied: apts.filter((a) => a.status === "occupied").length, reserved: apts.filter((a) => a.status === "reserved").length, turnover: apts.filter((a) => a.status === "turnover").length, available: apts.filter((a) => a.status === "available").length };
+    residential[unit.code] = { residents: apts.reduce((n2, apt) => n2 + apt.occupants.length, 0), occupied: apts.filter((a) => a.status === "occupied").length, reserved: apts.filter((a) => a.status === "reserved").length, turnover: apts.filter((a) => a.status === "turnover").length, available: apts.filter((a) => a.status === "available").length };
   }
   const payers = {};
   let hospice = 0;
@@ -7837,8 +8106,8 @@ async function execute(uow, actor, step, results) {
     case "scope_propose": {
       const representativeId = await representativeOf(uow, str(i.resident), i.priority);
       const grantIds = [];
-      for (const scope2 of i.scopes) {
-        const proposed = await proposePortalScope(uow, actor, { representativeId, scope: scope2 });
+      for (const scope3 of i.scopes) {
+        const proposed = await proposePortalScope(uow, actor, { representativeId, scope: scope3 });
         if (proposed.status === "proposed") grantIds.push(proposed.grantId);
       }
       return { grantIds };
@@ -8102,7 +8371,7 @@ async function createCarePlan(uow, actor, input) {
         carePlanId: plan.id,
         kind: oneOf(item.kind, ["focus", "goal", "intervention"], "item type"),
         parentId,
-        text: text16(item.text, "Item text"),
+        text: text17(item.text, "Item text"),
         discipline: item.discipline ?? "nursing",
         frequency: item.frequency ? oneOf(item.frequency, FREQUENCIES, "frequency") : "as_needed",
         targetDate: item.targetDate ? /* @__PURE__ */ new Date(`${item.targetDate}T00:00:00Z`) : null,
@@ -8144,13 +8413,13 @@ async function generatePocSlots(uow, carePlanId) {
   const plan = await uow.tx.carePlan.findUnique({ where: { id: carePlanId }, include: { items: { where: { kind: "intervention", status: "active" } } } });
   if (!plan?.communityId) return 0;
   const tz = await communityZone(uow.tx, plan.communityId);
-  const today = localDate(tz, uow.now);
+  const today2 = localDate(tz, uow.now);
   let made = 0;
   for (const item of plan.items) {
     const times = TIMES[item.frequency ?? ""] ?? [];
     if (!times.length) continue;
-    if (item.frequency === "weekly" && item.createdAt && uow.now.getTime() - item.createdAt.getTime() > 6e4 && (/* @__PURE__ */ new Date(`${today}T00:00:00Z`)).getUTCDay() !== item.createdAt.getUTCDay()) continue;
-    for (const date3 of [today, addDays(today, 1)]) {
+    if (item.frequency === "weekly" && item.createdAt && uow.now.getTime() - item.createdAt.getTime() > 6e4 && (/* @__PURE__ */ new Date(`${today2}T00:00:00Z`)).getUTCDay() !== item.createdAt.getUTCDay()) continue;
+    for (const date3 of [today2, addDays(today2, 1)]) {
       for (const hhmm of times) {
         const dueAt = zonedInstant(tz, date3, hhmm);
         if (dueAt.getTime() < uow.now.getTime() - 12 * 36e5 || dueAt.getTime() > uow.now.getTime() + 24 * 36e5) continue;
@@ -8187,13 +8456,13 @@ async function enterOrder(uow, actor, input) {
       communityId: resident3.communityId,
       reference: await ref(uow, "ORD"),
       kind,
-      summary: text16(input.summary, "Order", { max: 500 }),
+      summary: text17(input.summary, "Order", { max: 500 }),
       instructions: input.instructions ?? "",
       source,
       readBack: Boolean(input.readBack),
       status: "active",
-      startAt: when7(input.startAt, "startAt", uow.now),
-      stopAt: input.stopAt ? when7(input.stopAt, "stopAt") : null,
+      startAt: when8(input.startAt, "startAt", uow.now),
+      stopAt: input.stopAt ? when8(input.stopAt, "stopAt") : null,
       enteredById: userOf(actor),
       prescriberId: input.prescriberId ?? null,
       prescriberName: input.prescriberName ?? "",
@@ -8214,9 +8483,9 @@ async function enterOrder(uow, actor, input) {
         communityId: resident3.communityId,
         orderId: order.id,
         referenceId: med.referenceId ?? null,
-        drugName: text16(med.drugName, "Drug"),
+        drugName: text17(med.drugName, "Drug"),
         dose: String(qty(med.dose, "Dose")),
-        doseUnit: text16(med.doseUnit, "Dose unit"),
+        doseUnit: text17(med.doseUnit, "Dose unit"),
         route: med.route ?? null,
         prn: Boolean(med.prn),
         prnReason: med.prnReason ?? "",
@@ -8247,7 +8516,7 @@ async function countersignOrder(uow, actor, input) {
 }
 async function discontinueOrder(uow, actor, input) {
   const order = await lockRow(uow.tx, "Order", input.orderId);
-  const reason = text16(input.reason, "Reason", { min: 3 });
+  const reason = text17(input.reason, "Reason", { min: 3 });
   await casUpdate(uow, { model: "Order", id: order.id, version: order.version, from: ["active"], to: "discontinued", actor, eventType: "order.discontinued", reason, data: { stopAt: uow.now, discontinuedReason: reason } });
   await uow.tx.administrationSlot.updateMany({ where: { orderId: order.id, status: "scheduled", scheduledFor: { gt: uow.now } }, data: { status: "not_given", settledAt: uow.now, version: { increment: 1 } } });
   return { orderId: order.id, status: "discontinued" };
@@ -8323,8 +8592,8 @@ async function decideApproval(uow, actor, input) {
     throw new DomainError(Codes.NOT_AUTHORIZED, `Deciding this needs the ${request.requiredPermission} permission.`);
   }
   if (request.communityId && !actor.permissions.has("canManageOperator")) {
-    const today = /* @__PURE__ */ new Date(`${uow.now.toISOString().slice(0, 10)}T00:00:00Z`);
-    const assigned = await uow.tx.staffAssignment.findFirst({ where: { userId: actor.userId, communityId: request.communityId, status: "active", OR: [{ effectiveTo: null }, { effectiveTo: { gte: today } }] }, select: { id: true } });
+    const today2 = /* @__PURE__ */ new Date(`${uow.now.toISOString().slice(0, 10)}T00:00:00Z`);
+    const assigned = await uow.tx.staffAssignment.findFirst({ where: { userId: actor.userId, communityId: request.communityId, status: "active", OR: [{ effectiveTo: null }, { effectiveTo: { gte: today2 } }] }, select: { id: true } });
     if (!assigned) throw new DomainError(Codes.NOT_AUTHORIZED, "Only someone assigned to this community can decide this request.");
   }
   if (request.expiresAt && new Date(request.expiresAt).getTime() <= uow.now.getTime()) {
@@ -8369,8 +8638,8 @@ async function createIncident(uow, actor, input) {
   const communityId = resident3?.communityId ?? input.communityId;
   if (!communityId) return invalid("Choose a community.", "communityId");
   const kind = oneOf(input.kind, INCIDENT_KINDS, "incident type");
-  const occurredAt = input.occurredAt ? when7(input.occurredAt, "occurredAt") : uow.now;
-  const discoveredAt = input.discoveredAt ? when7(input.discoveredAt, "discoveredAt") : occurredAt;
+  const occurredAt = input.occurredAt ? when8(input.occurredAt, "occurredAt") : uow.now;
+  const discoveredAt = input.discoveredAt ? when8(input.discoveredAt, "discoveredAt") : occurredAt;
   if (occurredAt.getTime() > uow.now.getTime() + 5 * 6e4) invalid("An incident cannot be in the future.", "occurredAt");
   const alleged = kind === "alleged_abuse" || kind === "misappropriation" || kind === "injury_unknown_source" || Boolean(input.allegedAbuseOrSbi);
   const allegedOther = !alleged && (kind === "alleged_neglect" || Boolean(input.allegedOther));
@@ -8380,7 +8649,7 @@ async function createIncident(uow, actor, input) {
       residentId: resident3?.id ?? null,
       reference: await ref(uow, "INC"),
       kind,
-      description: text16(input.description, "Description", { min: 5 }),
+      description: text17(input.description, "Description", { min: 5 }),
       location: input.location ?? "",
       severity: input.severity ? oneOf(input.severity, SEVERITIES, "severity") : "no_injury",
       status: "reported",
@@ -8399,7 +8668,7 @@ async function createIncident(uow, actor, input) {
   });
   auditCreate(uow, actor, "Incident", incident.id, "incident.reported", { kind, residentId: resident3?.id ?? null, alleged, allegedOther, severity: incident.severity });
   for (const p of input.parties ?? []) {
-    await uow.tx.incidentParty.create({ data: { communityId, incidentId: incident.id, residentId: resident3?.id ?? null, role: oneOf(p.role, ["involved_resident", "witness", "staff_involved", "alleged_perpetrator", "family_notified", "physician_notified"], "party role"), name: text16(p.name, "Name") } });
+    await uow.tx.incidentParty.create({ data: { communityId, incidentId: incident.id, residentId: resident3?.id ?? null, role: oneOf(p.role, ["involved_resident", "witness", "staff_involved", "alleged_perpetrator", "family_notified", "physician_notified"], "party role"), name: text17(p.name, "Name") } });
   }
   const setting = resident3?.stay?.setting ?? null;
   const clockBase = { communityId, residentId: resident3?.id ?? null, subjectType: "Incident", subjectId: incident.id, startedAt: discoveredAt, setting };
@@ -8439,7 +8708,7 @@ async function completeInvestigation(uow, actor, input) {
     to: "completed",
     actor,
     eventType: "incident.investigation_completed",
-    data: { findings: text16(input.findings, "Findings", { min: 5 }), rootCause: text16(input.rootCause, "Root cause", { min: 3 }), interventions: text16(input.interventions, "Interventions", { min: 3 }), completedAt: uow.now }
+    data: { findings: text17(input.findings, "Findings", { min: 5 }), rootCause: text17(input.rootCause, "Root cause", { min: 3 }), interventions: text17(input.interventions, "Interventions", { min: 3 }), completedAt: uow.now }
   });
   return { investigationId: inv.id };
 }
@@ -8465,8 +8734,8 @@ async function draftRegulatoryReport(uow, actor, input) {
 async function recordReportSubmission(uow, actor, input) {
   const report = await lockRow(uow.tx, "RegulatoryReport", input.reportId);
   const channel = oneOf(input.channel, ["state_portal", "phone", "fax", "other"], "channel");
-  const confirmation = text16(input.confirmation, "Confirmation", { min: 2 });
-  const at = when7(input.submittedAt, "submittedAt", uow.now);
+  const confirmation = text17(input.confirmation, "Confirmation", { min: 2 });
+  const at = when8(input.submittedAt, "submittedAt", uow.now);
   if (at.getTime() > uow.now.getTime() + 5 * 6e4) invalid("A submission cannot be in the future.", "submittedAt");
   await casUpdate(uow, { model: "RegulatoryReport", id: report.id, version: report.version, from: ["draft"], to: "submitted", actor, eventType: "regulatory_report.submitted", data: { channel, confirmation, submittedAt: at, submittedById: userOf(actor) } });
   const evidence = report.kind === "f609_followup" ? "submission:state_incident_followup" : "submission:state_incident";
@@ -8490,7 +8759,7 @@ async function requestDowngrade(uow, actor, input) {
   const incident = await uow.tx.incident.findUnique({ where: { id: input.incidentId } });
   if (!incident) return notFound("Incident");
   if (incident.reportableDecision !== "reportable") throw new DomainError(Codes.GUARD_FAILED, "This incident is not marked reportable.");
-  const reason = text16(input.reason, "Reason", { min: 10 });
+  const reason = text17(input.reason, "Reason", { min: 10 });
   const request = await requestApproval(uow, actor, { action: "incident.downgrade", targetList: "Incident", targetId: incident.id, payload: { incidentId: incident.id, reason }, requiredPermission: "canApproveIncidentDowngrade", summary: `Downgrade ${incident.reference} to not reportable`, communityId: incident.communityId });
   return { approvalRequestId: request.id };
 }
@@ -8519,14 +8788,14 @@ async function generateAdministrationSlots(uow, communityId, residentId) {
     const d = { ...dd, order: dd.order };
     const times = Array.isArray(d.times) ? d.times : [];
     const first = localDate(tz, new Date(from));
-    for (let day15 = first; (/* @__PURE__ */ new Date(`${day15}T00:00:00Z`)).getTime() <= to + 864e5; day15 = addDays(day15, 1)) {
+    for (let day19 = first; (/* @__PURE__ */ new Date(`${day19}T00:00:00Z`)).getTime() <= to + 864e5; day19 = addDays(day19, 1)) {
       for (const hhmm of times) {
-        const at = zonedInstant(tz, day15, hhmm);
+        const at = zonedInstant(tz, day19, hhmm);
         const t = at.getTime();
         if (t < from || t > to) continue;
         if (d.order.startAt && t < d.order.startAt.getTime()) continue;
         if (d.order.stopAt && t >= d.order.stopAt.getTime()) continue;
-        const slotKey = `${d.id}:${day15}:${hhmm}`;
+        const slotKey = `${d.id}:${day19}:${hhmm}`;
         const result = await uow.tx.administrationSlot.createMany({
           data: [{ residentId: d.residentId, communityId, detailId: d.id, orderId: d.order.id, drugName: d.drugName, slotKey, scheduledFor: at, status: "scheduled" }],
           skipDuplicates: true
@@ -8542,7 +8811,7 @@ async function latestVital(uow, residentId, kind) {
 }
 function emergencyOf(input) {
   if (!input.emergency) return null;
-  return { reason: text16(input.emergencyReason ?? "", "Why this is an emergency", { min: 10 }) };
+  return { reason: text17(input.emergencyReason ?? "", "Why this is an emergency", { min: 10 }) };
 }
 async function administerDose(uow, actor, input) {
   const slot = await lockRow(uow.tx, "AdministrationSlot", input.slotId);
@@ -8551,7 +8820,7 @@ async function administerDose(uow, actor, input) {
   const detail = await uow.tx.medicationOrderDetail.findUniqueOrThrow({ where: { id: slot.detailId } });
   const order = await uow.tx.order.findUniqueOrThrow({ where: { id: detail.orderId }, select: { status: true } });
   if (order.status !== "active") throw new DomainError(Codes.GUARD_FAILED, "This order is no longer active.");
-  const actual = when7(input.administeredAt, "administeredAt", uow.now);
+  const actual = when8(input.administeredAt, "administeredAt", uow.now);
   const late = uow.now.getTime() - actual.getTime() > 30 * 6e4;
   if (actual.getTime() > uow.now.getTime() + 6e4) invalid("A dose cannot be recorded in the future.", "administeredAt");
   const minutesOff = Math.round((actual.getTime() - slot.scheduledFor.getTime()) / 6e4);
@@ -8629,8 +8898,8 @@ async function administerPrn(uow, actor, input) {
   if (!detail || !detail.prn || !detail.orderId) return notFound("PRN order");
   const order = await lockRow(uow.tx, "Order", detail.orderId);
   if (order.status !== "active") throw new DomainError(Codes.GUARD_FAILED, "This order is no longer active.");
-  const reason = text16(input.reason, "Reason for the PRN dose", { min: 3 });
-  const actual = when7(input.administeredAt, "administeredAt", uow.now);
+  const reason = text17(input.reason, "Reason for the PRN dose", { min: 3 });
+  const actual = when8(input.administeredAt, "administeredAt", uow.now);
   if (detail.prnMinIntervalMinutes) {
     const last = await uow.tx.medicationAdministration.findFirst({ where: { detailId: detail.id, outcome: "given" }, orderBy: { administeredAt: "desc" } });
     if (last?.administeredAt && actual.getTime() - last.administeredAt.getTime() < detail.prnMinIntervalMinutes * 6e4) {
@@ -8697,12 +8966,12 @@ async function receiveSupply(uow, actor, input) {
       residentId: input.residentId ?? null,
       referenceId: input.referenceId ?? null,
       unitLocationId: input.unitLocationId ?? null,
-      label: text16(input.label, "Label"),
+      label: text17(input.label, "Label"),
       kind,
       lot: input.lot ?? "",
       expiresOn: input.expiresOn ? /* @__PURE__ */ new Date(`${input.expiresOn}T00:00:00Z`) : null,
       controlled: Boolean(input.controlled),
-      unit: text16(input.unit, "Unit"),
+      unit: text17(input.unit, "Unit"),
       balance: "0",
       status: "active"
     }
@@ -8747,7 +9016,7 @@ async function destroySupply(uow, actor, input) {
   const q = input.quantity != null && input.quantity !== "" ? qty(input.quantity, "Quantity") : new Decimal(supply.balance.toString());
   if (q.lte(0)) invalid("Nothing to destroy.", "quantity");
   const posted = await postMovement(uow, actor, { supplyId: supply.id, kind: "destroy", quantity: q.negated(), reason: `Destroyed: ${input.method}`, witnessId: input.witnessId });
-  const row = await uow.tx.medicationDestruction.create({ data: { communityId: supply.communityId, supplyId: supply.id, quantity: q.toString(), method: text16(input.method, "Method"), destroyedAt: uow.now, destroyedById: userOf(actor), witnessId: input.witnessId, movementId: posted.movementId } });
+  const row = await uow.tx.medicationDestruction.create({ data: { communityId: supply.communityId, supplyId: supply.id, quantity: q.toString(), method: text17(input.method, "Method"), destroyedAt: uow.now, destroyedById: userOf(actor), witnessId: input.witnessId, movementId: posted.movementId } });
   const fresh = await uow.tx.medicationSupply.findUniqueOrThrow({ where: { id: supply.id } });
   if (new Decimal(fresh.balance.toString()).isZero()) await casUpdate(uow, { model: "MedicationSupply", id: fresh.id, version: fresh.version, from: ["active", "empty", "quarantined"], to: "destroyed", actor, eventType: "supply.destroyed" });
   return { destructionId: row.id };
@@ -8759,7 +9028,7 @@ async function drawFromEkit(uow, actor, input) {
   if (supply.communityId !== resident3.communityId) return notFound("E-kit");
   const q = qty(input.quantity, "Quantity");
   if (q.lte(0)) invalid("Quantity must be more than zero.", "quantity");
-  const posted = await postMovement(uow, actor, { supplyId: supply.id, kind: "administer", quantity: q.negated(), reason: `E-kit for resident: ${text16(input.reason, "Reason")}`, witnessId: input.witnessId ?? null, residentId: resident3.id, emergency: emergencyOf(input) });
+  const posted = await postMovement(uow, actor, { supplyId: supply.id, kind: "administer", quantity: q.negated(), reason: `E-kit for resident: ${text17(input.reason, "Reason")}`, witnessId: input.witnessId ?? null, residentId: resident3.id, emergency: emergencyOf(input) });
   await createTask(uow, actor, { communityId: supply.communityId, residentId: resident3.id, kind: "general", title: `E-kit used: restock and pharmacy verification for ${supply.label}`, ownerRole: ROLE_NAMES.charge, dedupeKey: `ekit:${posted.movementId}`, subjectType: "MedicationSupply", subjectId: supply.id });
   return posted;
 }
@@ -8817,7 +9086,7 @@ async function resolveDiscrepancy(uow, actor, input) {
   const count = await uow.tx.shiftCount.findUniqueOrThrow({ where: { id: d.shiftCountId } });
   if (userOf(actor) === count.outgoingId || userOf(actor) === count.incomingId) throw new DomainError(Codes.SELF_APPROVAL, "A nurse who did the count cannot resolve its discrepancy.");
   const resolution = oneOf(input.resolution, ["recount_matched", "documentation_error", "loss_suspected", "found"], "resolution");
-  const note = text16(input.note, "Note", { min: 10 });
+  const note = text17(input.note, "Note", { min: 10 });
   let adjustmentId = null;
   const expected = new Decimal(d.expected.toString());
   const counted = new Decimal(d.incomingCounted.toString());
@@ -8854,9 +9123,9 @@ var import_node_crypto8 = require("node:crypto");
 var import_zod2 = require("zod");
 init_common();
 var emptyFlow = () => ({ records: [], events: [], candidates: [], resolutions: [], pending: 0 });
-var hours2 = (n) => n * 36e5;
-var day5 = (d) => d.toISOString().slice(0, 10);
-var digestText = (text17) => (0, import_node_crypto8.createHash)("sha256").update(text17).digest("hex");
+var hours2 = (n2) => n2 * 36e5;
+var day6 = (d) => d.toISOString().slice(0, 10);
+var digestText = (text18) => (0, import_node_crypto8.createHash)("sha256").update(text18).digest("hex");
 var detector = (code, label2, description, params, find) => ({
   code,
   label: label2,
@@ -8879,7 +9148,7 @@ var lowFluid = detector("low_fluid_intake", "Low fluid intake over 24 hours", "R
     const rows = byResident2.get(r.id) ?? [];
     const total = rows.reduce((sum, row) => sum + Number(row.amountMl ?? 0), 0);
     if (total < threshold) {
-      out.push({ residentId: r.id, key: day5(now), title: `Low fluid intake: ${total} mL in 24 hours`, detail: `Threshold ${threshold} mL. ${rows.length} entries charted.`, severity: total < threshold / 2 ? "urgent" : "warning", ownerRole: ROLE_NAMES.charge, evidence: rows.slice(0, 10).map((row) => ({ recordType: "IntakeRecord", recordId: row.id, quote: `${row.amountMl ?? 0} mL` })) });
+      out.push({ residentId: r.id, key: day6(now), title: `Low fluid intake: ${total} mL in 24 hours`, detail: `Threshold ${threshold} mL. ${rows.length} entries charted.`, severity: total < threshold / 2 ? "urgent" : "warning", ownerRole: ROLE_NAMES.charge, evidence: rows.slice(0, 10).map((row) => ({ recordType: "IntakeRecord", recordId: row.id, quote: `${row.amountMl ?? 0} mL` })) });
     }
   }
   return out;
@@ -8889,15 +9158,15 @@ var weightLoss = detector("weight_loss", "Weight loss over 30 days", "Weight dow
   const days = Number(params.days ?? 30);
   const since = new Date(now.getTime() - days * 864e5);
   const rows = await tx.vitalSign.findMany({ where: { communityId, kind: "weight", takenAt: { gte: since, lte: now }, ...residentId ? { residentId } : {} }, orderBy: { takenAt: "asc" }, select: { id: true, residentId: true, value: true, takenAt: true } });
-  const by7 = /* @__PURE__ */ new Map();
-  for (const row of rows) by7.set(row.residentId, [...by7.get(row.residentId) ?? [], row]);
+  const by8 = /* @__PURE__ */ new Map();
+  for (const row of rows) by8.set(row.residentId, [...by8.get(row.residentId) ?? [], row]);
   const out = [];
-  for (const [rid, list16] of by7) {
-    if (list16.length < 2) continue;
-    const first = list16[0];
-    const last = list16[list16.length - 1];
+  for (const [rid, list17] of by8) {
+    if (list17.length < 2) continue;
+    const first = list17[0];
+    const last = list17[list17.length - 1];
     const loss = (Number(first.value) - Number(last.value)) / Number(first.value) * 100;
-    if (loss >= pct) out.push({ residentId: rid, key: day5(last.takenAt), title: `Weight down ${loss.toFixed(1)}% in ${days} days`, detail: `${first.value} kg to ${last.value} kg.`, severity: loss >= pct * 2 ? "urgent" : "warning", ownerRole: ROLE_NAMES.don, evidence: [{ recordType: "VitalSign", recordId: first.id, quote: `${first.value} kg` }, { recordType: "VitalSign", recordId: last.id, quote: `${last.value} kg` }] });
+    if (loss >= pct) out.push({ residentId: rid, key: day6(last.takenAt), title: `Weight down ${loss.toFixed(1)}% in ${days} days`, detail: `${first.value} kg to ${last.value} kg.`, severity: loss >= pct * 2 ? "urgent" : "warning", ownerRole: ROLE_NAMES.don, evidence: [{ recordType: "VitalSign", recordId: first.id, quote: `${first.value} kg` }, { recordType: "VitalSign", recordId: last.id, quote: `${last.value} kg` }] });
   }
   return out;
 });
@@ -8907,23 +9176,23 @@ var woundOverdue = detector("wound_assessment_overdue", "Wound assessment overdu
   for (const w of wounds) {
     const interval = (w.assessmentIntervalDays ?? 7) * 864e5;
     const last = w.lastAssessedAt?.getTime() ?? 0;
-    if (now.getTime() - last > interval) out.push({ residentId: w.residentId, key: `${w.id}:${day5(new Date(last || 0))}`, title: `Wound assessment overdue: ${w.site}`, detail: w.lastAssessedAt ? `Last assessed ${day5(w.lastAssessedAt)}.` : "Never assessed.", severity: "warning", ownerRole: ROLE_NAMES.charge, evidence: [{ recordType: "Wound", recordId: w.id, quote: w.site }] });
+    if (now.getTime() - last > interval) out.push({ residentId: w.residentId, key: `${w.id}:${day6(new Date(last || 0))}`, title: `Wound assessment overdue: ${w.site}`, detail: w.lastAssessedAt ? `Last assessed ${day6(w.lastAssessedAt)}.` : "Never assessed.", severity: "warning", ownerRole: ROLE_NAMES.charge, evidence: [{ recordType: "Wound", recordId: w.id, quote: w.site }] });
   }
   return out;
 });
 var missedDoses = detector("missed_doses", "Repeated missed doses", "A number of missed doses for one resident in 24 hours.", import_zod2.z.object({ count: import_zod2.z.number().int().min(2).max(20).default(2) }), async ({ tx, communityId, now, params, residentId }) => {
   const need = Number(params.count ?? 2);
   const slots = await tx.administrationSlot.findMany({ where: { communityId, status: "missed", scheduledFor: { gte: new Date(now.getTime() - hours2(24)), lte: now }, ...residentId ? { residentId } : {} }, select: { id: true, residentId: true, drugName: true } });
-  const by7 = /* @__PURE__ */ new Map();
-  for (const s of slots) by7.set(s.residentId, [...by7.get(s.residentId) ?? [], s]);
-  return [...by7].filter(([, list16]) => list16.length >= need).map(([rid, list16]) => ({
+  const by8 = /* @__PURE__ */ new Map();
+  for (const s of slots) by8.set(s.residentId, [...by8.get(s.residentId) ?? [], s]);
+  return [...by8].filter(([, list17]) => list17.length >= need).map(([rid, list17]) => ({
     residentId: rid,
-    key: day5(now),
-    title: `${list16.length} missed doses in 24 hours`,
-    detail: [...new Set(list16.map((s) => s.drugName))].join(", "),
+    key: day6(now),
+    title: `${list17.length} missed doses in 24 hours`,
+    detail: [...new Set(list17.map((s) => s.drugName))].join(", "),
     severity: "urgent",
     ownerRole: ROLE_NAMES.don,
-    evidence: list16.slice(0, 10).map((s) => ({ recordType: "AdministrationSlot", recordId: s.id, quote: s.drugName ?? void 0 }))
+    evidence: list17.slice(0, 10).map((s) => ({ recordType: "AdministrationSlot", recordId: s.id, quote: s.drugName ?? void 0 }))
   }));
 });
 var progressNotes = {
@@ -8940,7 +9209,7 @@ var progressNotes = {
       take: 500,
       select: { id: true, residentId: true, eventAt: true, body: true }
     });
-    return { ...flow, records: [...flow.records, ...notes.map((n) => ({ recordType: "ProgressNote", recordId: n.id, residentId: n.residentId, at: n.eventAt, text: n.body, digest: digestText(n.body) }))] };
+    return { ...flow, records: [...flow.records, ...notes.map((n2) => ({ recordType: "ProgressNote", recordId: n2.id, residentId: n2.residentId, at: n2.eventAt, text: n2.body, digest: digestText(n2.body) }))] };
   }
 };
 var FALL_EXTRACTOR = "extract.fall_from_note@1";
@@ -8958,7 +9227,7 @@ var fallFromNote = {
   async run({ tx }, flow) {
     const notes = flow.records.filter((r) => r.recordType === "ProgressNote");
     if (!notes.length) return flow;
-    const keys = notes.map((n) => factCacheKey(FALL_EXTRACTOR, n.recordType, n.recordId, n.digest));
+    const keys = notes.map((n2) => factCacheKey(FALL_EXTRACTOR, n2.recordType, n2.recordId, n2.digest));
     const facts = new Map((await tx.extractedFact.findMany({ where: { cacheKey: { in: keys } }, select: { cacheKey: true, outcome: true, facts: true } })).map((f) => [f.cacheKey, f]));
     const events = [];
     let pending = 0;
@@ -9055,7 +9324,7 @@ async function runGraph(ctx, graph) {
 }
 var graphUses = (graph, block) => {
   const nodes = graph?.nodes;
-  return Array.isArray(nodes) && nodes.some((n) => n?.block === block);
+  return Array.isArray(nodes) && nodes.some((n2) => n2?.block === block);
 };
 var LIBRARY = [
   { code: "low_fluid_intake", name: "Low fluid intake", description: "Residents who drank less than the daily threshold.", graph: { nodes: [{ block: "low_fluid_intake", params: { thresholdMl: 1e3 } }] }, policy: { thresholdMl: 1e3 } },
@@ -9340,9 +9609,1495 @@ async function seedClinical(uow, actor = systemActor("seed")) {
   return out;
 }
 
+// features/keystone/mds/service.ts
+init_actor();
+init_cas();
+init_errors();
+init_sequence();
+
+// features/keystone/pdpm/classify.ts
+init_decimal();
+
+// features/keystone/lib/money.ts
+init_decimal();
+var MINOR_DIGITS = { USD: 2, EUR: 2, GBP: 2, CHF: 2, CAD: 2, AUD: 2, SEK: 2, JPY: 0, KRW: 0, BHD: 3, KWD: 3 };
+var isCurrencyCode = (code) => typeof code === "string" && /^[A-Z]{3}$/.test(code);
+function minorDigits(currencyCode) {
+  if (!isCurrencyCode(currencyCode)) throw new Error(`Invalid currency code: ${String(currencyCode).slice(0, 8)}`);
+  return MINOR_DIGITS[currencyCode] ?? 2;
+}
+function toMinor(amount, currencyCode = "USD", rounding = Decimal.ROUND_HALF_EVEN) {
+  const digits = minorDigits(currencyCode);
+  const scaled = dec(amount).times(new Decimal(10).pow(digits)).toDecimalPlaces(0, rounding);
+  return BigInt(scaled.toFixed(0));
+}
+function minorOf(value) {
+  if (typeof value === "bigint") return value;
+  if (typeof value === "number" && Number.isSafeInteger(value)) return BigInt(value);
+  if (typeof value === "string" && /^-?\d+$/.test(value.trim())) return BigInt(value.trim());
+  throw new Error("Not an integer minor-unit amount");
+}
+function allocateMinor(total, weights) {
+  if (weights.length === 0) throw new Error("allocateMinor needs at least one weight");
+  const w = weights.map(dec);
+  if (w.some((x) => x.isNegative())) throw new Error("allocateMinor weights must be non-negative");
+  const weightSum = w.reduce((a, b) => a.plus(b), new Decimal(0));
+  if (weightSum.isZero()) throw new Error("allocateMinor weights must not all be zero");
+  const negative = total < 0n;
+  const abs = negative ? -total : total;
+  const exact2 = w.map((x) => dec(abs).times(x).div(weightSum));
+  const floors = exact2.map((x) => BigInt(x.floor().toFixed(0)));
+  let leftover = abs - floors.reduce((a, b) => a + b, 0n);
+  const order = exact2.map((x, index) => ({ index, remainder: x.minus(x.floor()) })).sort((a, b) => b.remainder.comparedTo(a.remainder) || a.index - b.index);
+  const shares = [...floors];
+  for (let i = 0; leftover > 0n; i = (i + 1) % order.length, leftover -= 1n) shares[order[i].index] += 1n;
+  return negative ? shares.map((x) => -x) : shares;
+}
+function roundToMinor(value) {
+  return BigInt(dec(value).toDecimalPlaces(0, Decimal.ROUND_HALF_EVEN).toFixed(0));
+}
+
+// features/keystone/pdpm/tables.ts
+init_decimal();
+var PDPM_VERSION = "FY2026";
+var PDPM_EFFECTIVE_FROM = "2025-10-01";
+var PDPM_EFFECTIVE_TO = "2026-09-30";
+var PDPM_VERIFY_NOTE = "FY2026 CMIs and unadjusted urban rates were transcribed from CMS FY2026 resources (PDPM resources sheet, RESEARCH \xA78.2). Re-check every figure against the CMS final rule tables before first live claim; hand-check the golden cases.";
+var UNADJUSTED_URBAN = { pt: "75.73", ot: "70.49", slp: "28.28", nursing: "132.00", nta: "99.59", nonCaseMix: "118.21" };
+var LABOR_SHARE = { pt: "0.702", ot: "0.702", slp: "0.702", nursing: "0.702", nta: "0.702", nonCaseMix: "0.702" };
+var LABOR_SHARE_VERIFY = "Labor share 70.2% carried from the CMS final rule; confirm the FY2026 value. With wage index 1.0000 it has no effect.";
+var PT_OT_GROUP = {
+  major_joint: ["TA", "TB", "TC", "TD"],
+  other_ortho: ["TE", "TF", "TG", "TH"],
+  medical_mgmt: ["TI", "TJ", "TK", "TL"],
+  nonortho_surg_neuro: ["TM", "TN", "TO", "TP"]
+};
+var PT_CMI = { TA: "1.45", TB: "1.61", TC: "1.78", TD: "1.81", TE: "1.34", TF: "1.52", TG: "1.58", TH: "1.10", TI: "1.07", TJ: "1.34", TK: "1.44", TL: "1.03", TM: "1.20", TN: "1.40", TO: "1.47", TP: "1.02" };
+var OT_CMI = { TA: "1.41", TB: "1.54", TC: "1.60", TD: "1.45", TE: "1.33", TF: "1.51", TG: "1.55", TH: "1.09", TI: "1.12", TJ: "1.37", TK: "1.46", TL: "1.05", TM: "1.23", TN: "1.42", TO: "1.47", TP: "1.03" };
+var SLP_CMI = { SA: "0.64", SB: "1.72", SC: "2.52", SD: "1.38", SE: "2.21", SF: "2.82", SG: "1.93", SH: "2.70", SI: "3.34", SJ: "2.83", SK: "3.50", SL: "3.98" };
+var NURSING_CMI = {
+  ES3: "3.84",
+  ES2: "2.90",
+  ES1: "2.77",
+  HDE2: "2.27",
+  HDE1: "1.88",
+  HBC2: "2.12",
+  HBC1: "1.76",
+  LDE2: "1.97",
+  LDE1: "1.64",
+  LBC2: "1.63",
+  LBC1: "1.35",
+  CDE2: "1.77",
+  CDE1: "1.53",
+  CBC2: "1.47",
+  CBC1: "1.27",
+  CA2: "1.03",
+  CA1: "0.89",
+  BAB2: "0.98",
+  BAB1: "0.94",
+  PDE2: "1.48",
+  PDE1: "1.39",
+  PBC2: "1.15",
+  PA2: "0.67",
+  PBC1: "1.07",
+  PA1: "0.62"
+};
+var NTA_CMI = { NA: "3.06", NB: "2.39", NC: "1.74", ND: "1.26", NE: "0.91", NF: "0.68" };
+var PT_OT_LETTER = Object.fromEntries(Object.values(PT_OT_GROUP).flat().map((g, i) => [g, String.fromCharCode(65 + i)]));
+var SLP_LETTER = Object.fromEntries(Object.keys(SLP_CMI).map((g, i) => [g, String.fromCharCode(65 + i)]));
+var NURSING_HIPPS_ORDER = ["ES3", "ES2", "ES1", "HDE2", "HDE1", "HBC2", "HBC1", "LDE2", "LDE1", "LBC2", "LBC1", "CDE2", "CDE1", "CBC2", "CA2", "CBC1", "CA1", "BAB2", "BAB1", "PDE2", "PDE1", "PBC2", "PA2", "PBC1", "PA1"];
+var NURSING_LETTER = Object.fromEntries(NURSING_HIPPS_ORDER.map((g, i) => [g, String.fromCharCode(65 + i)]));
+var NTA_LETTER = Object.fromEntries(Object.keys(NTA_CMI).map((g, i) => [g, String.fromCharCode(65 + i)]));
+var ASSESSMENT_INDICATOR = { ipa: "0", five_day: "1", obra: "6" };
+var HIPPS_SOURCE_NOTE = 'HIPPS letters and the assessment indicator follow the CMS crosswalk (MLN MM11152; Noridian JE "HIPPS Coding for PDPM", example TC/SD/PBC1/NE 5-day = CDXE1).';
+function ptOtVpd(day19) {
+  if (day19 <= 20) return "1.00";
+  const block = Math.floor((day19 - 21) / 7) + 1;
+  return toScale(new Decimal(1).minus(new Decimal("0.02").times(block)), 2);
+}
+var ntaVpd = (day19) => day19 <= 3 ? "3.00" : "1.00";
+var VPD_VERIFY_NOTE = "PT/OT adjustment 1.00 days 1-20, then -0.02 per 7-day block (0.98 on 21-27 ... 0.76 on 98-100); NTA x3 days 1-3. Interrupted-stay window: RAI Manual ch. 2, day of discharge plus the 2 following days; a return on L+4 or later is a new stay.";
+var AIDS_NURSING_ADDON = "1.18";
+var NTA_POINTS = {
+  hiv_aids: { points: 8, source: "SNF claim B20" },
+  parenteral_iv_high: { points: 7, source: "K0510A2" },
+  iv_medication: { points: 5, source: "O0110H2" },
+  ventilator: { points: 4, source: "O0110F2" },
+  parenteral_iv_low: { points: 3, source: "K0710" },
+  lung_transplant: { points: 3, source: "I8000" },
+  transfusion: { points: 2, source: "O0110I2" },
+  major_organ_transplant: { points: 2, source: "I8000" },
+  multiple_sclerosis: { points: 2, source: "I5200" },
+  opportunistic_infection: { points: 2, source: "I8000" },
+  chronic_lung_disease: { points: 2, source: "I6200" },
+  bone_joint_infection: { points: 2, source: "I8000" },
+  chronic_myeloid_leukemia: { points: 2, source: "I8000" },
+  wound_infection: { points: 2, source: "I2500" },
+  diabetes: { points: 2, source: "I2900" },
+  endocarditis: { points: 1, source: "I8000" },
+  immune_disorder: { points: 1, source: "I8000" },
+  end_stage_liver: { points: 1, source: "I8000" },
+  diabetic_foot_ulcer: { points: 1, source: "M1040B" },
+  narcolepsy: { points: 1, source: "I8000" },
+  cystic_fibrosis: { points: 1, source: "I8000" },
+  tracheostomy: { points: 1, source: "O0110E2" },
+  mdro: { points: 1, source: "I1700" },
+  isolation: { points: 1, source: "O0110M2" },
+  hereditary_metabolic: { points: 1, source: "I8000" },
+  morbid_obesity: { points: 1, source: "I8000" },
+  radiation: { points: 1, source: "O0110B2" },
+  pressure_ulcer_stage4: { points: 1, source: "M0300D1" },
+  psoriatic_sclerosis: { points: 1, source: "I8000" },
+  chronic_pancreatitis: { points: 1, source: "I8000" },
+  proliferative_retinopathy: { points: 1, source: "I8000" },
+  foot_infection_lesion: { points: 1, source: "M1040A/C" },
+  implanted_device_complication: { points: 1, source: "I8000" },
+  intermittent_catheterization: { points: 1, source: "H0100D" },
+  inflammatory_bowel: { points: 1, source: "I1300" },
+  aseptic_necrosis: { points: 1, source: "I8000" },
+  suctioning: { points: 1, source: "O0110D2" },
+  cardiorespiratory_failure: { points: 1, source: "I8000" },
+  myelodysplastic: { points: 1, source: "I8000" },
+  lupus_connective: { points: 1, source: "I8000" },
+  diabetic_retinopathy: { points: 1, source: "I8000" },
+  feeding_tube: { points: 1, source: "K0510B2" },
+  severe_skin_burn: { points: 1, source: "I8000" },
+  intractable_epilepsy: { points: 1, source: "I8000" },
+  malnutrition: { points: 1, source: "I5600" },
+  immunity_disorder_other: { points: 1, source: "I8000" },
+  cirrhosis: { points: 1, source: "I8000" },
+  ostomy: { points: 1, source: "H0100C" },
+  respiratory_arrest: { points: 1, source: "I8000" },
+  pulmonary_fibrosis: { points: 1, source: "I8000" }
+};
+var NTA_GROUPS = [{ min: 12, group: "NA" }, { min: 9, group: "NB" }, { min: 6, group: "NC" }, { min: 3, group: "ND" }, { min: 1, group: "NE" }, { min: 0, group: "NF" }];
+var ICD_CATEGORY_STARTER = {
+  Z96: "major_joint",
+  M16: "major_joint",
+  M17: "major_joint",
+  S72: "other_ortho",
+  S32: "other_ortho",
+  M80: "other_ortho",
+  M81: "other_ortho",
+  M25: "other_ortho",
+  I63: "acute_neuro",
+  I61: "acute_neuro",
+  G81: "acute_neuro",
+  G20: "acute_neuro",
+  S06: "acute_neuro",
+  I50: "cardiovascular",
+  I48: "cardiovascular",
+  I21: "cardiovascular",
+  I26: "cardiovascular",
+  J44: "pulmonary",
+  J96: "pulmonary",
+  J18: "infection",
+  A41: "infection",
+  N39: "infection",
+  L03: "infection",
+  C: "cancer",
+  E11: "medical_mgmt",
+  E87: "medical_mgmt",
+  N18: "medical_mgmt",
+  R26: "medical_mgmt",
+  R53: "medical_mgmt",
+  Z48: "nonortho_surgery",
+  K56: "nonortho_surgery"
+};
+var ICD_VERIFY_NOTE = "Starter ICD-10-CM -> clinical category map; replace with the CMS PDPM ICD-10 mapping file for production.";
+var SNF_COINSURANCE_2026 = "217.00";
+var COINSURANCE_VERIFY = "Sourced: CMS MLN MM14279 and Federal Register 2025-20249 (CY 2026: $217.00/day). A new calendar year is a new ReferenceRate row.";
+
+// features/keystone/pdpm/classify.ts
+var GG_POINTS = { "06": 4, "05": 4, "04": 3, "03": 2, "02": 1 };
+var ggScore = (value) => GG_POINTS[(value ?? "").padStart(2, "0")] ?? 0;
+var roundSixths = (sixths) => Math.floor((sixths + 3) / 6);
+function functionScores(input) {
+  const g = input.gg;
+  const eating = ggScore(g.GG0130A1), oral = ggScore(g.GG0130B1), toileting = ggScore(g.GG0130C1);
+  const bed3 = 3 * (ggScore(g.GG0170B1) + ggScore(g.GG0170C1));
+  const transfers2 = 2 * (ggScore(g.GG0170D1) + ggScore(g.GG0170E1) + ggScore(g.GG0170F1));
+  const walking3 = input.cannotWalk ? 0 : 3 * (ggScore(g.GG0170J1) + ggScore(g.GG0170K1));
+  return { ptOt: roundSixths(6 * (eating + oral + toileting) + bed3 + transfers2 + walking3), nursing: roundSixths(6 * (eating + toileting) + bed3 + transfers2) };
+}
+var ptOtBand = (score) => score <= 5 ? 0 : score <= 9 ? 1 : score <= 23 ? 2 : 3;
+function ptOtCategory(c) {
+  if (c === "major_joint") return "major_joint";
+  if (c === "other_ortho") return "other_ortho";
+  if (c === "nonortho_surgery" || c === "acute_neuro") return "nonortho_surg_neuro";
+  return "medical_mgmt";
+}
+function slpGroup(input) {
+  const count = [input.acuteNeuro || input.clinicalCategory === "acute_neuro", Boolean(input.slpComorbidity), input.cognition !== "intact"].filter(Boolean).length;
+  const swallow = [input.mechanicallyAlteredDiet, input.swallowingDisorder].filter(Boolean).length;
+  const either = swallow === 0 ? 0 : swallow === 1 ? 1 : 2;
+  const letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+  return `S${letters[count * 3 + either]}`;
+}
+function nursingGroup(input, nursingFunction) {
+  const dep = input.depression ? "2" : "1";
+  const rest = (input.restorativeNursingCount ?? 0) >= 2 ? "2" : "1";
+  const extensive = Boolean(input.tracheostomy || input.ventilator || input.isolation);
+  if (extensive && nursingFunction <= 14) {
+    if (input.tracheostomy && input.ventilator) return "ES3";
+    if (input.tracheostomy || input.ventilator) return "ES2";
+    return "ES1";
+  }
+  if (input.specialCareHigh && nursingFunction <= 14) return nursingFunction <= 5 ? `HDE${dep}` : `HBC${dep}`;
+  if (input.specialCareLow && nursingFunction <= 14) return nursingFunction <= 5 ? `LDE${dep}` : `LBC${dep}`;
+  if (input.clinicallyComplex || input.specialCareHigh || input.specialCareLow || extensive) return nursingFunction <= 5 ? `CDE${dep}` : nursingFunction <= 14 ? `CBC${dep}` : `CA${dep}`;
+  if (input.behavioral && nursingFunction >= 11) return `BAB${rest}`;
+  if (nursingFunction <= 5) return `PDE${rest}`;
+  if (nursingFunction <= 14) return `PBC${rest}`;
+  return `PA${rest}`;
+}
+function ntaScore(conditions, aids = false) {
+  const set = new Set(conditions);
+  if (aids) set.add("hiv_aids");
+  let score = 0;
+  for (const key of [...set].sort()) score += NTA_POINTS[key]?.points ?? 0;
+  const group = NTA_GROUPS.find((g) => score >= g.min).group;
+  return { score, group };
+}
+var DEFAULT_TABLES = { ptCmi: PT_CMI, otCmi: OT_CMI, slpCmi: SLP_CMI, nursingCmi: NURSING_CMI, ntaCmi: NTA_CMI };
+function classify(input, indicator = "five_day", tables = DEFAULT_TABLES) {
+  const fn = functionScores(input);
+  const category = ptOtCategory(input.clinicalCategory);
+  const ptOt = PT_OT_GROUP[category][ptOtBand(fn.ptOt)];
+  const slp = slpGroup(input);
+  const nursing = nursingGroup(input, fn.nursing);
+  const mdsNta = ntaScore((input.ntaConditions ?? []).filter((c) => c !== "hiv_aids"), false);
+  const nta = ntaScore(input.ntaConditions ?? [], input.aids);
+  const hipps = `${PT_OT_LETTER[ptOt]}${SLP_LETTER[slp]}${NURSING_LETTER[nursing]}${NTA_LETTER[mdsNta.group]}${ASSESSMENT_INDICATOR[indicator]}`;
+  return {
+    version: PDPM_VERSION,
+    functionScore: fn,
+    groups: { pt: ptOt, ot: ptOt, slp, nursing, nta: nta.group },
+    hippsNta: mdsNta.group,
+    ntaScore: nta.score,
+    aids: Boolean(input.aids),
+    hipps,
+    cmi: { pt: tables.ptCmi[ptOt], ot: tables.otCmi[ptOt], slp: tables.slpCmi[slp], nursing: tables.nursingCmi[nursing], nta: tables.ntaCmi[nta.group] }
+  };
+}
+function adjustedRate(base2, labor, wageIndex) {
+  const l = dec(labor);
+  return dec(base2).times(l.times(dec(wageIndex)).plus(dec(1).minus(l)));
+}
+function perDiem(result, rates, day19, options = {}) {
+  const wi = options.wageIndex ?? "1";
+  const rate2 = (k) => adjustedRate(rates[k], options.labor?.[k] ?? LABOR_SHARE[k], wi);
+  const ptVpd = ptOtVpd(day19), ntVpd = ntaVpd(day19);
+  let nursing = rate2("nursing").times(result.cmi.nursing);
+  if (result.aids) nursing = nursing.times(AIDS_NURSING_ADDON);
+  const c = {
+    pt: toMinor(rate2("pt").times(result.cmi.pt).times(ptVpd)),
+    ot: toMinor(rate2("ot").times(result.cmi.ot).times(ptVpd)),
+    slp: toMinor(rate2("slp").times(result.cmi.slp)),
+    nursing: toMinor(nursing),
+    nta: toMinor(rate2("nta").times(result.cmi.nta).times(ntVpd)),
+    nonCaseMix: toMinor(rate2("nonCaseMix"))
+  };
+  return { day: day19, componentsMinor: c, totalMinor: c.pt + c.ot + c.slp + c.nursing + c.nta + c.nonCaseMix, vpd: { ptOt: ptVpd, nta: ntVpd } };
+}
+var INTERRUPTED_STAY_DAYS = 3;
+function vpdDayNumber(stays, day19) {
+  let count = 0;
+  let prevEnd = null;
+  for (const s of [...stays].sort((a, b) => a.from < b.from ? -1 : a.from > b.from ? 1 : 0)) {
+    if (prevEnd !== null && !isInterruptedStay(prevEnd, s.from)) count = 0;
+    const end = s.to ?? day19;
+    if (day19 >= s.from && day19 <= end) return count + daysBetween2(s.from, day19) + 1;
+    if (day19 < s.from) return null;
+    count += daysBetween2(s.from, end) + 1;
+    prevEnd = end;
+  }
+  return null;
+}
+var isInterruptedStay = (leftOn, returnOn) => daysBetween2(leftOn, returnOn) <= INTERRUPTED_STAY_DAYS;
+var daysBetween2 = (a, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 864e5);
+
+// features/keystone/pdpm/mapMds.ts
+function categoryFromIcd(code, override2 = {}) {
+  const clean3 = (code ?? "").replace(".", "").toUpperCase();
+  const map = { ...ICD_CATEGORY_STARTER, ...override2 };
+  for (const len of [3, 2, 1]) {
+    const hit = map[clean3.slice(0, len)];
+    if (hit) return hit;
+  }
+  return "medical_mgmt";
+}
+var yes = (v) => v === "1" || v === "true" || v === "Y";
+function cognition(items) {
+  const bims2 = items.C0500 !== void 0 && items.C0500 !== "" ? Number.parseInt(items.C0500, 10) : null;
+  if (bims2 !== null && !Number.isNaN(bims2) && bims2 <= 15) return bims2 >= 13 ? "intact" : bims2 >= 8 ? "mild" : "moderate";
+  if (items.C1000 !== void 0 && items.C1000 !== "" && items.C1000 !== "-") return ["intact", "mild", "moderate", "severe"][Math.min(3, Number.parseInt(items.C1000, 10) || 0)];
+  const cps = Number.parseInt(items.CPS ?? "0", 10);
+  return cps >= 5 ? "severe" : cps >= 3 ? "moderate" : cps >= 1 ? "mild" : "intact";
+}
+var ITEM_TO_NTA = {
+  O0110H2: "iv_medication",
+  O0110F2: "ventilator",
+  O0110I2: "transfusion",
+  O0110E2: "tracheostomy",
+  O0110M2: "isolation",
+  O0110B2: "radiation",
+  O0110D2: "suctioning",
+  I5200: "multiple_sclerosis",
+  I6200: "chronic_lung_disease",
+  I2500: "wound_infection",
+  I2900: "diabetes",
+  I1700: "mdro",
+  I1300: "inflammatory_bowel",
+  I5600: "malnutrition",
+  K0510B2: "feeding_tube",
+  H0100C: "ostomy",
+  H0100D: "intermittent_catheterization",
+  M1040B: "diabetic_foot_ulcer",
+  M0300D1: "pressure_ulcer_stage4"
+};
+function mdsToPdpmInput(items, options = {}) {
+  const gg3 = {};
+  for (const key of Object.keys(items)) if (key.startsWith("GG")) gg3[key] = items[key];
+  const ntaKey = (k) => /^O0110[A-Z]1$/.test(k) ? `${k.slice(0, -1)}2` : k;
+  const nta = new Set(Object.keys(items).filter((k) => yes(items[k]) && ITEM_TO_NTA[ntaKey(k)] && NTA_POINTS[ITEM_TO_NTA[ntaKey(k)]]).map((k) => ITEM_TO_NTA[ntaKey(k)]));
+  for (const key of (items.I8000 ?? "").split(",").map((s) => s.trim()).filter(Boolean)) if (NTA_POINTS[key]) nta.add(key);
+  const cannotWalk = ["07", "88", "09", "10"].includes((items.GG0170I1 ?? "").padStart(2, "0"));
+  return {
+    clinicalCategory: categoryFromIcd(items.I0020B, options.icdOverride),
+    gg: gg3,
+    cannotWalk,
+    cognition: cognition(items),
+    slpComorbidity: yes(items.SLP_COMORBIDITY) || yes(items.I4300) || yes(items.I4500) || yes(items.I4900),
+    mechanicallyAlteredDiet: yes(items.K0510C1) || yes(items.K0510C2),
+    swallowingDisorder: yes(items.K0100),
+    tracheostomy: yes(items.O0110E1),
+    ventilator: yes(items.O0110F1),
+    isolation: yes(items.O0110M1),
+    specialCareHigh: yes(items.NURSING_SCH),
+    specialCareLow: yes(items.NURSING_SCL),
+    clinicallyComplex: yes(items.NURSING_CC),
+    behavioral: yes(items.NURSING_BEHAVIOR),
+    depression: Number.parseInt(items.D0160 ?? "0", 10) >= 10,
+    restorativeNursingCount: Number.parseInt(items.H_RESTORATIVE ?? "0", 10) || 0,
+    ntaConditions: [...nta],
+    aids: options.aids ?? false
+  };
+}
+
+// features/keystone/mds/caa.ts
+var CAA_VERIFY_NOTE = "Simplified triggers from the RAI Manual chapter 4 CAT logic; confirm each against the current CAT specification.";
+var n = (v) => v === void 0 || v === "" || v === "-" || v === "^" ? null : Number(v);
+var any = (items, ids, test) => ids.some((id) => {
+  const v = n(items[id]);
+  return v !== null && test(v);
+});
+var CAAS = [
+  { code: 1, area: "Delirium", trigger: (i) => n(i.C1310A) === 1 && (n(i.C1310B) ?? 0) >= 1 },
+  { code: 2, area: "Cognitive loss/dementia", trigger: (i) => {
+    const b = n(i.C0500);
+    return b !== null && b <= 12 || (n(i.C1000) ?? 0) >= 1;
+  } },
+  { code: 3, area: "Visual function", trigger: (i) => (n(i.B1000) ?? 0) >= 1 },
+  { code: 4, area: "Communication", trigger: (i) => (n(i.B0700) ?? 0) >= 1 },
+  { code: 5, area: "ADL functional/rehabilitation potential", trigger: (i) => any(i, ["GG0130A1", "GG0130C1", "GG0170D1", "GG0170F1"], (v) => v >= 1 && v <= 3) },
+  { code: 6, area: "Urinary incontinence and indwelling catheter", trigger: (i) => (n(i.H0300) ?? 0) >= 1 && n(i.H0300) !== 9 },
+  { code: 9, area: "Mood state", trigger: (i) => (n(i.D0160) ?? 0) >= 10 },
+  { code: 10, area: "Behavioural symptoms", trigger: (i) => any(i, ["E0200A", "E0200B", "E0200C"], (v) => v >= 1) },
+  { code: 11, area: "Falls", trigger: (i) => n(i.J1800) === 1 },
+  { code: 12, area: "Nutritional status", trigger: (i) => (n(i.K0300) ?? 0) >= 1 },
+  { code: 13, area: "Feeding tube", trigger: (i) => n(i.K0510B2) === 1 },
+  { code: 14, area: "Dehydration/fluid maintenance", trigger: (i) => n(i.J1550C) === 1 },
+  { code: 16, area: "Pressure ulcer/injury", trigger: (i) => n(i.M0210) === 1 },
+  { code: 17, area: "Psychotropic medication use", trigger: (i) => n(i.N0415A1) === 1 },
+  { code: 18, area: "Physical restraints", trigger: (i) => n(i.P0100) === 1 },
+  { code: 19, area: "Pain", trigger: (i) => n(i.J0300) === 1 },
+  { code: 20, area: "Return to community referral", trigger: (i) => n(i.Q0400A) === 1 }
+];
+var COMPREHENSIVE = /* @__PURE__ */ new Set(["obra_admission", "obra_annual", "obra_significant_change"]);
+function caaTriggers(kind, items) {
+  if (!COMPREHENSIVE.has(kind)) return [];
+  return CAAS.filter((c) => c.trigger(items)).map((c) => ({ code: c.code, area: c.area }));
+}
+
+// features/keystone/mds/itemSet.ts
+var MDS_TEMPLATE_CODE = "mds_3_0";
+var MDS_VERIFY_NOTE = "Item set versions (V1.19.1 from 2024-10-01, V1.20.1 from 2025-10-01) and the edits below are a working subset of the CMS MDS 3.0 data specifications. Confirm item values, skip patterns and the iQIES header against the current data specifications before a live submission.";
+var ASSESS = ["obra_admission", "obra_quarterly", "obra_annual", "obra_significant_change", "pps_5day", "ipa"];
+var PPS = ["pps_5day", "ipa"];
+var ALL = [...ASSESS, "discharge_return_anticipated", "discharge_return_not_anticipated", "pps_discharge", "entry", "death_in_facility"];
+var DISCH = ["discharge_return_anticipated", "discharge_return_not_anticipated", "pps_discharge"];
+var yn = ["0", "1"];
+var gg = ["01", "02", "03", "04", "05", "06", "07", "09", "10", "88"];
+var base = [
+  { id: "A0310A", section: "A", label: "Federal OBRA reason for assessment", values: ["01", "02", "03", "04", "05", "06", "99"], requiredFor: ALL },
+  { id: "A0310B", section: "A", label: "PPS assessment", values: ["01", "08", "99"], requiredFor: ALL },
+  { id: "A0310F", section: "A", label: "Entry/discharge reporting", values: ["01", "10", "11", "12", "99"], requiredFor: ALL },
+  { id: "A0310H", section: "A", label: "Is this a SNF Part A PPS discharge assessment?", values: yn, requiredFor: ALL },
+  { id: "A0500A", section: "A", label: "Resident first name", values: "text", requiredFor: ALL },
+  { id: "A0500C", section: "A", label: "Resident last name", values: "text", requiredFor: ALL },
+  { id: "A0900", section: "A", label: "Birth date", values: "date", requiredFor: ALL },
+  { id: "A0800", section: "A", label: "Gender", values: ["1", "2", "-"], requiredFor: ALL },
+  { id: "A1600", section: "A", label: "Entry date", values: "date", requiredFor: ALL },
+  { id: "A1700", section: "A", label: "Type of entry", values: ["1", "2"], requiredFor: ["entry"] },
+  { id: "A2000", section: "A", label: "Discharge date", values: "date", requiredFor: [...DISCH.filter((k) => k !== "pps_discharge"), "death_in_facility"] },
+  { id: "A2300", section: "A", label: "Assessment reference date", values: "date", requiredFor: [...ASSESS, ...DISCH] },
+  { id: "A2400A", section: "A", label: "Has the resident had a Medicare-covered stay since the most recent entry?", values: yn, requiredFor: ASSESS },
+  { id: "A2400B", section: "A", label: "Start of most recent Medicare stay", values: "date" },
+  { id: "A2400C", section: "A", label: "End date of most recent Medicare stay", values: "date", requiredFor: ["pps_discharge"] },
+  { id: "B0700", section: "B", label: "Makes self understood", values: ["0", "1", "2", "3", "-"] },
+  { id: "B1000", section: "B", label: "Vision", values: ["0", "1", "2", "3", "4", "-"] },
+  { id: "C0100", section: "C", label: "Should the BIMS be conducted?", values: yn, requiredFor: ASSESS },
+  { id: "C0500", section: "C", label: "BIMS summary score", values: "int:0-15" },
+  { id: "C1000", section: "C", label: "Cognitive skills for daily decision making (staff assessment)", values: ["0", "1", "2", "3", "-"] },
+  { id: "C1310A", section: "C", label: "Acute onset of mental status change", values: yn },
+  { id: "C1310B", section: "C", label: "Inattention", values: ["0", "1", "2"] },
+  { id: "D0160", section: "D", label: "PHQ resident total severity score", values: "int:0-27" },
+  { id: "E0200A", section: "E", label: "Physical behavioural symptoms directed toward others", values: ["0", "1", "2", "3"] },
+  { id: "E0200B", section: "E", label: "Verbal behavioural symptoms directed toward others", values: ["0", "1", "2", "3"] },
+  { id: "E0200C", section: "E", label: "Other behavioural symptoms not directed toward others", values: ["0", "1", "2", "3"] },
+  ...[["GG0130A1", "Eating"], ["GG0130B1", "Oral hygiene"], ["GG0130C1", "Toileting hygiene"]].map(([id, label2]) => ({ id, section: "GG", label: `${label2} (admission performance)`, values: gg, requiredFor: PPS })),
+  ...[["GG0170B1", "Sit to lying"], ["GG0170C1", "Lying to sitting on side of bed"], ["GG0170D1", "Sit to stand"], ["GG0170E1", "Chair/bed-to-chair transfer"], ["GG0170F1", "Toilet transfer"], ["GG0170I1", "Walk 10 feet"], ["GG0170J1", "Walk 50 feet with two turns"], ["GG0170K1", "Walk 150 feet"]].map(([id, label2]) => ({ id, section: "GG", label: `${label2} (admission performance)`, values: gg, requiredFor: PPS })),
+  { id: "H0300", section: "H", label: "Urinary continence", values: ["0", "1", "2", "3", "9"] },
+  { id: "I0020", section: "I", label: "Primary medical condition category", values: ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13"], requiredFor: PPS },
+  { id: "I0020B", section: "I", label: "Primary condition ICD-10-CM code", values: "icd", requiredFor: PPS },
+  { id: "I2900", section: "I", label: "Diabetes mellitus", values: yn },
+  { id: "I4300", section: "I", label: "Aphasia", values: yn },
+  { id: "I4500", section: "I", label: "CVA, TIA or stroke", values: yn },
+  { id: "I4900", section: "I", label: "Hemiplegia or hemiparesis", values: yn },
+  { id: "I8000", section: "I", label: "Additional active diagnoses (ICD-10-CM, comma separated)", values: "text" },
+  { id: "J0300", section: "J", label: "Pain presence", values: ["0", "1", "9"] },
+  { id: "J1550C", section: "J", label: "Dehydrated", values: yn },
+  { id: "J1800", section: "J", label: "Any falls since admission or prior assessment", values: yn },
+  { id: "K0300", section: "K", label: "Weight loss", values: ["0", "1", "2"] },
+  { id: "K0100", section: "K", label: "Swallowing disorder signs (any of K0100A-D)", values: yn },
+  { id: "K0510B2", section: "K", label: "Feeding tube while a resident", values: yn },
+  { id: "K0510C2", section: "K", label: "Mechanically altered diet while a resident", values: yn },
+  { id: "M0210", section: "M", label: "Unhealed pressure ulcers/injuries", values: yn },
+  { id: "N0415A1", section: "N", label: "Antipsychotic received", values: yn },
+  { id: "O0110C1", section: "O", label: "Oxygen therapy", values: yn },
+  { id: "O0110E1", section: "O", label: "Tracheostomy care", values: yn },
+  { id: "O0110F1", section: "O", label: "Invasive mechanical ventilator", values: yn },
+  { id: "O0110H1", section: "O", label: "IV medications", values: yn },
+  { id: "O0110M1", section: "O", label: "Isolation or quarantine for active infectious disease", values: yn },
+  { id: "P0100", section: "P", label: "Physical restraints used", values: yn },
+  { id: "Q0400A", section: "Q", label: "Active discharge planning for return to the community", values: yn },
+  { id: "SLP_COMORBIDITY", section: "PDPM", label: "Worksheet: any SLP-related comorbidity (aphasia, CVA, hemiplegia, TBI, ALS, oral cancer, ...)", values: yn, exported: false },
+  { id: "NURSING_SCH", section: "PDPM", label: "Worksheet: qualifies for special care high", values: yn, exported: false },
+  { id: "NURSING_SCL", section: "PDPM", label: "Worksheet: qualifies for special care low", values: yn, exported: false },
+  { id: "NURSING_CC", section: "PDPM", label: "Worksheet: qualifies for clinically complex", values: yn, exported: false },
+  { id: "NURSING_BEHAVIOR", section: "PDPM", label: "Worksheet: behavioural symptoms or cognitive impairment (BAB)", values: yn, exported: false },
+  { id: "H_RESTORATIVE", section: "PDPM", label: "Worksheet: restorative nursing programmes (6+ days)", values: "int:0-10", exported: false },
+  { id: "Z0400", section: "Z", label: "Signatures of persons completing the assessment (structured, see signatures)", values: "text" },
+  { id: "Z0500B", section: "Z", label: "Date the RN coordinator signed the assessment as complete", values: "date", requiredFor: [...ASSESS, ...DISCH] }
+];
+var ITEM_SETS = [
+  { itemSetVersion: "1.19.1", specVersion: "3.00.1", effectiveFrom: "2024-10-01", effectiveTo: "2025-09-30", items: base },
+  { itemSetVersion: "1.20.1", specVersion: "3.00.2", effectiveFrom: "2025-10-01", effectiveTo: null, items: base }
+];
+function itemSetFor(sets, ard) {
+  return sets.filter((s) => s.effectiveFrom <= ard && (s.effectiveTo === null || ard <= s.effectiveTo)).sort((a, b) => a.effectiveFrom < b.effectiveFrom ? 1 : -1)[0] ?? null;
+}
+var A0310 = {
+  obra_admission: { A: "01", B: "99", F: "99", H: "0" },
+  obra_quarterly: { A: "02", B: "99", F: "99", H: "0" },
+  obra_annual: { A: "03", B: "99", F: "99", H: "0" },
+  obra_significant_change: { A: "04", B: "99", F: "99", H: "0" },
+  pps_5day: { A: "99", B: "01", F: "99", H: "0" },
+  ipa: { A: "99", B: "08", F: "99", H: "0" },
+  pps_discharge: { A: "99", B: "99", F: "99", H: "1" },
+  discharge_return_not_anticipated: { A: "99", B: "99", F: "10", H: "0" },
+  discharge_return_anticipated: { A: "99", B: "99", F: "11", H: "0" },
+  death_in_facility: { A: "99", B: "99", F: "12", H: "0" },
+  entry: { A: "99", B: "99", F: "01", H: "0" }
+};
+function sectionsFor(kind, def) {
+  if (kind === "entry" || kind === "death_in_facility") return ["A", "Z"];
+  return [...new Set(def.items.filter((i) => i.exported !== false).map((i) => i.section))];
+}
+function unsignedSections(kind, def, signatures) {
+  const signed = new Set(signatures.flatMap((s) => s.sections));
+  return sectionsFor(kind, def).filter((s) => !signed.has(s));
+}
+
+// features/keystone/mds/specEdits.ts
+var DATE3 = /^\d{8}$/;
+var validDate = (v) => {
+  if (!DATE3.test(v)) return false;
+  const iso10 = `${v.slice(0, 4)}-${v.slice(4, 6)}-${v.slice(6, 8)}`;
+  const d = /* @__PURE__ */ new Date(`${iso10}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === iso10;
+};
+var ICD = /^[A-TV-Z][0-9][0-9A-Z](\.?[0-9A-Z]{1,4})?$/;
+var isoToMds = (iso10) => iso10.replace(/-/g, "");
+function runSpecEdits(kind, items, def) {
+  const out = { fatal: [], warning: [] };
+  const fatal = (item, code, message) => out.fatal.push({ item, code, message });
+  const warn = (item, code, message) => out.warning.push({ item, code, message });
+  for (const item of def.items) {
+    const v = items[item.id];
+    const blank = v === void 0 || v === "";
+    if (blank) {
+      if (item.requiredFor?.includes(kind)) fatal(item.id, "required", `${item.id} (${item.label}) is required on this record.`);
+      continue;
+    }
+    if (v === "-" && item.values !== "text") continue;
+    if (item.values === "date") {
+      if (!validDate(v)) fatal(item.id, "format", `${item.id} must be a date as YYYYMMDD.`);
+    } else if (item.values === "icd") {
+      if (!ICD.test(v.toUpperCase())) fatal(item.id, "format", `${item.id} is not an ICD-10-CM code.`);
+    } else if (item.values === "text") {
+      if (v.length > 200) fatal(item.id, "format", `${item.id} is too long.`);
+    } else if (typeof item.values === "string" && item.values.startsWith("int:")) {
+      const [lo, hi] = item.values.slice(4).split("-").map(Number);
+      if (!/^\d+$/.test(v) || Number(v) < lo || Number(v) > hi) fatal(item.id, "range", `${item.id} must be a whole number from ${lo} to ${hi}.`);
+    } else if (Array.isArray(item.values) && !item.values.includes(v)) fatal(item.id, "range", `${item.id} has a value outside the allowed codes.`);
+  }
+  for (const key of Object.keys(items)) if (!def.items.some((i) => i.id === key) && items[key] !== void 0) warn(key, "unknown_item", `${key} is not in this item set and is not exported.`);
+  const header = A0310[kind];
+  if (header) {
+    for (const [suffix, value] of Object.entries(header)) if (items[`A0310${suffix}`] !== void 0 && items[`A0310${suffix}`] !== value) fatal(`A0310${suffix}`, "consistency", `A0310${suffix} must be ${value} for this record type.`);
+  }
+  const entry = items.A1600, ard = items.A2300, z5 = items.Z0500B, dob = items.A0900;
+  if (entry && ard && validDate(entry) && validDate(ard) && ard < entry) fatal("A2300", "consistency", "The ARD is before the entry date.");
+  if (z5 && ard && validDate(z5) && validDate(ard) && z5 < ard) fatal("Z0500B", "consistency", "The completion date is before the ARD.");
+  if (dob && entry && validDate(dob) && validDate(entry) && dob >= entry) fatal("A0900", "consistency", "The birth date is not before the entry date.");
+  if (items.C0100 === "1" && (items.C0500 === void 0 || items.C0500 === "")) fatal("C0500", "skip", "C0100 = 1, so the BIMS summary (C0500) is required.");
+  if (items.C0100 === "0" && (items.C1000 === void 0 || items.C1000 === "")) fatal("C1000", "skip", "C0100 = 0, so the staff assessment (C1000) is required.");
+  if (items.A2400A === "1" && !items.A2400B) fatal("A2400B", "skip", "A2400A = 1, so the start of the Medicare stay (A2400B) is required.");
+  if (kind === "pps_5day" && items.A2400A !== "1") fatal("A2400A", "consistency", "A 5-day PPS assessment needs a Medicare-covered stay (A2400A = 1).");
+  return out;
+}
+function batchEdits(records, def) {
+  return records.map((r) => ({ reference: r.reference, ...runSpecEdits(r.kind, r.items, def) })).filter((r) => r.fatal.length);
+}
+
+// features/keystone/mds/exportFile.ts
+var import_node_crypto10 = require("node:crypto");
+var EXPORT_VERIFY_NOTE = "The XML layout (ASSESSMENT root, item ids as elements, header fields) follows the shape of the CMS MDS 3.0 submission specification; confirm the exact header elements and file naming against the current iQIES data specification before a live upload.";
+var esc = (v) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+function recordXml(record, def, header) {
+  const lines = [
+    '<?xml version="1.0" standalone="yes"?>',
+    "<ASSESSMENT>",
+    `<ASMT_SYS_CD>MDS</ASMT_SYS_CD>`,
+    `<ITM_SBST_CD>${esc(itemSubset(record.kind))}</ITM_SBST_CD>`,
+    `<ITM_SET_VRSN_CD>${esc(def.itemSetVersion)}</ITM_SET_VRSN_CD>`,
+    `<SPEC_VRSN_CD>${esc(def.specVersion)}</SPEC_VRSN_CD>`,
+    `<STATE_CD>${esc(header.stateCode)}</STATE_CD>`,
+    `<FAC_ID>${esc(header.facilityId)}</FAC_ID>`,
+    `<PRODN_TEST_CD>2</PRODN_TEST_CD>`,
+    `<SFTWR_VNDR_NAME>${esc(header.softwareVendor)}</SFTWR_VNDR_NAME>`,
+    `<SFTWR_PROD_NAME>${esc(header.softwareName)}</SFTWR_PROD_NAME>`,
+    `<SFTWR_PROD_VRSN_CD>${esc(header.softwareVersion)}</SFTWR_PROD_VRSN_CD>`,
+    `<X0100>${record.correctionNumber > 0 ? "2" : "1"}</X0100>`,
+    `<CRCTN_NUM>${String(record.correctionNumber).padStart(2, "0")}</CRCTN_NUM>`,
+    `<FAC_DOC_ID>${esc(record.reference)}</FAC_DOC_ID>`
+  ];
+  for (const item of def.items) {
+    if (item.exported === false) continue;
+    const v = record.items[item.id];
+    if (v === void 0 || v === "") continue;
+    lines.push(`<${item.id}>${esc(v)}</${item.id}>`);
+  }
+  lines.push("</ASSESSMENT>", "");
+  return lines.join("\r\n");
+}
+function itemSubset(kind) {
+  if (kind === "obra_admission" || kind === "obra_annual" || kind === "obra_significant_change") return "NC";
+  if (kind === "obra_quarterly") return "NQ";
+  if (kind === "pps_5day" || kind === "ipa") return "NP";
+  if (kind.startsWith("discharge") || kind === "pps_discharge") return "ND";
+  return "NT";
+}
+var CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let n2 = 0; n2 < 256; n2 += 1) {
+    let c = n2;
+    for (let k = 0; k < 8; k += 1) c = c & 1 ? 3988292384 ^ c >>> 1 : c >>> 1;
+    table[n2] = c >>> 0;
+  }
+  return table;
+})();
+function crc32(data) {
+  let c = 4294967295;
+  for (let i = 0; i < data.length; i += 1) c = CRC_TABLE[(c ^ data[i]) & 255] ^ c >>> 8;
+  return (c ^ 4294967295) >>> 0;
+}
+function zipStored(files) {
+  const locals = [];
+  const centrals = [];
+  let offset = 0;
+  const DOS_TIME = 0, DOS_DATE = 2026 - 1980 << 9 | 1 << 5 | 1;
+  for (const file of files) {
+    const name = Buffer.from(file.name, "utf8");
+    const data = Buffer.from(file.content, "utf8");
+    const crc = crc32(data);
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(67324752, 0);
+    local.writeUInt16LE(20, 4);
+    local.writeUInt16LE(2048, 6);
+    local.writeUInt16LE(0, 8);
+    local.writeUInt16LE(DOS_TIME, 10);
+    local.writeUInt16LE(DOS_DATE, 12);
+    local.writeUInt32LE(crc, 14);
+    local.writeUInt32LE(data.length, 18);
+    local.writeUInt32LE(data.length, 22);
+    local.writeUInt16LE(name.length, 26);
+    local.writeUInt16LE(0, 28);
+    locals.push(local, name, data);
+    const central = Buffer.alloc(46);
+    central.writeUInt32LE(33639248, 0);
+    central.writeUInt16LE(20, 4);
+    central.writeUInt16LE(20, 6);
+    central.writeUInt16LE(2048, 8);
+    central.writeUInt16LE(0, 10);
+    central.writeUInt16LE(DOS_TIME, 12);
+    central.writeUInt16LE(DOS_DATE, 14);
+    central.writeUInt32LE(crc, 16);
+    central.writeUInt32LE(data.length, 20);
+    central.writeUInt32LE(data.length, 24);
+    central.writeUInt16LE(name.length, 28);
+    central.writeUInt32LE(offset, 42);
+    centrals.push(central, name);
+    offset += 30 + name.length + data.length;
+  }
+  const centralSize = centrals.reduce((n2, b) => n2 + b.length, 0);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(101010256, 0);
+  end.writeUInt16LE(files.length, 8);
+  end.writeUInt16LE(files.length, 10);
+  end.writeUInt32LE(centralSize, 12);
+  end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...locals, ...centrals, end]);
+}
+var sha256Hex = (b) => (0, import_node_crypto10.createHash)("sha256").update(b).digest("hex");
+var FVR_VERIFY_NOTE = "FVR parsing matches each record by FAC_DOC_ID and reads Accepted/Rejected and the edit numbers on that line; confirm against a current iQIES FVR export.";
+function parseFvr(text18, references) {
+  const lines = text18.split(/\r?\n/);
+  return references.map((reference) => {
+    const hit = lines.filter((line) => line.includes(reference));
+    if (!hit.length) return { reference, status: "not_found", edits: [] };
+    const joined = hit.join(" ");
+    const edits = [...new Set(joined.match(/-[13]\d{3}[a-z]?/g) ?? [])];
+    const rejected = /\brejected\b/i.test(joined) || edits.some((e) => e.startsWith("-3"));
+    const accepted = /\baccepted\b/i.test(joined);
+    return { reference, status: rejected ? "rejected" : accepted ? "accepted" : "not_found", edits };
+  });
+}
+
+// features/keystone/mds/service.ts
+var PPS_KINDS = /* @__PURE__ */ new Set(["pps_5day", "ipa"]);
+var OBRA_ASSESSMENTS = /* @__PURE__ */ new Set(["obra_admission", "obra_quarterly", "obra_annual", "obra_significant_change"]);
+var DATE4 = /^\d{4}-\d{2}-\d{2}$/;
+var day7 = (iso10) => /* @__PURE__ */ new Date(`${iso10}T00:00:00Z`);
+var iso = (d) => d ? d.toISOString().slice(0, 10) : null;
+var fail2 = (message, field) => {
+  throw new DomainError(Codes.INVALID_INPUT, message, field ? { field } : {});
+};
+var guard = (message, reason, extra = {}) => {
+  throw new DomainError(Codes.GUARD_FAILED, message, { reason, ...extra });
+};
+var dateIn = (value, field) => {
+  const v = typeof value === "string" ? value.slice(0, 10) : "";
+  if (!DATE4.test(v) || Number.isNaN(Date.parse(`${v}T00:00:00Z`))) fail2(`${field} must be a date.`, field);
+  return v;
+};
+async function loadMdsReference(uow, actor) {
+  let templates = 0, versions = 0, rates = 0;
+  for (const [i, set] of ITEM_SETS.entries()) {
+    const exists = await uow.tx.assessmentTemplate.findFirst({ where: { code: MDS_TEMPLATE_CODE, templateVersion: i + 1 } });
+    if (exists) continue;
+    const row = await uow.tx.assessmentTemplate.create({
+      data: { code: MDS_TEMPLATE_CODE, name: `MDS 3.0 item set V${set.itemSetVersion}`, templateVersion: i + 1, scorer: "mds", definition: set, settings: { effectiveFrom: set.effectiveFrom, effectiveTo: set.effectiveTo }, sourceNote: "CMS MDS 3.0 RAI Manual and data specifications.", verifyNote: MDS_VERIFY_NOTE, status: "active" }
+    });
+    auditCreate(uow, actor, "AssessmentTemplate", row.id, "assessment_template.loaded", { code: MDS_TEMPLATE_CODE, itemSetVersion: set.itemSetVersion });
+    templates += 1;
+  }
+  let version2 = await uow.tx.pdpmMappingVersion.findUnique({ where: { code: PDPM_VERSION } });
+  if (!version2) {
+    const tables = { ptCmi: PT_CMI, otCmi: OT_CMI, slpCmi: SLP_CMI, nursingCmi: NURSING_CMI, ntaCmi: NTA_CMI, ntaPoints: NTA_POINTS, icdCategory: ICD_CATEGORY_STARTER, nursingHippsOrder: NURSING_HIPPS_ORDER };
+    version2 = await uow.tx.pdpmMappingVersion.create({
+      data: { code: PDPM_VERSION, effectiveFrom: day7(PDPM_EFFECTIVE_FROM), effectiveTo: day7(PDPM_EFFECTIVE_TO), tables, sourceNote: HIPPS_SOURCE_NOTE, verifyNote: [PDPM_VERIFY_NOTE, VPD_VERIFY_NOTE, ICD_VERIFY_NOTE].join(" "), status: "active" }
+    });
+    auditCreate(uow, actor, "PdpmMappingVersion", version2.id, "pdpm.mapping_loaded", { code: PDPM_VERSION });
+    versions += 1;
+  }
+  const rows = [
+    ...Object.entries(UNADJUSTED_URBAN).map(([k, v]) => ({ component: k === "nonCaseMix" ? "non_case_mix" : k, geography: "urban", rate: v, laborShare: LABOR_SHARE[k], sourceNote: "FY2026 unadjusted federal per diem, urban (RESEARCH \xA78.2).", verifyNote: `${PDPM_VERIFY_NOTE} ${LABOR_SHARE_VERIFY}` })),
+    { component: "snf_coinsurance", geography: "national", rate: SNF_COINSURANCE_2026, sourceNote: "SNF coinsurance per day, days 21-100 (calendar year 2026).", verifyNote: COINSURANCE_VERIFY },
+    { component: "wage_index", geography: "cbsa_17460", rate: "1.0000", sourceNote: "Starting CBSA wage index for the community; a person replaces it with the published figure.", verifyNote: "Replace with the FY2026 SNF PPS wage index for the community CBSA." }
+  ];
+  for (const r of rows) {
+    const exists = await uow.tx.referenceRate.findFirst({ where: { component: r.component, geography: r.geography, effectiveFrom: day7(PDPM_EFFECTIVE_FROM) } });
+    if (exists) continue;
+    const effectiveTo = r.component === "snf_coinsurance" ? day7("2026-12-31") : day7(PDPM_EFFECTIVE_TO);
+    const row = await uow.tx.referenceRate.create({ data: { mappingVersionId: version2.id, component: r.component, geography: r.geography, rate: r.rate, laborShare: r.laborShare ?? null, effectiveFrom: day7(PDPM_EFFECTIVE_FROM), effectiveTo, sourceNote: r.sourceNote, verifyNote: r.verifyNote } });
+    auditCreate(uow, actor, "ReferenceRate", row.id, "reference_rate.loaded", { component: r.component, geography: r.geography, rate: r.rate });
+    rates += 1;
+  }
+  return { templates, versions, rates };
+}
+async function itemSetRow(tx, ard) {
+  const rows = await tx.assessmentTemplate.findMany({ where: { code: MDS_TEMPLATE_CODE, status: "active" } });
+  const sets = rows.map((r) => ({ id: r.id, ...r.definition }));
+  const set = itemSetFor(sets, ard);
+  if (!set) guard(`No MDS item set covers ${ard}. Load the MDS reference data first.`, "no_item_set");
+  return set;
+}
+async function openMds(uow, actor, input) {
+  const kind = String(input.kind ?? "");
+  if (!A0310[kind]) fail2("Choose a record type.", "kind");
+  const ard = dateIn(input.ardDate, "ardDate");
+  const stay = await uow.tx.stay.findUnique({ where: { id: input.stayId }, select: { id: true, residentId: true, communityId: true, admittedAt: true, resident: { select: { firstName: true, lastName: true, dateOfBirth: true, sex: true } } } });
+  if (!stay?.residentId || !stay.communityId) throw new DomainError(Codes.NOT_FOUND, "Stay not found.");
+  const set = await itemSetRow(uow.tx, ard);
+  const header = A0310[kind];
+  const entry = stay.admittedAt ? stay.admittedAt.toISOString().slice(0, 10) : ard;
+  if (ard < entry) fail2("The ARD is before the entry date.", "ardDate");
+  const partA = await uow.tx.coveragePeriod.findFirst({ where: { stayId: stay.id, payer: { kind: "medicare_a" }, startDate: { lte: day7(ard) }, OR: [{ endDate: null }, { endDate: { gt: day7(ard) } }] }, select: { startDate: true } });
+  if (PPS_KINDS.has(kind) && !partA) guard("A PPS assessment needs a Medicare Part A coverage on its ARD.", "no_part_a");
+  const r = stay.resident;
+  const items = {
+    A0310A: header.A,
+    A0310B: header.B,
+    A0310F: header.F,
+    A0310H: header.H,
+    A0500A: r?.firstName ?? "",
+    A0500C: r?.lastName ?? "",
+    A0900: r?.dateOfBirth ? isoToMds(iso(r.dateOfBirth)) : "",
+    A0800: r?.sex === "male" ? "1" : r?.sex === "female" ? "2" : "-",
+    A1600: isoToMds(entry),
+    ...kind === "entry" ? { A1700: "1" } : { A2300: isoToMds(ard) },
+    ...partA ? { A2400A: "1", A2400B: isoToMds(iso(partA.startDate)) } : OBRA_ASSESSMENTS.has(kind) ? { A2400A: "0" } : {}
+  };
+  const existing = await uow.tx.mdsAssessment.findFirst({ where: { residentId: stay.residentId, kind, ardDate: day7(ard), status: { notIn: ["superseded", "entered_in_error"] } }, select: { id: true } });
+  if (existing) guard("There is already a record of this type on this ARD.", "duplicate", { assessmentId: existing.id });
+  const row = await uow.tx.mdsAssessment.create({
+    data: { reference: await nextReference(uow.tx, "MDS", uow.now), residentId: stay.residentId, communityId: stay.communityId, stayId: stay.id, kind, ardDate: day7(ard), itemSetId: set.id, itemSetVersion: set.itemSetVersion, items, signatures: [], status: "in_progress", correctionNumber: 0 }
+  });
+  auditCreate(uow, actor, "MdsAssessment", row.id, "mds.opened", { kind, ardDate: ard, itemSetVersion: set.itemSetVersion });
+  return { assessmentId: row.id, reference: row.reference, itemSetVersion: set.itemSetVersion };
+}
+async function lockMds(tx, id) {
+  const rows = await tx.$queryRawUnsafe(`SELECT "id" FROM "MdsAssessment" WHERE "id" = $1 FOR UPDATE`, id);
+  if (!rows.length) throw new DomainError(Codes.NOT_FOUND, "MDS record not found.");
+  return tx.mdsAssessment.findUniqueOrThrow({ where: { id } });
+}
+var itemsOf = (row) => ({ ...row.items ?? {} });
+async function saveMdsItems(uow, actor, input) {
+  const row = await lockMds(uow.tx, input.assessmentId);
+  if (row.status !== "in_progress") guard("This record is complete. Make a correction instead.", "completed");
+  if (input.expectedVersion != null && Number(input.expectedVersion) !== row.version) throw new DomainError(Codes.STALE_STATE, "This record changed since you loaded it. Reload and try again.");
+  if (!input.items || typeof input.items !== "object" || Array.isArray(input.items)) fail2("Send the items as an object.", "items");
+  const set = (await uow.tx.assessmentTemplate.findUniqueOrThrow({ where: { id: row.itemSetId } })).definition;
+  const known = new Set(set.items.map((i) => i.id));
+  const header = /* @__PURE__ */ new Set(["A0310A", "A0310B", "A0310F", "A0310H"]);
+  const next = itemsOf(row);
+  const changed = [];
+  for (const [k, v] of Object.entries(input.items)) {
+    if (!known.has(k)) fail2(`${k} is not in item set V${set.itemSetVersion}.`, k);
+    if (header.has(k)) fail2("The reason for assessment is fixed by the record type.", k);
+    const value = v === null || v === void 0 ? "" : String(v).trim();
+    if (value.length > 200) fail2(`${k} is too long.`, k);
+    if (next[k] !== value) {
+      changed.push(k);
+      if (value === "") delete next[k];
+      else next[k] = value;
+    }
+  }
+  if (!changed.length) return { assessmentId: row.id, changed: 0 };
+  const touched = new Set(changed.map((k) => set.items.find((i) => i.id === k).section));
+  const signatures = (row.signatures ?? []).map((s) => ({ ...s, sections: s.sections.filter((sec) => !touched.has(sec)) })).filter((s) => s.sections.length);
+  await casUpdate(uow, { model: "MdsAssessment", id: row.id, version: row.version, from: ["in_progress"], to: "in_progress", actor, eventType: "mds.items_saved", data: { items: next, signatures }, audit: { changed } });
+  return { assessmentId: row.id, changed: changed.length };
+}
+async function signMdsSections(uow, actor, input) {
+  const row = await lockMds(uow.tx, input.assessmentId);
+  if (row.status !== "in_progress") guard("This record is complete.", "completed");
+  const userId = actorUserId(actor);
+  if (!userId) guard("A person signs the sections.", "not_human");
+  const set = (await uow.tx.assessmentTemplate.findUniqueOrThrow({ where: { id: row.itemSetId } })).definition;
+  const sections = (Array.isArray(input.sections) ? input.sections : String(input.sections ?? "").split(",")).map((s) => String(s).trim().toUpperCase()).filter(Boolean);
+  const all2 = new Set(set.items.filter((i) => i.exported !== false).map((i) => i.section));
+  if (!sections.length || sections.some((s) => !all2.has(s))) fail2("Choose the sections you completed.", "sections");
+  const title = String(input.title ?? "").trim();
+  if (!title) fail2("Your title is required (for example RN, MDS Coordinator).", "title");
+  const user = await uow.tx.user.findUnique({ where: { id: userId }, select: { name: true } });
+  const signature = { userId, name: String(input.name ?? user?.name ?? ""), title, sections: [...new Set(sections)].sort(), signedOn: iso(uow.now) };
+  const signatures = [...row.signatures ?? [], signature];
+  await casUpdate(uow, { model: "MdsAssessment", id: row.id, version: row.version, from: ["in_progress"], to: "in_progress", actor, eventType: "mds.sections_signed", data: { signatures }, audit: { sections: signature.sections, title } });
+  return { assessmentId: row.id, signed: signature.sections };
+}
+async function tablesOn(tx, date3) {
+  const v = await tx.pdpmMappingVersion.findFirst({ where: { status: "active", effectiveFrom: { lte: day7(date3) }, OR: [{ effectiveTo: null }, { effectiveTo: { gte: day7(date3) } }] }, orderBy: { effectiveFrom: "desc" } });
+  if (!v) return { id: null, code: PDPM_VERSION, tables: DEFAULT_TABLES };
+  const t = v.tables;
+  return { id: v.id, code: v.code, tables: { ptCmi: t.ptCmi, otCmi: t.otCmi, slpCmi: t.slpCmi, nursingCmi: t.nursingCmi, ntaCmi: t.ntaCmi } };
+}
+async function effectiveFromFor(tx, row) {
+  const ard = iso(row.ardDate);
+  if (row.kind !== "pps_5day") return ard;
+  const cov = await tx.coveragePeriod.findFirst({ where: { stayId: row.stayId, payer: { kind: "medicare_a" }, startDate: { lte: row.ardDate }, OR: [{ endDate: null }, { endDate: { gt: row.ardDate } }] }, select: { startDate: true } });
+  return cov ? iso(cov.startDate) : ard;
+}
+async function completeMds(uow, actor, input) {
+  const row = await lockMds(uow.tx, input.assessmentId);
+  if (row.status !== "in_progress") guard("This record is already complete.", "completed");
+  const set = (await uow.tx.assessmentTemplate.findUniqueOrThrow({ where: { id: row.itemSetId } })).definition;
+  const completedOn = input.completedOn ? dateIn(input.completedOn, "completedOn") : iso(uow.now);
+  const items = { ...itemsOf(row), Z0500B: isoToMds(completedOn) };
+  const unsigned = unsignedSections(row.kind, set, row.signatures ?? []);
+  if (unsigned.length) guard(`Sections ${unsigned.join(", ")} are not signed yet (Z0400).`, "unsigned_sections", { sections: unsigned });
+  const edits = runSpecEdits(row.kind, items, set);
+  if (edits.fatal.length) guard(`${edits.fatal.length} spec edit(s) fail: ${edits.fatal.slice(0, 3).map((e) => e.message).join(" ")}`, "spec_edits", { edits: edits.fatal });
+  const caas = caaTriggers(row.kind, items);
+  let classification = null;
+  let hipps = "";
+  if (PPS_KINDS.has(row.kind) || OBRA_ASSESSMENTS.has(row.kind)) {
+    classification = await writeClassification(uow, actor, row, items, Boolean(input.aids));
+    hipps = classification.hipps;
+  }
+  await casUpdate(uow, {
+    model: "MdsAssessment",
+    id: row.id,
+    version: row.version,
+    from: ["in_progress"],
+    to: "completed",
+    actor,
+    eventType: "mds.completed",
+    data: { items, editResults: edits, caaTriggers: { triggered: caas, verifyNote: CAA_VERIFY_NOTE }, hipps, completedAt: uow.now, completedById: actorUserId(actor) },
+    audit: { kind: row.kind, ardDate: iso(row.ardDate), hipps, caas: caas.map((c) => c.code), warnings: edits.warning.length }
+  });
+  if (row.correctionOfId) {
+    const prior = await lockMds(uow.tx, row.correctionOfId);
+    await casUpdate(uow, { model: "MdsAssessment", id: prior.id, version: prior.version, from: [prior.status], to: "superseded", actor, eventType: "mds.superseded", reason: row.correctionReason, audit: { by: row.id } });
+  }
+  return { assessmentId: row.id, hipps, caaTriggers: caas, warnings: edits.warning, classificationId: classification?.id ?? null };
+}
+async function writeClassification(uow, actor, row, items, aids) {
+  const indicator = row.kind === "pps_5day" ? "five_day" : row.kind === "ipa" ? "ipa" : "obra";
+  const effectiveFrom = await effectiveFromFor(uow.tx, row);
+  const tables = await tablesOn(uow.tx, iso(row.ardDate));
+  const input = mdsToPdpmInput(items, { aids });
+  const result = classify(input, indicator, tables.tables);
+  const created = await uow.tx.pdpmClassification.create({
+    data: {
+      residentId: row.residentId,
+      communityId: row.communityId,
+      stayId: row.stayId,
+      assessmentId: row.id,
+      mappingVersionId: tables.id,
+      indicator,
+      effectiveFrom: day7(effectiveFrom),
+      hipps: result.hipps,
+      cmi: result.cmi,
+      groups: { ...result.groups, hippsNta: result.hippsNta, ntaScore: result.ntaScore, aids: result.aids, version: tables.code },
+      functionScores: result.functionScore,
+      inputHash: sha256(canonicalJson({ input, indicator, version: tables.code })),
+      status: "current"
+    }
+  });
+  auditCreate(uow, actor, "PdpmClassification", created.id, "pdpm.classified", { assessmentId: row.id, hipps: result.hipps, effectiveFrom, version: tables.code });
+  if (row.correctionOfId) {
+    const old = await uow.tx.pdpmClassification.findFirst({ where: { assessmentId: row.correctionOfId, status: "current" } });
+    if (old) {
+      await uow.tx.pdpmClassification.update({ where: { id: old.id }, data: { status: "superseded", supersededById: created.id } });
+      uow.audit({ eventType: "pdpm.superseded", entityType: "PdpmClassification", entityId: old.id, actorUserId: actorUserId(actor), before: { status: "current", hipps: old.hipps }, after: { status: "superseded", by: created.id, hipps: result.hipps } });
+    }
+  }
+  return { id: created.id, hipps: result.hipps };
+}
+async function correctMds(uow, actor, input) {
+  const row = await lockMds(uow.tx, input.assessmentId);
+  if (!["completed", "exported", "accepted"].includes(row.status)) guard("Only a completed record can be corrected.", "not_completed");
+  const reason = String(input.reason ?? "").trim();
+  if (reason.length < 5) fail2("Say why the record is being corrected.", "reason");
+  const open = await uow.tx.mdsAssessment.findFirst({ where: { correctionOfId: row.id, status: "in_progress" }, select: { id: true } });
+  if (open) guard("A correction of this record is already open.", "correction_open", { assessmentId: open.id });
+  const items = itemsOf(row);
+  delete items.Z0500B;
+  const created = await uow.tx.mdsAssessment.create({
+    data: {
+      reference: await nextReference(uow.tx, "MDS", uow.now),
+      residentId: row.residentId,
+      communityId: row.communityId,
+      stayId: row.stayId,
+      kind: row.kind,
+      ardDate: row.ardDate,
+      itemSetId: row.itemSetId,
+      itemSetVersion: row.itemSetVersion,
+      items,
+      signatures: [],
+      status: "in_progress",
+      correctionOfId: row.id,
+      correctionNumber: (row.correctionNumber ?? 0) + 1,
+      correctionReason: reason
+    }
+  });
+  auditCreate(uow, actor, "MdsAssessment", created.id, "mds.correction_opened", { correctionOf: row.id, correctionNumber: (row.correctionNumber ?? 0) + 1 }, { reason });
+  return { assessmentId: created.id, reference: created.reference };
+}
+async function markMdsInError(uow, actor, input) {
+  const row = await lockMds(uow.tx, input.assessmentId);
+  if (row.status !== "in_progress") guard("Only a record still in progress can be marked entered in error; correct a completed one.", "completed");
+  const reason = String(input.reason ?? "").trim();
+  if (reason.length < 5) fail2("Say why.", "reason");
+  await casUpdate(uow, { model: "MdsAssessment", id: row.id, version: row.version, from: ["in_progress"], to: "entered_in_error", actor, eventType: "mds.entered_in_error", reason });
+  return { assessmentId: row.id };
+}
+async function exportMds(uow, actor, input) {
+  const ids = Array.isArray(input.assessmentIds) ? input.assessmentIds.map(String) : null;
+  const rows = await uow.tx.mdsAssessment.findMany({ where: { communityId: input.communityId, status: "completed", submissionId: null, ...ids ? { id: { in: ids } } : {} }, orderBy: [{ ardDate: "asc" }, { reference: "asc" }], take: 500 });
+  if (!rows.length) guard("There are no completed records waiting to be exported.", "nothing_to_export");
+  const community3 = await uow.tx.community.findUniqueOrThrow({ where: { id: input.communityId }, select: { identifiers: true, region: true } });
+  const facilityId = String(community3.identifiers?.ccn ?? "");
+  if (!facilityId) guard("Record the facility CCN in the community identifiers first.", "no_ccn");
+  const header = { facilityId, stateCode: String(community3.identifiers?.state ?? community3.region ?? "OH").slice(0, 2).toUpperCase(), softwareVendor: "Openfront", softwareName: "Openfront Senior Care", softwareVersion: "4a" };
+  const files = [];
+  const failed = [];
+  const sets = /* @__PURE__ */ new Map();
+  for (const row of rows) {
+    if (!sets.has(row.itemSetId)) sets.set(row.itemSetId, (await uow.tx.assessmentTemplate.findUniqueOrThrow({ where: { id: row.itemSetId } })).definition);
+    const set = sets.get(row.itemSetId);
+    const bad = batchEdits([{ reference: row.reference, kind: row.kind, items: itemsOf(row) }], set);
+    if (bad.length) {
+      failed.push({ reference: row.reference, fatal: bad[0].fatal });
+      continue;
+    }
+    files.push({ name: `${row.reference}_${itemSubset(row.kind)}.xml`, content: recordXml({ reference: row.reference, kind: row.kind, items: itemsOf(row), correctionNumber: row.correctionNumber ?? 0 }, set, header) });
+  }
+  if (failed.length) guard(`${failed.length} record(s) fail the spec edits and cannot be exported.`, "spec_edits", { failed });
+  const zip = zipStored(files);
+  const fileHash = sha256Hex(zip);
+  const reference = await nextReference(uow.tx, "MDSX", uow.now);
+  const fileName = `${facilityId}_${reference}.zip`;
+  const submission = await uow.tx.mdsSubmission.create({
+    data: { communityId: input.communityId, reference, recordCount: files.length, payload: { files, verifyNote: EXPORT_VERIFY_NOTE }, fileHash, fileName, status: "generated", generatedAt: uow.now, generatedById: actorUserId(actor), assessments: { connect: rows.map((r) => ({ id: r.id })) } }
+  });
+  const document = await uow.tx.document.create({ data: { title: `iQIES MDS submission ${reference}`, kind: "mds_submission", communityId: input.communityId, phiTier: "clin", storageKey: `mds-submission/${submission.id}`, sha256: fileHash, mimeType: "application/zip", sizeBytes: zip.length, status: "final" } });
+  for (const row of rows) await casUpdate(uow, { model: "MdsAssessment", id: row.id, version: row.version, from: ["completed"], to: "exported", actor, eventType: "mds.exported", audit: { submissionId: submission.id } });
+  auditCreate(uow, actor, "MdsSubmission", submission.id, "mds.export_generated", { reference, records: files.length, fileHash, documentId: document.id });
+  return { submissionId: submission.id, reference, fileName, fileHash, records: files.length, documentId: document.id };
+}
+async function markUploaded(uow, actor, input) {
+  const row = await uow.tx.mdsSubmission.findUniqueOrThrow({ where: { id: input.submissionId } });
+  await casUpdate(uow, { model: "MdsSubmission", id: row.id, version: row.version, from: ["generated"], to: "uploaded", actor, eventType: "mds.uploaded", data: { uploadedAt: uow.now, uploadedById: actorUserId(actor) } });
+  return { submissionId: row.id };
+}
+async function recordFvr(uow, actor, input) {
+  const text18 = String(input.text ?? "");
+  if (text18.trim().length < 10) fail2("Paste the Final Validation Report text.", "text");
+  if (text18.length > 2e6) fail2("The report is too large.", "text");
+  const row = await uow.tx.mdsSubmission.findUniqueOrThrow({ where: { id: input.submissionId }, include: { assessments: true } });
+  if (!["generated", "uploaded"].includes(row.status)) guard("This submission already has its FVR.", "fvr_recorded");
+  const outcomes = parseFvr(text18, row.assessments.map((a) => a.reference));
+  const accepted = outcomes.filter((o) => o.status === "accepted").length;
+  const rejected = outcomes.filter((o) => o.status === "rejected").length;
+  for (const a of row.assessments) {
+    const o = outcomes.find((x) => x.reference === a.reference);
+    if (o.status === "not_found" || a.status !== "exported") continue;
+    await casUpdate(uow, { model: "MdsAssessment", id: a.id, version: a.version, from: ["exported"], to: o.status, actor, eventType: `mds.${o.status}`, data: o.status === "accepted" ? { acceptedAt: uow.now } : {}, audit: { edits: o.edits } });
+  }
+  const status = rejected && !accepted ? "rejected" : rejected || outcomes.some((o) => o.status === "not_found") ? "partially_accepted" : "accepted";
+  await casUpdate(uow, { model: "MdsSubmission", id: row.id, version: row.version, from: [row.status], to: status, actor, eventType: "mds.fvr_recorded", data: { fvr: { text: text18.slice(0, 2e5), outcomes, verifyNote: FVR_VERIFY_NOTE }, fvrSummary: { accepted, rejected, notFound: outcomes.length - accepted - rejected }, fvrParsedAt: uow.now } });
+  return { submissionId: row.id, status, accepted, rejected, outcomes };
+}
+
+// features/keystone/coverage/service.ts
+init_actor();
+init_cas();
+init_errors();
+init_sequence();
+
+// features/keystone/billing/medicare.ts
+init_decimal();
+
+// features/keystone/coverage/medicare.ts
+var FULL_DAYS = 20;
+var BENEFIT_DAYS = 100;
+var SPELL_GAP_DAYS = 60;
+var diff = (a, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 864e5);
+function countCoveredDays(coveredDates, options = {}) {
+  const covered2 = [...new Set(coveredDates)].sort();
+  const care = [.../* @__PURE__ */ new Set([...options.careDates ?? [], ...covered2])].sort();
+  const spellOf = /* @__PURE__ */ new Map();
+  let spell = 1;
+  care.forEach((d, i) => {
+    if (i > 0 && diff(care[i - 1], d) - 1 >= SPELL_GAP_DAYS) spell += 1;
+    spellOf.set(d, spell);
+  });
+  const used = /* @__PURE__ */ new Map();
+  const out = [];
+  covered2.forEach((date3) => {
+    const s = spellOf.get(date3);
+    const base2 = used.get(s) ?? (s === 1 ? Math.max(0, options.priorDaysUsed ?? 0) : 0);
+    const n2 = base2 + 1;
+    used.set(s, n2);
+    out.push({ date: date3, n: n2, spell: s, bucket: n2 <= FULL_DAYS ? "full" : n2 <= BENEFIT_DAYS ? "coinsurance" : "exhausted" });
+  });
+  return out;
+}
+function counterSummary(days) {
+  const last = days[days.length - 1];
+  const spellDays = last ? days.filter((d) => d.spell === last.spell) : [];
+  return {
+    spell: last?.spell ?? 0,
+    spellStart: spellDays[0]?.date ?? null,
+    spellEnd: last?.date ?? null,
+    fullDaysUsed: spellDays.filter((d) => d.bucket === "full").length,
+    coinsuranceDaysUsed: spellDays.filter((d) => d.bucket === "coinsurance").length,
+    exhaustedDays: spellDays.filter((d) => d.bucket === "exhausted").length,
+    lastCountedDay: last?.n ?? 0
+  };
+}
+function qualifyingStay(input) {
+  const problems = [];
+  const { inpatientFrom: from, inpatientTo: to } = input;
+  if (!from || !to) problems.push("Record the hospital inpatient dates.");
+  else {
+    if (diff(from, to) < 3) problems.push("The hospital stay must be at least 3 inpatient days (discharge day does not count).");
+    const gap = diff(to, input.snfAdmission);
+    if (gap < 0) problems.push("The SNF admission is before the hospital discharge.");
+    if (gap > 30) problems.push("Admission was more than 30 days after the hospital discharge.");
+  }
+  if (!input.hasEvidence) problems.push("Attach the hospital record as evidence.");
+  return { ok: problems.length === 0, problems };
+}
+var NOTICE_LEAD_DAYS = 2;
+function noticeDueBy(lastCoveredDay) {
+  return addDays(lastCoveredDay, -NOTICE_LEAD_DAYS);
+}
+function noticeState(lastCoveredDay, deliveredOn, today2) {
+  const dueBy = noticeDueBy(lastCoveredDay);
+  if (deliveredOn) return { dueBy, status: deliveredOn <= dueBy ? "delivered_in_time" : "delivered_late", daysLeft: null };
+  return today2 > dueBy ? { dueBy, status: "overdue", daysLeft: diff(today2, dueBy) } : { dueBy, status: "due", daysLeft: diff(today2, dueBy) };
+}
+
+// features/keystone/billing/medicare.ts
+function stretchDates(stretches, through) {
+  const out = [];
+  for (const s of [...stretches].sort((a, b) => a.from < b.from ? -1 : 1)) {
+    const end = s.to && s.to < through ? s.to : through;
+    for (let d = s.from; d <= end; d = addDays(d, 1)) out.push(d);
+  }
+  return [...new Set(out)].sort();
+}
+function benefitDays(stay, through) {
+  return new Map(countCoveredDays(stretchDates(stay.stretches, through), { priorDaysUsed: stay.priorDaysUsed }).map((d) => [d.date, d]));
+}
+function classificationOn(stay, date3) {
+  return [...stay.classifications].filter((c) => c.effectiveFrom <= date3).sort((a, b) => a.effectiveFrom < b.effectiveFrom ? 1 : a.effectiveFrom > b.effectiveFrom ? -1 : a.id < b.id ? 1 : -1)[0] ?? null;
+}
+function medicareDay(stay, counted, rates, date3) {
+  if (!rates) return { kind: "problem", code: "missing_rate" };
+  const day19 = counted.get(date3);
+  if (!day19 || day19.bucket === "exhausted") return { kind: "problem", code: "benefit_exhausted" };
+  const cls = classificationOn(stay, date3);
+  if (!cls) return { kind: "problem", code: "missing_assessment" };
+  const vpdDay = vpdDayNumber(stay.stretches, date3) ?? day19.n;
+  const labor = { pt: rates.laborShare, ot: rates.laborShare, slp: rates.laborShare, nursing: rates.laborShare, nta: rates.laborShare, nonCaseMix: rates.laborShare };
+  const pd = perDiem({ cmi: cls.cmi, aids: cls.aids }, rates.rates, vpdDay, { wageIndex: rates.wageIndex, labor });
+  const coinsuranceMinor = day19.bucket === "coinsurance" ? rates.coinsuranceMinor < pd.totalMinor ? rates.coinsuranceMinor : pd.totalMinor : 0n;
+  return { kind: "billed", benefitDay: day19.n, vpdDay, classification: cls, pdpmMinor: pd.totalMinor, coinsuranceMinor, components: Object.fromEntries(Object.entries(pd.componentsMinor).map(([k, v]) => [k, v.toString()])) };
+}
+var hospiceRoomBoard = (dailyMinor, bps) => roundToMinor(dec(dailyMinor).times(bps).div(1e4));
+
+// features/keystone/coverage/service.ts
+var DATE5 = /^\d{4}-\d{2}-\d{2}$/;
+var day8 = (iso10) => /* @__PURE__ */ new Date(`${iso10}T00:00:00Z`);
+var iso2 = (d) => d ? d.toISOString().slice(0, 10) : null;
+var fail3 = (message, field) => {
+  throw new DomainError(Codes.INVALID_INPUT, message, field ? { field } : {});
+};
+var guard2 = (message, reason, extra = {}) => {
+  throw new DomainError(Codes.GUARD_FAILED, message, { reason, ...extra });
+};
+var dateIn2 = (value, field) => {
+  const v = typeof value === "string" ? value.slice(0, 10) : "";
+  if (!DATE5.test(v) || Number.isNaN(Date.parse(`${v}T00:00:00Z`))) fail3(`${field} must be a date.`, field);
+  return v;
+};
+var textIn = (value, field, required = true) => {
+  const v = typeof value === "string" ? value.trim() : "";
+  if (required && !v) fail3(`${field} is required.`, field);
+  if (v.length > 2e3) fail3(`${field} is too long.`, field);
+  return v;
+};
+async function lockCoverage(tx, id) {
+  const rows = await tx.$queryRawUnsafe(`SELECT "id" FROM "CoveragePeriod" WHERE "id" = $1 FOR UPDATE`, id);
+  if (!rows.length) throw new DomainError(Codes.NOT_FOUND, "Coverage not found.");
+  return tx.coveragePeriod.findUniqueOrThrow({ where: { id }, include: { payer: { select: { kind: true, name: true } }, stay: { select: { id: true, residentId: true, communityId: true, admittedAt: true, status: true } } } });
+}
+var today = async (tx, communityId, now) => {
+  const c = await tx.community.findUnique({ where: { id: communityId }, select: { timeZone: true } });
+  return localDate(c?.timeZone ?? "America/New_York", now);
+};
+async function changePayer(uow, actor, input) {
+  const from = dateIn2(input.from, "from");
+  const stay = await uow.tx.stay.findUnique({ where: { id: input.stayId }, select: { id: true, residentId: true, communityId: true, status: true, admittedAt: true } });
+  if (!stay?.communityId) throw new DomainError(Codes.NOT_FOUND, "Stay not found.");
+  if (stay.status !== "admitted") guard2("Only an admitted stay changes payer.", "not_admitted");
+  const payer = await uow.tx.payer.findUnique({ where: { id: input.payerId }, select: { id: true, kind: true, name: true } });
+  if (!payer) fail3("Choose a payer.", "payerId");
+  const current = await uow.tx.coveragePeriod.findFirst({ where: { stayId: stay.id, rank: "primary", status: { in: ["active", "ending", "pending", "retro_approved"] }, startDate: { lt: day8(from) }, OR: [{ endDate: null }, { endDate: { gt: day8(from) } }] }, include: { payer: { select: { kind: true } } } });
+  if (current) {
+    if (current.payerId === payer.id) guard2("That payer is already primary.", "same_payer");
+    if (current.payer?.kind === "medicare_a") await assertNoticeGiven(uow.tx, current, addDays(from, -1), input.endOverrideReason);
+    const reason = String(input.endReason ?? (payer.kind === "hospice_agency" ? "payer_change" : "payer_change"));
+    await casUpdate(uow, { model: "CoveragePeriod", id: current.id, version: current.version, from: [current.status], to: "ended", actor, eventType: "coverage.ended", data: { endDate: day8(from), endReason: reason, endOverrideReason: input.endOverrideReason ? String(input.endOverrideReason) : null, ...current.payer?.kind === "medicare_a" && !current.lastCoveredDay ? { lastCoveredDay: day8(addDays(from, -1)) } : {} } });
+  }
+  const bps = input.hospiceRoomBoardBps === void 0 || input.hospiceRoomBoardBps === null || input.hospiceRoomBoardBps === "" ? null : Number(input.hospiceRoomBoardBps);
+  if (payer.kind === "hospice_agency") {
+    if (bps === null || !Number.isInteger(bps) || bps < 0 || bps > 1e4) fail3("The room-and-board share is a whole number of basis points (9500 = 95%).", "hospiceRoomBoardBps");
+    textIn(input.hospiceAgency, "hospiceAgency");
+  }
+  const created = await uow.tx.coveragePeriod.create({
+    data: {
+      stayId: stay.id,
+      payerId: payer.id,
+      rank: "primary",
+      startDate: day8(from),
+      status: "active",
+      memberReference: textIn(input.memberReference, "memberReference", false),
+      qualifyingStayFrom: input.qualifyingStayFrom ? day8(dateIn2(input.qualifyingStayFrom, "qualifyingStayFrom")) : null,
+      qualifyingStayTo: input.qualifyingStayTo ? day8(dateIn2(input.qualifyingStayTo, "qualifyingStayTo")) : null,
+      qualifyingStayHospital: textIn(input.qualifyingStayHospital, "qualifyingStayHospital", false),
+      ...payer.kind === "hospice_agency" ? { hospiceAgency: textIn(input.hospiceAgency, "hospiceAgency"), hospiceElectionOn: day8(from), hospiceRoomBoardBps: bps } : {}
+    }
+  });
+  auditCreate(uow, actor, "CoveragePeriod", created.id, payer.kind === "hospice_agency" ? "coverage.hospice_elected" : "coverage.opened", { payerKind: payer.kind, startDate: from, replaces: current?.id ?? null });
+  return { coverageId: created.id, endedCoverageId: current?.id ?? null };
+}
+async function assertNoticeGiven(tx, coverage, lastDay2, override2) {
+  if (override2) {
+    if (!["resident_refused_notice", "death", "emergency_transfer", "other"].includes(String(override2))) fail3("Choose a valid reason the notice was not given.", "endOverrideReason");
+    return;
+  }
+  const lcd = iso2(coverage.lastCoveredDay) ?? lastDay2;
+  const notice = await tx.noticeDelivery.findFirst({ where: { subjectType: "CoveragePeriod", subjectId: coverage.id, kind: { in: ["nomnc", "snfabn"] }, deliveredAt: { not: null } }, orderBy: { deliveredAt: "asc" } });
+  const state2 = noticeState(lcd, notice ? iso2(notice.deliveredAt) : null, lcd);
+  if (state2.status !== "delivered_in_time") guard2(`The NOMNC must be delivered by ${state2.dueBy} (2 days before the last covered day ${lcd}). Record it, or give the reason it could not be.`, "nomnc_missing", { dueBy: state2.dueBy, status: state2.status });
+}
+async function recordQualifyingStay(uow, actor, input) {
+  const cov = await lockCoverage(uow.tx, input.coverageId);
+  if (cov.payer?.kind !== "medicare_a") guard2("Qualifying-stay evidence is for Medicare Part A coverage.", "not_part_a");
+  const from = dateIn2(input.from, "from"), to = dateIn2(input.to, "to");
+  const hospital = textIn(input.hospital, "hospital");
+  const note = textIn(input.evidenceNote, "evidenceNote", false);
+  const doc = await uow.tx.document.create({ data: { title: textIn(input.documentTitle, "documentTitle", false) || `Hospital record: ${hospital} ${from} to ${to}`, kind: "qualifying_stay", communityId: cov.stay?.communityId ?? null, residentId: cov.stay?.residentId ?? null, phiTier: "clin", status: "final" } });
+  auditCreate(uow, actor, "Document", doc.id, "document.filed", { kind: "qualifying_stay" });
+  const check = qualifyingStay({ inpatientFrom: from, inpatientTo: to, snfAdmission: iso2(cov.startDate), hasEvidence: true });
+  await casUpdate(uow, { model: "CoveragePeriod", id: cov.id, version: cov.version, from: [cov.status], to: cov.status, actor, eventType: "coverage.qualifying_stay_recorded", data: { qualifyingStayFrom: day8(from), qualifyingStayTo: day8(to), qualifyingStayHospital: hospital, qualifyingStayEvidenceId: doc.id, qualifyingStayEvidenceNote: note || `Document ${doc.id}` }, audit: { from, to, hospital, ok: check.ok, problems: check.problems } });
+  return { coverageId: cov.id, ok: check.ok, problems: check.problems, documentId: doc.id };
+}
+async function recordSkilledCert(uow, actor, input) {
+  const cov = await lockCoverage(uow.tx, input.coverageId);
+  if (cov.payer?.kind !== "medicare_a") guard2("The skilled certification is for Medicare Part A coverage.", "not_part_a");
+  const signedOn = dateIn2(input.signedOn, "signedOn");
+  const by8 = textIn(input.signedBy, "signedBy");
+  if (signedOn > await today(uow.tx, cov.stay.communityId, uow.now)) fail3("The signing date cannot be in the future.", "signedOn");
+  await casUpdate(uow, { model: "CoveragePeriod", id: cov.id, version: cov.version, from: [cov.status], to: cov.status, actor, eventType: "coverage.skilled_cert_recorded", data: { skilledCertSignedAt: day8(signedOn), skilledCertBy: by8 }, audit: { signedOn, signedBy: by8 } });
+  return { coverageId: cov.id };
+}
+async function recordPriorDays(uow, actor, input) {
+  const resident3 = await uow.tx.resident.findUnique({ where: { id: input.residentId }, select: { id: true, communityId: true } });
+  if (!resident3) throw new DomainError(Codes.NOT_FOUND, "Resident not found.");
+  const source = String(input.source ?? "");
+  if (!["hets", "cwf_manual", "hospital_record", "resident_report"].includes(source)) fail3("Choose where the figure came from.", "source");
+  const days = Number(input.daysUsed);
+  if (!Number.isInteger(days) || days < 0 || days > 100) fail3("Days used is a whole number from 0 to 100.", "daysUsed");
+  const row = await uow.tx.priorSnfDaysObservation.create({ data: { residentId: resident3.id, communityId: resident3.communityId, source, daysUsed: days, asOf: day8(dateIn2(input.asOf, "asOf")), spellStart: input.spellStart ? day8(dateIn2(input.spellStart, "spellStart")) : null, note: textIn(input.note, "note", false), recordedById: actorUserId(actor) } });
+  auditCreate(uow, actor, "PriorSnfDaysObservation", row.id, "coverage.prior_days_recorded", { source, daysUsed: days });
+  return { observationId: row.id };
+}
+async function setLastCoveredDay(uow, actor, input) {
+  const cov = await lockCoverage(uow.tx, input.coverageId);
+  if (!["medicare_a", "medicare_advantage"].includes(cov.payer?.kind ?? "")) guard2("A last covered day is for Medicare Part A or Medicare Advantage.", "not_medicare");
+  if (!["active", "ending"].includes(cov.status)) guard2("This coverage is not active.", "not_active");
+  const lcd = dateIn2(input.lastCoveredDay, "lastCoveredDay");
+  if (lcd < iso2(cov.startDate)) fail3("The last covered day is before the coverage starts.", "lastCoveredDay");
+  await casUpdate(uow, { model: "CoveragePeriod", id: cov.id, version: cov.version, from: ["active", "ending"], to: "ending", actor, eventType: "coverage.last_covered_day_set", data: { lastCoveredDay: day8(lcd) }, reason: textIn(input.reason, "reason", false) || null, audit: { lastCoveredDay: lcd, noticeDueBy: addDays(lcd, -2) } });
+  return { coverageId: cov.id, lastCoveredDay: lcd, noticeDueBy: addDays(lcd, -2) };
+}
+async function recordCoverageNotice(uow, actor, input) {
+  const cov = await lockCoverage(uow.tx, input.coverageId);
+  const kind = String(input.kind ?? "");
+  if (!["nomnc", "snfabn"].includes(kind)) fail3("Choose NOMNC or SNFABN.", "kind");
+  const method = String(input.method ?? "");
+  if (!["in_person", "mail", "email", "portal", "phone_then_mail"].includes(method)) fail3("Choose how it was delivered.", "method");
+  const deliveredOn = dateIn2(input.deliveredOn, "deliveredOn");
+  if (deliveredOn > await today(uow.tx, cov.stay.communityId, uow.now)) fail3("The delivery date cannot be in the future.", "deliveredOn");
+  const ack = String(input.acknowledgement ?? "signed");
+  if (!["signed", "refused_witnessed", "not_required"].includes(ack)) fail3("Choose the acknowledgement.", "acknowledgement");
+  const repId = input.recipientRepresentativeId ? String(input.recipientRepresentativeId) : null;
+  if (repId) {
+    const rep = await uow.tx.representative.findUnique({ where: { id: repId }, select: { residentId: true } });
+    if (rep?.residentId !== cov.stay?.residentId) fail3("That representative does not represent this resident.", "recipientRepresentativeId");
+  }
+  const notice = await uow.tx.noticeDelivery.create({ data: { kind, subjectType: "CoveragePeriod", subjectId: cov.id, residentId: cov.stay?.residentId ?? null, recipientRepresentativeId: repId, method, deliveredAt: day8(deliveredOn), deliveredById: actorUserId(actor), acknowledgement: ack, note: textIn(input.note, "note", false) } });
+  const lcd = iso2(cov.lastCoveredDay);
+  const state2 = lcd ? noticeState(lcd, deliveredOn, deliveredOn) : null;
+  auditCreate(uow, actor, "NoticeDelivery", notice.id, "notice.delivered", { kind, method, deliveredOn, coverageId: cov.id, clock: state2?.status ?? null });
+  return { noticeId: notice.id, clock: state2 };
+}
+async function revokeHospice(uow, actor, input) {
+  const cov = await lockCoverage(uow.tx, input.coverageId);
+  if (cov.payer?.kind !== "hospice_agency") guard2("This is not a hospice election.", "not_hospice");
+  if (!["active", "ending"].includes(cov.status)) guard2("This election is not active.", "not_active");
+  const on = dateIn2(input.revokedOn, "revokedOn");
+  if (on <= iso2(cov.startDate)) fail3("The revocation is on or before the election.", "revokedOn");
+  const v = await casUpdate(uow, { model: "CoveragePeriod", id: cov.id, version: cov.version, from: [cov.status], to: "ended", actor, eventType: "coverage.hospice_revoked", data: { endDate: day8(on), endReason: "hospice_revoked" } });
+  const payer = await uow.tx.payer.findUnique({ where: { id: input.nextPayerId }, select: { id: true, kind: true } });
+  if (!payer || payer.kind === "hospice_agency") fail3("Choose the payer after the revocation.", "nextPayerId");
+  const created = await uow.tx.coveragePeriod.create({ data: { stayId: cov.stayId, payerId: payer.id, rank: "primary", startDate: day8(on), status: "active", memberReference: textIn(input.memberReference, "memberReference", false) } });
+  auditCreate(uow, actor, "CoveragePeriod", created.id, "coverage.opened", { payerKind: payer.kind, startDate: on, after: "hospice_revoked" });
+  return { coverageId: created.id };
+}
+async function requestAuthorisation(uow, actor, input) {
+  const cov = await lockCoverage(uow.tx, input.coverageId);
+  if (!["medicare_advantage", "medicaid_mco", "commercial"].includes(cov.payer?.kind ?? "")) guard2("Authorisations are for managed plans.", "not_managed");
+  const interval = input.reviewIntervalDays === void 0 || input.reviewIntervalDays === "" ? 7 : Number(input.reviewIntervalDays);
+  if (!Number.isInteger(interval) || interval < 1 || interval > 60) fail3("The review interval is 1 to 60 days.", "reviewIntervalDays");
+  const row = await uow.tx.authorisation.create({
+    data: { reference: await nextReference(uow.tx, "AUTH", uow.now), residentId: cov.stay?.residentId ?? null, communityId: cov.stay?.communityId ?? null, stayId: cov.stayId, coverageId: cov.id, payerId: cov.payerId, requestedOn: day8(dateIn2(input.requestedOn, "requestedOn")), payerAuthNumber: textIn(input.payerAuthNumber, "payerAuthNumber", false), levelOfCare: textIn(input.levelOfCare, "levelOfCare", false), reviewIntervalDays: interval, status: "requested", note: textIn(input.note, "note", false) }
+  });
+  auditCreate(uow, actor, "Authorisation", row.id, "authorisation.requested", { coverageId: cov.id });
+  return { authorisationId: row.id, reference: row.reference };
+}
+async function decideAuthorisation(uow, actor, input) {
+  const row = await uow.tx.authorisation.findUnique({ where: { id: input.authorisationId } });
+  if (!row) throw new DomainError(Codes.NOT_FOUND, "Authorisation not found.");
+  const decision = String(input.decision ?? "");
+  if (decision === "approved") {
+    const from = dateIn2(input.authFrom, "authFrom"), to = dateIn2(input.authTo, "authTo");
+    if (to < from) fail3("The authorised days end before they start.", "authTo");
+    await casUpdate(uow, { model: "Authorisation", id: row.id, version: row.version, from: ["requested"], to: "approved", actor, eventType: "authorisation.approved", data: { authFrom: day8(from), authTo: day8(to), ...input.payerAuthNumber ? { payerAuthNumber: textIn(input.payerAuthNumber, "payerAuthNumber") } : {} }, audit: { authFrom: from, authTo: to } });
+  } else if (decision === "denied") {
+    await casUpdate(uow, { model: "Authorisation", id: row.id, version: row.version, from: ["requested"], to: "denied", actor, eventType: "authorisation.denied" });
+  } else fail3("Choose approved or denied.", "decision");
+  return { authorisationId: row.id, status: decision };
+}
+async function recordReview(uow, actor, input) {
+  const auth = await uow.tx.authorisation.findUnique({ where: { id: input.authorisationId } });
+  if (!auth) throw new DomainError(Codes.NOT_FOUND, "Authorisation not found.");
+  if (auth.status !== "approved") guard2("Reviews are recorded against an approved authorisation.", "not_approved");
+  const outcome = String(input.outcome ?? "");
+  if (!["continued", "extended", "last_covered_day_set", "denied"].includes(outcome)) fail3("Choose the outcome.", "outcome");
+  const reviewedOn = dateIn2(input.reviewedOn, "reviewedOn");
+  const newTo = outcome === "extended" || outcome === "last_covered_day_set" ? dateIn2(input.newAuthTo, "newAuthTo") : null;
+  if (newTo && auth.authFrom && newTo < iso2(auth.authFrom)) fail3("The new date is before the authorisation starts.", "newAuthTo");
+  const review = await uow.tx.concurrentReview.create({ data: { residentId: auth.residentId, communityId: auth.communityId, authorisationId: auth.id, reviewedOn: day8(reviewedOn), outcome, newAuthTo: newTo ? day8(newTo) : null, reviewer: textIn(input.reviewer, "reviewer", false), note: textIn(input.note, "note", false), recordedById: actorUserId(actor) } });
+  auditCreate(uow, actor, "ConcurrentReview", review.id, "authorisation.reviewed", { authorisationId: auth.id, outcome, newAuthTo: newTo });
+  if (outcome === "extended") await casUpdate(uow, { model: "Authorisation", id: auth.id, version: auth.version, from: ["approved"], to: "approved", actor, eventType: "authorisation.extended", data: { authTo: day8(newTo) } });
+  if (outcome === "last_covered_day_set" || outcome === "denied") {
+    await casUpdate(uow, { model: "Authorisation", id: auth.id, version: auth.version, from: ["approved"], to: "ended", actor, eventType: "authorisation.ended", data: { authTo: day8(newTo ?? reviewedOn) } });
+    if (auth.coverageId) await setLastCoveredDay(uow, actor, { coverageId: auth.coverageId, lastCoveredDay: newTo ?? reviewedOn, reason: `Concurrent review ${outcome}` });
+  }
+  return { reviewId: review.id };
+}
+async function recountBenefitPeriod(uow, actor, input) {
+  const resident3 = await uow.tx.resident.findUnique({ where: { id: input.residentId }, select: { id: true, communityId: true } });
+  if (!resident3?.communityId) throw new DomainError(Codes.NOT_FOUND, "Resident not found.");
+  const asOf = await today(uow.tx, resident3.communityId, uow.now);
+  const summary = await benefitSummary(uow.tx, resident3.id, asOf);
+  const hash2 = sha256(canonicalJson(summary));
+  const existing = await uow.tx.benefitPeriodCounter.findFirst({ where: { residentId: resident3.id }, orderBy: { createdAt: "desc" } });
+  if (existing?.derivedFromHash === hash2) return { counterId: existing.id, unchanged: true, ...summary };
+  const row = await uow.tx.benefitPeriodCounter.create({ data: { residentId: resident3.id, communityId: resident3.communityId, spellStart: summary.spellStart ? day8(summary.spellStart) : null, fullDaysUsed: summary.fullDaysUsed, coinsuranceDaysUsed: summary.coinsuranceDaysUsed, priorDaysUsed: summary.priorDaysUsed, lastCoveredDay: summary.lastCountedDate ? day8(summary.lastCountedDate) : null, derivedFromHash: hash2, computedAt: uow.now } });
+  auditCreate(uow, actor, "BenefitPeriodCounter", row.id, "coverage.benefit_recounted", summary);
+  return { counterId: row.id, unchanged: false, ...summary };
+}
+async function benefitSummary(tx, residentId, asOf) {
+  const covs = await tx.coveragePeriod.findMany({ where: { stay: { residentId }, payer: { kind: "medicare_a" }, status: { in: ["active", "ending", "ended", "retro_approved"] } }, orderBy: { startDate: "asc" }, select: { startDate: true, endDate: true } });
+  const stretches = covs.map((c) => ({ from: iso2(c.startDate), to: c.endDate ? addDays(iso2(c.endDate), -1) : null }));
+  const firstFrom = stretches[0]?.from ?? asOf;
+  const prior = await tx.priorSnfDaysObservation.findFirst({ where: { residentId, asOf: { lte: day8(firstFrom) } }, orderBy: [{ asOf: "desc" }, { createdAt: "desc" }], select: { daysUsed: true } });
+  const priorDaysUsed = prior?.daysUsed ?? 0;
+  const counted = [...benefitDays({ stayId: "", stretches, priorDaysUsed, classifications: [], qualifyingStayOk: true, skilledCertOk: true }, asOf).values()];
+  const s = counterSummary(counted);
+  const spell = counted.length ? counted[counted.length - 1].spell : 0;
+  const spellDays = counted.filter((d) => d.spell === spell);
+  return {
+    asOf,
+    priorDaysUsed,
+    spellStart: spellDays[0]?.date ?? null,
+    fullDaysUsed: s.fullDaysUsed,
+    coinsuranceDaysUsed: s.coinsuranceDaysUsed,
+    exhaustedDays: s.exhaustedDays,
+    lastCountedDate: spellDays[spellDays.length - 1]?.date ?? null,
+    lastCountedDay: s.lastCountedDay,
+    daysLeft: Math.max(0, 100 - (s.lastCountedDay ?? priorDaysUsed)),
+    coveredDates: stretchDates(stretches, asOf).length
+  };
+}
+
+// features/keystone/pdpm/goldenCases.ts
+var gg2 = (eat, oral, toilet, bed, tr, walk) => ({
+  gg: { GG0130A1: eat, GG0130B1: oral, GG0130C1: toilet, GG0170B1: bed[0], GG0170C1: bed[1], GG0170D1: tr[0], GG0170E1: tr[1], GG0170F1: tr[2], ...walk ? { GG0170J1: walk[0], GG0170K1: walk[1] } : {} },
+  cannotWalk: walk === null
+});
+var all = (code, walk = true) => gg2(code, code, code, [code, code], [code, code, code], walk ? [code, code] : null);
+var GOLDEN_CASES = [
+  // GG all 03 → 2 each: PT/OT 12 (TC), nursing 8 (PBC1). PT 75.73×1.78=134.7994→134.80; OT 70.49×1.60=112.784→112.78; SLP 28.28×0.64=18.0992→18.10;
+  // NUR 132×1.07=141.24; NTA 99.59×0.68×3=203.1636→203.16; NCM 118.21. Σ 728.29
+  { name: "Ada Quill, hip replacement, day 1", input: { clinicalCategory: "major_joint", ...all("03"), cognition: "intact" }, hipps: "CAXF1", groups: "TC/SA/PBC1/NF", day: 1, perDiem: "728.29" },
+  // Same resident on day 25: PT/OT ×0.98, NTA ×1. PT 132.103412→132.10; OT 110.52832→110.53; SLP 18.10; NUR 141.24; NTA 67.7212→67.72; NCM 118.21. Σ 587.90
+  { name: "Ada Quill, day 25", input: { clinicalCategory: "major_joint", ...all("03"), cognition: "intact" }, hipps: "CAXF1", groups: "TC/SA/PBC1/NF", day: 25, perDiem: "587.90" },
+  // The CMS/Noridian example TC/SD/PBC1/NE 5-day = CDXE1. SLP 28.28×1.38=39.0264→39.03; NTA 99.59×0.91×3=271.8807→271.88. Σ 134.80+112.78+39.03+141.24+271.88+118.21 = 817.94
+  { name: "Bram Okafor, knee replacement, mild impairment, diabetes", input: { clinicalCategory: "major_joint", ...all("03"), cognition: "mild", ntaConditions: ["diabetes"] }, hipps: "CDXE1", groups: "TC/SD/PBC1/NE", day: 1, perDiem: "817.94" },
+  // Eat 06(4) oral 03(2) toilet 02(1) bed 03/03(2) transfers 02(1) cannot walk: PT/OT 10 → TO; nursing 8 → PBC1. Neuro + cognition = 2, mech diet → SH.
+  // IV med 5 + diabetes 2 = 7 → NC. PT 75.73×1.47=111.3231→111.32; OT 70.49×1.47=103.6203→103.62; SLP 28.28×2.70=76.356→76.36; NUR 141.24;
+  // NTA 99.59×1.74×3=519.8598→519.86; NCM 118.21. Σ 1070.61
+  { name: "Cleo Varga, stroke, moderate impairment", input: { clinicalCategory: "acute_neuro", ...gg2("06", "03", "02", ["03", "03"], ["02", "02", "02"], null), cognition: "moderate", mechanicallyAlteredDiet: true, ntaConditions: ["iv_medication", "diabetes"] }, hipps: "OHXC1", groups: "TO/SH/PBC1/NC", day: 1, perDiem: "1070.61" },
+  // All 01 → 0: TI; trach + vent → ES3. Comorbidity + severe cognition = 2, both swallow items → SI. Vent 4 + trach 1 = 5 → ND.
+  // PT 75.73×1.07=81.0311→81.03; OT 70.49×1.12=78.9488→78.95; SLP 28.28×3.34=94.4552→94.46; NUR 132×3.84=506.88; NTA 99.59×1.26×3=376.4502→376.45; NCM 118.21. Σ 1255.98
+  { name: "Dov Lindqvist, heart failure on a ventilator", input: { clinicalCategory: "cardiovascular", ...all("01"), cognition: "severe", slpComorbidity: true, mechanicallyAlteredDiet: true, swallowingDisorder: true, tracheostomy: true, ventilator: true, ntaConditions: ["ventilator", "tracheostomy"] }, hipps: "IIAD1", groups: "TI/SI/ES3/ND", day: 1, perDiem: "1255.98" },
+  // All 06: PT/OT 24 → TH; nursing 16, so isolation falls to clinically complex: CA2 (depression). Isolation 1 + MDRO 1 = 2 → NE.
+  // PT 75.73×1.10=83.303→83.30; OT 70.49×1.09=76.8341→76.83; SLP 18.10; NUR 132×1.03=135.96; NTA 271.88; NCM 118.21. Σ 704.28
+  { name: "Esme Hart, hip fracture in isolation, independent", input: { clinicalCategory: "other_ortho", ...all("06"), cognition: "intact", isolation: true, depression: true, ntaConditions: ["isolation", "mdro"] }, hipps: "HAOE1", groups: "TH/SA/CA2/NE", day: 1, perDiem: "704.28" },
+  // All 02 → 1: PT/OT 6 → TJ; nursing 4, special care high + depression → HDE2. Comorbidity + cognition = 2, neither → SG. Parenteral high 7 + DM 2 = 9 → NB.
+  // PT 75.73×1.34=101.4782→101.48; OT 70.49×1.37=96.5713→96.57; SLP 28.28×1.93=54.5804→54.58; NUR 132×2.27=299.64; NTA 99.59×2.39×3=714.0603→714.06; NCM 118.21. Σ 1384.54
+  { name: "Faro Mensah, COPD on parenteral nutrition", input: { clinicalCategory: "pulmonary", ...all("02"), cognition: "moderate", slpComorbidity: true, specialCareHigh: true, depression: true, ntaConditions: ["parenteral_iv_high", "diabetes"] }, hipps: "JGDB1", groups: "TJ/SG/HDE2/NB", day: 1, perDiem: "1384.54" },
+  // All 04 → 3: PT/OT 18 → TO; nursing 12, special care low → LBC1. Swallowing only → SB. MDS NTA: IV med 5 → ND on the HIPPS; paid with AIDS +8 = 13 → NA.
+  // PT 111.32; OT 103.62; SLP 28.28×1.72=48.6416→48.64; NUR 132×1.35×1.18=210.276→210.28; NTA 99.59×3.06×3=914.2362→914.24; NCM 118.21. Σ 1506.31
+  { name: "Gil Ferreira, after abdominal surgery, AIDS on the claim", input: { clinicalCategory: "nonortho_surgery", ...all("04"), cognition: "intact", swallowingDisorder: true, specialCareLow: true, ntaConditions: ["iv_medication"], aids: true }, hipps: "OBKD1", groups: "TO/SB/LBC1/NA", day: 1, perDiem: "1506.31" },
+  // All 05 → 4, cannot walk: PT/OT 20 → TK; nursing 16, behaviour + 2 restorative → BAB2. Severe cognition → SD. NTA 0 → NF.
+  // PT 75.73×1.44=109.0512→109.05; OT 70.49×1.46=102.9154→102.92; SLP 39.03; NUR 132×0.98=129.36; NTA 203.16; NCM 118.21. Σ 701.73
+  { name: "Hana Brod, cancer with behaviours", input: { clinicalCategory: "cancer", ...all("05", false), cognition: "severe", behavioral: true, restorativeNursingCount: 2 }, hipps: "KDRF1", groups: "TK/SD/BAB2/NF", day: 1, perDiem: "701.73" },
+  // Eat 03 (2), the rest 01: PT/OT 2 → TI; nursing 2, clinically complex → CDE1. Mild + both swallow → SF. Wound infection 2 + tube 1 + malnutrition 1 = 4 → ND.
+  // SLP 28.28×2.82=79.7496→79.75; NUR 132×1.53=201.96. Σ 81.03+78.95+79.75+201.96+376.45+118.21 = 936.35
+  { name: "Ivo Sato, sepsis", input: { clinicalCategory: "infection", ...gg2("03", "01", "01", ["01", "01"], ["01", "01", "01"], ["01", "01"]), cognition: "mild", mechanicallyAlteredDiet: true, swallowingDisorder: true, clinicallyComplex: true, ntaConditions: ["wound_infection", "feeding_tube", "malnutrition"] }, hipps: "IFMD1", groups: "TI/SF/CDE1/ND", day: 1, perDiem: "936.35" },
+  // IPA, all 06: PT/OT 24 → TD; nursing 16 → PA1. Day 30 is the 28-34 block: PT/OT ×0.96. PT 75.73×1.81×0.96=131.588448→131.59;
+  // OT 70.49×1.45×0.96=98.12208→98.12; SLP 18.10; NUR 132×0.62=81.84; NTA 67.72; NCM 118.21. Σ 515.58
+  { name: "Jun Abara, spinal surgery, IPA on day 30", input: { clinicalCategory: "major_joint", ...all("06"), cognition: "intact" }, indicator: "ipa", hipps: "DAYF0", groups: "TD/SA/PA1/NF", day: 30, perDiem: "515.58" },
+  // All 02, cannot walk: PT/OT 5 → TM; nursing 4, 2 restorative → PDE2. Neuro + comorbidity + cognition, both swallow → SL.
+  // PT 75.73×1.20=90.876→90.88; OT 70.49×1.23=86.7027→86.70; SLP 28.28×3.98=112.5544→112.55; NUR 132×1.48=195.36; NTA 203.16; NCM 118.21. Σ 806.86
+  { name: "Kai Duarte, stroke with aphasia", input: { clinicalCategory: "acute_neuro", ...all("02", false), cognition: "moderate", slpComorbidity: true, mechanicallyAlteredDiet: true, swallowingDisorder: true, restorativeNursingCount: 2 }, hipps: "MLTF1", groups: "TM/SL/PDE2/NF", day: 1, perDiem: "806.86" },
+  // As Ada Quill day 1, wage index 1.0500: factor 0.702×1.05+0.298 = 1.0351. PT 75.73×1.0351×1.78=139.5308…→139.53; OT 72.964199×1.60=116.7427…→116.74;
+  // SLP 29.272628×0.64=18.7344…→18.73; NUR 136.6332×1.07=146.1975…→146.20; NTA 103.085609×0.68×3=210.2946…→210.29; NCM 118.21×1.0351=122.3591…→122.36. Σ 753.85
+  { name: "Lena Wexford, hip replacement, wage index 1.05", input: { clinicalCategory: "major_joint", ...all("03"), cognition: "intact" }, hipps: "CAXF1", groups: "TC/SA/PBC1/NF", day: 1, wageIndex: "1.0500", perDiem: "753.85" }
+];
+var ICD2 = {
+  major_joint: ["Z96.651", "05"],
+  other_ortho: ["S72.001A", "06"],
+  acute_neuro: ["I63.9", "01"],
+  cardiovascular: ["I50.9", "10"],
+  pulmonary: ["J44.1", "11"],
+  nonortho_surgery: ["K56.7", "13"],
+  cancer: ["C18.9", "12"],
+  infection: ["A41.9", "13"],
+  medical_mgmt: ["E11.9", "13"]
+};
+function goldenItems(input) {
+  const items = {};
+  const [icd, category] = ICD2[input.clinicalCategory];
+  items.I0020B = icd;
+  items.I0020 = category;
+  for (const key of ["GG0130A1", "GG0130B1", "GG0130C1", "GG0170B1", "GG0170C1", "GG0170D1", "GG0170E1", "GG0170F1", "GG0170J1", "GG0170K1"]) items[key] = input.gg[key] ?? "88";
+  items.GG0170I1 = input.cannotWalk ? "88" : input.gg.GG0170J1 ?? "88";
+  if (input.cognition === "severe") {
+    items.C0100 = "0";
+    items.C1000 = "3";
+  } else {
+    items.C0100 = "1";
+    items.C0500 = { intact: "15", mild: "10", moderate: "5" }[input.cognition];
+  }
+  const flag = (key, on) => {
+    if (on) items[key] = "1";
+  };
+  flag("SLP_COMORBIDITY", input.slpComorbidity);
+  flag("K0510C2", input.mechanicallyAlteredDiet);
+  flag("K0100", input.swallowingDisorder);
+  flag("O0110E1", input.tracheostomy);
+  flag("O0110F1", input.ventilator);
+  flag("O0110M1", input.isolation);
+  flag("NURSING_SCH", input.specialCareHigh);
+  flag("NURSING_SCL", input.specialCareLow);
+  flag("NURSING_CC", input.clinicallyComplex);
+  flag("NURSING_BEHAVIOR", input.behavioral);
+  if (input.depression) items.D0160 = "12";
+  if (input.restorativeNursingCount) items.H_RESTORATIVE = String(input.restorativeNursingCount);
+  const byItem = { iv_medication: "O0110H1", diabetes: "I2900", ventilator: "O0110F1", tracheostomy: "O0110E1", isolation: "O0110M1", feeding_tube: "K0510B2" };
+  const listed = [];
+  for (const c of input.ntaConditions ?? []) {
+    if (byItem[c]) items[byItem[c]] = "1";
+    else listed.push(c);
+  }
+  if (listed.length) items.I8000 = listed.join(",");
+  return items;
+}
+
+// features/keystone/seed/mds.ts
+var ADMISSIONS = "seed_user_patel";
+var MDS_COORDINATOR = "seed_user_vukovic";
+var BIRTH_YEARS = [1938, 1941, 1944, 1936, 1947, 1940, 1943, 1939, 1945, 1942, 1937, 1946];
+var SEED_CASES = GOLDEN_CASES.filter((c) => !/, day 25$/.test(c.name));
+async function runMdsSeed(db, options = {}) {
+  const now = options.now ?? /* @__PURE__ */ new Date();
+  const prefix = options.idempotencyPrefix ?? "seed-mds-v1";
+  const created = { templates: 0, rates: 0, residents: 0, assessments: 0 };
+  const coordinator = seedActor(MDS_COORDINATOR);
+  const ref2 = await command(db, { name: "setup.load_mds_reference", actor: coordinator, idempotencyKey: `${prefix}:reference`, params: {}, now }, async (uow) => {
+    const loaded = await loadMdsReference(uow, coordinator);
+    const community4 = await uow.tx.community.findUnique({ where: { id: COMMUNITY.id }, select: { identifiers: true } });
+    const ids = community4?.identifiers ?? {};
+    if (community4 && !ids.cbsa) await uow.tx.community.update({ where: { id: COMMUNITY.id }, data: { identifiers: { ...ids, cbsa: "cbsa_17460" } } });
+    return loaded;
+  });
+  created.templates += ref2.value.templates;
+  created.rates += ref2.value.rates;
+  const community3 = await db.community.findUnique({ where: { id: COMMUNITY.id }, select: { timeZone: true } });
+  if (!community3) return created;
+  const today2 = localDate(community3.timeZone ?? "America/New_York", now);
+  for (const [i, c] of SEED_CASES.entries()) {
+    const [firstName, lastName] = c.name.split(",")[0].split(" ");
+    const result = await command(db, { name: "setup.mds_case", actor: coordinator, idempotencyKey: `${prefix}:case:${i}`, params: { case: c.name }, serializable: true, now }, async (uow) => {
+      const admissions = seedActor(ADMISSIONS);
+      const taken = new Set((await uow.tx.stay.findMany({ where: { status: { in: ["admitted", "on_leave", "pending"] }, currentBedId: { not: null } }, select: { currentBedId: true } })).map((s) => s.currentBedId));
+      const beds = await uow.tx.bed.findMany({
+        where: { status: "available", certification: { in: ["dual", "medicare"] }, room: { genderPolicy: "any", unit: { communityId: COMMUNITY.id, setting: "nursing_facility", secured: false } } },
+        orderBy: [{ room: { unit: { code: "asc" } } }, { label: "asc" }],
+        select: { id: true }
+      });
+      const bed = beds.find((b) => !taken.has(b.id));
+      if (!bed) return { skipped: "no_bed" };
+      const admittedAt = new Date(now.getTime() - 3 * 36e5);
+      const admit = await admitResident(uow, admissions, {
+        communityId: COMMUNITY.id,
+        resident: { firstName, lastName, dateOfBirth: `${BIRTH_YEARS[i % BIRTH_YEARS.length]}-0${i % 9 + 1}-1${i % 9}`, sex: i % 2 ? "male" : "female" },
+        representatives: [{ firstName: "Family", lastName, roles: ["healthcare_poa", "family"], contactPriority: 1 }],
+        bedId: bed.id,
+        payerId: "seed_payer_medicare_a",
+        qualifyingStayFrom: addDays(today2, -6),
+        qualifyingStayTo: addDays(today2, -1),
+        admissionSource: "acute_hospital",
+        effectiveAt: admittedAt,
+        pasrrLevel1: { completedAt: addDays(today2, -2), result: "Level I negative: Level II not required." },
+        idempotencyKey: `${prefix}:admit:${i}`,
+        synthetic: true
+      });
+      const stay = await uow.tx.stay.findUniqueOrThrow({ where: { id: admit.stayId }, select: { id: true, coverage: { select: { id: true } } } });
+      await recordSkilledCert(uow, admissions, { coverageId: stay.coverage[0].id, signedOn: today2, signedBy: "Dr. Imani Castellanos (fictional)" });
+      const opened = await openMds(uow, coordinator, { stayId: stay.id, kind: "pps_5day", ardDate: today2 });
+      await saveMdsItems(uow, coordinator, { assessmentId: opened.assessmentId, items: { ...goldenItems(c.input), H0300: "1", J0300: "1", B0700: "0", B1000: "0" } });
+      const row = await uow.tx.mdsAssessment.findUniqueOrThrow({ where: { id: opened.assessmentId }, select: { itemSetId: true } });
+      const set = (await uow.tx.assessmentTemplate.findUniqueOrThrow({ where: { id: row.itemSetId } })).definition;
+      await signMdsSections(uow, coordinator, { assessmentId: opened.assessmentId, sections: sectionsFor("pps_5day", set), title: "RN, MDS Coordinator" });
+      const done = await completeMds(uow, coordinator, { assessmentId: opened.assessmentId, completedOn: today2, aids: c.input.aids });
+      return { hipps: done.hipps };
+    });
+    if ("hipps" in result.value && !result.replay) {
+      created.residents += 1;
+      created.assessments += 1;
+    }
+  }
+  return created;
+}
+
 // features/keystone/seed/billing.ts
 init_cas();
-var day6 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var day9 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 var CARE_LEVELS = [
   { id: "seed_care_al_1", code: "AL1", name: "Level 1 assistance", setting: "assisted_living", minPoints: 0, maxPoints: 9 },
   { id: "seed_care_al_2", code: "AL2", name: "Level 2 assistance", setting: "assisted_living", minPoints: 10, maxPoints: 19 },
@@ -9396,7 +11151,7 @@ async function seedBilling(uow, actor) {
     ["seed_rates_mc_2026", "Memory care 2026", "memory_care", MC_LINES]
   ]) {
     if (await tx.rateSchedule.findUnique({ where: { id }, select: { id: true } })) continue;
-    await tx.rateSchedule.create({ data: { id, communityId, name, setting, effectiveFrom: day6("2026-01-01"), noticeDays: 30, status: "draft" } });
+    await tx.rateSchedule.create({ data: { id, communityId, name, setting, effectiveFrom: day9("2026-01-01"), noticeDays: 30, status: "draft" } });
     auditCreate(uow, actor, "RateSchedule", id, "rate_schedule.seeded", { setting }, seedMeta);
     created.schedules += 1;
     await tx.rateLine.createMany({
@@ -9441,6 +11196,12 @@ async function loadBillingSetup(_root, args, context) {
   requirePermission(actor, "canManageOnboarding");
   const result = await command(context.prisma, { name: "setup.load_billing", actor, idempotencyKey: args.idempotencyKey, params: {} }, (uow) => seedBilling(uow, actor));
   return { replay: result.replay, ...result.value };
+}
+async function loadMdsSetup(_root, args, context) {
+  const actor = actorFromSession(context.session);
+  requirePermission(actor, "canManageOnboarding");
+  const created = await runMdsSeed(context.prisma, { idempotencyPrefix: `seed-mds-v1` });
+  return { created, key: args.idempotencyKey };
 }
 
 // features/keystone/mutations/audit.ts
@@ -9676,7 +11437,7 @@ init_actor();
 init_errors();
 
 // features/keystone/lib/jobs.ts
-var import_node_crypto10 = require("node:crypto");
+var import_node_crypto11 = require("node:crypto");
 init_actor();
 
 // features/keystone/lib/lease.ts
@@ -9712,7 +11473,7 @@ async function assertFence(tx, grant, now = /* @__PURE__ */ new Date()) {
 // features/keystone/lib/jobs.ts
 var LEASE_MS = 5 * 6e4;
 async function runLeasedJob(db, kind, scopeKey, work, now = /* @__PURE__ */ new Date()) {
-  const owner = `${process.env.RAILWAY_REPLICA_ID ?? "local"}:${(0, import_node_crypto10.randomUUID)()}`;
+  const owner = `${process.env.RAILWAY_REPLICA_ID ?? "local"}:${(0, import_node_crypto11.randomUUID)()}`;
   const grant = await acquireLease(db, `job:${kind}:${scopeKey}`, owner, LEASE_MS, now);
   if (!grant) return { skipped: true };
   const run = await db.jobRun.create({ data: { kind, scopeKey, status: "running", startedAt: now, fencingToken: grant.fencingToken } });
@@ -9763,8 +11524,8 @@ async function runDueJobs(db, now = /* @__PURE__ */ new Date()) {
     census2[community3.id] = await guarded(() => runLeasedJob(db, "midnight_census", `${community3.id}:${yesterday}`, (uow, runId) => snapshotCensusDay(uow, actor, { communityId: community3.id, date: yesterday, runId }), now));
   }
   results.census = census2;
-  const all = [...Object.values(results).filter((value) => value !== census2), ...Object.values(census2)];
-  results.errors = all.filter((value) => value && typeof value === "object" && "error" in value).length;
+  const all2 = [...Object.values(results).filter((value) => value !== census2), ...Object.values(census2)];
+  results.errors = all2.filter((value) => value && typeof value === "object" && "error" in value).length;
   return results;
 }
 
@@ -9907,22 +11668,22 @@ async function verifyStay(_root, args, context) {
 }
 
 // features/keystone/lib/portalReads.ts
-var import_node_crypto12 = require("node:crypto");
+var import_node_crypto13 = require("node:crypto");
 init_errors();
 
 // features/keystone/security/phiReadAudit.ts
-var import_node_crypto11 = require("node:crypto");
+var import_node_crypto12 = require("node:crypto");
 var import_graphql2 = require("graphql");
 function referenceToken(secret2, resourceType, id) {
   if (!secret2 || secret2.length < 32) throw new Error("A strong PHI audit reference secret is required");
-  return (0, import_node_crypto11.createHmac)("sha256", secret2).update(`${resourceType}\0${id}`).digest("hex");
+  return (0, import_node_crypto12.createHmac)("sha256", secret2).update(`${resourceType}\0${id}`).digest("hex");
 }
 function phiReferenceSecret() {
   const configured = process.env.PHI_AUDIT_SECRET?.trim();
   if (configured) return configured;
   const session = process.env.SESSION_SECRET?.trim() ?? "";
   if (!session) return "";
-  return (0, import_node_crypto11.createHmac)("sha256", session).update("openfront-senior-care:phi-audit").digest("hex");
+  return (0, import_node_crypto12.createHmac)("sha256", session).update("openfront-senior-care:phi-audit").digest("hex");
 }
 
 // features/keystone/lib/portalReads.ts
@@ -9945,11 +11706,11 @@ async function portalResidents(tx, principal) {
   for (const residentId of byResident2.keys()) await auditPortalRead(tx, principal, "portalMe", residentId, ["Resident.firstName", "Resident.community"], 1);
   return { mfaEnrolled: account.mfaEnrolled, residents: [...byResident2.values()] };
 }
-async function requirePortalScope(tx, principal, residentId, scope2) {
+async function requirePortalScope(tx, principal, residentId, scope3) {
   const account = await portalAccountFor(tx, principal);
-  const grant = await tx.portalScopeGrant.findFirst({ where: { accountId: account.id, residentId, scope: scope2, status: "granted" }, select: { id: true } });
+  const grant = await tx.portalScopeGrant.findFirst({ where: { accountId: account.id, residentId, scope: scope3, status: "granted" }, select: { id: true } });
   if (!grant) throw new DomainError(Codes.NOT_FOUND, "Not found.");
-  if (MFA_SCOPES.has(scope2) && !account.mfaEnrolled) throw new DomainError(Codes.GUARD_FAILED, "Turn on two-step sign-in to see this.", { reason: "mfa_required" });
+  if (MFA_SCOPES.has(scope3) && !account.mfaEnrolled) throw new DomainError(Codes.GUARD_FAILED, "Turn on two-step sign-in to see this.", { reason: "mfa_required" });
   return account;
 }
 async function auditPortalRead(tx, principal, operationName, residentId, fields, count) {
@@ -9965,8 +11726,8 @@ async function auditPortalRead(tx, principal, operationName, residentId, fields,
       operationName,
       rootFields: [operationName],
       selectedFields: fields,
-      selectionDigest: (0, import_node_crypto12.createHash)("sha256").update(`${operationName}:${fields.join(",")}`).digest("hex"),
-      resultReferenceDigest: (0, import_node_crypto12.createHash)("sha256").update(reference).digest("hex"),
+      selectionDigest: (0, import_node_crypto13.createHash)("sha256").update(`${operationName}:${fields.join(",")}`).digest("hex"),
+      resultReferenceDigest: (0, import_node_crypto13.createHash)("sha256").update(reference).digest("hex"),
       resourceReferences: [reference],
       purpose: "family_access",
       breakGlass: false,
@@ -9997,10 +11758,10 @@ async function portalCalendar(tx, principal, residentId, now = /* @__PURE__ */ n
   const resident3 = await tx.resident.findUnique({ where: { id: residentId }, select: { community: { select: { id: true, timeZone: true, holidayCalendarId: true } } } });
   const community3 = resident3?.community;
   if (!community3) throw new DomainError(Codes.NOT_FOUND, "Not found.");
-  const today = localDate(community3.timeZone, now);
-  const holidays = community3.holidayCalendarId ? await tx.holidayDate.findMany({ where: { calendarId: community3.holidayCalendarId, date: { gte: /* @__PURE__ */ new Date(`${today}T00:00:00Z`), lt: new Date(now.getTime() + 60 * 864e5) } }, orderBy: { date: "asc" }, select: { date: true, name: true } }) : [];
+  const today2 = localDate(community3.timeZone, now);
+  const holidays = community3.holidayCalendarId ? await tx.holidayDate.findMany({ where: { calendarId: community3.holidayCalendarId, date: { gte: /* @__PURE__ */ new Date(`${today2}T00:00:00Z`), lt: new Date(now.getTime() + 60 * 864e5) } }, orderBy: { date: "asc" }, select: { date: true, name: true } }) : [];
   await auditPortalRead(tx, principal, "portalCalendar", residentId, ["Resident.community"], holidays.length);
-  return { timeZone: community3.timeZone, from: today, holidays: holidays.map((h) => ({ date: h.date.toISOString().slice(0, 10), name: h.name })) };
+  return { timeZone: community3.timeZone, from: today2, holidays: holidays.map((h) => ({ date: h.date.toISOString().slice(0, 10), name: h.name })) };
 }
 async function portalDocuments(tx, principal, residentId) {
   await requirePortalScope(tx, principal, residentId, "documents");
@@ -10063,19 +11824,19 @@ async function portalPayments(tx, principal, residentId) {
 init_errors();
 
 // features/keystone/billing/payments.ts
-var import_node_crypto14 = require("node:crypto");
+var import_node_crypto15 = require("node:crypto");
 init_actor();
 init_cas();
 init_errors();
 init_sequence();
 
 // features/integrations/payment/index.ts
-var import_node_crypto13 = require("node:crypto");
+var import_node_crypto14 = require("node:crypto");
 var STRIPE = "https://api.stripe.com/v1";
 function stripeKey() {
   const key = process.env.STRIPE_SECRET_KEY ?? "";
   if (!key) throw new Error("Card payments are not set up on this server yet.");
-  if (!key.startsWith("sk_test_") && !key.startsWith("rk_test_")) throw new Error("Only Stripe test keys are accepted here.");
+  if (!/^(sk|rk)_(test|live)_/.test(key)) throw new Error("The card processor key on this server is not a Stripe secret key.");
   return key;
 }
 var form = (data) => new URLSearchParams(data).toString();
@@ -10090,8 +11851,8 @@ async function stripeCall(path, method, body, idempotencyKey) {
     ...body ? { body: form(body) } : {},
     signal: AbortSignal.timeout(2e4)
   });
-  const json14 = await res.json().catch(() => ({}));
-  return { status: res.status, json: json14 };
+  const json15 = await res.json().catch(() => ({}));
+  return { status: res.status, json: json15 };
 }
 function intentResult(status, j) {
   const ref2 = j.error?.payment_intent?.id ?? j.id ?? null;
@@ -10138,24 +11899,25 @@ async function findIntent(input) {
 var stripeAdapter = {
   key: "stripe",
   async charge(input) {
+    if (!input.paymentMethod) return { outcome: "failed", providerRef: null, message: "Choose a saved card first." };
     try {
       let customer = input.customer;
       if (!customer && input.paymentMethod && /^pm_/.test(input.paymentMethod) && !/^pm_card_/.test(input.paymentMethod)) {
         const pm = await stripeCall(`/payment_methods/${encodeURIComponent(input.paymentMethod)}`, "GET", null);
         if (pm.status === 200 && typeof pm.json.customer === "string") customer = pm.json.customer;
       }
-      const { status, json: json14 } = await stripeCall("/payment_intents", "POST", {
+      const { status, json: json15 } = await stripeCall("/payment_intents", "POST", {
         amount: input.amountMinor.toString(),
         currency: input.currencyCode.toLowerCase(),
         confirm: "true",
-        payment_method: input.paymentMethod || "pm_card_visa",
+        payment_method: input.paymentMethod,
         ...customer ? { customer, off_session: "true" } : {},
         "automatic_payment_methods[enabled]": "true",
         "automatic_payment_methods[allow_redirects]": "never",
         description: input.description,
         ...Object.fromEntries(Object.entries({ ...input.metadata, idempotencyKey: input.idempotencyKey }).map(([k, v]) => [`metadata[${k}]`, v]))
       }, input.idempotencyKey);
-      return intentResult(status, json14);
+      return intentResult(status, json15);
     } catch {
       return { outcome: "unknown", providerRef: null, message: "The card processor did not answer. Check the status in a moment." };
     }
@@ -10174,16 +11936,16 @@ var stripeAdapter = {
   },
   async refund(input) {
     try {
-      const { status, json: json14 } = await stripeCall("/refunds", "POST", {
+      const { status, json: json15 } = await stripeCall("/refunds", "POST", {
         payment_intent: input.providerRef,
         amount: input.amountMinor.toString(),
         "metadata[reason]": input.reason.slice(0, 200)
       }, input.idempotencyKey);
-      if (status >= 500 || status === 429) return { outcome: "unknown", providerRef: json14.id ?? null, message: "The card processor did not answer." };
-      if (status >= 400) return { outcome: "failed", providerRef: null, message: String(json14.error?.message ?? "The refund was refused.") };
-      if (json14.status === "succeeded") return { outcome: "succeeded", providerRef: json14.id, message: "Refunded." };
-      if (json14.status === "pending") return { outcome: "unknown", providerRef: json14.id, message: "The refund is on its way." };
-      return { outcome: "failed", providerRef: json14.id ?? null, message: "The refund did not go through." };
+      if (status >= 500 || status === 429) return { outcome: "unknown", providerRef: json15.id ?? null, message: "The card processor did not answer." };
+      if (status >= 400) return { outcome: "failed", providerRef: null, message: String(json15.error?.message ?? "The refund was refused.") };
+      if (json15.status === "succeeded") return { outcome: "succeeded", providerRef: json15.id, message: "Refunded." };
+      if (json15.status === "pending") return { outcome: "unknown", providerRef: json15.id, message: "The refund is on its way." };
+      return { outcome: "failed", providerRef: json15.id ?? null, message: "The refund did not go through." };
     } catch {
       return { outcome: "unknown", providerRef: null, message: "The card processor did not answer." };
     }
@@ -10197,10 +11959,10 @@ var stripeAdapter = {
     const v1 = header.split(",").filter((p) => p.startsWith("v1=")).map((p) => p.slice(3));
     if (!t || !v1.length) throw new Error("The event signature is missing.");
     if (Math.abs(Date.now() / 1e3 - Number(t)) > 600) throw new Error("The event is too old.");
-    const expected = (0, import_node_crypto13.createHmac)("sha256", secret2).update(`${t}.${rawBody}`).digest();
+    const expected = (0, import_node_crypto14.createHmac)("sha256", secret2).update(`${t}.${rawBody}`).digest();
     const ok = v1.some((sig) => {
       const b = Buffer.from(sig, "hex");
-      return b.length === expected.length && (0, import_node_crypto13.timingSafeEqual)(b, expected);
+      return b.length === expected.length && (0, import_node_crypto14.timingSafeEqual)(b, expected);
     });
     if (!ok) throw new Error("The event signature does not match.");
     const event = JSON.parse(rawBody);
@@ -10235,29 +11997,31 @@ var terminalAdapter = {
 };
 var ADAPTERS = { stripe: stripeAdapter, manual: manualAdapter, terminal: terminalAdapter };
 var adapterFor = (key) => ADAPTERS[key] ?? manualAdapter;
-var cardConfigured = () => /^(sk|rk)_test_/.test(process.env.STRIPE_SECRET_KEY ?? "");
-async function saveCard(input) {
+var cardConfigured = () => /^(sk|rk)_(test|live)_/.test(process.env.STRIPE_SECRET_KEY ?? "");
+async function startCardSetup(input) {
   try {
-    const meta = Object.fromEntries(Object.entries(input.metadata ?? {}).map(([k, v]) => [`metadata[${k}]`, v]));
-    const cus = await stripeCall("/customers", "POST", { name: input.name.slice(0, 120), ...input.email ? { email: input.email } : {}, ...meta }, `${input.idempotencyKey}:customer`);
+    const meta = Object.fromEntries(Object.entries(input.metadata).map(([k, v]) => [`metadata[${k}]`, v]));
+    const cus = await stripeCall("/customers", "POST", { name: input.name.slice(0, 120), ...meta }, `${input.idempotencyKey}:customer`);
     if (cus.status >= 400 || !cus.json.id) return { ok: false, message: "The card processor could not start saving the card." };
-    const seti = await stripeCall("/setup_intents", "POST", {
-      customer: cus.json.id,
-      payment_method: input.paymentMethod,
-      confirm: "true",
-      usage: "off_session",
-      "automatic_payment_methods[enabled]": "true",
-      "automatic_payment_methods[allow_redirects]": "never",
-      ...meta
-    }, `${input.idempotencyKey}:setup`);
-    if (seti.status >= 400) return { ok: false, message: String(seti.json.error?.message ?? "The card was not accepted.") };
-    if (seti.json.status !== "succeeded") return { ok: false, message: "The bank needs the cardholder to confirm this card. Try another card." };
-    const pmId = String(seti.json.payment_method ?? "");
-    const pm = await stripeCall(`/payment_methods/${encodeURIComponent(pmId)}`, "GET", null);
-    const card = pm.json.card;
-    return { ok: true, customer: String(cus.json.id), paymentMethod: pmId, brand: card?.brand ?? "card", last4: card?.last4 ?? "" };
+    const seti = await stripeCall("/setup_intents", "POST", { customer: cus.json.id, usage: "off_session", "payment_method_types[0]": "card", ...meta }, `${input.idempotencyKey}:setup`);
+    if (seti.status >= 400 || !seti.json.client_secret) return { ok: false, message: "The card processor could not start saving the card." };
+    return { ok: true, clientSecret: String(seti.json.client_secret), setupIntentId: String(seti.json.id) };
   } catch (error) {
-    return { ok: false, message: error instanceof Error && /set up|test keys/.test(error.message) ? error.message : "The card processor did not answer. Try again in a moment." };
+    return { ok: false, message: error instanceof Error && /secret key/.test(error.message) ? "Card payments are not set up on this server." : "The card processor did not answer. Try again in a moment." };
+  }
+}
+async function readCardSetup(setupIntentId, expectMetadata) {
+  try {
+    const got = await stripeCall(`/setup_intents/${encodeURIComponent(setupIntentId)}`, "GET", null);
+    if (got.status !== 200) return { ok: false, message: "The card processor could not confirm the card." };
+    const j = got.json;
+    if (j.status !== "succeeded" || typeof j.payment_method !== "string" || typeof j.customer !== "string") return { ok: false, message: "The card was not accepted. Try another card." };
+    for (const [k, v] of Object.entries(expectMetadata)) if (j.metadata?.[k] !== v) return { ok: false, message: "This card was set up for someone else." };
+    const pm = await stripeCall(`/payment_methods/${encodeURIComponent(j.payment_method)}`, "GET", null);
+    const card = pm.json.card;
+    return { ok: true, customer: j.customer, paymentMethod: j.payment_method, brand: card?.brand ?? "card", last4: card?.last4 ?? "" };
+  } catch {
+    return { ok: false, message: "The card processor did not answer. Try again in a moment." };
   }
 }
 
@@ -10304,7 +12068,7 @@ async function newPayment(uow, actor, a) {
   const balance = balanceOf(fresh);
   if (balance <= 0n) throw new DomainError(Codes.GUARD_FAILED, "This statement is already paid.", { reason: "already_paid" });
   if (a.amountMinor > balance) throw new DomainError(Codes.GUARD_FAILED, "That is more than the statement balance.", { reason: "overpayment" });
-  const id = (0, import_node_crypto14.randomUUID)();
+  const id = (0, import_node_crypto15.randomUUID)();
   const created = await uow.tx.payment.create({
     data: {
       id,
@@ -10587,34 +12351,6 @@ init_cas();
 init_errors();
 init_sequence();
 
-// features/keystone/lib/money.ts
-init_decimal();
-function minorOf(value) {
-  if (typeof value === "bigint") return value;
-  if (typeof value === "number" && Number.isSafeInteger(value)) return BigInt(value);
-  if (typeof value === "string" && /^-?\d+$/.test(value.trim())) return BigInt(value.trim());
-  throw new Error("Not an integer minor-unit amount");
-}
-function allocateMinor(total, weights) {
-  if (weights.length === 0) throw new Error("allocateMinor needs at least one weight");
-  const w = weights.map(dec);
-  if (w.some((x) => x.isNegative())) throw new Error("allocateMinor weights must be non-negative");
-  const weightSum = w.reduce((a, b) => a.plus(b), new Decimal(0));
-  if (weightSum.isZero()) throw new Error("allocateMinor weights must not all be zero");
-  const negative = total < 0n;
-  const abs = negative ? -total : total;
-  const exact2 = w.map((x) => dec(abs).times(x).div(weightSum));
-  const floors = exact2.map((x) => BigInt(x.floor().toFixed(0)));
-  let leftover = abs - floors.reduce((a, b) => a + b, 0n);
-  const order = exact2.map((x, index) => ({ index, remainder: x.minus(x.floor()) })).sort((a, b) => b.remainder.comparedTo(a.remainder) || a.index - b.index);
-  const shares = [...floors];
-  for (let i = 0; leftover > 0n; i = (i + 1) % order.length, leftover -= 1n) shares[order[i].index] += 1n;
-  return negative ? shares.map((x) => -x) : shares;
-}
-function roundToMinor(value) {
-  return BigInt(dec(value).toDecimalPlaces(0, Decimal.ROUND_HALF_EVEN).toFixed(0));
-}
-
 // features/keystone/billing/ar.ts
 var MAX_INSTALMENTS = 24;
 var lastDay = (year, month) => new Date(Date.UTC(year, month, 0)).getUTCDate();
@@ -10633,17 +12369,17 @@ function planInstalments(totalMinor, count, firstDueOn) {
   const shares = allocateMinor(totalMinor, Array.from({ length: count }, () => 1));
   return shares.map((amountMinor, index) => ({ number: index + 1, dueOn: addMonths(firstDueOn, index), amountMinor }));
 }
-function instalmentState(row, today) {
+function instalmentState(row, today2) {
   if (row.paymentStatus === "succeeded") return "paid";
   if (row.paymentStatus === "pending" || row.paymentStatus === "unknown") return "in_flight";
   if (row.paymentStatus === "failed") return "declined";
-  const left = daysBetween(today, row.dueOn);
+  const left = daysBetween(today2, row.dueOn);
   return left < 0 ? "overdue" : left <= 7 ? "due" : "upcoming";
 }
 
 // features/keystone/billing/plans.ts
-var day7 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
-var iso = (value) => value ? value.toISOString().slice(0, 10) : null;
+var day10 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var iso3 = (value) => value ? value.toISOString().slice(0, 10) : null;
 async function createPlan(uow, actor, input) {
   const statement = await uow.tx.statement.findUnique({ where: { id: input.statementId } });
   if (!statement) throw new DomainError(Codes.NOT_FOUND, "Statement not found.");
@@ -10673,7 +12409,7 @@ async function createPlan(uow, actor, input) {
       createdById: actorUserId(actor)
     }
   });
-  await uow.tx.paymentPlanInstalment.createMany({ data: schedule.map((row) => ({ communityId: fresh.communityId, residentId: fresh.residentId, planId: plan.id, number: row.number, dueOn: day7(row.dueOn), amountMinor: row.amountMinor })) });
+  await uow.tx.paymentPlanInstalment.createMany({ data: schedule.map((row) => ({ communityId: fresh.communityId, residentId: fresh.residentId, planId: plan.id, number: row.number, dueOn: day10(row.dueOn), amountMinor: row.amountMinor })) });
   auditCreate(uow, actor, "PaymentPlan", plan.id, "payment_plan.created", { statement: fresh.number, totalMinor: balance.toString(), instalments: schedule.map((row) => ({ dueOn: row.dueOn, amountMinor: row.amountMinor.toString() })) });
   return { planId: plan.id, reference: plan.reference, totalMinor: balance.toString(), instalments: schedule.length };
 }
@@ -10709,7 +12445,7 @@ async function chargeInstalment(db, actor, input) {
         await lockRow(uow.tx, "PaymentPlanInstalment", row.id);
         const fresh = await uow.tx.paymentPlanInstalment.findUniqueOrThrow({ where: { id: row.id }, include: { plan: { select: { status: true } }, payment: { select: { status: true } } } });
         if (fresh.plan?.status !== "active") throw new DomainError(Codes.GUARD_FAILED, "This plan is no longer active.");
-        const state2 = instalmentState({ dueOn: iso(fresh.dueOn), paymentStatus: fresh.payment?.status ?? null }, localDate("UTC", uow.now));
+        const state2 = instalmentState({ dueOn: iso3(fresh.dueOn), paymentStatus: fresh.payment?.status ?? null }, localDate("UTC", uow.now));
         if (state2 === "paid") throw new DomainError(Codes.GUARD_FAILED, "This instalment is already paid.", { reason: "already_paid" });
         if (state2 === "in_flight") throw new DomainError(Codes.GUARD_FAILED, "This instalment has a payment with no final answer yet. Check its status first.", { reason: "charge_in_flight" });
         if (state2 === "declined" && !input.retry) throw new DomainError(Codes.GUARD_FAILED, "This instalment was declined. It is only charged again when someone presses Retry.", { reason: "declined" });
@@ -10748,27 +12484,27 @@ async function portalPay(db, principal, input) {
 }
 
 // features/keystone/lib/publicRateLimit.ts
-var import_node_crypto16 = require("node:crypto");
+var import_node_crypto17 = require("node:crypto");
 init_errors();
 
 // features/keystone/security/internalIdentity.ts
-var import_node_crypto15 = require("node:crypto");
+var import_node_crypto16 = require("node:crypto");
 var INTERNAL_IDENTITY_MAX_AGE_MS = 9e4;
 function safeEqual(left, right) {
   const leftBuffer = Buffer.from(left);
   const rightBuffer = Buffer.from(right);
-  return leftBuffer.length === rightBuffer.length && (0, import_node_crypto15.timingSafeEqual)(leftBuffer, rightBuffer);
+  return leftBuffer.length === rightBuffer.length && (0, import_node_crypto16.timingSafeEqual)(leftBuffer, rightBuffer);
 }
 function verifiedInternalIdentity(headers, socketAddress, secret2, now) {
   const loopback = /^(?:127\.|::1$|::ffff:127\.)/.test(String(socketAddress || ""));
   if (!loopback || secret2.length < 32) return null;
   const identity = String(headers["x-openfront-client-identity"] || "");
-  const timestamp15 = String(headers["x-openfront-client-timestamp"] || "");
+  const timestamp16 = String(headers["x-openfront-client-timestamp"] || "");
   const signature = String(headers["x-openfront-client-signature"] || "");
-  if (!/^[a-f0-9]{64}$/.test(identity) || !/^\d{10}$/.test(timestamp15) || !/^[a-f0-9]{64}$/.test(signature)) return null;
-  const age = Math.abs(now - Number(timestamp15) * 1e3);
+  if (!/^[a-f0-9]{64}$/.test(identity) || !/^\d{10}$/.test(timestamp16) || !/^[a-f0-9]{64}$/.test(signature)) return null;
+  const age = Math.abs(now - Number(timestamp16) * 1e3);
   if (!Number.isFinite(age) || age > INTERNAL_IDENTITY_MAX_AGE_MS) return null;
-  const expected = (0, import_node_crypto15.createHmac)("sha256", secret2).update(`${timestamp15}:${identity}`).digest("hex");
+  const expected = (0, import_node_crypto16.createHmac)("sha256", secret2).update(`${timestamp16}:${identity}`).digest("hex");
   return safeEqual(signature, expected) ? `forwarded:${identity}` : null;
 }
 
@@ -10796,8 +12532,8 @@ async function consumeRateLimit(prisma, input) {
   const now = input.now ?? /* @__PURE__ */ new Date();
   const windowMs = Math.max(6e4, Math.min(24 * 36e5, Math.floor(input.windowMs)));
   const windowStartMs = Math.floor(now.getTime() / windowMs) * windowMs;
-  const identity = (0, import_node_crypto16.createHmac)("sha256", signingSecret()).update(normalized(input.address)).digest("hex");
-  const bucketKey = (0, import_node_crypto16.createHmac)("sha256", signingSecret()).update(`${input.operation}:${windowStartMs}:${identity}`).digest("hex");
+  const identity = (0, import_node_crypto17.createHmac)("sha256", signingSecret()).update(normalized(input.address)).digest("hex");
+  const bucketKey = (0, import_node_crypto17.createHmac)("sha256", signingSecret()).update(`${input.operation}:${windowStartMs}:${identity}`).digest("hex");
   const row = await prisma.requestRateLimitBucket.upsert({
     where: { bucketKey },
     create: { bucketKey, count: 1, windowStartsAt: new Date(windowStartMs), expiresAt: new Date(windowStartMs + windowMs + 36e5) },
@@ -10891,7 +12627,7 @@ var portalPayMutation = (_, args, context) => {
 var portalDocumentsQuery = (_, args, context) => portalRead(context, (tx) => portalDocuments(tx, portalPrincipal(context), args.residentId));
 
 // features/keystone/mutations/reads.ts
-var import_node_crypto17 = require("node:crypto");
+var import_node_crypto18 = require("node:crypto");
 init_actor();
 init_errors();
 async function reader(context, permissions2) {
@@ -10915,8 +12651,8 @@ async function auditRead(context, actor, operationName, residentIds) {
       operationName,
       rootFields: [operationName],
       selectedFields: ["Resident.firstName", "Resident.lastName"],
-      selectionDigest: (0, import_node_crypto17.createHash)("sha256").update(`${operationName}:names`).digest("hex"),
-      resultReferenceDigest: (0, import_node_crypto17.createHash)("sha256").update(references.join(",")).digest("hex"),
+      selectionDigest: (0, import_node_crypto18.createHash)("sha256").update(`${operationName}:names`).digest("hex"),
+      resultReferenceDigest: (0, import_node_crypto18.createHash)("sha256").update(references.join(",")).digest("hex"),
       resourceReferences: references,
       purpose: mcpSessionMarker(context.session) || actor.kind === "agent" ? "operations" : "treatment_operations",
       breakGlass: false,
@@ -11041,8 +12777,8 @@ init_common();
 async function createProgressNote(uow, actor, input) {
   const resident3 = await residentFor(uow.tx, input.residentId);
   const kind = oneOf(input.kind, NOTE_KINDS, "note type");
-  const body = text16(input.body, "Note", { min: 3 });
-  const eventAt = when7(input.eventAt, "eventAt", uow.now);
+  const body = text17(input.body, "Note", { min: 3 });
+  const eventAt = when8(input.eventAt, "eventAt", uow.now);
   if (eventAt.getTime() > uow.now.getTime() + 5 * 6e4) invalid("A note cannot describe a future time.", "eventAt");
   const late = kind === "late_entry" || uow.now.getTime() - eventAt.getTime() > 60 * 6e4;
   const note = await uow.tx.progressNote.create({
@@ -11060,8 +12796,8 @@ async function signProgressNote(uow, actor, input) {
 }
 async function amendProgressNote(uow, actor, input) {
   const old = await lockRow(uow.tx, "ProgressNote", input.noteId);
-  const reason = text16(input.reason, "Reason", { min: 3 });
-  const body = text16(input.body, "Amended note", { min: 3 });
+  const reason = text17(input.reason, "Reason", { min: 3 });
+  const body = text17(input.body, "Amended note", { min: 3 });
   const next = await uow.tx.progressNote.create({
     data: { residentId: old.residentId, communityId: old.communityId, kind: old.kind, body: `${body}
 
@@ -11073,7 +12809,7 @@ async function amendProgressNote(uow, actor, input) {
 }
 async function markNoteInError(uow, actor, input) {
   const note = await lockRow(uow.tx, "ProgressNote", input.noteId);
-  const reason = text16(input.reason, "Reason", { min: 5 });
+  const reason = text17(input.reason, "Reason", { min: 5 });
   await casUpdate(uow, { model: "ProgressNote", id: note.id, version: note.version, from: ["draft", "signed", "amended"], to: "entered_in_error", actor, eventType: "progress_note.entered_in_error", reason, data: { errorReason: reason } });
   return { noteId: note.id, status: "entered_in_error" };
 }
@@ -11091,7 +12827,7 @@ var VITAL_UNITS = {
 async function recordVitals(uow, actor, input) {
   const resident3 = await residentFor(uow.tx, input.residentId);
   if (!Array.isArray(input.readings) || !input.readings.length) invalid("Add at least one reading.", "readings");
-  const takenAt = when7(input.takenAt, "takenAt", uow.now);
+  const takenAt = when8(input.takenAt, "takenAt", uow.now);
   const ids = [];
   for (const reading of input.readings) {
     const kind = oneOf(reading.kind, VITAL_KINDS, "vital sign");
@@ -11106,7 +12842,7 @@ async function recordVitals(uow, actor, input) {
 async function recordIntake(uow, actor, input) {
   const resident3 = await residentFor(uow.tx, input.residentId);
   const kind = oneOf(input.kind, ["fluid", "meal", "supplement", "tube_feed"], "intake type");
-  const data = { residentId: resident3.id, communityId: resident3.communityId, kind, at: when7(input.at, "at", uow.now), recordedById: userOf(actor) };
+  const data = { residentId: resident3.id, communityId: resident3.communityId, kind, at: when8(input.at, "at", uow.now), recordedById: userOf(actor) };
   if (input.amountMl != null && input.amountMl !== "") data.amountMl = String(num(input.amountMl, "Amount", { min: 0, max: 5e3 }));
   if (input.percentEaten != null) data.percentEaten = num(input.percentEaten, "Percent eaten", { min: 0, max: 100 });
   if (data.amountMl === void 0 && data.percentEaten === void 0) invalid("Record an amount or a percentage.");
@@ -11117,7 +12853,7 @@ async function recordAdl(uow, actor, input) {
   const resident3 = await residentFor(uow.tx, input.residentId);
   const activity = oneOf(input.activity, ["bed_mobility", "transfer", "walking", "dressing", "eating", "toileting", "bathing", "hygiene", "continence"], "activity");
   const level = oneOf(input.level, ["independent", "supervision", "limited_assist", "extensive_assist", "total_dependence", "did_not_occur"], "level");
-  const at = when7(input.at, "at", uow.now);
+  const at = when8(input.at, "at", uow.now);
   const row = await uow.tx.adlRecord.create({ data: { residentId: resident3.id, communityId: resident3.communityId, activity, level, at, recordedById: userOf(actor), pocTaskSlotId: input.slotId ?? null } });
   if (input.slotId) {
     const slot = await lockRow(uow.tx, "PocTaskSlot", input.slotId);
@@ -11130,7 +12866,7 @@ async function openWound(uow, actor, input) {
   const resident3 = await residentFor(uow.tx, input.residentId);
   const kind = oneOf(input.kind, ["pressure_injury", "skin_tear", "venous", "arterial", "diabetic", "surgical", "other"], "wound type");
   const wound = await uow.tx.wound.create({
-    data: { residentId: resident3.id, communityId: resident3.communityId, site: text16(input.site, "Site"), kind, status: "open", firstNotedAt: uow.now, assessmentIntervalDays: input.intervalDays ?? 7 }
+    data: { residentId: resident3.id, communityId: resident3.communityId, site: text17(input.site, "Site"), kind, status: "open", firstNotedAt: uow.now, assessmentIntervalDays: input.intervalDays ?? 7 }
   });
   auditCreate(uow, actor, "Wound", wound.id, "wound.opened", { kind, residentId: resident3.id });
   await assessWoundRow(uow, actor, wound.id, resident3.id, resident3.communityId, input);
@@ -11174,7 +12910,7 @@ async function recordBehaviour(uow, actor, input) {
       antecedent: input.antecedent ?? "",
       intervention: input.intervention ?? "",
       outcome: input.outcome ?? "",
-      startedAt: when7(input.startedAt, "startedAt", uow.now),
+      startedAt: when8(input.startedAt, "startedAt", uow.now),
       durationMinutes: input.durationMinutes ?? null,
       recordedById: userOf(actor)
     }
@@ -11184,10 +12920,10 @@ async function recordBehaviour(uow, actor, input) {
 async function recordPhysicianVisit(uow, actor, input) {
   const resident3 = await residentFor(uow.tx, input.residentId);
   const kind = oneOf(input.kind, ["physician", "nurse_practitioner", "physician_assistant", "telehealth"], "visit type");
-  const visitedAt = when7(input.visitedAt, "visitedAt");
+  const visitedAt = when8(input.visitedAt, "visitedAt");
   if (visitedAt.getTime() > uow.now.getTime() + 5 * 6e4) invalid("A visit cannot be in the future.", "visitedAt");
   const row = await uow.tx.physicianVisit.create({
-    data: { residentId: resident3.id, communityId: resident3.communityId, kind, physicianName: text16(input.physicianName, "Physician"), visitedAt, summary: input.summary ?? "", recordedById: userOf(actor) }
+    data: { residentId: resident3.id, communityId: resident3.communityId, kind, physicianName: text17(input.physicianName, "Physician"), visitedAt, summary: input.summary ?? "", recordedById: userOf(actor) }
   });
   auditCreate(uow, actor, "PhysicianVisit", row.id, "physician_visit.recorded", { residentId: resident3.id, visitedAt });
   return { visitId: row.id };
@@ -11209,12 +12945,12 @@ async function openInfectionCase(uow, actor, input) {
       communityId: resident3.communityId,
       syndrome,
       status: "suspected",
-      onsetAt: when7(input.onsetAt, "onsetAt", uow.now),
+      onsetAt: when8(input.onsetAt, "onsetAt", uow.now),
       criteria,
       criteriaMet: met,
       criteriaSet: input.criteriaSet ?? "facility checklist (verify the surveillance definition)",
       organism: input.organism ?? "",
-      cultureAt: input.cultureAt ? when7(input.cultureAt, "cultureAt") : null
+      cultureAt: input.cultureAt ? when8(input.cultureAt, "cultureAt") : null
     }
   });
   auditCreate(uow, actor, "InfectionCase", row.id, "infection_case.opened", { syndrome, criteriaMet: met, residentId: resident3.id });
@@ -11249,7 +12985,7 @@ async function startPrecaution(uow, actor, input) {
 }
 async function endPrecaution(uow, actor, input) {
   const row = await lockRow(uow.tx, "PrecautionOrder", input.precautionId);
-  await casUpdate(uow, { model: "PrecautionOrder", id: row.id, version: row.version, from: ["active"], to: "ended", actor, eventType: "precaution.ended", reason: text16(input.reason, "Reason", { min: 3 }), data: { endedAt: uow.now } });
+  await casUpdate(uow, { model: "PrecautionOrder", id: row.id, version: row.version, from: ["active"], to: "ended", actor, eventType: "precaution.ended", reason: text17(input.reason, "Reason", { min: 3 }), data: { endedAt: uow.now } });
   return { precautionId: row.id };
 }
 async function startAntibioticCourse(uow, actor, input) {
@@ -11258,8 +12994,8 @@ async function startAntibioticCourse(uow, actor, input) {
     data: {
       residentId: resident3.id,
       communityId: resident3.communityId,
-      drugName: text16(input.drugName, "Drug"),
-      indication: text16(input.indication, "Indication"),
+      drugName: text17(input.drugName, "Drug"),
+      indication: text17(input.indication, "Indication"),
       orderId: input.orderId ?? null,
       caseId: input.caseId ?? null,
       startedAt: uow.now,
@@ -11286,7 +13022,7 @@ async function recordAntibioticTimeout(uow, actor, input) {
 async function declareOutbreak(uow, actor, input) {
   const community3 = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { id: true } });
   if (!community3) return notFound("Community");
-  const row = await uow.tx.outbreak.create({ data: { communityId: community3.id, name: text16(input.name, "Name"), organism: input.organism ?? "", unitId: input.unitId ?? null, status: "declared", declaredAt: uow.now, declaredById: userOf(actor) } });
+  const row = await uow.tx.outbreak.create({ data: { communityId: community3.id, name: text17(input.name, "Name"), organism: input.organism ?? "", unitId: input.unitId ?? null, status: "declared", declaredAt: uow.now, declaredById: userOf(actor) } });
   if (input.caseIds?.length) await uow.tx.infectionCase.updateMany({ where: { id: { in: input.caseIds }, communityId: community3.id }, data: { outbreakId: row.id } });
   auditCreate(uow, actor, "Outbreak", row.id, "outbreak.declared", { name: row.name, cases: input.caseIds?.length ?? 0 });
   await createTask(uow, actor, { communityId: community3.id, kind: "escalation", title: `Outbreak declared: ${row.name}. Notify the health department (done outside this system).`, ownerRole: ROLE_NAMES.director, dedupeKey: `outbreak:${row.id}`, subjectType: "Outbreak", subjectId: row.id });
@@ -11303,7 +13039,7 @@ async function recordImmunisation(uow, actor, input) {
   const vaccine = oneOf(input.vaccine, ["influenza", "covid19", "pneumococcal", "rsv", "tdap", "hepatitis_b", "other"], "vaccine");
   const status = oneOf(input.status, ["offered", "accepted", "declined", "given", "contraindicated"], "status");
   if (status === "given" && !input.givenAt) invalid("Say when it was given.", "givenAt");
-  const row = await uow.tx.immunisation.create({ data: { residentId: resident3.id, communityId: resident3.communityId, vaccine, status, offeredAt: uow.now, decidedAt: status === "offered" ? null : uow.now, givenAt: input.givenAt ? when7(input.givenAt, "givenAt") : null, lot: input.lot ?? "", recordedById: userOf(actor) } });
+  const row = await uow.tx.immunisation.create({ data: { residentId: resident3.id, communityId: resident3.communityId, vaccine, status, offeredAt: uow.now, decidedAt: status === "offered" ? null : uow.now, givenAt: input.givenAt ? when8(input.givenAt, "givenAt") : null, lot: input.lot ?? "", recordedById: userOf(actor) } });
   return { immunisationId: row.id };
 }
 
@@ -11314,7 +13050,7 @@ init_errors();
 init_cas();
 
 // features/keystone/lib/inference/gateway.ts
-var import_node_crypto18 = require("node:crypto");
+var import_node_crypto19 = require("node:crypto");
 init_errors();
 init_actor();
 
@@ -11322,22 +13058,22 @@ init_actor();
 var get = (data, label2) => data.find((d) => d.label === label2)?.text ?? "";
 var FALL = /\b(fell|had a fall|was found on the floor|found (?:her|him|them|the resident)? ?(?:sitting |lying )?on the floor|slid (?:out of|off|from) [^.]{1,40} (?:to|onto) the floor|lowered (?:her|him|them)? ?to the floor)\b/i;
 var NEGATED = /\b(no|denies|without|free of)\s+(?:a\s+)?(?:recent\s+)?falls?\b/i;
-function fallSpans(text17) {
+function fallSpans(text18) {
   const events = [];
   const sentence = /[^.!?\n]+[.!?]?/g;
-  for (let m = sentence.exec(text17); m; m = sentence.exec(text17)) {
+  for (let m = sentence.exec(text18); m; m = sentence.exec(text18)) {
     const raw = m[0];
     const lead = raw.length - raw.trimStart().length;
     const quote = raw.trim();
     if (!quote || !FALL.test(quote) || NEGATED.test(quote)) continue;
-    const injury = /\bno (?:visible )?injur/i.test(text17) ? "none" : /\b(fracture|laceration|head strike|hit (?:her|his|their) head)\b/i.test(text17) ? "major" : /\b(bruise|skin tear|abrasion)\b/i.test(text17) ? "minor" : "unknown";
+    const injury = /\bno (?:visible )?injur/i.test(text18) ? "none" : /\b(fracture|laceration|head strike|hit (?:her|his|their) head)\b/i.test(text18) ? "major" : /\b(bruise|skin tear|abrasion)\b/i.test(text18) ? "minor" : "unknown";
     events.push({ kind: "fall", spanStart: m.index + lead, spanEnd: m.index + lead + quote.length, quote, injury });
     if (events.length >= 5) break;
   }
   return events;
 }
-var num2 = (text17, re, fallback) => {
-  const m = re.exec(text17);
+var num2 = (text18, re, fallback) => {
+  const m = re.exec(text18);
   return m ? Number(m[1]) : fallback;
 };
 function buildWorkflow(request) {
@@ -11432,8 +13168,8 @@ var builtinRules = {
     const rule3 = BUILTIN_RULES[request.task];
     if (!rule3) throw new Error(`The built-in rules engine has no rule for ${request.task}.`);
     const value = rule3(request.data);
-    const text17 = JSON.stringify(value);
-    return { text: text17, model: target.model || "builtin-rules", tokens: { input: request.data.reduce((n, d) => n + Math.ceil(d.text.length / 4), 0), output: Math.ceil(text17.length / 4) } };
+    const text18 = JSON.stringify(value);
+    return { text: text18, model: target.model || "builtin-rules", tokens: { input: request.data.reduce((n2, d) => n2 + Math.ceil(d.text.length / 4), 0), output: Math.ceil(text18.length / 4) } };
   }
 };
 var ADAPTERS2 = {
@@ -11444,7 +13180,7 @@ var ADAPTERS2 = {
 };
 
 // features/keystone/lib/inference/gateway.ts
-var digest = (value) => (0, import_node_crypto18.createHash)("sha256").update(typeof value === "string" ? value : JSON.stringify(value)).digest("hex");
+var digest = (value) => (0, import_node_crypto19.createHash)("sha256").update(typeof value === "string" ? value : JSON.stringify(value)).digest("hex");
 var CLASS = { self_hosted: "self_hosted", baa_hosted: "baa_hosted" };
 function policyProblem(provider, policy, request, now = /* @__PURE__ */ new Date()) {
   if (!provider) return { code: Codes.INFERENCE_POLICY_REFUSED, reason: "No inference provider is set up." };
@@ -11469,9 +13205,9 @@ function policyProblem(provider, policy, request, now = /* @__PURE__ */ new Date
   return { code: Codes.INFERENCE_POLICY_REFUSED, reason: `Unknown provider mode ${provider.mode}.` };
 }
 async function resolveProvider(db, key) {
-  const select13 = { id: true, key: true, adapter: true, mode: true, endpoint: true, model: true, status: true, processorRegistration: { select: { status: true, effectiveTo: true, dataCategories: true } } };
-  if (key) return db.inferenceProvider.findUnique({ where: { key }, select: select13 });
-  return db.inferenceProvider.findFirst({ where: { isDefault: true, status: "active" }, orderBy: { createdAt: "asc" }, select: select13 });
+  const select14 = { id: true, key: true, adapter: true, mode: true, endpoint: true, model: true, status: true, processorRegistration: { select: { status: true, effectiveTo: true, dataCategories: true } } };
+  if (key) return db.inferenceProvider.findUnique({ where: { key }, select: select14 });
+  return db.inferenceProvider.findFirst({ where: { isDefault: true, status: "active" }, orderBy: { createdAt: "asc" }, select: select14 });
 }
 async function infer(db, request) {
   const started = Date.now();
@@ -11556,10 +13292,10 @@ async function extractForCommunity(db, actor, input) {
     select: { id: true, residentId: true, body: true, resident: { select: { synthetic: true } } }
   });
   out.considered = notes.length;
-  const keyed = notes.map((n) => ({ ...n, digest: digestText(n.body) })).map((n) => ({ ...n, cacheKey: factCacheKey(FALL_EXTRACTOR, "ProgressNote", n.id, n.digest) }));
-  const have = new Set((await db.extractedFact.findMany({ where: { cacheKey: { in: keyed.map((n) => n.cacheKey) } }, select: { cacheKey: true } })).map((f) => f.cacheKey));
+  const keyed = notes.map((n2) => ({ ...n2, digest: digestText(n2.body) })).map((n2) => ({ ...n2, cacheKey: factCacheKey(FALL_EXTRACTOR, "ProgressNote", n2.id, n2.digest) }));
+  const have = new Set((await db.extractedFact.findMany({ where: { cacheKey: { in: keyed.map((n2) => n2.cacheKey) } }, select: { cacheKey: true } })).map((f) => f.cacheKey));
   out.cached = have.size;
-  for (const note of keyed.filter((n) => !have.has(n.cacheKey)).slice(0, MAX_PER_REQUEST)) {
+  for (const note of keyed.filter((n2) => !have.has(n2.cacheKey)).slice(0, MAX_PER_REQUEST)) {
     const result = await infer(db, {
       purpose: "extract",
       task: FALL_EXTRACTOR,
@@ -11746,7 +13482,7 @@ async function acceptProposal(uow, actor, input) {
 }
 async function rejectProposal(uow, actor, input) {
   const p = await lockRow(uow.tx, "Proposal", input.proposalId);
-  const reason = text16(input.reason, "Reason", { min: 3 });
+  const reason = text17(input.reason, "Reason", { min: 3 });
   await casUpdate(uow, { model: "Proposal", id: p.id, version: p.version, from: ["proposed", "accepted"], to: "rejected", actor, eventType: "proposal.rejected", reason, data: { rejectedReason: reason } });
   return { proposalId: p.id, status: "rejected" };
 }
@@ -11946,79 +13682,112 @@ var finish = (line) => {
   const key = lineKey(line);
   return { ...line, key, derivationHash: sha256(canonicalJson({ key, amountMinor: line.amountMinor, derivation: line.derivation, description: line.description })) };
 };
-var labelOf = { rent: "Apartment rent", second_person: "Second person", care_level: "Care level", room_board: "Room and board", bed_hold: "Bed hold", patient_liability: "Patient liability", per_diem_claim: "Per diem" };
-function monthly(base, dates, monthlyMinor, daysInMonth2, derivation, proration, per = "month") {
+var labelOf = { rent: "Apartment rent", second_person: "Second person", care_level: "Care level", room_board: "Room and board", bed_hold: "Bed hold", patient_liability: "Patient liability", per_diem_claim: "Per diem", coinsurance: "Medicare coinsurance" };
+function monthly(base2, dates, monthlyMinor, daysInMonth2, derivation, proration, per = "month") {
   const divisor = proration === "thirty_day_month" ? 30 : daysInMonth2;
   const daily = per === "day" || proration === "daily";
   const total = daily ? monthlyMinor * BigInt(dates.length) : dates.length >= daysInMonth2 ? monthlyMinor : roundToMinor(dec(monthlyMinor).times(dates.length).div(divisor));
   const shares = allocateMinor(total, dates.map(() => 1));
-  return dates.map((date3, index) => finish({ ...base, date: date3, amountMinor: shares[index], derivation: { ...derivation, monthlyMinor, daysInGroup: dates.length, daysInMonth: daysInMonth2, proration, per } }));
+  return dates.map((date3, index) => finish({ ...base2, date: date3, amountMinor: shares[index], derivation: { ...derivation, monthlyMinor, daysInGroup: dates.length, daysInMonth: daysInMonth2, proration, per } }));
 }
 function deriveCharges(input) {
   const daysInMonth2 = monthDays(input.month);
   const problems = [];
   const lines = [];
   const byStay = /* @__PURE__ */ new Map();
-  for (const day15 of input.days) byStay.set(day15.stayId, [...byStay.get(day15.stayId) ?? [], day15]);
+  for (const day19 of input.days) byStay.set(day19.stayId, [...byStay.get(day19.stayId) ?? [], day19]);
   for (const stayId of [...byStay.keys()].sort()) {
     const days = byStay.get(stayId).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
     const residentId = days[0].residentId;
-    const uncovered = days.filter((day15) => day15.payerKind === "uncovered").length;
+    const uncovered = days.filter((day19) => day19.payerKind === "uncovered").length;
     if (uncovered) problems.push({ code: "uncovered_days", stayId, residentId, count: uncovered });
     const groups = /* @__PURE__ */ new Map();
-    const add = (rate2, base, date3) => {
-      const id = `${base.kind}|${base.payerKey}|${rate2.id}`;
-      const group = groups.get(id) ?? { base, rate: rate2, dates: [] };
+    const add = (rate2, base2, date3) => {
+      const id = `${base2.kind}|${base2.payerKey}|${rate2.id}`;
+      const group = groups.get(id) ?? { base: base2, rate: rate2, dates: [] };
       group.dates.push(date3);
       groups.set(id, group);
     };
     let missingRate = 0;
-    for (const day15 of days) {
-      if (day15.payerKind === "private_pay") {
-        const setting = day15.setting;
+    const extra = /* @__PURE__ */ new Map();
+    const bump = (code) => extra.set(code, (extra.get(code) ?? 0) + 1);
+    let countedCache = null;
+    const countedOf = (stay) => {
+      if (countedCache?.stay !== stay) countedCache = { stay, map: benefitDays(stay, monthEnd(input.month)) };
+      return countedCache.map;
+    };
+    for (const day19 of days) {
+      if (day19.payerKind === "private_pay") {
+        const setting = day19.setting;
         if (setting === "nursing_facility") {
-          const rate2 = rateOn(input.rates, day15.date, { setting, kind: day15.presence === "on_leave_hold" ? "bed_hold_daily" : "room_daily" });
+          const rate2 = rateOn(input.rates, day19.date, { setting, kind: day19.presence === "on_leave_hold" ? "bed_hold_daily" : "room_daily" });
           if (!rate2) {
             missingRate += 1;
             continue;
           }
-          const kind = day15.presence === "on_leave_hold" ? "bed_hold" : "room_board";
-          lines.push(finish({ stayId, residentId, date: day15.date, kind, responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf[kind], amountMinor: rate2.amountMinor, derivation: { rateLineId: rate2.id, per: "day" } }));
+          const kind = day19.presence === "on_leave_hold" ? "bed_hold" : "room_board";
+          lines.push(finish({ stayId, residentId, date: day19.date, kind, responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf[kind], amountMinor: rate2.amountMinor, derivation: { rateLineId: rate2.id, per: "day" } }));
           continue;
         }
-        if (day15.occupantRank > 1) {
-          const second = rateOn(input.rates, day15.date, { setting, kind: "second_person" });
+        if (day19.occupantRank > 1) {
+          const second = rateOn(input.rates, day19.date, { setting, kind: "second_person" });
           if (!second) {
             missingRate += 1;
             continue;
           }
-          add(second, { stayId, residentId, kind: "second_person", responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf.second_person }, day15.date);
+          add(second, { stayId, residentId, kind: "second_person", responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf.second_person }, day19.date);
         } else {
-          const rent = rateOn(input.rates, day15.date, { setting, kind: "apartment_rent", apartmentTypeId: day15.apartmentTypeId });
+          const rent = rateOn(input.rates, day19.date, { setting, kind: "apartment_rent", apartmentTypeId: day19.apartmentTypeId });
           if (!rent) {
             missingRate += 1;
             continue;
           }
-          add(rent, { stayId, residentId, kind: "rent", responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf.rent }, day15.date);
+          add(rent, { stayId, residentId, kind: "rent", responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf.rent }, day19.date);
         }
-        if (day15.presence === "in_house") {
-          const care = careOn(input.careAssignments, stayId, day15.date, input.careNoticeDays);
-          const rate2 = care ? rateOn(input.rates, day15.date, { setting, kind: "care_level", careLevelId: care.careLevelId }) : null;
-          if (rate2) add(rate2, { stayId, residentId, kind: "care_level", responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf.care_level }, day15.date);
+        if (day19.presence === "in_house") {
+          const care = careOn(input.careAssignments, stayId, day19.date, input.careNoticeDays);
+          const rate2 = care ? rateOn(input.rates, day19.date, { setting, kind: "care_level", careLevelId: care.careLevelId }) : null;
+          if (rate2) add(rate2, { stayId, residentId, kind: "care_level", responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf.care_level }, day19.date);
         }
-      } else if (day15.payerKind === "medicaid_ffs" || day15.payerKind === "medicaid_mco" || day15.payerKind === "medicare_a" || day15.payerKind === "medicare_advantage") {
-        const rate2 = rateOn(input.rates, day15.date, { setting: day15.setting, kind: day15.presence === "on_leave_hold" ? "bed_hold_daily" : "room_daily" });
-        if (rate2 && day15.payerId) {
-          lines.push(finish({ stayId, residentId, date: day15.date, kind: "per_diem_claim", responsibility: "payer", payerKey: day15.payerId, payerId: day15.payerId, description: labelOf.per_diem_claim, amountMinor: rate2.amountMinor, derivation: { rateLineId: rate2.id, per: "day" } }));
+      } else if (day19.payerKind === "medicare_a" && input.medicare) {
+        const stay = input.medicare.stays.find((row) => row.stayId === stayId);
+        const cov = day19.coverageId ? input.medicare.coverages[day19.coverageId] : void 0;
+        if (!stay || !cov || !cov.qualifyingStayOk || !cov.skilledCertOk) {
+          bump("medicare_unqualified");
+          continue;
+        }
+        if (day19.presence !== "in_house") continue;
+        const counted = countedOf(stay);
+        const result = medicareDay(stay, counted, input.medicare.rates, day19.date);
+        if (result.kind === "problem") {
+          bump(result.code === "missing_rate" ? "missing_rate" : result.code);
+          continue;
+        }
+        const basis = { hipps: result.classification.hipps, classificationId: result.classification.id, benefitDay: result.benefitDay, vpdDay: result.vpdDay, version: input.medicare.rates.version, components: result.components, pdpmMinor: result.pdpmMinor };
+        if (day19.payerId) lines.push(finish({ stayId, residentId, date: day19.date, kind: "per_diem_claim", responsibility: "payer", payerKey: day19.payerId, payerId: day19.payerId, description: `Medicare Part A ${result.classification.hipps} day ${result.benefitDay}`, amountMinor: result.pdpmMinor - result.coinsuranceMinor, derivation: basis }));
+        if (result.coinsuranceMinor > 0n) lines.push(finish({ stayId, residentId, date: day19.date, kind: "coinsurance", responsibility: "resident", payerKey: "resident", payerId: null, description: `${labelOf.coinsurance} (day ${result.benefitDay})`, amountMinor: result.coinsuranceMinor, derivation: { ...basis, coinsuranceMinor: result.coinsuranceMinor } }));
+      } else if (day19.payerKind === "hospice_agency" && input.hospice) {
+        const share = day19.coverageId ? input.hospice[day19.coverageId] : void 0;
+        const rate2 = rateOn(input.rates, day19.date, { setting: day19.setting, kind: day19.presence === "on_leave_hold" ? "bed_hold_daily" : "room_daily" });
+        if (!rate2 || !share) {
+          missingRate += 1;
+          continue;
+        }
+        if (day19.payerId) lines.push(finish({ stayId, residentId, date: day19.date, kind: "room_board", responsibility: "payer", payerKey: day19.payerId, payerId: day19.payerId, description: "Hospice room and board", amountMinor: hospiceRoomBoard(rate2.amountMinor, share.roomBoardBps), derivation: { rateLineId: rate2.id, roomBoardBps: share.roomBoardBps } }));
+      } else if (day19.payerKind === "medicaid_ffs" || day19.payerKind === "medicaid_mco" || day19.payerKind === "medicare_a" || day19.payerKind === "medicare_advantage") {
+        const rate2 = rateOn(input.rates, day19.date, { setting: day19.setting, kind: day19.presence === "on_leave_hold" ? "bed_hold_daily" : "room_daily" });
+        if (rate2 && day19.payerId) {
+          lines.push(finish({ stayId, residentId, date: day19.date, kind: "per_diem_claim", responsibility: "payer", payerKey: day19.payerId, payerId: day19.payerId, description: labelOf.per_diem_claim, amountMinor: rate2.amountMinor, derivation: { rateLineId: rate2.id, per: "day" } }));
         }
       }
     }
     if (missingRate) problems.push({ code: "missing_rate", stayId, residentId, count: missingRate });
+    for (const [code, count] of [...extra.entries()].sort()) problems.push({ code, stayId, residentId, count });
     for (const id of [...groups.keys()].sort()) {
       const group = groups.get(id);
       lines.push(...monthly(group.base, group.dates, group.rate.amountMinor, daysInMonth2, { rateLineId: group.rate.id }, group.rate.proration, group.rate.per));
     }
-    const medicaidDays = days.filter((day15) => day15.payerKind === "medicaid_ffs" || day15.payerKind === "medicaid_mco").map((day15) => day15.date);
+    const medicaidDays = days.filter((day19) => day19.payerKind === "medicaid_ffs" || day19.payerKind === "medicaid_mco").map((day19) => day19.date);
     if (medicaidDays.length) {
       const liability = input.liabilities.find((row) => row.stayId === stayId);
       if (!liability) problems.push({ code: "missing_liability", stayId, residentId, count: 1 });
@@ -12055,8 +13824,8 @@ init_cas();
 init_errors();
 var INFO_RESPONSE_DAYS = 10;
 var APPEAL_DAYS = 90;
-var day8 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
-var iso2 = (value) => value ? value.toISOString().slice(0, 10) : null;
+var day11 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var iso4 = (value) => value ? value.toISOString().slice(0, 10) : null;
 var assertMonth = (month) => {
   if (!/^\d{4}-\d{2}-01$/.test(month)) throw new DomainError(Codes.INVALID_INPUT, "The month is the first day of the month, like 2026-10-01.", { field: "month" });
 };
@@ -12066,17 +13835,17 @@ async function recordLiability(uow, actor, input) {
   const stay = await uow.tx.stay.findUnique({ where: { id: input.stayId }, select: { id: true, residentId: true, communityId: true } });
   if (!stay) throw new DomainError(Codes.NOT_FOUND, "Stay not found.");
   await lockRow(uow.tx, "Stay", stay.id);
-  const current = await uow.tx.medicaidLiability.findFirst({ where: { stayId: stay.id, month: day8(input.month), status: { not: "superseded" } } });
-  if (current && current.liabilityMinor === input.liabilityMinor && iso2(current.noticeReceivedOn) === (input.noticeReceivedOn ?? null)) return { liabilityId: current.id, unchanged: true };
+  const current = await uow.tx.medicaidLiability.findFirst({ where: { stayId: stay.id, month: day11(input.month), status: { not: "superseded" } } });
+  if (current && current.liabilityMinor === input.liabilityMinor && iso4(current.noticeReceivedOn) === (input.noticeReceivedOn ?? null)) return { liabilityId: current.id, unchanged: true };
   const created = await uow.tx.medicaidLiability.create({
     data: {
       communityId: stay.communityId,
       residentId: stay.residentId,
       stayId: stay.id,
-      month: day8(input.month),
+      month: day11(input.month),
       liabilityMinor: input.liabilityMinor,
       status: "determined",
-      noticeReceivedOn: input.noticeReceivedOn ? day8(input.noticeReceivedOn) : null,
+      noticeReceivedOn: input.noticeReceivedOn ? day11(input.noticeReceivedOn) : null,
       note: input.note ?? ""
     }
   });
@@ -12091,7 +13860,7 @@ async function recordInfoRequest(uow, actor, input) {
   const row = await uow.tx.medicaidLiability.findUnique({ where: { id: input.liabilityId } });
   if (!row || row.status === "superseded") throw new DomainError(Codes.NOT_FOUND, "Not found.");
   if (input.kind === "responded" && !row.infoRequestedOn) throw new DomainError(Codes.GUARD_FAILED, "No information request is open.");
-  const data = input.kind === "requested" ? { infoRequestedOn: day8(input.on), infoRespondedOn: null } : { infoRespondedOn: day8(input.on) };
+  const data = input.kind === "requested" ? { infoRequestedOn: day11(input.on), infoRespondedOn: null } : { infoRespondedOn: day11(input.on) };
   await uow.tx.medicaidLiability.update({ where: { id: row.id }, data: { ...data, version: { increment: 1 } } });
   uow.audit({ eventType: `medicaid_liability.info_${input.kind}`, entityType: "MedicaidLiability", entityId: row.id, actorUserId: actorUserId(actor), after: { on: input.on } });
   return { liabilityId: row.id };
@@ -12100,18 +13869,18 @@ async function fileAppeal(uow, actor, input) {
   await lockRow(uow.tx, "MedicaidLiability", input.liabilityId);
   const row = await uow.tx.medicaidLiability.findUnique({ where: { id: input.liabilityId } });
   if (!row) throw new DomainError(Codes.NOT_FOUND, "Not found.");
-  await casUpdate(uow, { model: "MedicaidLiability", id: row.id, version: row.version, from: ["determined", "expected"], to: "appealed", actor, eventType: "medicaid_liability.appealed", data: { appealFiledOn: day8(input.filedOn) } });
+  await casUpdate(uow, { model: "MedicaidLiability", id: row.id, version: row.version, from: ["determined", "expected"], to: "appealed", actor, eventType: "medicaid_liability.appealed", data: { appealFiledOn: day11(input.filedOn) } });
   return { liabilityId: row.id, status: "appealed" };
 }
 
 // features/keystone/billing/medicaidApplication.ts
-var day9 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
-var iso3 = (value) => value ? value.toISOString().slice(0, 10) : null;
-var DATE3 = /^\d{4}-\d{2}-\d{2}$/;
+var day12 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var iso5 = (value) => value ? value.toISOString().slice(0, 10) : null;
+var DATE6 = /^\d{4}-\d{2}-\d{2}$/;
 var date2 = (value, field) => {
-  const text17 = String(value ?? "").slice(0, 10);
-  if (!DATE3.test(text17)) throw new DomainError(Codes.INVALID_INPUT, `The ${field} is a date, like 2026-10-01.`, { field });
-  return text17;
+  const text18 = String(value ?? "").slice(0, 10);
+  if (!DATE6.test(text18)) throw new DomainError(Codes.INVALID_INPUT, `The ${field} is a date, like 2026-10-01.`, { field });
+  return text18;
 };
 var PENDING_STATUSES = ["preparing", "submitted", "info_requested", "appealed"];
 function scheduleForMonth(rows, month, monthEnd2) {
@@ -12134,7 +13903,7 @@ async function startApplication(uow, actor, input) {
       stayId: stay.id,
       reference: await nextReference(uow.tx, "MCD", uow.now, 5),
       status: "preparing",
-      requestedFrom: day9(requestedFrom),
+      requestedFrom: day12(requestedFrom),
       state: input.state ?? "",
       caseworker: input.caseworker ?? "",
       note: input.note ?? ""
@@ -12159,45 +13928,45 @@ async function advanceApplication(uow, actor, input) {
   const on = date2(input.on, "date");
   const row = await lockRow(uow.tx, "MedicaidApplication", input.applicationId);
   if (!FROM[step].includes(row.status)) throw new DomainError(Codes.GUARD_FAILED, `This application is ${row.status.replace(/_/g, " ")}; it cannot ${step.replace(/_/g, " ")} now.`);
-  if (row.submittedOn && on < iso3(row.submittedOn)) throw new DomainError(Codes.INVALID_INPUT, "That date is before the application was submitted.");
+  if (row.submittedOn && on < iso5(row.submittedOn)) throw new DomainError(Codes.INVALID_INPUT, "That date is before the application was submitted.");
   let to = row.status;
   const data = {};
   switch (step) {
     case "submit":
       to = "submitted";
-      data.submittedOn = day9(on);
+      data.submittedOn = day12(on);
       break;
     case "info_request": {
       to = "info_requested";
       const due = input.dueOn ? date2(input.dueOn, "reply due date") : addDays(on, INFO_RESPONSE_DAYS);
       if (due < on) throw new DomainError(Codes.INVALID_INPUT, "The reply is due on or after the request date.");
-      Object.assign(data, { infoRequestedOn: day9(on), infoDueOn: day9(due), infoRespondedOn: null });
+      Object.assign(data, { infoRequestedOn: day12(on), infoDueOn: day12(due), infoRespondedOn: null });
       break;
     }
     // An information request during an appeal returns to the appeal.
     case "info_response":
       to = row.appealFiledOn ? "appealed" : "submitted";
-      data.infoRespondedOn = day9(on);
+      data.infoRespondedOn = day12(on);
       break;
     case "approve":
     case "appeal_approved":
       to = "approved";
-      Object.assign(data, { decisionOn: day9(on), effectiveOn: day9(input.effectiveOn ? date2(input.effectiveOn, "effective date") : iso3(row.requestedFrom)) });
+      Object.assign(data, { decisionOn: day12(on), effectiveOn: day12(input.effectiveOn ? date2(input.effectiveOn, "effective date") : iso5(row.requestedFrom)) });
       break;
     case "deny":
       to = "denied";
-      Object.assign(data, { decisionOn: day9(on), appealDueOn: day9(addDays(on, APPEAL_DAYS)) });
+      Object.assign(data, { decisionOn: day12(on), appealDueOn: day12(addDays(on, APPEAL_DAYS)) });
       break;
     case "appeal": {
-      const due = iso3(row.appealDueOn) ?? addDays(iso3(row.decisionOn), APPEAL_DAYS);
+      const due = iso5(row.appealDueOn) ?? addDays(iso5(row.decisionOn), APPEAL_DAYS);
       if (on > due) throw new DomainError(Codes.GUARD_FAILED, `The appeal window closed on ${due}.`, { reason: "appeal_window_closed" });
       to = "appealed";
-      data.appealFiledOn = day9(on);
+      data.appealFiledOn = day12(on);
       break;
     }
     case "appeal_denied":
       to = "denied";
-      data.decisionOn = day9(on);
+      data.decisionOn = day12(on);
       break;
   }
   if (input.note) data.note = input.note;
@@ -12218,15 +13987,15 @@ async function recordSchedule(uow, actor, input) {
   const live = await uow.tx.patientLiabilitySchedule.findMany({ where: { residentId: resident3.id, status: "effective" }, orderBy: { effectiveFrom: "asc" } });
   const superseded = [];
   const endDated = [];
-  const nextLater = live.map((row) => iso3(row.effectiveFrom)).find((rowFrom) => rowFrom > from) ?? null;
+  const nextLater = live.map((row) => iso5(row.effectiveFrom)).find((rowFrom) => rowFrom > from) ?? null;
   const to = nextLater ? addDays(nextLater, -1) : null;
   for (const row of live) {
-    const rowFrom = iso3(row.effectiveFrom);
+    const rowFrom = iso5(row.effectiveFrom);
     if (rowFrom === from) {
       await uow.tx.patientLiabilitySchedule.update({ where: { id: row.id }, data: { status: "superseded", version: { increment: 1 } } });
       superseded.push(row.id);
-    } else if (rowFrom < from && (!row.effectiveTo || iso3(row.effectiveTo) >= from)) {
-      await uow.tx.patientLiabilitySchedule.update({ where: { id: row.id }, data: { effectiveTo: day9(addDays(from, -1)), version: { increment: 1 } } });
+    } else if (rowFrom < from && (!row.effectiveTo || iso5(row.effectiveTo) >= from)) {
+      await uow.tx.patientLiabilitySchedule.update({ where: { id: row.id }, data: { effectiveTo: day12(addDays(from, -1)), version: { increment: 1 } } });
       endDated.push({ scheduleId: row.id, effectiveTo: addDays(from, -1) });
     }
   }
@@ -12238,8 +14007,8 @@ async function recordSchedule(uow, actor, input) {
       applicationId: input.applicationId ?? null,
       monthlyAmountMinor: input.monthlyAmountMinor,
       personalNeedsAllowanceMinor: input.personalNeedsAllowanceMinor,
-      effectiveFrom: day9(from),
-      effectiveTo: to ? day9(to) : null,
+      effectiveFrom: day12(from),
+      effectiveTo: to ? day12(to) : null,
       status: "effective",
       note: input.note ?? ""
     }
@@ -12248,12 +14017,77 @@ async function recordSchedule(uow, actor, input) {
   return { scheduleId: created.id, effectiveFrom: from, effectiveTo: to, superseded, endDated };
 }
 
+// features/keystone/billing/medicareLoad.ts
+init_decimal();
+var iso6 = (d) => d ? d.toISOString().slice(0, 10) : null;
+var day13 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+async function loadMedicareInput(tx, communityId, month, monthEndDate, days) {
+  const medicareStays = [...new Set(days.filter((d) => d.payerKind === "medicare_a").map((d) => d.stayId))];
+  const hospiceCoverages = [...new Set(days.filter((d) => d.payerKind === "hospice_agency" && d.coverageId).map((d) => d.coverageId))];
+  const out = {};
+  if (hospiceCoverages.length) {
+    const rows = await tx.coveragePeriod.findMany({ where: { id: { in: hospiceCoverages } }, select: { id: true, hospiceRoomBoardBps: true } });
+    out.hospice = Object.fromEntries(rows.map((r) => [r.id, { roomBoardBps: r.hospiceRoomBoardBps ?? 9500 }]));
+  }
+  if (!medicareStays.length) return out;
+  const stays = await tx.stay.findMany({ where: { id: { in: medicareStays } }, select: { id: true, residentId: true } });
+  const residentIds = [...new Set(stays.map((s) => s.residentId).filter((id) => Boolean(id)))];
+  const [coverages, classifications, prior, rates, community3] = await Promise.all([
+    tx.coveragePeriod.findMany({
+      where: { stay: { residentId: { in: residentIds }, communityId }, payer: { kind: "medicare_a" }, status: { in: ["active", "ending", "ended", "retro_approved"] }, startDate: { lte: day13(monthEndDate) } },
+      select: { id: true, stayId: true, startDate: true, endDate: true, qualifyingStayFrom: true, qualifyingStayTo: true, qualifyingStayEvidenceId: true, qualifyingStayEvidenceNote: true, skilledCertSignedAt: true, stay: { select: { residentId: true } } },
+      orderBy: { startDate: "asc" }
+    }),
+    tx.pdpmClassification.findMany({ where: { residentId: { in: residentIds }, status: "current", effectiveFrom: { lte: day13(monthEndDate) } }, select: { id: true, residentId: true, stayId: true, effectiveFrom: true, hipps: true, cmi: true, groups: true } }),
+    tx.priorSnfDaysObservation.findMany({ where: { residentId: { in: residentIds } }, orderBy: [{ asOf: "desc" }, { createdAt: "desc" }], select: { residentId: true, daysUsed: true, asOf: true } }),
+    tx.referenceRate.findMany({ where: { effectiveFrom: { lte: day13(month) }, OR: [{ effectiveTo: null }, { effectiveTo: { gte: day13(month) } }] }, orderBy: { effectiveFrom: "desc" }, include: { mappingVersion: { select: { code: true } } } }),
+    tx.community.findUnique({ where: { id: communityId }, select: { identifiers: true } })
+  ]);
+  const ids = community3?.identifiers ?? {};
+  const geography = ids.pdpmGeography === "rural" ? "rural" : "urban";
+  const pick = (component, geo = geography) => rates.find((r) => r.component === component && r.geography === geo);
+  const comp = ["pt", "ot", "slp", "nursing", "nta", "non_case_mix"].map((c) => pick(c));
+  const wage = ids.cbsa ? pick("wage_index", ids.cbsa) : void 0;
+  const coins = pick("snf_coinsurance", "national");
+  let ratesIn = null;
+  if (comp.every(Boolean) && coins) {
+    const [pt, ot, slp, nursing, nta, ncm] = comp.map((r) => r.rate.toString());
+    ratesIn = {
+      rates: { pt, ot, slp, nursing, nta, nonCaseMix: ncm },
+      laborShare: comp[0].laborShare?.toString() ?? "0.702",
+      wageIndex: wage?.rate?.toString() ?? "1",
+      coinsuranceMinor: minorOf(toScale(coins.rate.toString(), 2).replace(".", "")),
+      version: comp[0].mappingVersion?.code ?? "unversioned"
+    };
+  }
+  const medicareStaysIn = [];
+  const coverageFlags = {};
+  for (const stay of stays) {
+    const own = coverages.filter((c) => c.stay?.residentId === stay.residentId);
+    const stretches = own.map((c) => ({ from: iso6(c.startDate), to: c.endDate ? addDays(iso6(c.endDate), -1) : null }));
+    for (const c of own) coverageFlags[c.id] = { qualifyingStayOk: Boolean(c.qualifyingStayFrom && c.qualifyingStayTo && (c.qualifyingStayEvidenceId || c.qualifyingStayEvidenceNote)), skilledCertOk: Boolean(c.skilledCertSignedAt) };
+    const firstStretch = stretches[0]?.from ?? month;
+    const priorRow = prior.find((p) => p.residentId === stay.residentId && iso6(p.asOf) <= firstStretch);
+    medicareStaysIn.push({
+      stayId: stay.id,
+      stretches,
+      priorDaysUsed: priorRow?.daysUsed ?? 0,
+      classifications: classifications.filter((c) => c.residentId === stay.residentId).map((c) => ({ id: c.id, effectiveFrom: iso6(c.effectiveFrom), hipps: c.hipps ?? "", cmi: c.cmi, aids: Boolean(c.groups?.aids) })),
+      qualifyingStayOk: true,
+      skilledCertOk: true
+    });
+  }
+  out.medicare = { stays: medicareStaysIn.sort((a, b) => a.stayId < b.stayId ? -1 : 1), rates: ratesIn, coverages: coverageFlags };
+  return out;
+}
+
 // features/keystone/billing/period.ts
-var DATE4 = /^\d{4}-01$|^\d{4}-\d{2}-01$/;
-var day10 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
-var iso4 = (value) => value ? value.toISOString().slice(0, 10) : "";
+var DATE7 = /^\d{4}-01$|^\d{4}-\d{2}-01$/;
+var day14 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var iso7 = (value) => value ? value.toISOString().slice(0, 10) : "";
+var problemText = (p) => p.code === "uncovered_days" ? `${p.count} uncovered day(s)` : p.code === "missing_rate" ? `${p.count} day(s) without a published rate` : p.code === "missing_assessment" ? `${p.count} Part A day(s) without a PDPM assessment` : p.code === "benefit_exhausted" ? `${p.count} day(s) past day 100 of the benefit period still on Medicare Part A` : p.code === "medicare_unqualified" ? `${p.count} Part A day(s) without qualifying-stay evidence and a skilled certification` : "a Medicaid month without a patient liability";
 function assertMonth2(month) {
-  if (!DATE4.test(month) && !/^\d{4}-\d{2}-01$/.test(month)) throw new DomainError(Codes.INVALID_INPUT, "The month is the first day of the month, like 2026-10-01.", { field: "month" });
+  if (!DATE7.test(month) && !/^\d{4}-\d{2}-01$/.test(month)) throw new DomainError(Codes.INVALID_INPUT, "The month is the first day of the month, like 2026-10-01.", { field: "month" });
 }
 async function loadDerivationInput(tx, communityId, month) {
   assertMonth2(month);
@@ -12267,11 +14101,11 @@ async function loadDerivationInput(tx, communityId, month) {
     tx.stay.findMany({ where: { id: { in: stayIds } }, select: { id: true, residentId: true, admittedAt: true } }),
     tx.apartment.findMany({ where: { id: { in: apartmentIds } }, select: { id: true, apartmentTypeId: true } }),
     tx.coveragePeriod.findMany({ where: { id: { in: coverageIds } }, select: { id: true, payerId: true } }),
-    tx.rateSchedule.findMany({ where: { communityId, status: "published", effectiveFrom: { lte: day10(monthEnd(month)) } }, select: { setting: true, lines: true } }),
-    tx.careLevelAssignment.findMany({ where: { communityId, effectiveFrom: { lte: day10(monthEnd(month)) } }, select: { stayId: true, careLevelId: true, points: true, effectiveFrom: true, noticeDeliveredOn: true, careLevel: { select: { minPoints: true } } }, orderBy: [{ effectiveFrom: "asc" }, { createdAt: "asc" }, { id: "asc" }] }),
-    tx.medicaidLiability.findMany({ where: { communityId, month: day10(month), status: { not: "superseded" } }, select: { stayId: true, liabilityMinor: true } }),
+    tx.rateSchedule.findMany({ where: { communityId, status: "published", effectiveFrom: { lte: day14(monthEnd(month)) } }, select: { setting: true, lines: true } }),
+    tx.careLevelAssignment.findMany({ where: { communityId, effectiveFrom: { lte: day14(monthEnd(month)) } }, select: { stayId: true, careLevelId: true, points: true, effectiveFrom: true, noticeDeliveredOn: true, careLevel: { select: { minPoints: true } } }, orderBy: [{ effectiveFrom: "asc" }, { createdAt: "asc" }, { id: "asc" }] }),
+    tx.medicaidLiability.findMany({ where: { communityId, month: day14(month), status: { not: "superseded" } }, select: { stayId: true, liabilityMinor: true } }),
     tx.community.findUnique({ where: { id: communityId }, select: { jurisdictionPack: { select: { rules: true } } } }),
-    tx.patientLiabilitySchedule.findMany({ where: { communityId, status: "effective", effectiveFrom: { lte: day10(monthEnd(month)) } }, select: { id: true, residentId: true, stayId: true, monthlyAmountMinor: true, personalNeedsAllowanceMinor: true, effectiveFrom: true, effectiveTo: true, status: true }, orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }] })
+    tx.patientLiabilitySchedule.findMany({ where: { communityId, status: "effective", effectiveFrom: { lte: day14(monthEnd(month)) } }, select: { id: true, residentId: true, stayId: true, monthlyAmountMinor: true, personalNeedsAllowanceMinor: true, effectiveFrom: true, effectiveTo: true, status: true }, orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }] })
   ]);
   const noticeRule = (pack?.jurisdictionPack?.rules ?? {}).careLevelIncreaseNoticeDays?.value;
   const careNoticeDays = Number.isInteger(noticeRule) && noticeRule >= 0 ? noticeRule : 30;
@@ -12297,13 +14131,14 @@ async function loadDerivationInput(tx, communityId, month) {
         apartmentTypeId: row.apartmentId ? typeOf.get(row.apartmentId) ?? null : null,
         payerKind: row.payerKind,
         payerId: row.coverageId ? payerOf.get(row.coverageId) ?? null : null,
-        occupantRank: rank.get(row.stayId) ?? 1
+        occupantRank: rank.get(row.stayId) ?? 1,
+        coverageId: row.coverageId
       });
     }
   }
   const scheduleIds = /* @__PURE__ */ new Map();
   const rates = schedules.length ? await tx.rateLine.findMany({
-    where: { schedule: { communityId, status: "published", effectiveFrom: { lte: day10(monthEnd(month)) } } },
+    where: { schedule: { communityId, status: "published", effectiveFrom: { lte: day14(monthEnd(month)) } } },
     select: { id: true, kind: true, amountMinor: true, per: true, proration: true, apartmentTypeId: true, careLevelId: true, scheduleId: true, schedule: { select: { setting: true, effectiveFrom: true } } }
   }) : [];
   return {
@@ -12312,7 +14147,7 @@ async function loadDerivationInput(tx, communityId, month) {
     rates: rates.map((line) => ({
       id: line.id,
       scheduleId: line.scheduleId ?? "",
-      effectiveFrom: iso4(line.schedule?.effectiveFrom),
+      effectiveFrom: iso7(line.schedule?.effectiveFrom),
       setting: line.schedule?.setting ?? "",
       kind: line.kind,
       apartmentTypeId: line.apartmentTypeId,
@@ -12321,9 +14156,10 @@ async function loadDerivationInput(tx, communityId, month) {
       per: line.per ?? "month",
       proration: line.proration ?? "actual_days_in_month"
     })),
-    careAssignments: assignments.filter((row) => row.stayId && row.careLevelId).map((row) => ({ stayId: row.stayId, careLevelId: row.careLevelId, points: row.points, levelMinPoints: row.careLevel?.minPoints ?? void 0, effectiveFrom: iso4(row.effectiveFrom), noticeDeliveredOn: iso4(row.noticeDeliveredOn) || null })),
+    careAssignments: assignments.filter((row) => row.stayId && row.careLevelId).map((row) => ({ stayId: row.stayId, careLevelId: row.careLevelId, points: row.points, levelMinPoints: row.careLevel?.minPoints ?? void 0, effectiveFrom: iso7(row.effectiveFrom), noticeDeliveredOn: iso7(row.noticeDeliveredOn) || null })),
     careNoticeDays,
-    liabilities: liabilitiesFor(stays, liabilities, liabilitySchedules, month)
+    liabilities: liabilitiesFor(stays, liabilities, liabilitySchedules, month),
+    ...await loadMedicareInput(tx, communityId, month, monthEnd(month), days)
   };
 }
 function liabilitiesFor(stays, monthly2, schedules, month) {
@@ -12334,8 +14170,8 @@ function liabilitiesFor(stays, monthly2, schedules, month) {
     stayId: row.stayId,
     monthlyAmountMinor: row.monthlyAmountMinor ?? 0n,
     personalNeedsAllowanceMinor: row.personalNeedsAllowanceMinor ?? 0n,
-    effectiveFrom: iso4(row.effectiveFrom),
-    effectiveTo: row.effectiveTo ? iso4(row.effectiveTo) : null,
+    effectiveFrom: iso7(row.effectiveFrom),
+    effectiveTo: row.effectiveTo ? iso7(row.effectiveTo) : null,
     status: row.status ?? ""
   }));
   for (const stay of stays) {
@@ -12350,13 +14186,13 @@ async function deriveForMonth(tx, communityId, month) {
   return deriveCharges(await loadDerivationInput(tx, communityId, month));
 }
 async function getOrCreatePeriod(uow, actor, communityId, month) {
-  const existing = await uow.tx.billingPeriod.findFirst({ where: { communityId, month: day10(month) } });
+  const existing = await uow.tx.billingPeriod.findFirst({ where: { communityId, month: day14(month) } });
   if (existing) return existing;
-  const created = await uow.tx.billingPeriod.create({ data: { communityId, month: day10(month), status: "open" } });
+  const created = await uow.tx.billingPeriod.create({ data: { communityId, month: day14(month), status: "open" } });
   uow.audit({ eventType: "billing.period_opened", entityType: "BillingPeriod", entityId: created.id, actorUserId: actorUserId(actor), after: { month } });
   return created;
 }
-var keyOf = (row) => `${row.stayId}|${iso4(row.date)}|${row.kind}|${row.payerKey}`;
+var keyOf = (row) => `${row.stayId}|${iso7(row.date)}|${row.kind}|${row.payerKey}`;
 async function applyDerivation(uow, communityId, period, derivation, liveStatuses, newStatus) {
   const existing = await uow.tx.charge.findMany({
     where: { periodId: period.id, source: "derived", kind: { not: "adjustment" }, status: { in: liveStatuses } },
@@ -12380,7 +14216,7 @@ async function applyDerivation(uow, communityId, period, derivation, liveStatuse
     residentId: line.residentId,
     stayId: line.stayId,
     periodId: period.id,
-    date: day10(line.date),
+    date: day14(line.date),
     kind: line.kind,
     responsibility: line.responsibility,
     payerKey: line.payerKey,
@@ -12403,7 +14239,7 @@ async function applyDerivation(uow, communityId, period, derivation, liveStatuse
   const removed = [...byKey.values()];
   for (const row of removed) {
     await uow.tx.charge.update({ where: { id: row.id }, data: { status: "voided" } });
-    changes.push({ residentId: row.residentId ?? "", stayId: row.stayId ?? "", before: row.amountMinor, after: 0n, oldId: row.id, responsibility: row.responsibility, date: iso4(row.date), kind: row.kind });
+    changes.push({ residentId: row.residentId ?? "", stayId: row.stayId ?? "", before: row.amountMinor, after: 0n, oldId: row.id, responsibility: row.responsibility, date: iso7(row.date), kind: row.kind });
   }
   return { created: created.length, superseded: supersede.length, voided: removed.length, unchanged: derivation.lines.length - toCreate.length - supersede.length, changes };
 }
@@ -12431,7 +14267,7 @@ async function issueStatements(uow, communityId, period, month) {
   for (const residentId of [...byResident2.keys()].sort()) {
     const rows = byResident2.get(residentId);
     const total = rows.reduce((sum, row) => sum + (row.amountMinor ?? 0n), 0n);
-    const lines = statementLines(rows.map((row) => ({ kind: row.kind, description: row.description, date: iso4(row.date), amountMinor: row.amountMinor ?? 0n })));
+    const lines = statementLines(rows.map((row) => ({ kind: row.kind, description: row.description, date: iso7(row.date), amountMinor: row.amountMinor ?? 0n })));
     await uow.tx.statement.create({
       data: {
         communityId,
@@ -12440,7 +14276,7 @@ async function issueStatements(uow, communityId, period, month) {
         number: await nextReference(uow.tx, "STM", uow.now, 6),
         status: total > 0n ? "issued" : "paid",
         issuedAt: uow.now,
-        dueOn: day10(dueOn),
+        dueOn: day14(dueOn),
         totalMinor: total,
         paidMinor: 0n,
         lines: lines.map((line) => ({ ...line, amountMinor: line.amountMinor.toString() })),
@@ -12465,7 +14301,7 @@ async function closePeriod(uow, actor, input) {
   if (!closed || closed < end) throw new DomainError(Codes.GUARD_FAILED, `Sign off the midnight census through ${end} before closing the month.`, { reason: "census_not_signed_off" });
   const derivation = await deriveForMonth(uow.tx, input.communityId, input.month);
   if (derivation.problems.length) {
-    throw new DomainError(Codes.GUARD_FAILED, `The month cannot close yet: ${derivation.problems.map((p) => p.code === "uncovered_days" ? `${p.count} uncovered day(s)` : p.code === "missing_rate" ? `${p.count} day(s) without a published rate` : "a Medicaid month without a patient liability").filter((v, i, a) => a.indexOf(v) === i).join("; ")}.`, { reason: "derivation_problems", problems: derivation.problems.map((p) => ({ ...p })) });
+    throw new DomainError(Codes.GUARD_FAILED, `The month cannot close yet: ${derivation.problems.map((p) => problemText(p)).filter((v, i, a) => a.indexOf(v) === i).join("; ")}.`, { reason: "derivation_problems", problems: derivation.problems.map((p) => ({ ...p })) });
   }
   await applyDerivation(uow, input.communityId, period, derivation, ["open"], "open");
   await uow.tx.charge.updateMany({ where: { periodId: period.id, status: "open" }, data: { status: "posted" } });
@@ -12476,7 +14312,7 @@ async function closePeriod(uow, actor, input) {
 }
 async function adjustClosedPeriod(uow, actor, input) {
   assertMonth2(input.month);
-  const period = await uow.tx.billingPeriod.findFirst({ where: { communityId: input.communityId, month: day10(input.month) } });
+  const period = await uow.tx.billingPeriod.findFirst({ where: { communityId: input.communityId, month: day14(input.month) } });
   if (!period) throw new DomainError(Codes.NOT_FOUND, "Not found.");
   await lockRow(uow.tx, "BillingPeriod", period.id);
   if (period.status !== "closed") throw new DomainError(Codes.GUARD_FAILED, "This month is still open; derive it again instead.", { reason: "period_open" });
@@ -12510,7 +14346,7 @@ async function adjustClosedPeriod(uow, actor, input) {
         residentId,
         stayId: entry.stayId,
         periodId: next.id,
-        date: day10(nextMonthStart),
+        date: day14(nextMonthStart),
         kind: "adjustment",
         responsibility: "resident",
         payerKey,
@@ -12533,10 +14369,10 @@ async function adjustClosedPeriod(uow, actor, input) {
 init_actor();
 init_cas();
 init_errors();
-var day11 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var day15 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 async function createSchedule(uow, actor, input) {
   if (!input.name.trim()) throw new DomainError(Codes.INVALID_INPUT, "Name the schedule.", { field: "name" });
-  const schedule = await uow.tx.rateSchedule.create({ data: { communityId: input.communityId, name: input.name.trim(), setting: input.setting, effectiveFrom: day11(input.effectiveFrom), noticeDays: input.noticeDays ?? 30, status: "draft" } });
+  const schedule = await uow.tx.rateSchedule.create({ data: { communityId: input.communityId, name: input.name.trim(), setting: input.setting, effectiveFrom: day15(input.effectiveFrom), noticeDays: input.noticeDays ?? 30, status: "draft" } });
   auditCreate(uow, actor, "RateSchedule", schedule.id, "rate_schedule.created", { setting: input.setting });
   return { scheduleId: schedule.id };
 }
@@ -12666,11 +14502,11 @@ registerApplier("balance.adjust", async (uow, actor, request) => post(uow, actor
 // features/keystone/billing/careLevel.ts
 init_cas();
 init_errors();
-var DATE5 = /^\d{4}-\d{2}-\d{2}$/;
-var day12 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var DATE8 = /^\d{4}-\d{2}-\d{2}$/;
+var day16 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 async function assignCareLevel(uow, actor, input) {
-  if (!DATE5.test(String(input.effectiveFrom))) throw new DomainError(Codes.INVALID_INPUT, "Give the date the level starts, like 2026-10-01.", { field: "effectiveFrom" });
-  if (input.noticeDeliveredOn && !DATE5.test(input.noticeDeliveredOn)) throw new DomainError(Codes.INVALID_INPUT, "The notice date is a date.", { field: "noticeDeliveredOn" });
+  if (!DATE8.test(String(input.effectiveFrom))) throw new DomainError(Codes.INVALID_INPUT, "Give the date the level starts, like 2026-10-01.", { field: "effectiveFrom" });
+  if (input.noticeDeliveredOn && !DATE8.test(input.noticeDeliveredOn)) throw new DomainError(Codes.INVALID_INPUT, "The notice date is a date.", { field: "noticeDeliveredOn" });
   await lockRow(uow.tx, "Stay", input.stayId);
   const stay = await uow.tx.stay.findUniqueOrThrow({ where: { id: input.stayId }, select: { id: true, residentId: true, communityId: true, setting: true } });
   if (stay.setting !== "assisted_living" && stay.setting !== "memory_care") throw new DomainError(Codes.GUARD_FAILED, "Care levels apply to assisted living and memory care.");
@@ -12692,7 +14528,7 @@ async function assignCareLevel(uow, actor, input) {
   if (current?.effectiveFrom && current.effectiveFrom.toISOString().slice(0, 10) > input.effectiveFrom) throw new DomainError(Codes.GUARD_FAILED, "A later assignment already exists.", { reason: "later_assignment" });
   if (current) await uow.tx.careLevelAssignment.update({ where: { id: current.id }, data: { status: "superseded", version: { increment: 1 } } });
   const created = await uow.tx.careLevelAssignment.create({
-    data: { communityId: stay.communityId, residentId: stay.residentId, stayId: stay.id, careLevelId: level.id, points, effectiveFrom: day12(input.effectiveFrom), noticeDeliveredOn: input.noticeDeliveredOn ? day12(input.noticeDeliveredOn) : null, source: manual ? "manual" : "points", reason: input.reason?.trim() ?? "", status: "active" }
+    data: { communityId: stay.communityId, residentId: stay.residentId, stayId: stay.id, careLevelId: level.id, points, effectiveFrom: day16(input.effectiveFrom), noticeDeliveredOn: input.noticeDeliveredOn ? day16(input.noticeDeliveredOn) : null, source: manual ? "manual" : "points", reason: input.reason?.trim() ?? "", status: "active" }
   });
   auditCreate(uow, actor, "CareLevelAssignment", created.id, "care_level.assigned", { careLevelId: level.id, points, source: manual ? "manual" : "points", supersedes: current?.id ?? null }, { reason: input.reason?.trim() ?? null });
   return { assignmentId: created.id, careLevelId: level.id, supersedes: current?.id ?? null, unchanged: false };
@@ -12705,7 +14541,7 @@ init_errors();
 init_sequence();
 
 // features/keystone/trust/ledger.ts
-var DATE6 = /^\d{4}-\d{2}-\d{2}$/;
+var DATE9 = /^\d{4}-\d{2}-\d{2}$/;
 var BUCKETS = /* @__PURE__ */ new Set(["bank_control", "client_liability", "bank_fee", "suspense"]);
 var TrustLedgerError = class extends Error {
   constructor(message, reason) {
@@ -12720,7 +14556,7 @@ function assertBalanced(lines) {
   for (const line of lines) {
     if (typeof line.amountMinor !== "bigint" || line.amountMinor <= 0n) throw new TrustLedgerError("Every trust line needs a positive amount.", "invalid");
     if (!BUCKETS.has(line.bucket)) throw new TrustLedgerError("Unknown trust bucket.", "invalid");
-    if (!DATE6.test(line.effectiveOn)) throw new TrustLedgerError("Every trust line needs a date.", "invalid");
+    if (!DATE9.test(line.effectiveOn)) throw new TrustLedgerError("Every trust line needs a date.", "invalid");
     if (line.bucket === "client_liability" !== Boolean(line.ledgerId)) throw new TrustLedgerError("Only resident lines name a resident ledger, and each one must.", "invalid");
     if (line.side === "debit") debit += line.amountMinor;
     else if (line.side === "credit") credit += line.amountMinor;
@@ -12751,18 +14587,18 @@ function assertHistoricalMinimumBalances(existing, proposed) {
   for (const line of [...existing, ...proposed]) {
     if (line.bucket !== "client_liability" || !line.ledgerId) continue;
     const days = byLedger2.get(line.ledgerId) ?? /* @__PURE__ */ new Map();
-    const day15 = days.get(line.effectiveOn) ?? { in: 0n, out: 0n };
-    if (line.side === "credit") day15.in += line.amountMinor;
-    else day15.out += line.amountMinor;
-    days.set(line.effectiveOn, day15);
+    const day19 = days.get(line.effectiveOn) ?? { in: 0n, out: 0n };
+    if (line.side === "credit") day19.in += line.amountMinor;
+    else day19.out += line.amountMinor;
+    days.set(line.effectiveOn, day19);
     byLedger2.set(line.ledgerId, days);
   }
   for (const days of byLedger2.values()) {
     let balance = 0n;
     for (const date3 of [...days.keys()].sort()) {
-      const day15 = days.get(date3);
-      balance += day15.in;
-      balance -= day15.out;
+      const day19 = days.get(date3);
+      balance += day19.in;
+      balance -= day19.out;
       if (balance < 0n) throw new TrustLedgerError(`This would leave the resident's trust ledger short on ${date3}.`, "overdrawn");
     }
   }
@@ -12852,24 +14688,24 @@ function quarterStatement(ledgerId, txs, start) {
 }
 function trustRules(rules2) {
   const r = rules2 ?? {};
-  const toMinor = (value, fallback) => typeof value === "number" || typeof value === "string" && /^\d+$/.test(value) ? BigInt(value) : fallback;
+  const toMinor2 = (value, fallback) => typeof value === "number" || typeof value === "string" && /^\d+$/.test(value) ? BigInt(value) : fallback;
   return {
-    resource: { limitMinor: toMinor(r.trustResourceThreshold?.value?.limitMinor, 200000n), marginMinor: toMinor(r.trustResourceThreshold?.value?.marginMinor, 20000n) },
-    authorisationOverMinor: toMinor(r.trustAuthorisationApproval?.value?.overMinor, 0n)
+    resource: { limitMinor: toMinor2(r.trustResourceThreshold?.value?.limitMinor, 200000n), marginMinor: toMinor2(r.trustResourceThreshold?.value?.marginMinor, 20000n) },
+    authorisationOverMinor: toMinor2(r.trustAuthorisationApproval?.value?.overMinor, 0n)
   };
 }
 
 // features/keystone/trust/service.ts
 var CONVEYANCE_DAYS = 30;
-var iso5 = (value) => value ? value.toISOString().slice(0, 10) : "";
-var day13 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var iso8 = (value) => value ? value.toISOString().slice(0, 10) : "";
+var day17 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 var asDomain = (error) => {
   if (error instanceof TrustLedgerError) throw new DomainError(error.reason === "overdrawn" ? Codes.GUARD_FAILED : Codes.INVALID_INPUT, error.message, { reason: error.reason });
   throw error;
 };
 async function linesOfAccount(tx, accountId) {
   const rows = await tx.trustLedgerLine.findMany({ where: { accountId }, select: { ledgerId: true, bucket: true, side: true, amountMinor: true, effectiveOn: true } });
-  return rows.map((row) => ({ ledgerId: row.ledgerId, bucket: row.bucket, side: row.side, amountMinor: row.amountMinor, effectiveOn: iso5(row.effectiveOn) }));
+  return rows.map((row) => ({ ledgerId: row.ledgerId, bucket: row.bucket, side: row.side, amountMinor: row.amountMinor, effectiveOn: iso8(row.effectiveOn) }));
 }
 async function openLedger(uow, actor, input) {
   if (!input.consentOnFile) throw new DomainError(Codes.GUARD_FAILED, "The resident or their representative must have agreed in writing to hold their money here.", { reason: "consent_required" });
@@ -12888,7 +14724,7 @@ async function loadLedger(uow, ledgerId) {
 }
 async function statedThrough(tx, ledgerId) {
   const latest = await tx.trustStatement.findFirst({ where: { ledgerId }, orderBy: { quarter: "desc" }, select: { quarter: true } });
-  return latest?.quarter ? quarterEnd(iso5(latest.quarter)) : null;
+  return latest?.quarter ? quarterEnd(iso8(latest.quarter)) : null;
 }
 async function assertNotStated(tx, ledgerId, on) {
   const through = await statedThrough(tx, ledgerId);
@@ -12903,7 +14739,7 @@ async function post2(uow, actor, tx, lines) {
     asDomain(error);
   }
   await uow.tx.trustLedgerLine.createMany({
-    data: lines.map((line) => ({ communityId: tx.communityId, residentId: tx.residentId, transactionId: tx.id, ledgerId: line.ledgerId, accountId: tx.accountId, bucket: line.bucket, side: line.side, amountMinor: line.amountMinor, effectiveOn: day13(line.effectiveOn) }))
+    data: lines.map((line) => ({ communityId: tx.communityId, residentId: tx.residentId, transactionId: tx.id, ledgerId: line.ledgerId, accountId: tx.accountId, bucket: line.bucket, side: line.side, amountMinor: line.amountMinor, effectiveOn: day17(line.effectiveOn) }))
   });
   auditCreate(uow, actor, "TrustTransaction", tx.id, "trust.lines_posted", { lines: lines.length });
 }
@@ -12912,9 +14748,9 @@ function checkAmount(amountMinor) {
 }
 async function effective(uow, communityId, date3) {
   const community3 = communityId ? await uow.tx.community.findUnique({ where: { id: communityId }, select: { timeZone: true } }) : null;
-  const today = localDate(community3?.timeZone ?? "America/New_York", uow.now);
-  const on = date3 || today;
-  if (on > today) throw new DomainError(Codes.INVALID_INPUT, "A trust entry cannot be dated in the future.", { field: "effectiveOn" });
+  const today2 = localDate(community3?.timeZone ?? "America/New_York", uow.now);
+  const on = date3 || today2;
+  if (on > today2) throw new DomainError(Codes.INVALID_INPUT, "A trust entry cannot be dated in the future.", { field: "effectiveOn" });
   return on;
 }
 async function recordDeposit(uow, actor, input) {
@@ -12924,7 +14760,7 @@ async function recordDeposit(uow, actor, input) {
   const on = await effective(uow, ledger.communityId, input.effectiveOn);
   const kind = input.kind ?? "deposit";
   const tx = await uow.tx.trustTransaction.create({
-    data: { communityId: ledger.communityId, residentId: ledger.residentId, ledgerId: ledger.id, accountId: ledger.accountId, reference: await nextReference(uow.tx, "TRX", uow.now, 6), kind, amountMinor: input.amountMinor, purpose: input.purpose ?? "", status: "posted", preparedById: actorUserId(actor), effectiveOn: day13(on), postedAt: uow.now }
+    data: { communityId: ledger.communityId, residentId: ledger.residentId, ledgerId: ledger.id, accountId: ledger.accountId, reference: await nextReference(uow.tx, "TRX", uow.now, 6), kind, amountMinor: input.amountMinor, purpose: input.purpose ?? "", status: "posted", preparedById: actorUserId(actor), effectiveOn: day17(on), postedAt: uow.now }
   });
   await post2(uow, actor, { id: tx.id, communityId: ledger.communityId, residentId: ledger.residentId, ledgerId: ledger.id, accountId: ledger.accountId }, linesOf(kind, ledger.id, input.amountMinor, on));
   return { transactionId: tx.id, status: "posted" };
@@ -12958,7 +14794,7 @@ async function prepareWithdrawal(uow, actor, input) {
       purpose: input.purpose.trim(),
       status: needsSecond ? "pending_signature" : "posted",
       preparedById: actorUserId(actor),
-      effectiveOn: day13(on),
+      effectiveOn: day17(on),
       postedAt: needsSecond ? null : uow.now
     }
   });
@@ -12989,7 +14825,7 @@ async function signWithdrawal(uow, actor, input) {
   if (tx.preparedById === actor.userId) throw new DomainError(Codes.SELF_APPROVAL, "The person who prepared a withdrawal cannot sign it.", { reason: "preparer_is_signer" });
   if (!tx.approvalId) throw new DomainError(Codes.APPROVAL_REQUIRED, "This withdrawal has no approval request.");
   const ledger = await loadLedger(uow, tx.ledgerId);
-  const on = iso5(tx.effectiveOn);
+  const on = iso8(tx.effectiveOn);
   const approved = await consumeApproval(uow, { requestId: tx.approvalId, action: "trust.withdraw", targetList: "TrustTransaction", targetId: tx.id, payload: { transactionId: tx.id, ledgerId: ledger.id, amountMinor: tx.amountMinor.toString(), effectiveOn: on } });
   if (approved.approverId && approved.approverId === tx.preparedById) throw new DomainError(Codes.SELF_APPROVAL, "The person who prepared a withdrawal cannot approve it.", { reason: "preparer_is_signer" });
   await casUpdate(uow, { model: "TrustTransaction", id: tx.id, version: tx.version, from: ["pending_signature"], to: "posted", actor, eventType: "trust.withdrawal_signed", approverId: approved.approverId, data: { signedById: actor.userId, postedAt: uow.now } });
@@ -12999,7 +14835,7 @@ async function signWithdrawal(uow, actor, input) {
 }
 async function markConveyed(uow, actor, ledgerId, on) {
   const ledger = await uow.tx.residentTrustLedger.findUniqueOrThrow({ where: { id: ledgerId } });
-  await casUpdate(uow, { model: "ResidentTrustLedger", id: ledgerId, version: ledger.version, from: ["closed"], to: "conveyed", actor, eventType: "trust.ledger_conveyed", data: { conveyedOn: day13(on) } });
+  await casUpdate(uow, { model: "ResidentTrustLedger", id: ledgerId, version: ledger.version, from: ["closed"], to: "conveyed", actor, eventType: "trust.ledger_conveyed", data: { conveyedOn: day17(on) } });
 }
 async function rejectWithdrawal(uow, actor, input) {
   await lockRow(uow.tx, "TrustTransaction", input.transactionId);
@@ -13019,9 +14855,9 @@ async function reverseTransaction(uow, actor, input) {
   const ledger = await loadLedger(uow, original.ledgerId);
   const on = await effective(uow, original.communityId, null);
   const reversal = await uow.tx.trustTransaction.create({
-    data: { communityId: original.communityId, residentId: original.residentId, ledgerId: original.ledgerId, accountId: original.accountId, reference: await nextReference(uow.tx, "TRX", uow.now, 6), kind: "reversal", amountMinor: original.amountMinor, purpose: input.reason.trim(), status: "posted", preparedById: actorUserId(actor), reversesId: original.id, effectiveOn: day13(on), postedAt: uow.now }
+    data: { communityId: original.communityId, residentId: original.residentId, ledgerId: original.ledgerId, accountId: original.accountId, reference: await nextReference(uow.tx, "TRX", uow.now, 6), kind: "reversal", amountMinor: original.amountMinor, purpose: input.reason.trim(), status: "posted", preparedById: actorUserId(actor), reversesId: original.id, effectiveOn: day17(on), postedAt: uow.now }
   });
-  const mirrored = original.lines.map((line) => ({ ledgerId: line.ledgerId, bucket: line.bucket, side: line.side, amountMinor: line.amountMinor, effectiveOn: iso5(line.effectiveOn) }));
+  const mirrored = original.lines.map((line) => ({ ledgerId: line.ledgerId, bucket: line.bucket, side: line.side, amountMinor: line.amountMinor, effectiveOn: iso8(line.effectiveOn) }));
   await post2(uow, actor, { id: reversal.id, communityId: original.communityId, residentId: original.residentId, ledgerId: ledger.id, accountId: ledger.accountId }, reverseLines(mirrored, on));
   return { transactionId: reversal.id, reverses: original.id };
 }
@@ -13039,12 +14875,12 @@ async function prepareReconciliation(uow, actor, input) {
   if (!account) throw new DomainError(Codes.NOT_FOUND, "Trust account not found.");
   const asOf = addDays(input.month, daysInMonth(input.month) - 1);
   const result = reconcile(await linesOfAccount(uow.tx, account.id), input.bankBalanceMinor, asOf);
-  const prior = await uow.tx.trustReconciliation.findFirst({ where: { accountId: account.id, month: day13(input.month) } });
+  const prior = await uow.tx.trustReconciliation.findFirst({ where: { accountId: account.id, month: day17(input.month) } });
   if (prior?.status === "signed") throw new DomainError(Codes.GUARD_FAILED, "This month is already signed off.");
   const data = {
     communityId: account.communityId,
     accountId: account.id,
-    month: day13(input.month),
+    month: day17(input.month),
     bankBalanceMinor: result.bankBalanceMinor,
     bookBalanceMinor: result.bookBalanceMinor,
     residentTotalMinor: result.residentTotalMinor,
@@ -13075,7 +14911,7 @@ var daysInMonth = (month) => {
 async function closeLedger(uow, actor, input) {
   const ledger = await loadLedger(uow, input.ledgerId);
   const on = await effective(uow, ledger.communityId, input.closedOn);
-  await casUpdate(uow, { model: "ResidentTrustLedger", id: ledger.id, version: ledger.version, from: ["open"], to: "closed", actor, eventType: "trust.ledger_closed", data: { closedOn: day13(on), closedReason: input.reason } });
+  await casUpdate(uow, { model: "ResidentTrustLedger", id: ledger.id, version: ledger.version, from: ["open"], to: "closed", actor, eventType: "trust.ledger_closed", data: { closedOn: day17(on), closedReason: input.reason } });
   return { ledgerId: ledger.id, closedOn: on, dueBy: addDays(on, CONVEYANCE_DAYS) };
 }
 async function conveyBalance(uow, actor, input) {
@@ -13084,7 +14920,7 @@ async function conveyBalance(uow, actor, input) {
   if (!input.conveyedTo.trim()) throw new DomainError(Codes.INVALID_INPUT, "Name who the money was paid to.", { field: "conveyedTo" });
   const balance = await balanceOfLedger(uow.tx, ledger.id);
   if (balance <= 0n) {
-    await casUpdate(uow, { model: "ResidentTrustLedger", id: ledger.id, version: ledger.version, from: ["closed"], to: "conveyed", actor, eventType: "trust.ledger_conveyed", data: { conveyedOn: day13(await effective(uow, ledger.communityId, input.effectiveOn)), conveyedTo: input.conveyedTo.trim() } });
+    await casUpdate(uow, { model: "ResidentTrustLedger", id: ledger.id, version: ledger.version, from: ["closed"], to: "conveyed", actor, eventType: "trust.ledger_conveyed", data: { conveyedOn: day17(await effective(uow, ledger.communityId, input.effectiveOn)), conveyedTo: input.conveyedTo.trim() } });
     return { ledgerId: ledger.id, status: "conveyed", transactionId: null };
   }
   await uow.tx.residentTrustLedger.update({ where: { id: ledger.id }, data: { conveyedTo: input.conveyedTo.trim() } });
@@ -13097,9 +14933,9 @@ init_actor();
 init_cas();
 init_errors();
 init_sequence();
-var iso6 = (value) => value ? value.toISOString().slice(0, 10) : "";
-var day14 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
-var DATE7 = /^\d{4}-\d{2}-\d{2}$/;
+var iso9 = (value) => value ? value.toISOString().slice(0, 10) : "";
+var day18 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var DATE10 = /^\d{4}-\d{2}-\d{2}$/;
 var asDomain2 = (error) => {
   if (error instanceof TrustLedgerError) throw new DomainError(error.reason === "overdrawn" ? Codes.GUARD_FAILED : Codes.INVALID_INPUT, error.message, { reason: error.reason });
   if (error instanceof RangeError) throw new DomainError(Codes.INVALID_INPUT, error.message);
@@ -13111,7 +14947,7 @@ async function packRules(tx, communityId) {
 }
 var AUTHORISATION_KINDS = ["deposit", "withdrawal_cash", "withdrawal_purchase", "liability_transfer"];
 async function recordAuthorisation(uow, actor, input) {
-  if (!DATE7.test(String(input.signedOn ?? ""))) throw new DomainError(Codes.INVALID_INPUT, "The signed date is a date, like 2026-10-01.", { field: "signedOn" });
+  if (!DATE10.test(String(input.signedOn ?? ""))) throw new DomainError(Codes.INVALID_INPUT, "The signed date is a date, like 2026-10-01.", { field: "signedOn" });
   const kinds = [...new Set((input.kinds ?? []).map(String))];
   if (!kinds.length || kinds.some((kind) => !AUTHORISATION_KINDS.includes(kind))) throw new DomainError(Codes.INVALID_INPUT, `Choose what the authorisation covers: ${AUTHORISATION_KINDS.join(", ")}.`, { field: "kinds" });
   const limit = input.perWithdrawalLimitMinor ?? null;
@@ -13132,7 +14968,7 @@ async function recordAuthorisation(uow, actor, input) {
       residentId: ledger.residentId,
       ledgerId: ledger.id,
       representativeId: input.representativeId ?? null,
-      signedOn: day14(input.signedOn),
+      signedOn: day18(input.signedOn),
       kinds,
       perWithdrawalLimitMinor: limit,
       documentId: input.documentId ?? null,
@@ -13186,9 +15022,9 @@ async function allocateAccountInterest(uow, actor, input) {
   if (!account || account.status !== "active") throw new DomainError(Codes.NOT_FOUND, "Trust account not found.");
   const rules2 = await packRules(uow.tx, account.communityId);
   const end = monthEndOf(input.month);
-  const today = localDate(rules2.timeZone, uow.now);
-  if (end >= today) throw new DomainError(Codes.GUARD_FAILED, "Allocate a month's interest after the month has ended.", { reason: "month_not_over" });
-  if (await uow.tx.interestAllocationRun.findFirst({ where: { accountId: account.id, month: day14(input.month) }, select: { id: true } })) throw new DomainError(Codes.GUARD_FAILED, "Interest for this month was already allocated. Reverse its entries to correct it.", { reason: "already_allocated" });
+  const today2 = localDate(rules2.timeZone, uow.now);
+  if (end >= today2) throw new DomainError(Codes.GUARD_FAILED, "Allocate a month's interest after the month has ended.", { reason: "month_not_over" });
+  if (await uow.tx.interestAllocationRun.findFirst({ where: { accountId: account.id, month: day18(input.month) }, select: { id: true } })) throw new DomainError(Codes.GUARD_FAILED, "Interest for this month was already allocated. Reverse its entries to correct it.", { reason: "already_allocated" });
   const ledgers = await uow.tx.residentTrustLedger.findMany({ where: { accountId: account.id }, select: { id: true, residentId: true, communityId: true, status: true } });
   const existing = await linesOfAccount(uow.tx, account.id);
   let shares;
@@ -13202,7 +15038,7 @@ async function allocateAccountInterest(uow, actor, input) {
   for (const share of shares) {
     const ledger = ledgers.find((l) => l.id === share.ledgerId);
     const through = await statedThrough(uow.tx, ledger.id);
-    const on = through && end <= through ? today : end;
+    const on = through && end <= through ? today2 : end;
     const lines = linesFor("interest", { ledgerId: ledger.id, amountMinor: share.amountMinor, effectiveOn: on });
     assertBalanced(lines);
     const tx = await uow.tx.trustTransaction.create({
@@ -13217,11 +15053,11 @@ async function allocateAccountInterest(uow, actor, input) {
         purpose: `Interest for ${input.month.slice(0, 7)}`,
         status: "posted",
         preparedById: actorUserId(actor),
-        effectiveOn: day14(on),
+        effectiveOn: day18(on),
         postedAt: uow.now
       }
     });
-    await uow.tx.trustLedgerLine.createMany({ data: lines.map((line) => ({ communityId: ledger.communityId, residentId: ledger.residentId, transactionId: tx.id, ledgerId: line.ledgerId, accountId: account.id, bucket: line.bucket, side: line.side, amountMinor: line.amountMinor, effectiveOn: day14(line.effectiveOn) })) });
+    await uow.tx.trustLedgerLine.createMany({ data: lines.map((line) => ({ communityId: ledger.communityId, residentId: ledger.residentId, transactionId: tx.id, ledgerId: line.ledgerId, accountId: account.id, bucket: line.bucket, side: line.side, amountMinor: line.amountMinor, effectiveOn: day18(line.effectiveOn) })) });
     proposed.push(...lines);
     out.push({ ledgerId: ledger.id, amountMinor: share.amountMinor.toString(), transactionId: tx.id, weightMinorDays: share.weightMinorDays.toString() });
   }
@@ -13232,39 +15068,39 @@ async function allocateAccountInterest(uow, actor, input) {
   }
   const total = out.reduce((sum, row) => sum + BigInt(row.amountMinor), 0n);
   if (total !== input.interestMinor) throw new DomainError(Codes.GUARD_FAILED, "Interest shares do not add up to the interest.");
-  const run = await uow.tx.interestAllocationRun.create({ data: { communityId: account.communityId, accountId: account.id, month: day14(input.month), interestMinor: input.interestMinor, method: "average_daily_balance", residualRule: "largest_remainder", allocations: out, postedById: actorUserId(actor) } });
+  const run = await uow.tx.interestAllocationRun.create({ data: { communityId: account.communityId, accountId: account.id, month: day18(input.month), interestMinor: input.interestMinor, method: "average_daily_balance", residualRule: "largest_remainder", allocations: out, postedById: actorUserId(actor) } });
   auditCreate(uow, actor, "InterestAllocationRun", run.id, "trust.interest_allocated", { month: input.month, interestMinor: input.interestMinor.toString(), shares: out.length });
   return { runId: run.id, interestMinor: input.interestMinor.toString(), allocations: out };
 }
 async function generateQuarterlyStatement(uow, actor, input) {
   const start = quarterStart(String(input.quarter ?? "").slice(0, 10));
-  if (!DATE7.test(start)) throw new DomainError(Codes.INVALID_INPUT, "Choose the quarter, like 2026-07-01.", { field: "quarter" });
+  if (!DATE10.test(start)) throw new DomainError(Codes.INVALID_INPUT, "Choose the quarter, like 2026-07-01.", { field: "quarter" });
   await lockRow(uow.tx, "ResidentTrustLedger", input.ledgerId);
   const ledger = await uow.tx.residentTrustLedger.findUnique({ where: { id: input.ledgerId } });
   if (!ledger?.accountId) throw new DomainError(Codes.NOT_FOUND, "Trust ledger not found.");
   const rules2 = await packRules(uow.tx, ledger.communityId);
   if (quarterEnd(start) >= localDate(rules2.timeZone, uow.now)) throw new DomainError(Codes.GUARD_FAILED, "A quarterly statement is made after the quarter ends.", { reason: "quarter_not_over" });
-  const existing = await uow.tx.trustStatement.findFirst({ where: { ledgerId: ledger.id, quarter: day14(start) }, select: { id: true } });
+  const existing = await uow.tx.trustStatement.findFirst({ where: { ledgerId: ledger.id, quarter: day18(start) }, select: { id: true } });
   if (existing) return { statementId: existing.id, created: false };
   const txs = await uow.tx.trustTransaction.findMany({ where: { ledgerId: ledger.id, status: "posted" }, select: { reference: true, kind: true, purpose: true, effectiveOn: true, ledgerId: true, lines: { select: { ledgerId: true, bucket: true, side: true, amountMinor: true, effectiveOn: true } } } });
   const mapped = txs.map((tx) => ({
     reference: tx.reference ?? "",
     kind: tx.kind ?? "",
     purpose: tx.purpose ?? "",
-    effectiveOn: iso6(tx.effectiveOn),
+    effectiveOn: iso9(tx.effectiveOn),
     ledgerId: tx.ledgerId ?? "",
-    lines: tx.lines.map((line) => ({ ledgerId: line.ledgerId, bucket: line.bucket, side: line.side, amountMinor: line.amountMinor, effectiveOn: iso6(line.effectiveOn) }))
+    lines: tx.lines.map((line) => ({ ledgerId: line.ledgerId, bucket: line.bucket, side: line.side, amountMinor: line.amountMinor, effectiveOn: iso9(line.effectiveOn) }))
   }));
   const s = quarterStatement(ledger.id, mapped, start);
   const created = await uow.tx.trustStatement.create({
-    data: { communityId: ledger.communityId, residentId: ledger.residentId, ledgerId: ledger.id, quarter: day14(start), openingMinor: s.openingMinor, inMinor: s.inMinor, outMinor: s.outMinor, closingMinor: s.closingMinor, lines: s.lines, generatedById: actorUserId(actor), generatedAt: uow.now }
+    data: { communityId: ledger.communityId, residentId: ledger.residentId, ledgerId: ledger.id, quarter: day18(start), openingMinor: s.openingMinor, inMinor: s.inMinor, outMinor: s.outMinor, closingMinor: s.closingMinor, lines: s.lines, generatedById: actorUserId(actor), generatedAt: uow.now }
   });
   auditCreate(uow, actor, "TrustStatement", created.id, "trust.statement_generated", { quarter: start, closingMinor: s.closingMinor.toString() });
   return { statementId: created.id, created: true };
 }
 async function generateQuarterForAccount(uow, actor, input) {
   const start = quarterStart(String(input.quarter ?? "").slice(0, 10));
-  const ledgers = await uow.tx.residentTrustLedger.findMany({ where: { accountId: input.accountId, OR: [{ status: "open" }, { closedOn: { gte: day14(start) } }] }, select: { id: true }, orderBy: { reference: "asc" } });
+  const ledgers = await uow.tx.residentTrustLedger.findMany({ where: { accountId: input.accountId, OR: [{ status: "open" }, { closedOn: { gte: day18(start) } }] }, select: { id: true }, orderBy: { reference: "asc" } });
   let created = 0;
   for (const ledger of ledgers) if ((await generateQuarterlyStatement(uow, actor, { ledgerId: ledger.id, quarter: start })).created) created += 1;
   return { quarter: start, ledgers: ledgers.length, created };
@@ -13272,13 +15108,13 @@ async function generateQuarterForAccount(uow, actor, input) {
 async function recordSuretyBond(uow, actor, input) {
   if (!String(input.carrier ?? "").trim() || !String(input.bondNumber ?? "").trim()) throw new DomainError(Codes.INVALID_INPUT, "Enter the carrier and the bond number.");
   if (typeof input.amountMinor !== "bigint" || input.amountMinor <= 0n) throw new DomainError(Codes.INVALID_INPUT, "The bond amount must be more than zero.", { field: "amountMinor" });
-  if (!DATE7.test(String(input.effectiveFrom ?? "")) || !DATE7.test(String(input.expiresOn ?? "")) || input.expiresOn <= input.effectiveFrom) throw new DomainError(Codes.INVALID_INPUT, "Enter the dates the bond runs from and to; it must end after it starts.");
+  if (!DATE10.test(String(input.effectiveFrom ?? "")) || !DATE10.test(String(input.expiresOn ?? "")) || input.expiresOn <= input.effectiveFrom) throw new DomainError(Codes.INVALID_INPUT, "Enter the dates the bond runs from and to; it must end after it starts.");
   await lockRow(uow.tx, "TrustAccount", input.accountId);
   const account = await uow.tx.trustAccount.findUnique({ where: { id: input.accountId }, select: { id: true, communityId: true } });
   if (!account) throw new DomainError(Codes.NOT_FOUND, "Trust account not found.");
   const prior = await uow.tx.suretyBond.findFirst({ where: { accountId: account.id, status: "active" } });
   if (prior) await casUpdate(uow, { model: "SuretyBond", id: prior.id, version: prior.version, from: ["active"], to: "replaced", actor, eventType: "trust.bond_replaced" });
-  const bond = await uow.tx.suretyBond.create({ data: { communityId: account.communityId, accountId: account.id, carrier: input.carrier.trim(), bondNumber: input.bondNumber.trim(), amountMinor: input.amountMinor, effectiveFrom: day14(input.effectiveFrom), expiresOn: day14(input.expiresOn), status: "active", recordedById: actorUserId(actor) } });
+  const bond = await uow.tx.suretyBond.create({ data: { communityId: account.communityId, accountId: account.id, carrier: input.carrier.trim(), bondNumber: input.bondNumber.trim(), amountMinor: input.amountMinor, effectiveFrom: day18(input.effectiveFrom), expiresOn: day18(input.expiresOn), status: "active", recordedById: actorUserId(actor) } });
   if (prior) await uow.tx.suretyBond.update({ where: { id: prior.id }, data: { replacedById: bond.id, version: { increment: 1 } } });
   auditCreate(uow, actor, "SuretyBond", bond.id, "trust.bond_recorded", { amountMinor: input.amountMinor.toString(), expiresOn: input.expiresOn, replaces: prior?.id ?? null });
   return { bondId: bond.id, replaces: prior?.id ?? null };
@@ -13308,6 +15144,16 @@ var PAYMENTS = ["canPostPayments", "canManagePayments"];
 var ADJUST = ["canManageBilling"];
 var TRUST_OP = ["canOperateTrust"];
 var TRUST_SIGN = ["canApproveTrust"];
+var MDS = ["canManageAssessments"];
+var MDS_SUBMIT = ["canSubmitRegulatory"];
+var COVERAGE = ["canManageBilling", "canManageAssessments"];
+var byMds = byRecord2("MdsAssessment", "assessmentId");
+var byCoverage = async (tx, i) => {
+  const id = i.coverageId;
+  if (typeof id !== "string" || !id) return null;
+  const row = await tx.coveragePeriod.findUnique({ where: { id }, select: { stay: { select: { communityId: true } } } });
+  return row?.stay?.communityId ?? null;
+};
 var HANDLERS2 = {
   // Billing periods
   "billing.derive": { permissions: BILLING, community: byCommunity2, serializable: true, run: (u, a, i) => runDerivation(u, a, { communityId: i.communityId, month: i.month }) },
@@ -13345,20 +15191,33 @@ var HANDLERS2 = {
     run: async () => ({}),
     external: (db, a, i) => chargeStatement(db, a, { statementId: i.statementId, method: i.method === "ach" ? "ach" : "card", amountMinor: money2(i.amountMinor, "amount"), tokenId: i.tokenId, idempotencyKey: String(i.__key) })
   },
-  // Keep a card on file for a resident (Stripe customer + SetupIntent); card numbers never touch this app
+  // Keep a card on file for a resident: card.setup makes the Stripe customer + SetupIntent, the browser confirms it with Stripe Elements,
+  // card.save reads it back from Stripe and stores the payment method id (never the number)
+  "card.setup": {
+    permissions: ["canManagePayments"],
+    community: byRecord2("Resident", "residentId"),
+    run: async () => ({}),
+    external: async (db, _a, i) => {
+      const resident3 = await db.resident.findUnique({ where: { id: String(i.residentId ?? "") }, select: { id: true, firstName: true, lastName: true } });
+      if (!resident3) throw new DomainError(Codes.NOT_FOUND, "Resident not found.");
+      const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY ?? "";
+      if (!cardConfigured() || !publishableKey) throw new DomainError(Codes.GUARD_FAILED, "Card payments are not set up on this server. Record the payment by hand.", { reason: "no_processor" });
+      const started = await startCardSetup({ idempotencyKey: String(i.__key), name: `${resident3.firstName} ${resident3.lastName}`.trim() || "Resident account", metadata: { resident: resident3.id } });
+      if (!started.ok) throw new DomainError(Codes.GUARD_FAILED, started.message, { reason: "card_not_started" });
+      return { clientSecret: started.clientSecret, setupIntentId: started.setupIntentId, publishableKey };
+    }
+  },
   "card.save": {
     permissions: ["canManagePayments"],
     community: byRecord2("Resident", "residentId"),
     run: async () => ({}),
     external: async (db, a, i) => {
-      const resident3 = await db.resident.findUnique({ where: { id: String(i.residentId ?? "") }, select: { id: true, communityId: true, firstName: true, lastName: true } });
+      const resident3 = await db.resident.findUnique({ where: { id: String(i.residentId ?? "") }, select: { id: true, communityId: true } });
       if (!resident3) throw new DomainError(Codes.NOT_FOUND, "Resident not found.");
-      const pm = String(i.paymentMethodId ?? "").trim();
-      if (!/^pm_[A-Za-z0-9_]{3,100}$/.test(pm)) throw new DomainError(Codes.INVALID_INPUT, "Enter the card token from the card form (it starts with pm_).", { field: "paymentMethodId" });
-      const card = await saveCard({ idempotencyKey: String(i.__key), name: `${resident3.firstName} ${resident3.lastName}`.trim() || "Resident account", paymentMethod: pm, metadata: { resident: resident3.id } });
+      const card = await readCardSetup(String(i.setupIntentId ?? ""), { resident: resident3.id });
       if (!card.ok) throw new DomainError(Codes.GUARD_FAILED, card.message, { reason: "card_not_saved" });
       const autopay = i.autopay === true || i.autopay === "true";
-      const done = await command(db, { name: "card.save.record", actor: a, idempotencyKey: `${String(i.__key)}:record`, params: { residentId: resident3.id, paymentMethod: card.paymentMethod, autopay } }, async (uow) => {
+      const done = await command(db, { name: "card.save", actor: a, idempotencyKey: String(i.__key), params: { residentId: resident3.id, paymentMethod: card.paymentMethod, autopay } }, async (uow) => {
         const token = await uow.tx.paymentMethodToken.create({ data: { communityId: resident3.communityId, residentId: resident3.id, provider: "card", brand: card.brand, last4: card.last4, token: card.paymentMethod, autopay, status: "active" } });
         auditCreate(uow, a, "PaymentMethodToken", token.id, "payment_method.saved", { brand: card.brand, last4: card.last4, autopay });
         return { tokenId: token.id, brand: card.brand, last4: card.last4 };
@@ -13387,6 +15246,29 @@ var HANDLERS2 = {
     serializable: true,
     run: (u, a, i) => recordSchedule(u, a, { residentId: i.residentId, stayId: i.stayId || null, applicationId: i.applicationId || null, monthlyAmountMinor: money2(i.monthlyAmountMinor, "liability"), personalNeedsAllowanceMinor: money2(i.personalNeedsAllowanceMinor ?? 0, "personal needs allowance"), effectiveFrom: i.effectiveFrom, note: i.note })
   },
+  // Phase 4a: MDS 3.0 and PDPM (STATE-MACHINES §6.1-§6.4)
+  "mds.load_reference": { permissions: MDS, community: async () => null, run: (u, a) => loadMdsReference(u, a) },
+  "mds.open": { permissions: MDS, community: byRecord2("Stay", "stayId"), run: (u, a, i) => openMds(u, a, { stayId: i.stayId, kind: i.kind, ardDate: i.ardDate }) },
+  "mds.save_items": { permissions: MDS, community: byMds, run: (u, a, i) => saveMdsItems(u, a, { assessmentId: i.assessmentId, items: i.items ?? Object.fromEntries(Object.entries(i).filter(([k]) => /^[A-Z][A-Z0-9_]+$/.test(k))), expectedVersion: i.expectedVersion }) },
+  "mds.sign_sections": { permissions: MDS, community: byMds, run: (u, a, i) => signMdsSections(u, a, { assessmentId: i.assessmentId, sections: i.sections, title: i.title, name: i.name }) },
+  "mds.complete": { permissions: MDS, community: byMds, serializable: true, run: (u, a, i) => completeMds(u, a, { assessmentId: i.assessmentId, completedOn: i.completedOn, aids: i.aids === true || i.aids === "true" }) },
+  "mds.correct": { permissions: MDS, community: byMds, run: (u, a, i) => correctMds(u, a, { assessmentId: i.assessmentId, reason: i.reason }) },
+  "mds.entered_in_error": { permissions: MDS, community: byMds, run: (u, a, i) => markMdsInError(u, a, { assessmentId: i.assessmentId, reason: i.reason }) },
+  "mds.export": { permissions: MDS_SUBMIT, community: byCommunity2, serializable: true, run: (u, a, i) => exportMds(u, a, { communityId: i.communityId, assessmentIds: i.assessmentIds }) },
+  "mds.mark_uploaded": { permissions: MDS_SUBMIT, community: byRecord2("MdsSubmission", "submissionId"), run: (u, a, i) => markUploaded(u, a, { submissionId: i.submissionId }) },
+  "mds.record_fvr": { permissions: MDS_SUBMIT, community: byRecord2("MdsSubmission", "submissionId"), serializable: true, run: (u, a, i) => recordFvr(u, a, { submissionId: i.submissionId, text: i.text }) },
+  // Phase 4a: Medicare Part A depth, hospice and Medicare Advantage (STATE-MACHINES §5.5)
+  "coverage.change_payer": { permissions: ["canManageBilling"], community: byRecord2("Stay", "stayId"), serializable: true, run: (u, a, i) => changePayer(u, a, i) },
+  "coverage.qualifying_stay": { permissions: COVERAGE, community: byCoverage, run: (u, a, i) => recordQualifyingStay(u, a, { coverageId: i.coverageId, from: i.from, to: i.to, hospital: i.hospital, evidenceNote: i.evidenceNote, documentTitle: i.documentTitle }) },
+  "coverage.skilled_cert": { permissions: COVERAGE, community: byCoverage, run: (u, a, i) => recordSkilledCert(u, a, { coverageId: i.coverageId, signedOn: i.signedOn, signedBy: i.signedBy }) },
+  "coverage.prior_days": { permissions: COVERAGE, community: byRecord2("Resident", "residentId"), run: (u, a, i) => recordPriorDays(u, a, { residentId: i.residentId, source: i.source, daysUsed: i.daysUsed, asOf: i.asOf, spellStart: i.spellStart, note: i.note }) },
+  "coverage.last_covered_day": { permissions: COVERAGE, community: byCoverage, run: (u, a, i) => setLastCoveredDay(u, a, { coverageId: i.coverageId, lastCoveredDay: i.lastCoveredDay, reason: i.reason }) },
+  "coverage.notice": { permissions: COVERAGE, community: byCoverage, run: (u, a, i) => recordCoverageNotice(u, a, { coverageId: i.coverageId, kind: i.kind, deliveredOn: i.deliveredOn, method: i.method, acknowledgement: i.acknowledgement, recipientRepresentativeId: i.recipientRepresentativeId, note: i.note }) },
+  "coverage.hospice_revoke": { permissions: ["canManageBilling"], community: byCoverage, serializable: true, run: (u, a, i) => revokeHospice(u, a, { coverageId: i.coverageId, revokedOn: i.revokedOn, nextPayerId: i.nextPayerId, memberReference: i.memberReference }) },
+  "coverage.benefit_recount": { permissions: COVERAGE, community: byRecord2("Resident", "residentId"), run: (u, a, i) => recountBenefitPeriod(u, a, { residentId: i.residentId }) },
+  "authorisation.request": { permissions: COVERAGE, community: byCoverage, run: (u, a, i) => requestAuthorisation(u, a, { coverageId: i.coverageId, requestedOn: i.requestedOn, levelOfCare: i.levelOfCare, payerAuthNumber: i.payerAuthNumber, reviewIntervalDays: i.reviewIntervalDays, note: i.note }) },
+  "authorisation.decide": { permissions: COVERAGE, community: byRecord2("Authorisation", "authorisationId"), run: (u, a, i) => decideAuthorisation(u, a, { authorisationId: i.authorisationId, decision: i.decision, authFrom: i.authFrom, authTo: i.authTo, payerAuthNumber: i.payerAuthNumber }) },
+  "authorisation.review": { permissions: COVERAGE, community: byRecord2("Authorisation", "authorisationId"), run: (u, a, i) => recordReview(u, a, { authorisationId: i.authorisationId, reviewedOn: i.reviewedOn, outcome: i.outcome, newAuthTo: i.newAuthTo, reviewer: i.reviewer, note: i.note }) },
   // Resident trust
   "trust.authorisation_record": {
     permissions: TRUST_OP,
@@ -13425,9 +15307,9 @@ async function billingCommand(_root, args, context) {
 // features/keystone/mutations/workflowReads.ts
 init_actor();
 init_errors();
-async function who(context, scope2) {
+async function who(context, scope3) {
   const actor = await actorFor(context);
-  if (actor.kind === "agent") requireScope(actor, scope2);
+  if (actor.kind === "agent") requireScope(actor, scope3);
   else requirePermission(actor, "canReadFindings", "canManageWorkflows");
   return actor;
 }
@@ -13519,6 +15401,7 @@ function extendGraphqlSchema(baseSchema) {
         loadCensusSetup(idempotencyKey: String!): JSON
         loadClinicalSetup(idempotencyKey: String!): JSON
         loadBillingSetup(idempotencyKey: String!): JSON
+        loadMdsSetup(idempotencyKey: String!): JSON
         refreshTimedStates(idempotencyKey: String!): JSON
         decideApprovalRequest(requestId: ID!, decision: String!, reason: String, expectedVersion: Int!, idempotencyKey: String!): JSON
         cancelApprovalRequest(requestId: ID!, expectedVersion: Int!, reason: String, idempotencyKey: String!): JSON
@@ -13608,6 +15491,7 @@ function extendGraphqlSchema(baseSchema) {
         loadCensusSetup: op(loadCensusSetup),
         loadClinicalSetup: op(loadClinicalSetup),
         loadBillingSetup: op(loadBillingSetup),
+        loadMdsSetup: op(loadMdsSetup),
         refreshTimedStates: op(refreshTimedStatesMutation),
         decideApprovalRequest: op(decideApprovalRequest),
         cancelApprovalRequest: op(cancelApprovalRequest),
@@ -13752,6 +15636,8 @@ var COMPOUND_UNIQUES = {
   CensusEvent: ['@@unique([stayId, seq], map: "CensusEvent_stay_seq_key")'],
   PaymentPlanInstalment: ['@@unique([planId, number], map: "PaymentPlanInstalment_plan_number_key")'],
   TrustStatement: ['@@unique([ledgerId, quarter], map: "TrustStatement_ledger_quarter_key")'],
+  MdsAssessment: ['@@unique([residentId, kind, ardDate, correctionNumber], map: "MdsAssessment_resident_kind_ard_correction_key")'],
+  ReferenceRate: ['@@unique([component, geography, effectiveFrom], map: "ReferenceRate_component_geo_from_key")'],
   InterestAllocationRun: ['@@unique([accountId, month], map: "InterestAllocationRun_account_month_key")']
 };
 function addDatabaseConstraints(schema) {
@@ -13785,8 +15671,8 @@ function throwing(result) {
   const settled = () => result.then(rethrowKeystonePrismaError);
   return new Proxy(result, {
     get(target, key) {
-      if (key === "then") return (ok, fail2) => settled().then(ok, fail2);
-      if (key === "catch") return (fail2) => settled().catch(fail2);
+      if (key === "then") return (ok, fail4) => settled().then(ok, fail4);
+      if (key === "catch") return (fail4) => settled().catch(fail4);
       if (key === "finally") return (done) => settled().finally(done);
       const value = Reflect.get(target, key, target);
       return typeof value === "function" ? value.bind(target) : value;
@@ -13876,7 +15762,7 @@ var { withAuth } = (0, import_auth.createAuth)({
   `
 });
 var keystone_default = withAuth(
-  (0, import_core19.config)({
+  (0, import_core20.config)({
     db: {
       provider: "postgresql",
       url: databaseURL,

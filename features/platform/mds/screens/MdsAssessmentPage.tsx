@@ -40,7 +40,7 @@ export default async function MdsAssessmentPage({ params }: { params: Promise<{ 
   };
   return (
     <Page title={`MDS ${m.reference}`} crumbs={[{ label: 'MDS calendar', href: '/dashboard/platform/mds' }]}>
-      <Section title={m.resident ? `${m.resident.firstName} ${m.resident.lastName}` : 'Resident'}>
+      <Section title={m.resident && (m.resident.firstName || m.resident.lastName) ? [m.resident.firstName, m.resident.lastName].filter(Boolean).join(' ') : 'Resident'}>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <Stat name="Record" value={label(m.kind)} />
           <Stat name="ARD" value={when(m.ardDate, tz, 'date')} />

@@ -71,18 +71,23 @@ describe('Medicare Part A through day 101', () => {
 })
 
 describe('interrupted stay', () => {
-  it('back within 3 days: the VPD day count continues; later than that it restarts', () => {
-    // Part A 1-10 Jan, hospital 11-13 Jan, back 14 Jan (gap of 3 days): day 14 Jan is VPD day 11, benefit day 11.
-    const days = monthDates('2026-01-01').filter(d => d <= '2026-01-10' || d >= '2026-01-14').map(d => row(d))
-    const out = run('2026-01-01', [{ from: '2026-01-01', to: '2026-01-10' }, { from: '2026-01-14', to: null }], { days, classifications: [{ ...ada, effectiveFrom: '2026-01-01' }] })
-    const back = out.lines.find(l => l.kind === 'per_diem_claim' && l.date === '2026-01-14')!
-    expect(back.derivation).toMatchObject({ vpdDay: 11, benefitDay: 11 })
-    // NTA ×3 does not come back: day 11 per diem = day 4-20 rate: 134.80+112.78+18.10+141.24+67.72+118.21 = 592.85
-    expect(back.amountMinor).toBe(59_285n)
-    // Back after 4 days: a new stay for the VPD (day 1 again, NTA ×3), the benefit count still continues.
-    const days2 = monthDates('2026-01-01').filter(d => d <= '2026-01-10' || d >= '2026-01-15').map(d => row(d))
-    const out2 = run('2026-01-01', [{ from: '2026-01-01', to: '2026-01-10' }, { from: '2026-01-15', to: null }], { days: days2, classifications: [{ ...ada, effectiveFrom: '2026-01-01' }] })
-    expect(out2.lines.find(l => l.kind === 'per_diem_claim' && l.date === '2026-01-15')!.derivation).toMatchObject({ vpdDay: 1, benefitDay: 11 })
+  // RAI Manual ch. 2: window = day of discharge (L+1) and the 2 following days; L = last covered day = 10 Jan.
+  const back = (d: string) => {
+    const days = monthDates('2026-01-01').filter(x => x <= '2026-01-10' || x >= d).map(x => row(x))
+    const out = run('2026-01-01', [{ from: '2026-01-01', to: '2026-01-10' }, { from: d, to: null }], { days, classifications: [{ ...ada, effectiveFrom: '2026-01-01' }] })
+    return out.lines.find(l => l.kind === 'per_diem_claim' && l.date === d)!
+  }
+  it('back on L+2 and L+3: the VPD day count continues (day 11), NTA x3 does not return', () => {
+    for (const d of ['2026-01-12', '2026-01-13']) {
+      const l = back(d)
+      expect(l.derivation).toMatchObject({ vpdDay: 11, benefitDay: 11 })
+      // day 11 per diem = day 4-20 rate: 134.80+112.78+18.10+141.24+67.72+118.21 = 592.85
+      expect(l.amountMinor).toBe(59_285n)
+    }
+  })
+  it('back on L+4 (14 Jan) or later: a new stay for the VPD (day 1, NTA x3), the benefit count still continues', () => {
+    expect(back('2026-01-14').derivation).toMatchObject({ vpdDay: 1, benefitDay: 11 })
+    expect(back('2026-01-15').derivation).toMatchObject({ vpdDay: 1, benefitDay: 11 })
   })
 })
 
