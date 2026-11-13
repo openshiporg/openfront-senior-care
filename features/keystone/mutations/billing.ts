@@ -219,6 +219,7 @@ export const HANDLERS: Record<string, Handler> = {
   // Claims (Phase 4b). Nothing is transmitted: the 837I is a file a person uploads, and every response is a file a person uploads back.
   'claim.billing_profile': { permissions: CLAIMS, community: byCommunity, run: (u, a, i) => claims.saveBillingProfile(u, a, { communityId: i.communityId, npi: i.npi, taxId: i.taxId, taxonomy: i.taxonomy, zip4: i.zip4, ccn: i.ccn, payerId: i.payerId, electronicPayerId: i.electronicPayerId }) },
   'claim.create_month': { permissions: CLAIMS, community: byCommunity, serializable: true, run: (u, a, i) => claims.createClaimsForMonth(u, a, { communityId: i.communityId, month: String(i.month ?? '') }) },
+  'claim.set_clinical': { permissions: CLAIMS, community: byRecord('Claim', 'claimId'), run: (u, a, i) => claims.setClaimClinical(u, a, { claimId: i.claimId, attendingNpi: i.attendingNpi, attendingName: i.attendingName, principal: i.principal, other: i.other }) },
   'claim.validate': { permissions: CLAIMS, community: byRecord('Claim', 'claimId'), run: (u, a, i) => claims.validateClaim(u, a, { claimId: i.claimId }) },
   'claim.release': { permissions: CLAIM_RELEASE, community: byRecord('Claim', 'claimId'), run: (u, a, i) => claims.releaseClaim(u, a, { claimId: i.claimId }) },
   'claim.export': { permissions: CLAIMS, community: byRecord('Claim', 'claimId'), run: (u, a, i) => claims.exportClaim(u, a, { claimId: i.claimId }) },

@@ -421,3 +421,37 @@ export async function saveBillingProfile(uow: UnitOfWork, actor: Actor, input: {
   if (changed.length) auditCreate(uow, actor, 'Community', community.id, 'claims.billing_profile', { changed })
   return { changed }
 }
+
+/** The attending provider and diagnoses a claim carries. Editable only while the claim is a draft. */
+export async function setClaimClinical(uow: UnitOfWork, actor: Actor, input: { claimId: string; attendingNpi?: string; attendingName?: string; principal?: string; other?: string }) {
+  await lockRow(uow.tx, 'Claim', input.claimId)
+  const claim = await uow.tx.claim.findUniqueOrThrow({ where: { id: input.claimId } })
+  if (claim.status !== 'draft') throw new DomainError(Codes.INVALID_TRANSITION, `A ${claim.status} claim can no longer be edited; cancel it and make a replacement.`, { currentStatus: claim.status })
+  const data: Record<string, unknown> = {}
+  const npi = input.attendingNpi?.trim()
+  if (npi) {
+    if (!validNpi(npi)) throw new DomainError(Codes.INVALID_INPUT, 'That attending NPI fails the check digit.', { field: 'attendingNpi' })
+    data.attendingNpi = npi
+  }
+  const name = input.attendingName?.trim()
+  if (name) {
+    if (!/^[^,]+,\s*[^,]+$/.test(name)) throw new DomainError(Codes.INVALID_INPUT, 'Write the attending as Last, First.', { field: 'attendingName' })
+    data.attendingName = name
+  }
+  const icd = (v: string) => v.trim().toUpperCase().replace('.', '')
+  const dx = { ...((claim.diagnoses ?? {}) as { principal?: string | null; other?: string[] }) }
+  const ok = (v: string) => /^[A-Z][0-9][0-9A-Z]{1,5}$/.test(v)
+  if (input.principal?.trim()) {
+    if (!ok(icd(input.principal))) throw new DomainError(Codes.INVALID_INPUT, 'Enter an ICD-10-CM code such as I63.9.', { field: 'principal' })
+    dx.principal = input.principal.trim().toUpperCase()
+  }
+  if (input.other?.trim()) {
+    const list = input.other.split(/[\s,;]+/).filter(Boolean)
+    if (list.some(c => !ok(icd(c)))) throw new DomainError(Codes.INVALID_INPUT, 'Other diagnoses are ICD-10-CM codes separated by commas.', { field: 'other' })
+    dx.other = list.map(c => c.toUpperCase())
+  }
+  data.diagnoses = dx
+  await uow.tx.claim.update({ where: { id: claim.id }, data: { ...data, scrubberResult: null as never, version: { increment: 1 } } as never })
+  auditCreate(uow, actor, 'Claim', claim.id, 'claim.clinical_set', { fields: Object.keys(data) })
+  return { claimId: claim.id }
+}

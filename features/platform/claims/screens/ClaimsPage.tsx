@@ -47,6 +47,7 @@ export default async function ClaimsPage({ searchParams }: { searchParams?: Prom
                 {c.status === 'released' || c.status === 'submitted' ? <BillingAction op="claim.export" input={{ claimId: c.id }}>Generate 837I</BillingAction> : null}
                 {c.exportHash ? <a className="inline-flex min-h-11 items-center text-sm underline" href={`/api/exports?kind=claim&id=${c.id}`}>Download 837I</a> : null}
                 {c.status === 'released' && c.exportHash ? <BillingAction op="claim.mark_submitted" input={{ claimId: c.id, exportHash: c.exportHash }} confirm="Confirm you uploaded this file to your Medicare contractor.">I uploaded it</BillingAction> : null}
+                {c.status === 'draft' ? <BillingAction op="claim.set_clinical" input={{ claimId: c.id }} fields={[{ name: 'attendingNpi', label: 'Attending NPI' }, { name: 'attendingName', label: 'Attending (Last, First)' }, { name: 'principal', label: 'Principal diagnosis (ICD-10-CM)' }, { name: 'other', label: 'Other diagnoses (comma separated)' }]}>Attending and diagnoses</BillingAction> : null}
                 {['draft', 'validated', 'released', 'rejected'].includes(c.status) ? <BillingAction op="claim.cancel" input={{ claimId: c.id }} fields={[{ name: 'reason', label: 'Why', type: 'text', required: true }]}>Cancel</BillingAction> : null}
               </div>
             </Row>
