@@ -82,6 +82,16 @@ export const OH_BILLING_RULES = {
     ruleRef: 'Resident contract and Ohio Adm. Code 3701-16 (verify)',
     verifyNote: 'refundWindowDays counts from the day the deposit was received; null means no window. forfeitable means the operator may keep it (needs a second approver).',
   },
+  trustResourceThreshold: {
+    value: { limitMinor: '200000', marginMinor: '20000' },
+    ruleRef: '20 CFR 416.1205 (SSI resource limit $2,000 for an individual); Ohio Adm. Code 5160:1-3-05.1; 42 CFR 483.10(f)(10)(v)(B) (verify)',
+    verifyNote: 'A Medicaid resident whose trust funds reach the limit less the margin ($200 below) gets the notice; above the limit is over. Amounts are minor units.',
+  },
+  trustAuthorisationApproval: {
+    value: { overMinor: '50000' },
+    ruleRef: 'Operator policy (maker-checker on resident funds; verify)',
+    verifyNote: 'A trust authorisation with no per-withdrawal limit, or a limit above this many minor units, needs a second person with trust approval before it is active.',
+  },
 } as const
 
 export const US_OH_PACK: PackSeed = {

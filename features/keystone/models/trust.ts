@@ -125,3 +125,89 @@ export const TrustReconciliation = list({
     ...trackingFields,
   },
 })
+
+/**
+ * The resident's (or representative's) written authorisation for the facility to handle their funds (SCHEMA §11.3, SM §13.1). A
+ * withdrawal needs an active authorisation that covers withdrawals, within its per-withdrawal limit when one is set. An authorisation
+ * with no limit, or a limit over the pack threshold, waits for a second person with canApproveTrust before it is active.
+ */
+export const TrustAuthorisation = list({
+  access: scoped(),
+  ui: { labelField: 'signedOn', listView: { initialColumns: ['resident', 'representative', 'signedOn', 'status'] } },
+  fields: {
+    community: community(),
+    resident: resident(),
+    ledger: relationship({ ref: 'ResidentTrustLedger', ...ro }),
+    representative: relationship({ ref: 'Representative', ...ro }),
+    signedOn: day(),
+    kinds: json({ ...ro, defaultValue: [] }),
+    ...phiFields('TrustAuthorisation', { perWithdrawalLimitMinor: ['fin', bigInt, { isFilterable: finOk, isOrderable: finOk, ...ro }] }),
+    document: relationship({ ref: 'Document', ...ro }),
+    status: lifecycle(['pending_approval', 'active', 'rejected', 'revoked'], 'pending_approval'),
+    approval: relationship({ ref: 'ApprovalRequest', ...ro }),
+    revokedReason: systemText(),
+    recordedBy: by(),
+    version: versionField(),
+    ...trackingFields,
+  },
+})
+phiList('TrustAuthorisation')
+
+/** A quarterly statement of one resident's funds (SCHEMA §11.5), made by a staff button and frozen. Its PDF is built on request. */
+export const TrustStatement = list({
+  access: scoped(),
+  ui: { labelField: 'quarter', listView: { initialColumns: ['resident', 'quarter', 'openingMinor', 'closingMinor', 'generatedAt'] } },
+  fields: {
+    community: community(),
+    resident: resident(),
+    ledger: relationship({ ref: 'ResidentTrustLedger', ...ro }),
+    quarter: day(),
+    ...phiFields('TrustStatement', {
+      openingMinor: ['fin', bigInt, fin],
+      inMinor: ['fin', bigInt, fin],
+      outMinor: ['fin', bigInt, fin],
+      closingMinor: ['fin', bigInt, fin],
+      lines: ['fin', json, { ...ro }],
+    }),
+    generatedBy: by(),
+    generatedAt: when(),
+  },
+})
+phiList('TrustStatement')
+
+/** The surety bond that assures the security of residents' funds (42 CFR 483.10(f)(10)(vi)). Recording a new one replaces the active one. */
+export const SuretyBond = list({
+  access: scopedGoverned(TRUST_READ, ['community']),
+  ui: { labelField: 'bondNumber', listView: { initialColumns: ['account', 'carrier', 'bondNumber', 'amountMinor', 'expiresOn', 'status'] } },
+  fields: {
+    community: community(),
+    account: relationship({ ref: 'TrustAccount', ...ro }),
+    carrier: systemText({ required: true }),
+    bondNumber: systemText({ required: true }),
+    amountMinor: bigInt({ ...ro, validation: { isRequired: true } }),
+    effectiveFrom: day(),
+    expiresOn: day(),
+    status: lifecycle(['active', 'replaced'], 'active'),
+    replacedBy: relationship({ ref: 'SuretyBond', ...ro }),
+    recordedBy: by(),
+    version: versionField(),
+    ...trackingFields,
+  },
+})
+
+/** One month's bank interest shared across resident ledgers by average daily balance, largest remainder (SM §13.3). Once per account and month. */
+export const InterestAllocationRun = list({
+  access: scopedGoverned(TRUST_READ, ['community']),
+  ui: { labelField: 'month', listView: { initialColumns: ['account', 'month', 'interestMinor', 'method'] } },
+  fields: {
+    community: community(),
+    account: relationship({ ref: 'TrustAccount', ...ro }),
+    month: day(),
+    interestMinor: bigInt({ ...ro, validation: { isRequired: true } }),
+    method: systemText(),
+    residualRule: systemText(),
+    allocations: json({ ...ro }),
+    postedBy: by(),
+    createdAt: timestamp({ defaultValue: { kind: 'now' }, ...ro }),
+  },
+})

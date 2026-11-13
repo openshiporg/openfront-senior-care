@@ -178,15 +178,26 @@ export async function applyCredit(uow: UnitOfWork, actor: Actor, input: { credit
   return { paymentId: payment.id, appliedMinor: amount.toString(), remainingMinor: left.toString() }
 }
 
+/** A plan instalment being charged: checked and linked inside the same intent transaction as the payment row. */
+export type InstalmentCharge = { instalmentId: string; retry: boolean; check: (uow: UnitOfWork) => Promise<void>; link: (uow: UnitOfWork, paymentId: string) => Promise<void> }
+
 /** Step 1 of a card or ACH charge: record the intent and commit. One in flight per statement. */
-async function recordIntent(db: Db, actor: Actor, input: { statementId: string; method: 'card' | 'ach'; amountMinor: bigint; tokenId: string; autopay: boolean; key: string }) {
-  return command(db, { name: 'payment.charge.start', actor, idempotencyKey: input.key, params: { ...input, amountMinor: input.amountMinor.toString() } }, async uow => {
+async function recordIntent(db: Db, actor: Actor, input: { statementId: string; method: 'card' | 'ach'; amountMinor: bigint; tokenId: string; autopay: boolean; key: string; instalment?: InstalmentCharge }) {
+  const { instalment, ...params } = input
+  return command(db, { name: 'payment.charge.start', actor, idempotencyKey: input.key, params: { ...params, amountMinor: input.amountMinor.toString(), instalmentId: instalment?.instalmentId ?? null, retry: instalment?.retry ?? false } }, async uow => {
+    // Lock the statement first: two charges for one statement (a plan instalment and a one-off) queue here, so the in-flight check below sees the other.
+    await lockRow(uow.tx, 'Statement', input.statementId)
     const open = await uow.tx.payment.findFirst({ where: { statementId: input.statementId, method: { in: ['card', 'ach'] }, status: { in: ['pending', 'unknown'] } }, select: { reference: true } })
     if (open) throw new DomainError(Codes.GUARD_FAILED, `Payment ${open.reference} has no final answer yet. Use "Check status" on it before charging again.`, { reason: 'charge_in_flight' })
     const token = await uow.tx.paymentMethodToken.findUnique({ where: { id: input.tokenId } })
     const statement = await uow.tx.statement.findUnique({ where: { id: input.statementId }, select: { residentId: true } })
     if (!token || token.status !== 'active' || token.residentId !== statement?.residentId) throw new DomainError(Codes.NOT_FOUND, 'That saved payment method is not available for this resident.')
+    if (!instalment) {
+      const plan = await uow.tx.paymentPlan.findFirst({ where: { statementId: input.statementId, status: 'active' }, select: { reference: true } })
+      if (plan) throw new DomainError(Codes.GUARD_FAILED, `This statement is on payment plan ${plan.reference}. Charge its next instalment, or cancel the plan first.`, { reason: 'on_plan' })
+    } else await instalment.check(uow)
     const payment = await newPayment(uow, actor, { statementId: input.statementId, method: input.method, amountMinor: input.amountMinor, tokenId: token.id, autopay: input.autopay, status: 'pending' })
+    if (instalment) await instalment.link(uow, payment.id)
     // The key is derived from the payment, so a second click can never reach the processor under a new key.
     const idempotencyKey = `sc-pay-${payment.id}`
     await uow.tx.payment.update({ where: { id: payment.id }, data: { idempotencyKey } })
@@ -224,10 +235,10 @@ async function recordOutcome(db: Db, actor: Actor, paymentId: string, result: Ch
 }
 
 /** Charges a saved card or bank account (Stripe test). Call it once per click; the key makes a repeat harmless. */
-export async function chargeStatement(db: Db, actor: Actor, input: { statementId: string; method: 'card' | 'ach'; amountMinor: bigint; tokenId: string; autopay?: boolean; idempotencyKey: string }) {
+export async function chargeStatement(db: Db, actor: Actor, input: { statementId: string; method: 'card' | 'ach'; amountMinor: bigint; tokenId: string; autopay?: boolean; idempotencyKey: string; instalment?: InstalmentCharge }) {
   const amount = positive(input.amountMinor, 'amount')
   if (!processorReady()) throw new DomainError(Codes.GUARD_FAILED, 'Card payments are not set up on this server. Record the payment by hand.', { reason: 'no_processor' })
-  const started = await recordIntent(db, actor, { statementId: input.statementId, method: input.method, amountMinor: amount, tokenId: input.tokenId, autopay: input.autopay === true, key: input.idempotencyKey })
+  const started = await recordIntent(db, actor, { statementId: input.statementId, method: input.method, amountMinor: amount, tokenId: input.tokenId, autopay: input.autopay === true, key: input.idempotencyKey, instalment: input.instalment })
   if (started.replay) {
     const payment = await db.payment.findUniqueOrThrow({ where: { id: started.value.paymentId }, select: { id: true, status: true } })
     return { replay: true, paymentId: payment.id, status: payment.status, message: '' }
@@ -366,6 +377,8 @@ export async function chargeAutopayForPeriod(db: Db, actor: Actor, input: { peri
     if (balance <= 0n || !statement.residentId) continue
     const token = await db.paymentMethodToken.findFirst({ where: { residentId: statement.residentId, autopay: true, status: 'active' }, orderBy: { createdAt: 'asc' } })
     if (!token) continue
+    // A statement on a payment plan is paid by its instalments, never by autopay.
+    if (await db.paymentPlan.findFirst({ where: { statementId: statement.id, status: 'active' }, select: { id: true } })) { results.push({ statementId: statement.id, status: 'on_plan' }); continue }
     const open = await db.payment.findFirst({ where: { statementId: statement.id, method: { in: ['card', 'ach'] }, status: { in: ['pending', 'unknown'] } }, select: { id: true } })
     if (open) { results.push({ statementId: statement.id, status: 'in_flight' }); continue }
     const prior = await db.payment.count({ where: { statementId: statement.id, autopay: true, status: 'failed' } })

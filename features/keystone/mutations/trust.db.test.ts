@@ -59,6 +59,10 @@ describe.skipIf(!hasTestDatabase)('resident trust (database)', () => {
     await expect(bc(trustOfficer, 'trust.open_ledger', { communityId: COMMUNITY.id, residentId, accountId: account.id, consentOnFile: false })).rejects.toMatchObject({ code: 'GUARD_FAILED' })
     const { ledgerId } = await bc(trustOfficer, 'trust.open_ledger', { communityId: COMMUNITY.id, residentId, accountId: account.id, consentOnFile: true })
     await bc(trustOfficer, 'trust.deposit', { ledgerId, amountMinor: 300_000, purpose: 'Personal needs deposit', effectiveOn: '2026-10-05' })
+    // Withdrawals rely on the resident's written authorisation (Phase 3b); with no limit it needs a second person.
+    await expect(bc(trustOfficer, 'trust.withdraw', { ledgerId, amountMinor: 1_000, purpose: 'Before consent' })).rejects.toMatchObject({ details: { reason: 'no_authorisation' } })
+    const authorisation = await bc(trustOfficer, 'trust.authorisation_record', { ledgerId, signedOn: '2026-10-01', kinds: ['withdrawal_cash', 'withdrawal_purchase'] })
+    await approve(authorisation.approvalRequestId, trustApprover)
 
     // Under the threshold: the preparer posts it.
     const small = await bc(trustOfficer, 'trust.withdraw', { ledgerId, amountMinor: 20_000, purpose: 'Hair salon', effectiveOn: '2026-10-20' })

@@ -9,6 +9,7 @@ import { lockRow } from '../lib/cas'
 import { nextReference } from '../lib/sequence'
 import type { UnitOfWork } from '../lib/unitOfWork'
 import { deriveCharges, monthDays, monthEnd, nextMonth, statementLines, type DayRow, type Derivation, type DerivationInput, type DerivedLine } from './derive'
+import { scheduleForMonth, type ScheduleRow } from './medicaidApplication'
 
 /**
  * Month-end close (STATE-MACHINES §12.2). A staff button, idempotent per period: it derives the charges from the census,
@@ -34,7 +35,7 @@ export async function loadDerivationInput(tx: Tx, communityId: string, month: st
   const stayIds = [...new Set(derived.flatMap(entry => entry.rows.map(row => row.stayId)))]
   const apartmentIds = [...new Set(derived.flatMap(entry => entry.rows.map(row => row.apartmentId).filter((id): id is string => Boolean(id))))]
   const coverageIds = [...new Set(derived.flatMap(entry => entry.rows.map(row => row.coverageId).filter((id): id is string => Boolean(id))))]
-  const [stays, apartments, coverages, schedules, assignments, liabilities, pack] = await Promise.all([
+  const [stays, apartments, coverages, schedules, assignments, liabilities, pack, liabilitySchedules] = await Promise.all([
     tx.stay.findMany({ where: { id: { in: stayIds } }, select: { id: true, residentId: true, admittedAt: true } }),
     tx.apartment.findMany({ where: { id: { in: apartmentIds } }, select: { id: true, apartmentTypeId: true } }),
     tx.coveragePeriod.findMany({ where: { id: { in: coverageIds } }, select: { id: true, payerId: true } }),
@@ -42,6 +43,7 @@ export async function loadDerivationInput(tx: Tx, communityId: string, month: st
     tx.careLevelAssignment.findMany({ where: { communityId, effectiveFrom: { lte: day(monthEnd(month)) } }, select: { stayId: true, careLevelId: true, points: true, effectiveFrom: true, noticeDeliveredOn: true, careLevel: { select: { minPoints: true } } }, orderBy: [{ effectiveFrom: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }] }),
     tx.medicaidLiability.findMany({ where: { communityId, month: day(month), status: { not: 'superseded' } }, select: { stayId: true, liabilityMinor: true } }),
     tx.community.findUnique({ where: { id: communityId }, select: { jurisdictionPack: { select: { rules: true } } } }),
+    tx.patientLiabilitySchedule.findMany({ where: { communityId, status: 'effective', effectiveFrom: { lte: day(monthEnd(month)) } }, select: { id: true, residentId: true, stayId: true, monthlyAmountMinor: true, personalNeedsAllowanceMinor: true, effectiveFrom: true, effectiveTo: true, status: true }, orderBy: [{ effectiveFrom: 'asc' }, { id: 'asc' }] }),
   ])
   const noticeRule = ((pack?.jurisdictionPack?.rules ?? {}) as { careLevelIncreaseNoticeDays?: { value?: number } }).careLevelIncreaseNoticeDays?.value
   const careNoticeDays = Number.isInteger(noticeRule) && (noticeRule as number) >= 0 ? (noticeRule as number) : 30
@@ -82,8 +84,32 @@ export async function loadDerivationInput(tx: Tx, communityId: string, month: st
     })),
     careAssignments: assignments.filter(row => row.stayId && row.careLevelId).map(row => ({ stayId: row.stayId!, careLevelId: row.careLevelId!, points: row.points, levelMinPoints: row.careLevel?.minPoints ?? undefined, effectiveFrom: iso(row.effectiveFrom), noticeDeliveredOn: iso(row.noticeDeliveredOn) || null })),
     careNoticeDays,
-    liabilities: liabilities.filter(row => row.stayId).map(row => ({ stayId: row.stayId!, liabilityMinor: row.liabilityMinor ?? 0n })),
+    liabilities: liabilitiesFor(stays, liabilities, liabilitySchedules, month),
   }
+}
+
+/**
+ * The month's patient liability per stay. An explicit monthly determination (MedicaidLiability) wins for its month; otherwise the
+ * resident's PatientLiabilitySchedule in effect for the month supplies it (SCHEMA §5.7). A schedule tied to a stay only feeds that stay.
+ */
+function liabilitiesFor(
+  stays: { id: string; residentId: string | null }[],
+  monthly: { stayId: string | null; liabilityMinor: bigint | null }[],
+  schedules: { id: string; residentId: string | null; stayId: string | null; monthlyAmountMinor: bigint | null; personalNeedsAllowanceMinor: bigint | null; effectiveFrom: Date | null; effectiveTo: Date | null; status: string | null }[],
+  month: string,
+) {
+  const out = new Map<string, bigint>()
+  const rows: ScheduleRow[] = schedules.filter(row => row.residentId && row.effectiveFrom).map(row => ({
+    id: row.id, residentId: row.residentId!, stayId: row.stayId, monthlyAmountMinor: row.monthlyAmountMinor ?? 0n, personalNeedsAllowanceMinor: row.personalNeedsAllowanceMinor ?? 0n,
+    effectiveFrom: iso(row.effectiveFrom), effectiveTo: row.effectiveTo ? iso(row.effectiveTo) : null, status: row.status ?? '',
+  }))
+  for (const stay of stays) {
+    const own = rows.filter(row => row.residentId === stay.residentId && (!row.stayId || row.stayId === stay.id))
+    const hit = scheduleForMonth(own, month, monthEnd(month))
+    if (hit) out.set(stay.id, hit.monthlyAmountMinor)
+  }
+  for (const row of monthly) if (row.stayId) out.set(row.stayId, row.liabilityMinor ?? 0n)
+  return [...out.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([stayId, liabilityMinor]) => ({ stayId, liabilityMinor }))
 }
 
 export async function deriveForMonth(tx: Tx, communityId: string, month: string): Promise<Derivation> {

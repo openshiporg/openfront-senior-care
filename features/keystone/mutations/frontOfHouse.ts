@@ -1,7 +1,9 @@
 import { endReservation, markPlaceReady, recomputeAvailability, reservePlace, setPlaceService, type ReserveInput } from '../lib/places'
 import { addToWaitlist, cancelTourWithToken, logSalesActivity, moveLead, moveReferral, moveTour, offerWaitlistPlace, recordInquiry, recordReferral, requestTour, scheduleTour, resolveWaitlistOffer, submitInquiry, type InquiryInput } from '../lib/sales'
 import { joinWaitlist, movePublishedPrice, openTourSlots, setStorefrontPublished, storefrontCommunity } from '../lib/storefront'
-import { portalCalendar, portalDocuments, portalResidents, portalStatements, portalTrustBalance, portalUpdates } from '../lib/portalReads'
+import { portalCalendar, portalDocuments, portalPayments, portalResidents, portalStatements, portalTrustBalance, portalUpdates } from '../lib/portalReads'
+import { portalPay } from '../billing/portalPay'
+import { minorOf } from '../lib/money'
 import { date } from './run'
 import { acceptPortalInvitation, grantPortalScope, inviteRepresentative, proposePortalScope, revokePortalScope, setPortalAccountStatus } from '../lib/portal'
 import { endBreakGlass, openBreakGlass, reviewBreakGlass } from '../lib/privacy'
@@ -156,4 +158,13 @@ export const portalUpdatesQuery = (_: unknown, args: { residentId: string }, con
 export const portalCalendarQuery = (_: unknown, args: { residentId: string }, context: Ctx) => portalRead(context, tx => portalCalendar(tx, portalPrincipal(context), args.residentId))
 export const portalStatementsQuery = (_: unknown, args: { residentId: string }, context: Ctx) => portalRead(context, tx => portalStatements(tx, portalPrincipal(context), args.residentId))
 export const portalTrustBalanceQuery = (_: unknown, args: { residentId: string }, context: Ctx) => portalRead(context, tx => portalTrustBalance(tx, portalPrincipal(context), args.residentId))
+export const portalPaymentsQuery = (_: unknown, args: { residentId: string }, context: Ctx) => portalRead(context, tx => portalPayments(tx, portalPrincipal(context), args.residentId))
+export const portalPayMutation = (_: unknown, args: { residentId: string; statementId: string; tokenId: string; amountMinor?: string | null; idempotencyKey: string }, context: Ctx) => {
+  let amountMinor: bigint | null = null
+  if (args.amountMinor !== undefined && args.amountMinor !== null && args.amountMinor !== '') {
+    try { amountMinor = minorOf(args.amountMinor) } catch { throw new DomainError(Codes.INVALID_INPUT, 'The amount is a whole number of cents.', { field: 'amountMinor' }) }
+  }
+  if (!args.idempotencyKey || args.idempotencyKey.length < 8) throw new DomainError(Codes.INVALID_INPUT, 'Missing idempotency key.')
+  return portalPay(context.prisma, portalPrincipal(context), { residentId: args.residentId, statementId: args.statementId, tokenId: args.tokenId, amountMinor, idempotencyKey: args.idempotencyKey })
+}
 export const portalDocumentsQuery = (_: unknown, args: { residentId: string }, context: Ctx) => portalRead(context, tx => portalDocuments(tx, portalPrincipal(context), args.residentId))

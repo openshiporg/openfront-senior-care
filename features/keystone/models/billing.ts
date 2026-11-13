@@ -369,3 +369,103 @@ export const BalanceAdjustment = list({
   },
 })
 phiList('BalanceAdjustment')
+
+/**
+ * A payment plan for one statement's balance (SCHEMA §10.7): the balance split into instalments that sum to it exactly. An instalment's
+ * state is read from its latest payment; a declined one is never charged again on its own: Retry is a staff action. One active plan
+ * per statement (DB partial unique index); autopay skips a statement on a plan.
+ */
+export const PaymentPlan = list({
+  access: scoped(PAYMENTS_READ),
+  ui: { labelField: 'reference', listView: { initialColumns: ['reference', 'resident', 'statement', 'totalMinor', 'instalmentCount', 'status'] } },
+  fields: {
+    community: community(),
+    resident: resident(),
+    statement: relationship({ ref: 'Statement', ...ro }),
+    reference: systemText({ indexed: 'unique', required: true }),
+    ...phiFields('PaymentPlan', { totalMinor: ['fin', bigInt, fin] }),
+    instalmentCount: integer({ ...ro, validation: { isRequired: true } }),
+    status: lifecycle(['active', 'cancelled'], 'active'),
+    cancelledReason: systemText(),
+    createdBy: by(),
+    instalments: relationship({ ref: 'PaymentPlanInstalment.plan', many: true, ...ro }),
+    version: versionField(),
+    ...trackingFields,
+  },
+})
+phiList('PaymentPlan')
+
+export const PaymentPlanInstalment = list({
+  access: scoped(PAYMENTS_READ),
+  ui: { labelField: 'number', listView: { initialColumns: ['plan', 'number', 'dueOn', 'amountMinor', 'payment'] } },
+  fields: {
+    community: community(),
+    resident: resident(),
+    plan: relationship({ ref: 'PaymentPlan.instalments', ...ro }),
+    number: integer({ ...ro, validation: { isRequired: true } }),
+    dueOn: day(),
+    ...phiFields('PaymentPlanInstalment', { amountMinor: ['fin', bigInt, fin] }),
+    /** The latest attempt. Paid, in flight or declined is read from it. */
+    payment: relationship({ ref: 'Payment', ...ro }),
+    attempts: integer({ ...ro, defaultValue: 0 }),
+    version: versionField(),
+    ...trackingFields,
+  },
+})
+phiList('PaymentPlanInstalment')
+
+/**
+ * A Medicaid eligibility application (SCHEMA §5.6, STATE-MACHINES §5.3): preparing → submitted → info_requested → submitted →
+ * approved | denied → appealed → approved | denied. The reply and appeal deadlines and the pending AR are worked out on read.
+ */
+export const MedicaidApplication = list({
+  access: scoped(BILLING_READ),
+  ui: { labelField: 'reference', listView: { initialColumns: ['reference', 'resident', 'status', 'submittedOn', 'infoDueOn', 'appealDueOn'] } },
+  fields: {
+    community: community(),
+    resident: resident(),
+    stay: relationship({ ref: 'Stay', ...ro }),
+    reference: systemText({ indexed: 'unique', required: true }),
+    state: systemText(),
+    caseworker: systemText(),
+    status: lifecycle(['preparing', 'submitted', 'info_requested', 'approved', 'denied', 'appealed'], 'preparing'),
+    /** The first day Medicaid is asked to cover: charges from here are pending AR until the decision. */
+    requestedFrom: day(),
+    submittedOn: day(),
+    infoRequestedOn: day(),
+    infoDueOn: day(),
+    infoRespondedOn: day(),
+    decisionOn: day(),
+    effectiveOn: day(),
+    appealDueOn: day(),
+    appealFiledOn: day(),
+    note: systemText(),
+    version: versionField(),
+    ...trackingFields,
+  },
+})
+phiList('MedicaidApplication')
+
+/**
+ * The resident's monthly patient liability and personal needs allowance as determined (SCHEMA §5.7). Effective-dated: a new
+ * determination ends the earlier one the day before it starts (that one becomes superseded) and billing re-derives; a closed month gets
+ * an adjustment. The amounts never change once recorded (DB trigger).
+ */
+export const PatientLiabilitySchedule = list({
+  access: scoped(BILLING_READ),
+  ui: { labelField: 'effectiveFrom', listView: { initialColumns: ['resident', 'monthlyAmountMinor', 'personalNeedsAllowanceMinor', 'effectiveFrom', 'effectiveTo', 'status'] } },
+  fields: {
+    community: community(),
+    resident: resident(),
+    stay: relationship({ ref: 'Stay', ...ro }),
+    application: relationship({ ref: 'MedicaidApplication', ...ro }),
+    ...phiFields('PatientLiabilitySchedule', { monthlyAmountMinor: ['fin', bigInt, fin], personalNeedsAllowanceMinor: ['fin', bigInt, fin] }),
+    effectiveFrom: day(),
+    effectiveTo: day(),
+    status: lifecycle(['draft', 'effective', 'superseded'], 'draft'),
+    note: systemText(),
+    version: versionField(),
+    ...trackingFields,
+  },
+})
+phiList('PatientLiabilitySchedule')

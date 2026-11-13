@@ -7,6 +7,7 @@ import { conveyanceClock } from '@/features/keystone/trust/service';
 
 type Line = { id: string; bucket: string; side: string; amountMinor: string; effectiveOn: string | null };
 type Ledger = { id: string; reference: string; status: string; closedOn: string | null; closedReason: string | null; conveyedOn: string | null; conveyedTo: string; resident: { firstName: string; lastName: string } | null };
+type Auth = { id: string; status: string; signedOn: string | null; kinds: string[] | null; perWithdrawalLimitMinor: string | null; revokedReason: string; recordedBy: { name: string } | null };
 type Tx = { id: string; reference: string; kind: string; amountMinor: string; status: string; purpose: string; effectiveOn: string | null };
 
 /** One resident's funds: balance, history and, after they leave, the 30-day clock to convey what is left. */
@@ -19,6 +20,8 @@ export default async function TrustLedgerPage({ params }: { params: Promise<{ id
     trustTransactions(where: { ledger: { id: { equals: $id } } }, orderBy: { createdAt: desc }, take: 50) { id reference kind amountMinor status purpose effectiveOn }
   }`, { id }).catch(() => null);
   if (!data?.residentTrustLedger) notFound();
+  const auths = (await q<{ trustAuthorisations: Auth[] }>(`query A($id: ID!) { trustAuthorisations(where: { ledger: { id: { equals: $id } } }, orderBy: { createdAt: desc }, take: 20) { id status signedOn kinds perWithdrawalLimitMinor revokedReason recordedBy { name } } }`, { id }).catch(() => ({ trustAuthorisations: [] as Auth[] }))).trustAuthorisations;
+  const activeAuth = auths.find(a => a.status === 'active') ?? null;
   const l = data.residentTrustLedger;
   const tz = community?.timeZone ?? 'America/New_York';
   // The resident's balance is the client-liability side: credits less debits.
@@ -45,6 +48,22 @@ export default async function TrustLedgerPage({ params }: { params: Promise<{ id
           ) : null}
           {l.status === 'closed' && balance > 0n ? <BillingAction op="trust.convey" input={{ ledgerId: l.id }} fields={[{ name: 'conveyedTo', label: 'Paid to (estate, family member or agency)', required: true }]}>Convey the balance</BillingAction> : null}
         </div>
+      </Section>
+      <Section title="Written authorisation" aside={l.status === 'open' ? <BillingAction op="trust.authorisation_record" input={{ ledgerId: l.id }} fields={[
+        { name: 'signedOn', label: 'Signed on', type: 'date', required: true },
+        { name: 'kinds', label: 'Covers (comma separated: deposit, withdrawal_cash, withdrawal_purchase, liability_transfer)', required: true, defaultValue: 'deposit, withdrawal_cash, withdrawal_purchase' },
+        { name: 'perWithdrawalLimitMinor', label: 'Limit for each withdrawal (blank for no limit)', type: 'money' },
+      ]}>Record an authorisation</BillingAction> : null}>
+        {!activeAuth ? <Title status="overdue">No active authorisation. Withdrawals are refused until one is recorded{auths.some(a => a.status === 'pending_approval') ? ' and approved' : ''}.</Title> : null}
+        {auths.map(a => (
+          <Row key={a.id}>
+            <div className="min-w-0 flex-1 basis-60 space-y-0.5">
+              <Title status={a.status === 'pending_approval' ? 'pending' : a.status}>{label(a.status)}{a.status === 'pending_approval' ? ' · waiting for a second person in Approvals' : ''}</Title>
+              <Meta>{a.signedOn ? `Signed ${when(a.signedOn, tz, 'date')} · ` : ''}{(a.kinds ?? []).map(k => label(k)).join(', ')} · {a.perWithdrawalLimitMinor ? `up to ${money(a.perWithdrawalLimitMinor)} a withdrawal` : 'no limit'}{a.recordedBy ? ` · recorded by ${a.recordedBy.name}` : ''}{a.revokedReason ? ` · ${a.revokedReason}` : ''}</Meta>
+            </div>
+            {a.status === 'active' || a.status === 'pending_approval' ? <BillingAction op="trust.authorisation_revoke" input={{ authorisationId: a.id }} fields={[{ name: 'reason', label: 'Why', required: true }]}>Revoke</BillingAction> : null}
+          </Row>
+        ))}
       </Section>
       <Section title="History">
         {data.trustTransactions.length ? data.trustTransactions.map(t => (

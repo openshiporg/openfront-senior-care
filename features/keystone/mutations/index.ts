@@ -39,6 +39,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         portalDocuments(residentId: ID!): JSON
         portalStatements(residentId: ID!): JSON
         portalTrustBalance(residentId: ID!): JSON
+        portalPayments(residentId: ID!): JSON
         listBlockTypes: JSON
         getBlockType(code: String!): JSON
         listWorkflows(communityId: ID!): JSON
@@ -110,6 +111,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         clinicalCommand(op: String!, input: JSON, idempotencyKey: String!): JSON
         runWorkflowsOnLoad(communityId: ID!, idempotencyKey: String!): JSON
         billingCommand(op: String!, input: JSON, idempotencyKey: String!): JSON
+        portalPay(residentId: ID!, statementId: ID!, tokenId: ID!, amountMinor: String, idempotencyKey: String!): JSON
       }
     `,
     resolvers: {
@@ -127,6 +129,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         portalDocuments: op(front.portalDocumentsQuery),
         portalStatements: op(front.portalStatementsQuery),
         portalTrustBalance: op(front.portalTrustBalanceQuery),
+        portalPayments: op(front.portalPaymentsQuery),
         listBlockTypes: op(workflowReads.listBlockTypes),
         getBlockType: op(workflowReads.getBlockType),
         listWorkflows: op(workflowReads.listWorkflows),
@@ -197,6 +200,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         clinicalCommand: op(clinical.clinicalCommand),
         runWorkflowsOnLoad: op(clinical.runWorkflowsOnLoad),
         billingCommand: op(billing.billingCommand),
+        portalPay: op(front.portalPayMutation),
       },
     },
   })

@@ -13373,6 +13373,134 @@ input PaymentRelateToOneForCreateInput {
   connect: PaymentWhereUniqueInput
 }
 
+type MedicaidApplication {
+  id: ID!
+  community: Community
+  resident: Resident
+  stay: Stay
+  reference: String
+  state: String
+  caseworker: String
+  status: String
+  requestedFrom: CalendarDay
+  submittedOn: CalendarDay
+  infoRequestedOn: CalendarDay
+  infoDueOn: CalendarDay
+  infoRespondedOn: CalendarDay
+  decisionOn: CalendarDay
+  effectiveOn: CalendarDay
+  appealDueOn: CalendarDay
+  appealFiledOn: CalendarDay
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MedicaidApplicationWhereUniqueInput {
+  id: ID
+  reference: String
+}
+
+input MedicaidApplicationWhereInput {
+  AND: [MedicaidApplicationWhereInput!]
+  OR: [MedicaidApplicationWhereInput!]
+  NOT: [MedicaidApplicationWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  stay: StayWhereInput
+  reference: StringFilter
+  state: StringFilter
+  caseworker: StringFilter
+  status: StringFilter
+  requestedFrom: CalendarDayNullableFilter
+  submittedOn: CalendarDayNullableFilter
+  infoRequestedOn: CalendarDayNullableFilter
+  infoDueOn: CalendarDayNullableFilter
+  infoRespondedOn: CalendarDayNullableFilter
+  decisionOn: CalendarDayNullableFilter
+  effectiveOn: CalendarDayNullableFilter
+  appealDueOn: CalendarDayNullableFilter
+  appealFiledOn: CalendarDayNullableFilter
+  note: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input MedicaidApplicationOrderByInput {
+  id: OrderDirection
+  reference: OrderDirection
+  state: OrderDirection
+  caseworker: OrderDirection
+  status: OrderDirection
+  requestedFrom: OrderDirection
+  submittedOn: OrderDirection
+  infoRequestedOn: OrderDirection
+  infoDueOn: OrderDirection
+  infoRespondedOn: OrderDirection
+  decisionOn: OrderDirection
+  effectiveOn: OrderDirection
+  appealDueOn: OrderDirection
+  appealFiledOn: OrderDirection
+  note: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input MedicaidApplicationUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  stay: StayRelateToOneForUpdateInput
+  reference: String
+  state: String
+  caseworker: String
+  status: String
+  requestedFrom: CalendarDay
+  submittedOn: CalendarDay
+  infoRequestedOn: CalendarDay
+  infoDueOn: CalendarDay
+  infoRespondedOn: CalendarDay
+  decisionOn: CalendarDay
+  effectiveOn: CalendarDay
+  appealDueOn: CalendarDay
+  appealFiledOn: CalendarDay
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MedicaidApplicationUpdateArgs {
+  where: MedicaidApplicationWhereUniqueInput!
+  data: MedicaidApplicationUpdateInput!
+}
+
+input MedicaidApplicationCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  stay: StayRelateToOneForCreateInput
+  reference: String
+  state: String
+  caseworker: String
+  status: String
+  requestedFrom: CalendarDay
+  submittedOn: CalendarDay
+  infoRequestedOn: CalendarDay
+  infoDueOn: CalendarDay
+  infoRespondedOn: CalendarDay
+  decisionOn: CalendarDay
+  effectiveOn: CalendarDay
+  appealDueOn: CalendarDay
+  appealFiledOn: CalendarDay
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
 type MedicaidLiability {
   id: ID!
   community: Community
@@ -13483,6 +13611,108 @@ input MedicaidLiabilityCreateInput {
 input MedicaidLiabilityRelateToOneForCreateInput {
   create: MedicaidLiabilityCreateInput
   connect: MedicaidLiabilityWhereUniqueInput
+}
+
+type PatientLiabilitySchedule {
+  id: ID!
+  community: Community
+  resident: Resident
+  stay: Stay
+  application: MedicaidApplication
+  monthlyAmountMinor: BigInt
+  personalNeedsAllowanceMinor: BigInt
+  effectiveFrom: CalendarDay
+  effectiveTo: CalendarDay
+  status: String
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PatientLiabilityScheduleWhereUniqueInput {
+  id: ID
+}
+
+input PatientLiabilityScheduleWhereInput {
+  AND: [PatientLiabilityScheduleWhereInput!]
+  OR: [PatientLiabilityScheduleWhereInput!]
+  NOT: [PatientLiabilityScheduleWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  stay: StayWhereInput
+  application: MedicaidApplicationWhereInput
+  monthlyAmountMinor: BigIntFilter
+  personalNeedsAllowanceMinor: BigIntFilter
+  effectiveFrom: CalendarDayNullableFilter
+  effectiveTo: CalendarDayNullableFilter
+  status: StringFilter
+  note: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input PatientLiabilityScheduleOrderByInput {
+  id: OrderDirection
+  monthlyAmountMinor: OrderDirection
+  personalNeedsAllowanceMinor: OrderDirection
+  effectiveFrom: OrderDirection
+  effectiveTo: OrderDirection
+  status: OrderDirection
+  note: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input PatientLiabilityScheduleUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  stay: StayRelateToOneForUpdateInput
+  application: MedicaidApplicationRelateToOneForUpdateInput
+  monthlyAmountMinor: BigInt
+  personalNeedsAllowanceMinor: BigInt
+  effectiveFrom: CalendarDay
+  effectiveTo: CalendarDay
+  status: String
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MedicaidApplicationRelateToOneForUpdateInput {
+  create: MedicaidApplicationCreateInput
+  connect: MedicaidApplicationWhereUniqueInput
+  disconnect: Boolean
+}
+
+input PatientLiabilityScheduleUpdateArgs {
+  where: PatientLiabilityScheduleWhereUniqueInput!
+  data: PatientLiabilityScheduleUpdateInput!
+}
+
+input PatientLiabilityScheduleCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  stay: StayRelateToOneForCreateInput
+  application: MedicaidApplicationRelateToOneForCreateInput
+  monthlyAmountMinor: BigInt
+  personalNeedsAllowanceMinor: BigInt
+  effectiveFrom: CalendarDay
+  effectiveTo: CalendarDay
+  status: String
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MedicaidApplicationRelateToOneForCreateInput {
+  create: MedicaidApplicationCreateInput
+  connect: MedicaidApplicationWhereUniqueInput
 }
 
 type Payment {
@@ -13818,6 +14048,208 @@ input PaymentMethodTokenCreateInput {
   version: Int
   createdAt: DateTime
   updatedAt: DateTime
+}
+
+type PaymentPlan {
+  id: ID!
+  community: Community
+  resident: Resident
+  statement: Statement
+  reference: String
+  totalMinor: BigInt
+  instalmentCount: Int
+  status: String
+  cancelledReason: String
+  createdBy: User
+  instalments(where: PaymentPlanInstalmentWhereInput! = {}, orderBy: [PaymentPlanInstalmentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentPlanInstalmentWhereUniqueInput): [PaymentPlanInstalment!]
+  instalmentsCount(where: PaymentPlanInstalmentWhereInput! = {}): Int
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PaymentPlanWhereUniqueInput {
+  id: ID
+  reference: String
+}
+
+input PaymentPlanWhereInput {
+  AND: [PaymentPlanWhereInput!]
+  OR: [PaymentPlanWhereInput!]
+  NOT: [PaymentPlanWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  statement: StatementWhereInput
+  reference: StringFilter
+  totalMinor: BigIntFilter
+  instalmentCount: IntFilter
+  status: StringFilter
+  cancelledReason: StringFilter
+  createdBy: UserWhereInput
+  instalments: PaymentPlanInstalmentManyRelationFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input PaymentPlanInstalmentManyRelationFilter {
+  every: PaymentPlanInstalmentWhereInput
+  some: PaymentPlanInstalmentWhereInput
+  none: PaymentPlanInstalmentWhereInput
+}
+
+input PaymentPlanOrderByInput {
+  id: OrderDirection
+  reference: OrderDirection
+  totalMinor: OrderDirection
+  instalmentCount: OrderDirection
+  status: OrderDirection
+  cancelledReason: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input PaymentPlanUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  statement: StatementRelateToOneForUpdateInput
+  reference: String
+  totalMinor: BigInt
+  instalmentCount: Int
+  status: String
+  cancelledReason: String
+  createdBy: UserRelateToOneForUpdateInput
+  instalments: PaymentPlanInstalmentRelateToManyForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PaymentPlanInstalmentRelateToManyForUpdateInput {
+  disconnect: [PaymentPlanInstalmentWhereUniqueInput!]
+  set: [PaymentPlanInstalmentWhereUniqueInput!]
+  create: [PaymentPlanInstalmentCreateInput!]
+  connect: [PaymentPlanInstalmentWhereUniqueInput!]
+}
+
+input PaymentPlanUpdateArgs {
+  where: PaymentPlanWhereUniqueInput!
+  data: PaymentPlanUpdateInput!
+}
+
+input PaymentPlanCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  statement: StatementRelateToOneForCreateInput
+  reference: String
+  totalMinor: BigInt
+  instalmentCount: Int
+  status: String
+  cancelledReason: String
+  createdBy: UserRelateToOneForCreateInput
+  instalments: PaymentPlanInstalmentRelateToManyForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PaymentPlanInstalmentRelateToManyForCreateInput {
+  create: [PaymentPlanInstalmentCreateInput!]
+  connect: [PaymentPlanInstalmentWhereUniqueInput!]
+}
+
+type PaymentPlanInstalment {
+  id: ID!
+  community: Community
+  resident: Resident
+  plan: PaymentPlan
+  number: Int
+  dueOn: CalendarDay
+  amountMinor: BigInt
+  payment: Payment
+  attempts: Int
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PaymentPlanInstalmentWhereUniqueInput {
+  id: ID
+}
+
+input PaymentPlanInstalmentWhereInput {
+  AND: [PaymentPlanInstalmentWhereInput!]
+  OR: [PaymentPlanInstalmentWhereInput!]
+  NOT: [PaymentPlanInstalmentWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  plan: PaymentPlanWhereInput
+  number: IntFilter
+  dueOn: CalendarDayNullableFilter
+  amountMinor: BigIntFilter
+  payment: PaymentWhereInput
+  attempts: IntNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input PaymentPlanInstalmentOrderByInput {
+  id: OrderDirection
+  number: OrderDirection
+  dueOn: OrderDirection
+  amountMinor: OrderDirection
+  attempts: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input PaymentPlanInstalmentUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  plan: PaymentPlanRelateToOneForUpdateInput
+  number: Int
+  dueOn: CalendarDay
+  amountMinor: BigInt
+  payment: PaymentRelateToOneForUpdateInput
+  attempts: Int
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PaymentPlanRelateToOneForUpdateInput {
+  create: PaymentPlanCreateInput
+  connect: PaymentPlanWhereUniqueInput
+  disconnect: Boolean
+}
+
+input PaymentPlanInstalmentUpdateArgs {
+  where: PaymentPlanInstalmentWhereUniqueInput!
+  data: PaymentPlanInstalmentUpdateInput!
+}
+
+input PaymentPlanInstalmentCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  plan: PaymentPlanRelateToOneForCreateInput
+  number: Int
+  dueOn: CalendarDay
+  amountMinor: BigInt
+  payment: PaymentRelateToOneForCreateInput
+  attempts: Int
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PaymentPlanRelateToOneForCreateInput {
+  create: PaymentPlanCreateInput
+  connect: PaymentPlanWhereUniqueInput
 }
 
 type RateLine {
@@ -14302,6 +14734,87 @@ input StatementCreateInput {
   updatedAt: DateTime
 }
 
+type InterestAllocationRun {
+  id: ID!
+  community: Community
+  account: TrustAccount
+  month: CalendarDay
+  interestMinor: BigInt
+  method: String
+  residualRule: String
+  allocations: JSON
+  postedBy: User
+  createdAt: DateTime
+}
+
+input InterestAllocationRunWhereUniqueInput {
+  id: ID
+}
+
+input InterestAllocationRunWhereInput {
+  AND: [InterestAllocationRunWhereInput!]
+  OR: [InterestAllocationRunWhereInput!]
+  NOT: [InterestAllocationRunWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  account: TrustAccountWhereInput
+  month: CalendarDayNullableFilter
+  interestMinor: BigIntFilter
+  method: StringFilter
+  residualRule: StringFilter
+  postedBy: UserWhereInput
+  createdAt: DateTimeNullableFilter
+}
+
+input InterestAllocationRunOrderByInput {
+  id: OrderDirection
+  month: OrderDirection
+  interestMinor: OrderDirection
+  method: OrderDirection
+  residualRule: OrderDirection
+  createdAt: OrderDirection
+}
+
+input InterestAllocationRunUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  account: TrustAccountRelateToOneForUpdateInput
+  month: CalendarDay
+  interestMinor: BigInt
+  method: String
+  residualRule: String
+  allocations: JSON
+  postedBy: UserRelateToOneForUpdateInput
+  createdAt: DateTime
+}
+
+input TrustAccountRelateToOneForUpdateInput {
+  create: TrustAccountCreateInput
+  connect: TrustAccountWhereUniqueInput
+  disconnect: Boolean
+}
+
+input InterestAllocationRunUpdateArgs {
+  where: InterestAllocationRunWhereUniqueInput!
+  data: InterestAllocationRunUpdateInput!
+}
+
+input InterestAllocationRunCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  account: TrustAccountRelateToOneForCreateInput
+  month: CalendarDay
+  interestMinor: BigInt
+  method: String
+  residualRule: String
+  allocations: JSON
+  postedBy: UserRelateToOneForCreateInput
+  createdAt: DateTime
+}
+
+input TrustAccountRelateToOneForCreateInput {
+  create: TrustAccountCreateInput
+  connect: TrustAccountWhereUniqueInput
+}
+
 type ResidentTrustLedger {
   id: ID!
   community: Community
@@ -14374,12 +14887,6 @@ input ResidentTrustLedgerUpdateInput {
   updatedAt: DateTime
 }
 
-input TrustAccountRelateToOneForUpdateInput {
-  create: TrustAccountCreateInput
-  connect: TrustAccountWhereUniqueInput
-  disconnect: Boolean
-}
-
 input ResidentTrustLedgerUpdateArgs {
   where: ResidentTrustLedgerWhereUniqueInput!
   data: ResidentTrustLedgerUpdateInput!
@@ -14401,9 +14908,106 @@ input ResidentTrustLedgerCreateInput {
   updatedAt: DateTime
 }
 
-input TrustAccountRelateToOneForCreateInput {
-  create: TrustAccountCreateInput
-  connect: TrustAccountWhereUniqueInput
+type SuretyBond {
+  id: ID!
+  community: Community
+  account: TrustAccount
+  carrier: String
+  bondNumber: String
+  amountMinor: BigInt
+  effectiveFrom: CalendarDay
+  expiresOn: CalendarDay
+  status: String
+  replacedBy: SuretyBond
+  recordedBy: User
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input SuretyBondWhereUniqueInput {
+  id: ID
+}
+
+input SuretyBondWhereInput {
+  AND: [SuretyBondWhereInput!]
+  OR: [SuretyBondWhereInput!]
+  NOT: [SuretyBondWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  account: TrustAccountWhereInput
+  carrier: StringFilter
+  bondNumber: StringFilter
+  amountMinor: BigIntFilter
+  effectiveFrom: CalendarDayNullableFilter
+  expiresOn: CalendarDayNullableFilter
+  status: StringFilter
+  replacedBy: SuretyBondWhereInput
+  recordedBy: UserWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input SuretyBondOrderByInput {
+  id: OrderDirection
+  carrier: OrderDirection
+  bondNumber: OrderDirection
+  amountMinor: OrderDirection
+  effectiveFrom: OrderDirection
+  expiresOn: OrderDirection
+  status: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input SuretyBondUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  account: TrustAccountRelateToOneForUpdateInput
+  carrier: String
+  bondNumber: String
+  amountMinor: BigInt
+  effectiveFrom: CalendarDay
+  expiresOn: CalendarDay
+  status: String
+  replacedBy: SuretyBondRelateToOneForUpdateInput
+  recordedBy: UserRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input SuretyBondRelateToOneForUpdateInput {
+  create: SuretyBondCreateInput
+  connect: SuretyBondWhereUniqueInput
+  disconnect: Boolean
+}
+
+input SuretyBondUpdateArgs {
+  where: SuretyBondWhereUniqueInput!
+  data: SuretyBondUpdateInput!
+}
+
+input SuretyBondCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  account: TrustAccountRelateToOneForCreateInput
+  carrier: String
+  bondNumber: String
+  amountMinor: BigInt
+  effectiveFrom: CalendarDay
+  expiresOn: CalendarDay
+  status: String
+  replacedBy: SuretyBondRelateToOneForCreateInput
+  recordedBy: UserRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input SuretyBondRelateToOneForCreateInput {
+  create: SuretyBondCreateInput
+  connect: SuretyBondWhereUniqueInput
 }
 
 type TrustAccount {
@@ -14475,6 +15079,113 @@ input TrustAccountCreateInput {
   updatedAt: DateTime
 }
 
+type TrustAuthorisation {
+  id: ID!
+  community: Community
+  resident: Resident
+  ledger: ResidentTrustLedger
+  representative: Representative
+  signedOn: CalendarDay
+  kinds: JSON
+  perWithdrawalLimitMinor: BigInt
+  document: Document
+  status: String
+  approval: ApprovalRequest
+  revokedReason: String
+  recordedBy: User
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input TrustAuthorisationWhereUniqueInput {
+  id: ID
+}
+
+input TrustAuthorisationWhereInput {
+  AND: [TrustAuthorisationWhereInput!]
+  OR: [TrustAuthorisationWhereInput!]
+  NOT: [TrustAuthorisationWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  ledger: ResidentTrustLedgerWhereInput
+  representative: RepresentativeWhereInput
+  signedOn: CalendarDayNullableFilter
+  perWithdrawalLimitMinor: BigIntNullableFilter
+  document: DocumentWhereInput
+  status: StringFilter
+  approval: ApprovalRequestWhereInput
+  revokedReason: StringFilter
+  recordedBy: UserWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input TrustAuthorisationOrderByInput {
+  id: OrderDirection
+  signedOn: OrderDirection
+  perWithdrawalLimitMinor: OrderDirection
+  status: OrderDirection
+  revokedReason: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input TrustAuthorisationUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  ledger: ResidentTrustLedgerRelateToOneForUpdateInput
+  representative: RepresentativeRelateToOneForUpdateInput
+  signedOn: CalendarDay
+  kinds: JSON
+  perWithdrawalLimitMinor: BigInt
+  document: DocumentRelateToOneForUpdateInput
+  status: String
+  approval: ApprovalRequestRelateToOneForUpdateInput
+  revokedReason: String
+  recordedBy: UserRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ResidentTrustLedgerRelateToOneForUpdateInput {
+  create: ResidentTrustLedgerCreateInput
+  connect: ResidentTrustLedgerWhereUniqueInput
+  disconnect: Boolean
+}
+
+input TrustAuthorisationUpdateArgs {
+  where: TrustAuthorisationWhereUniqueInput!
+  data: TrustAuthorisationUpdateInput!
+}
+
+input TrustAuthorisationCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  ledger: ResidentTrustLedgerRelateToOneForCreateInput
+  representative: RepresentativeRelateToOneForCreateInput
+  signedOn: CalendarDay
+  kinds: JSON
+  perWithdrawalLimitMinor: BigInt
+  document: DocumentRelateToOneForCreateInput
+  status: String
+  approval: ApprovalRequestRelateToOneForCreateInput
+  revokedReason: String
+  recordedBy: UserRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ResidentTrustLedgerRelateToOneForCreateInput {
+  create: ResidentTrustLedgerCreateInput
+  connect: ResidentTrustLedgerWhereUniqueInput
+}
+
 type TrustLedgerLine {
   id: ID!
   community: Community
@@ -14538,12 +15249,6 @@ input TrustTransactionRelateToOneForUpdateInput {
   disconnect: Boolean
 }
 
-input ResidentTrustLedgerRelateToOneForUpdateInput {
-  create: ResidentTrustLedgerCreateInput
-  connect: ResidentTrustLedgerWhereUniqueInput
-  disconnect: Boolean
-}
-
 input TrustLedgerLineUpdateArgs {
   where: TrustLedgerLineWhereUniqueInput!
   data: TrustLedgerLineUpdateInput!
@@ -14565,11 +15270,6 @@ input TrustLedgerLineCreateInput {
 input TrustTransactionRelateToOneForCreateInput {
   create: TrustTransactionCreateInput
   connect: TrustTransactionWhereUniqueInput
-}
-
-input ResidentTrustLedgerRelateToOneForCreateInput {
-  create: ResidentTrustLedgerCreateInput
-  connect: ResidentTrustLedgerWhereUniqueInput
 }
 
 type TrustReconciliation {
@@ -14669,6 +15369,85 @@ input TrustReconciliationCreateInput {
   version: Int
   createdAt: DateTime
   updatedAt: DateTime
+}
+
+type TrustStatement {
+  id: ID!
+  community: Community
+  resident: Resident
+  ledger: ResidentTrustLedger
+  quarter: CalendarDay
+  openingMinor: BigInt
+  inMinor: BigInt
+  outMinor: BigInt
+  closingMinor: BigInt
+  lines: JSON
+  generatedBy: User
+  generatedAt: DateTime
+}
+
+input TrustStatementWhereUniqueInput {
+  id: ID
+}
+
+input TrustStatementWhereInput {
+  AND: [TrustStatementWhereInput!]
+  OR: [TrustStatementWhereInput!]
+  NOT: [TrustStatementWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  resident: ResidentWhereInput
+  ledger: ResidentTrustLedgerWhereInput
+  quarter: CalendarDayNullableFilter
+  openingMinor: BigIntFilter
+  inMinor: BigIntFilter
+  outMinor: BigIntFilter
+  closingMinor: BigIntFilter
+  generatedBy: UserWhereInput
+  generatedAt: DateTimeNullableFilter
+}
+
+input TrustStatementOrderByInput {
+  id: OrderDirection
+  quarter: OrderDirection
+  openingMinor: OrderDirection
+  inMinor: OrderDirection
+  outMinor: OrderDirection
+  closingMinor: OrderDirection
+  generatedAt: OrderDirection
+}
+
+input TrustStatementUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  resident: ResidentRelateToOneForUpdateInput
+  ledger: ResidentTrustLedgerRelateToOneForUpdateInput
+  quarter: CalendarDay
+  openingMinor: BigInt
+  inMinor: BigInt
+  outMinor: BigInt
+  closingMinor: BigInt
+  lines: JSON
+  generatedBy: UserRelateToOneForUpdateInput
+  generatedAt: DateTime
+}
+
+input TrustStatementUpdateArgs {
+  where: TrustStatementWhereUniqueInput!
+  data: TrustStatementUpdateInput!
+}
+
+input TrustStatementCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  resident: ResidentRelateToOneForCreateInput
+  ledger: ResidentTrustLedgerRelateToOneForCreateInput
+  quarter: CalendarDay
+  openingMinor: BigInt
+  inMinor: BigInt
+  outMinor: BigInt
+  closingMinor: BigInt
+  lines: JSON
+  generatedBy: UserRelateToOneForCreateInput
+  generatedAt: DateTime
 }
 
 type TrustTransaction {
@@ -15545,12 +16324,24 @@ type Mutation {
   updateDeposits(data: [DepositUpdateArgs!]!): [Deposit]
   deleteDeposit(where: DepositWhereUniqueInput!): Deposit
   deleteDeposits(where: [DepositWhereUniqueInput!]!): [Deposit]
+  createMedicaidApplication(data: MedicaidApplicationCreateInput!): MedicaidApplication
+  createMedicaidApplications(data: [MedicaidApplicationCreateInput!]!): [MedicaidApplication]
+  updateMedicaidApplication(where: MedicaidApplicationWhereUniqueInput!, data: MedicaidApplicationUpdateInput!): MedicaidApplication
+  updateMedicaidApplications(data: [MedicaidApplicationUpdateArgs!]!): [MedicaidApplication]
+  deleteMedicaidApplication(where: MedicaidApplicationWhereUniqueInput!): MedicaidApplication
+  deleteMedicaidApplications(where: [MedicaidApplicationWhereUniqueInput!]!): [MedicaidApplication]
   createMedicaidLiability(data: MedicaidLiabilityCreateInput!): MedicaidLiability
   createMedicaidLiabilities(data: [MedicaidLiabilityCreateInput!]!): [MedicaidLiability]
   updateMedicaidLiability(where: MedicaidLiabilityWhereUniqueInput!, data: MedicaidLiabilityUpdateInput!): MedicaidLiability
   updateMedicaidLiabilities(data: [MedicaidLiabilityUpdateArgs!]!): [MedicaidLiability]
   deleteMedicaidLiability(where: MedicaidLiabilityWhereUniqueInput!): MedicaidLiability
   deleteMedicaidLiabilities(where: [MedicaidLiabilityWhereUniqueInput!]!): [MedicaidLiability]
+  createPatientLiabilitySchedule(data: PatientLiabilityScheduleCreateInput!): PatientLiabilitySchedule
+  createPatientLiabilitySchedules(data: [PatientLiabilityScheduleCreateInput!]!): [PatientLiabilitySchedule]
+  updatePatientLiabilitySchedule(where: PatientLiabilityScheduleWhereUniqueInput!, data: PatientLiabilityScheduleUpdateInput!): PatientLiabilitySchedule
+  updatePatientLiabilitySchedules(data: [PatientLiabilityScheduleUpdateArgs!]!): [PatientLiabilitySchedule]
+  deletePatientLiabilitySchedule(where: PatientLiabilityScheduleWhereUniqueInput!): PatientLiabilitySchedule
+  deletePatientLiabilitySchedules(where: [PatientLiabilityScheduleWhereUniqueInput!]!): [PatientLiabilitySchedule]
   createPayment(data: PaymentCreateInput!): Payment
   createPayments(data: [PaymentCreateInput!]!): [Payment]
   updatePayment(where: PaymentWhereUniqueInput!, data: PaymentUpdateInput!): Payment
@@ -15575,6 +16366,18 @@ type Mutation {
   updatePaymentMethodTokens(data: [PaymentMethodTokenUpdateArgs!]!): [PaymentMethodToken]
   deletePaymentMethodToken(where: PaymentMethodTokenWhereUniqueInput!): PaymentMethodToken
   deletePaymentMethodTokens(where: [PaymentMethodTokenWhereUniqueInput!]!): [PaymentMethodToken]
+  createPaymentPlan(data: PaymentPlanCreateInput!): PaymentPlan
+  createPaymentPlans(data: [PaymentPlanCreateInput!]!): [PaymentPlan]
+  updatePaymentPlan(where: PaymentPlanWhereUniqueInput!, data: PaymentPlanUpdateInput!): PaymentPlan
+  updatePaymentPlans(data: [PaymentPlanUpdateArgs!]!): [PaymentPlan]
+  deletePaymentPlan(where: PaymentPlanWhereUniqueInput!): PaymentPlan
+  deletePaymentPlans(where: [PaymentPlanWhereUniqueInput!]!): [PaymentPlan]
+  createPaymentPlanInstalment(data: PaymentPlanInstalmentCreateInput!): PaymentPlanInstalment
+  createPaymentPlanInstalments(data: [PaymentPlanInstalmentCreateInput!]!): [PaymentPlanInstalment]
+  updatePaymentPlanInstalment(where: PaymentPlanInstalmentWhereUniqueInput!, data: PaymentPlanInstalmentUpdateInput!): PaymentPlanInstalment
+  updatePaymentPlanInstalments(data: [PaymentPlanInstalmentUpdateArgs!]!): [PaymentPlanInstalment]
+  deletePaymentPlanInstalment(where: PaymentPlanInstalmentWhereUniqueInput!): PaymentPlanInstalment
+  deletePaymentPlanInstalments(where: [PaymentPlanInstalmentWhereUniqueInput!]!): [PaymentPlanInstalment]
   createRateLine(data: RateLineCreateInput!): RateLine
   createRateLines(data: [RateLineCreateInput!]!): [RateLine]
   updateRateLine(where: RateLineWhereUniqueInput!, data: RateLineUpdateInput!): RateLine
@@ -15605,18 +16408,36 @@ type Mutation {
   updateStatements(data: [StatementUpdateArgs!]!): [Statement]
   deleteStatement(where: StatementWhereUniqueInput!): Statement
   deleteStatements(where: [StatementWhereUniqueInput!]!): [Statement]
+  createInterestAllocationRun(data: InterestAllocationRunCreateInput!): InterestAllocationRun
+  createInterestAllocationRuns(data: [InterestAllocationRunCreateInput!]!): [InterestAllocationRun]
+  updateInterestAllocationRun(where: InterestAllocationRunWhereUniqueInput!, data: InterestAllocationRunUpdateInput!): InterestAllocationRun
+  updateInterestAllocationRuns(data: [InterestAllocationRunUpdateArgs!]!): [InterestAllocationRun]
+  deleteInterestAllocationRun(where: InterestAllocationRunWhereUniqueInput!): InterestAllocationRun
+  deleteInterestAllocationRuns(where: [InterestAllocationRunWhereUniqueInput!]!): [InterestAllocationRun]
   createResidentTrustLedger(data: ResidentTrustLedgerCreateInput!): ResidentTrustLedger
   createResidentTrustLedgers(data: [ResidentTrustLedgerCreateInput!]!): [ResidentTrustLedger]
   updateResidentTrustLedger(where: ResidentTrustLedgerWhereUniqueInput!, data: ResidentTrustLedgerUpdateInput!): ResidentTrustLedger
   updateResidentTrustLedgers(data: [ResidentTrustLedgerUpdateArgs!]!): [ResidentTrustLedger]
   deleteResidentTrustLedger(where: ResidentTrustLedgerWhereUniqueInput!): ResidentTrustLedger
   deleteResidentTrustLedgers(where: [ResidentTrustLedgerWhereUniqueInput!]!): [ResidentTrustLedger]
+  createSuretyBond(data: SuretyBondCreateInput!): SuretyBond
+  createSuretyBonds(data: [SuretyBondCreateInput!]!): [SuretyBond]
+  updateSuretyBond(where: SuretyBondWhereUniqueInput!, data: SuretyBondUpdateInput!): SuretyBond
+  updateSuretyBonds(data: [SuretyBondUpdateArgs!]!): [SuretyBond]
+  deleteSuretyBond(where: SuretyBondWhereUniqueInput!): SuretyBond
+  deleteSuretyBonds(where: [SuretyBondWhereUniqueInput!]!): [SuretyBond]
   createTrustAccount(data: TrustAccountCreateInput!): TrustAccount
   createTrustAccounts(data: [TrustAccountCreateInput!]!): [TrustAccount]
   updateTrustAccount(where: TrustAccountWhereUniqueInput!, data: TrustAccountUpdateInput!): TrustAccount
   updateTrustAccounts(data: [TrustAccountUpdateArgs!]!): [TrustAccount]
   deleteTrustAccount(where: TrustAccountWhereUniqueInput!): TrustAccount
   deleteTrustAccounts(where: [TrustAccountWhereUniqueInput!]!): [TrustAccount]
+  createTrustAuthorisation(data: TrustAuthorisationCreateInput!): TrustAuthorisation
+  createTrustAuthorisations(data: [TrustAuthorisationCreateInput!]!): [TrustAuthorisation]
+  updateTrustAuthorisation(where: TrustAuthorisationWhereUniqueInput!, data: TrustAuthorisationUpdateInput!): TrustAuthorisation
+  updateTrustAuthorisations(data: [TrustAuthorisationUpdateArgs!]!): [TrustAuthorisation]
+  deleteTrustAuthorisation(where: TrustAuthorisationWhereUniqueInput!): TrustAuthorisation
+  deleteTrustAuthorisations(where: [TrustAuthorisationWhereUniqueInput!]!): [TrustAuthorisation]
   createTrustLedgerLine(data: TrustLedgerLineCreateInput!): TrustLedgerLine
   createTrustLedgerLines(data: [TrustLedgerLineCreateInput!]!): [TrustLedgerLine]
   updateTrustLedgerLine(where: TrustLedgerLineWhereUniqueInput!, data: TrustLedgerLineUpdateInput!): TrustLedgerLine
@@ -15629,6 +16450,12 @@ type Mutation {
   updateTrustReconciliations(data: [TrustReconciliationUpdateArgs!]!): [TrustReconciliation]
   deleteTrustReconciliation(where: TrustReconciliationWhereUniqueInput!): TrustReconciliation
   deleteTrustReconciliations(where: [TrustReconciliationWhereUniqueInput!]!): [TrustReconciliation]
+  createTrustStatement(data: TrustStatementCreateInput!): TrustStatement
+  createTrustStatements(data: [TrustStatementCreateInput!]!): [TrustStatement]
+  updateTrustStatement(where: TrustStatementWhereUniqueInput!, data: TrustStatementUpdateInput!): TrustStatement
+  updateTrustStatements(data: [TrustStatementUpdateArgs!]!): [TrustStatement]
+  deleteTrustStatement(where: TrustStatementWhereUniqueInput!): TrustStatement
+  deleteTrustStatements(where: [TrustStatementWhereUniqueInput!]!): [TrustStatement]
   createTrustTransaction(data: TrustTransactionCreateInput!): TrustTransaction
   createTrustTransactions(data: [TrustTransactionCreateInput!]!): [TrustTransaction]
   updateTrustTransaction(where: TrustTransactionWhereUniqueInput!, data: TrustTransactionUpdateInput!): TrustTransaction
@@ -15695,6 +16522,7 @@ type Mutation {
   clinicalCommand(op: String!, input: JSON, idempotencyKey: String!): JSON
   runWorkflowsOnLoad(communityId: ID!, idempotencyKey: String!): JSON
   billingCommand(op: String!, input: JSON, idempotencyKey: String!): JSON
+  portalPay(residentId: ID!, statementId: ID!, tokenId: ID!, amountMinor: String, idempotencyKey: String!): JSON
 }
 
 union UserAuthenticationWithPasswordResult = UserAuthenticationWithPasswordSuccess | UserAuthenticationWithPasswordFailure
@@ -16092,9 +16920,15 @@ type Query {
   deposit(where: DepositWhereUniqueInput!): Deposit
   deposits(where: DepositWhereInput! = {}, orderBy: [DepositOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: DepositWhereUniqueInput): [Deposit!]
   depositsCount(where: DepositWhereInput! = {}): Int
+  medicaidApplication(where: MedicaidApplicationWhereUniqueInput!): MedicaidApplication
+  medicaidApplications(where: MedicaidApplicationWhereInput! = {}, orderBy: [MedicaidApplicationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MedicaidApplicationWhereUniqueInput): [MedicaidApplication!]
+  medicaidApplicationsCount(where: MedicaidApplicationWhereInput! = {}): Int
   medicaidLiability(where: MedicaidLiabilityWhereUniqueInput!): MedicaidLiability
   medicaidLiabilities(where: MedicaidLiabilityWhereInput! = {}, orderBy: [MedicaidLiabilityOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MedicaidLiabilityWhereUniqueInput): [MedicaidLiability!]
   medicaidLiabilitiesCount(where: MedicaidLiabilityWhereInput! = {}): Int
+  patientLiabilitySchedule(where: PatientLiabilityScheduleWhereUniqueInput!): PatientLiabilitySchedule
+  patientLiabilitySchedules(where: PatientLiabilityScheduleWhereInput! = {}, orderBy: [PatientLiabilityScheduleOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PatientLiabilityScheduleWhereUniqueInput): [PatientLiabilitySchedule!]
+  patientLiabilitySchedulesCount(where: PatientLiabilityScheduleWhereInput! = {}): Int
   payment(where: PaymentWhereUniqueInput!): Payment
   payments(where: PaymentWhereInput! = {}, orderBy: [PaymentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentWhereUniqueInput): [Payment!]
   paymentsCount(where: PaymentWhereInput! = {}): Int
@@ -16107,6 +16941,12 @@ type Query {
   paymentMethodToken(where: PaymentMethodTokenWhereUniqueInput!): PaymentMethodToken
   paymentMethodTokens(where: PaymentMethodTokenWhereInput! = {}, orderBy: [PaymentMethodTokenOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentMethodTokenWhereUniqueInput): [PaymentMethodToken!]
   paymentMethodTokensCount(where: PaymentMethodTokenWhereInput! = {}): Int
+  paymentPlan(where: PaymentPlanWhereUniqueInput!): PaymentPlan
+  paymentPlans(where: PaymentPlanWhereInput! = {}, orderBy: [PaymentPlanOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentPlanWhereUniqueInput): [PaymentPlan!]
+  paymentPlansCount(where: PaymentPlanWhereInput! = {}): Int
+  paymentPlanInstalment(where: PaymentPlanInstalmentWhereUniqueInput!): PaymentPlanInstalment
+  paymentPlanInstalments(where: PaymentPlanInstalmentWhereInput! = {}, orderBy: [PaymentPlanInstalmentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentPlanInstalmentWhereUniqueInput): [PaymentPlanInstalment!]
+  paymentPlanInstalmentsCount(where: PaymentPlanInstalmentWhereInput! = {}): Int
   rateLine(where: RateLineWhereUniqueInput!): RateLine
   rateLines(where: RateLineWhereInput! = {}, orderBy: [RateLineOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RateLineWhereUniqueInput): [RateLine!]
   rateLinesCount(where: RateLineWhereInput! = {}): Int
@@ -16122,18 +16962,30 @@ type Query {
   statement(where: StatementWhereUniqueInput!): Statement
   statements(where: StatementWhereInput! = {}, orderBy: [StatementOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: StatementWhereUniqueInput): [Statement!]
   statementsCount(where: StatementWhereInput! = {}): Int
+  interestAllocationRun(where: InterestAllocationRunWhereUniqueInput!): InterestAllocationRun
+  interestAllocationRuns(where: InterestAllocationRunWhereInput! = {}, orderBy: [InterestAllocationRunOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: InterestAllocationRunWhereUniqueInput): [InterestAllocationRun!]
+  interestAllocationRunsCount(where: InterestAllocationRunWhereInput! = {}): Int
   residentTrustLedger(where: ResidentTrustLedgerWhereUniqueInput!): ResidentTrustLedger
   residentTrustLedgers(where: ResidentTrustLedgerWhereInput! = {}, orderBy: [ResidentTrustLedgerOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ResidentTrustLedgerWhereUniqueInput): [ResidentTrustLedger!]
   residentTrustLedgersCount(where: ResidentTrustLedgerWhereInput! = {}): Int
+  suretyBond(where: SuretyBondWhereUniqueInput!): SuretyBond
+  suretyBonds(where: SuretyBondWhereInput! = {}, orderBy: [SuretyBondOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: SuretyBondWhereUniqueInput): [SuretyBond!]
+  suretyBondsCount(where: SuretyBondWhereInput! = {}): Int
   trustAccount(where: TrustAccountWhereUniqueInput!): TrustAccount
   trustAccounts(where: TrustAccountWhereInput! = {}, orderBy: [TrustAccountOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TrustAccountWhereUniqueInput): [TrustAccount!]
   trustAccountsCount(where: TrustAccountWhereInput! = {}): Int
+  trustAuthorisation(where: TrustAuthorisationWhereUniqueInput!): TrustAuthorisation
+  trustAuthorisations(where: TrustAuthorisationWhereInput! = {}, orderBy: [TrustAuthorisationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TrustAuthorisationWhereUniqueInput): [TrustAuthorisation!]
+  trustAuthorisationsCount(where: TrustAuthorisationWhereInput! = {}): Int
   trustLedgerLine(where: TrustLedgerLineWhereUniqueInput!): TrustLedgerLine
   trustLedgerLines(where: TrustLedgerLineWhereInput! = {}, orderBy: [TrustLedgerLineOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TrustLedgerLineWhereUniqueInput): [TrustLedgerLine!]
   trustLedgerLinesCount(where: TrustLedgerLineWhereInput! = {}): Int
   trustReconciliation(where: TrustReconciliationWhereUniqueInput!): TrustReconciliation
   trustReconciliations(where: TrustReconciliationWhereInput! = {}, orderBy: [TrustReconciliationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TrustReconciliationWhereUniqueInput): [TrustReconciliation!]
   trustReconciliationsCount(where: TrustReconciliationWhereInput! = {}): Int
+  trustStatement(where: TrustStatementWhereUniqueInput!): TrustStatement
+  trustStatements(where: TrustStatementWhereInput! = {}, orderBy: [TrustStatementOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TrustStatementWhereUniqueInput): [TrustStatement!]
+  trustStatementsCount(where: TrustStatementWhereInput! = {}): Int
   trustTransaction(where: TrustTransactionWhereUniqueInput!): TrustTransaction
   trustTransactions(where: TrustTransactionWhereInput! = {}, orderBy: [TrustTransactionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TrustTransactionWhereUniqueInput): [TrustTransaction!]
   trustTransactionsCount(where: TrustTransactionWhereInput! = {}): Int
@@ -16153,6 +17005,7 @@ type Query {
   portalDocuments(residentId: ID!): JSON
   portalStatements(residentId: ID!): JSON
   portalTrustBalance(residentId: ID!): JSON
+  portalPayments(residentId: ID!): JSON
   listBlockTypes: JSON
   getBlockType(code: String!): JSON
   listWorkflows(communityId: ID!): JSON

@@ -3,6 +3,7 @@ import { q, currentCommunity } from '../../lib/server';
 import { label, money, when } from '../../lib/format';
 import { Page, Section, Row, Empty, Meta, Title, CommunityTabs, Stat } from '../../components/ui';
 import { BillingAction } from '../../components/BillingAction';
+import { AGEING_BUCKETS, ageing } from '@/features/keystone/billing/ar';
 
 type Period = { id: string; month: string; status: string; statementCount: number | null; closedAt: string | null };
 type Statement = { id: string; number: string; status: string; totalMinor: string; paidMinor: string; adjustedMinor: string; dueOn: string | null; resident: { id: string; firstName: string; lastName: string } | null; period: { id: string } | null };
@@ -32,7 +33,14 @@ export default async function BillingPage({ searchParams }: { searchParams?: Pro
     ? (await q<{ statements: Statement[] }>(`query S($p: ID!) { statements(where: { period: { id: { equals: $p } } }, orderBy: { number: asc }, take: 200) { id number status totalMinor paidMinor adjustedMinor dueOn resident { id firstName lastName } period { id } } }`, { p: period.id }).catch(() => ({ statements: [] as Statement[] }))).statements
     : [];
   const owed = statements.reduce((sum, s) => sum + (BigInt(s.totalMinor ?? '0') - BigInt(s.paidMinor ?? '0') - BigInt(s.adjustedMinor ?? '0')), 0n);
-  const paths = ['/dashboard/platform/billing'];
+  // Collections ageing over every issued statement, worked out now (no job). A statement on a plan is still aged, and marked.
+  const open = (await q<{ statements: Statement[]; paymentPlans: { statement: { id: string } | null }[] }>(`query A($id: ID!) {
+    statements(where: { community: { id: { equals: $id } }, status: { equals: "issued" } }, take: 1000) { id number status totalMinor paidMinor adjustedMinor dueOn resident { id firstName lastName } period { id } }
+    paymentPlans(where: { community: { id: { equals: $id } }, status: { equals: "active" } }, take: 1000) { statement { id } }
+  }`, { id: community.id }).catch(() => null));
+  const onPlan = new Set((open?.paymentPlans ?? []).map(p => p.statement?.id));
+  const aged = ageing((open?.statements ?? []).map(s => ({ residentId: s.resident?.id ?? s.id, name: s.resident ? `${s.resident.lastName}, ${s.resident.firstName}` : 'Resident', dueOn: s.dueOn ? s.dueOn.slice(0, 10) : null, status: s.status, totalMinor: BigInt(s.totalMinor ?? '0'), paidMinor: BigInt(s.paidMinor ?? '0'), adjustedMinor: BigInt(s.adjustedMinor ?? '0'), onPlan: onPlan.has(s.id) })), today);
+  const bucketName: Record<string, string> = { current: 'Current', days_1_30: '1–30 days', days_31_60: '31–60 days', days_61_90: '61–90 days', days_over_90: 'Over 90 days' };
   const monthLinks = [...new Set([focus, lastEnded, ...periods.map(p => p.month.slice(0, 10))])].sort().reverse().slice(0, 8);
   return (
     <Page title="Billing" crumbs={[]}>
@@ -63,6 +71,22 @@ export default async function BillingPage({ searchParams }: { searchParams?: Pro
           )}
         </div>
         <Meta>Closing needs the census signed off through month end. A month that has not ended cannot close.</Meta>
+      </Section>
+      <Section title="Collections ageing" aside={<a className="inline-flex min-h-11 items-center text-sm underline" href={`/api/billing/gl-export?communityId=${community.id}&month=${focus}`}>Export GL for {monthName(focus)}</a>}>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-6">
+          {AGEING_BUCKETS.map(b => <Stat key={b} name={bucketName[b]} value={money(aged.totals[b].toString())} />)}
+          <Stat name="Total open" value={money(aged.totalMinor.toString())} />
+        </div>
+        {aged.rows.filter(r => r.buckets.days_31_60 + r.buckets.days_61_90 + r.buckets.days_over_90 > 0n).slice(0, 50).map(r => (
+          <Row key={r.residentId}>
+            <div className="min-w-0 flex-1 basis-60 space-y-0.5">
+              <Title status={r.buckets.days_over_90 > 0n ? 'overdue' : 'open'}>{r.name}{r.onPlan ? ' · on a payment plan' : ''}</Title>
+              <Meta>{AGEING_BUCKETS.filter(b => r.buckets[b] > 0n).map(b => `${bucketName[b]} ${money(r.buckets[b].toString())}`).join(' · ')}{r.oldestDueOn ? ` · oldest due ${when(r.oldestDueOn, community.timeZone, 'date')}` : ''}</Meta>
+            </div>
+            <span className="text-sm tabular-nums">{money(r.totalMinor.toString())}</span>
+          </Row>
+        ))}
+        <Meta>Worked out from issued statements when this page loads; residents more than 30 days behind are listed. The GL export is a balanced journal of the month&apos;s charges, payments and adjustments.</Meta>
       </Section>
       <Section title="Statements">
         {statements.length ? statements.map(s => (

@@ -18,7 +18,7 @@ export type StatementPdfInput = {
   lines: { description: string; days: number; amountMinor: string }[]
 }
 
-const usd = (minor: string) => {
+export const usd = (minor: string) => {
   const negative = minor.startsWith('-')
   const digits = minor.replace('-', '').padStart(3, '0')
   const whole = digits.slice(0, -2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
@@ -43,7 +43,13 @@ export function statementPdf(input: StatementPdfInput): Buffer {
   add('Paid', 10, usd(input.paidMinor))
   if (adjusted !== 0n) add('Adjusted', 10, usd(adjusted.toString()))
   add('Balance due', 12, usd(balance))
+  return textPdf(rows)
+}
 
+export type PdfRow = { text: string; size: number; x: number; right?: string }
+
+/** Rows of Helvetica text (an optional right-aligned amount) as a paged PDF. */
+export function textPdf(rows: PdfRow[]): Buffer {
   const perPage = 48
   const pages: typeof rows[] = []
   for (let i = 0; i < rows.length; i += perPage) pages.push(rows.slice(i, i + perPage))

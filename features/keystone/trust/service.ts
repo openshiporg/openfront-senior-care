@@ -7,6 +7,7 @@ import { DomainError, Codes } from '../lib/errors'
 import { nextReference } from '../lib/sequence'
 import type { UnitOfWork } from '../lib/unitOfWork'
 import { assertBalanced, assertHistoricalMinimumBalances, linesFor, reconcile, reverseLines, TrustLedgerError, type TrustLine } from './ledger'
+import { assertAuthorised } from './authorisation'
 
 /**
  * Resident trust (STATE-MACHINES §13). Money is BigInt minor units; every ledger is append-only; a balance is the sum of
@@ -97,6 +98,8 @@ export async function prepareWithdrawal(uow: UnitOfWork, actor: Actor, input: { 
   const ledger = await loadLedger(uow, input.ledgerId)
   if (ledger.status !== (input.conveyance ? 'closed' : 'open')) throw new DomainError(Codes.GUARD_FAILED, input.conveyance ? 'Close the ledger first.' : 'This trust ledger is closed.')
   const on = await effective(uow, ledger.communityId, input.effectiveOn)
+  // A withdrawal relies on the resident's written authorisation (SM §13.2). Paying out a closed ledger is a legal duty and does not.
+  if (!input.conveyance) await assertAuthorised(uow.tx, ledger.id, input.amountMinor)
   // Fail early on a short balance, before anyone is asked to sign.
   try {
     assertHistoricalMinimumBalances(await linesOfAccount(uow.tx, ledger.accountId!), linesOf('withdrawal', ledger.id, input.amountMinor, on))

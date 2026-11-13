@@ -10,6 +10,9 @@ import * as medicaid from '../billing/medicaid'
 import * as adjustments from '../billing/adjustments'
 import { assignCareLevel } from '../billing/careLevel'
 import * as trust from '../trust/service'
+import * as trustMore from '../trust/more'
+import * as plans from '../billing/plans'
+import * as mcdApp from '../billing/medicaidApplication'
 import { minorOf } from '../lib/money'
 import { actorFor } from './actorFor'
 import { assertCommunityAccess, assertHuman, authorize, runDomain } from './run'
@@ -94,6 +97,11 @@ export const HANDLERS: Record<string, Handler> = {
   },
   'payment.check_status': { permissions: ['canManagePayments'], community: byRecord('Payment', 'paymentId'), run: async () => ({}), external: (db, a, i) => pay.checkPaymentStatus(db, a, i.paymentId) },
   'refund.issue': { permissions: ['canIssueRefunds'], community: byRecord('Refund', 'refundId'), run: async () => ({}), external: (db, a, i) => pay.issueRefund(db, a, i.refundId) },
+  // Payment plans: charging an instalment and retrying a declined one are separate staff buttons; nothing charges on its own
+  'plan.create': { permissions: ['canManagePayments'], community: byStatement, serializable: true, run: (u, a, i) => plans.createPlan(u, a, { statementId: i.statementId, instalments: Number(i.instalments), firstDueOn: String(i.firstDueOn ?? '') }) },
+  'plan.cancel': { permissions: ['canManagePayments'], community: byRecord('PaymentPlan', 'planId'), run: (u, a, i) => plans.cancelPlan(u, a, { planId: i.planId, reason: String(i.reason ?? '') }) },
+  'plan.charge_instalment': { permissions: ['canManagePayments'], community: byRecord('PaymentPlanInstalment', 'instalmentId'), run: async () => ({}), external: (db, a, i) => plans.chargeInstalment(db, a, { instalmentId: i.instalmentId, tokenId: i.tokenId ?? null, retry: false, idempotencyKey: String(i.__key) }) },
+  'plan.retry_instalment': { permissions: ['canManagePayments'], community: byRecord('PaymentPlanInstalment', 'instalmentId'), run: async () => ({}), external: (db, a, i) => plans.chargeInstalment(db, a, { instalmentId: i.instalmentId, tokenId: i.tokenId ?? null, retry: true, idempotencyKey: String(i.__key) }) },
   'billing.autopay': { permissions: ['canManagePayments'], community: byRecord('BillingPeriod', 'periodId'), run: async () => ({}), external: (db, a, i) => pay.chargeAutopayForPeriod(db, a, { periodId: i.periodId }) },
 
   // Medicaid liability
@@ -101,7 +109,23 @@ export const HANDLERS: Record<string, Handler> = {
   'medicaid.info_request': { permissions: BILLING, community: byRecord('MedicaidLiability', 'liabilityId'), run: (u, a, i) => medicaid.recordInfoRequest(u, a, { liabilityId: i.liabilityId, kind: i.kind, on: i.on }) },
   'medicaid.appeal': { permissions: BILLING, community: byRecord('MedicaidLiability', 'liabilityId'), run: (u, a, i) => medicaid.fileAppeal(u, a, { liabilityId: i.liabilityId, filedOn: i.filedOn }) },
 
+  // Medicaid applications and the patient liability schedule (with the personal needs allowance)
+  'medicaid_app.start': { permissions: BILLING, community: byRecord('Stay', 'stayId'), run: (u, a, i) => mcdApp.startApplication(u, a, { stayId: i.stayId, requestedFrom: i.requestedFrom, state: i.state, caseworker: i.caseworker, note: i.note }) },
+  'medicaid_app.advance': { permissions: BILLING, community: byRecord('MedicaidApplication', 'applicationId'), run: (u, a, i) => mcdApp.advanceApplication(u, a, { applicationId: i.applicationId, step: i.step, on: i.on, dueOn: i.dueOn, effectiveOn: i.effectiveOn, note: i.note }) },
+  'liability_schedule.record': {
+    permissions: BILLING, community: byRecord('Resident', 'residentId'), serializable: true,
+    run: (u, a, i) => mcdApp.recordSchedule(u, a, { residentId: i.residentId, stayId: i.stayId || null, applicationId: i.applicationId || null, monthlyAmountMinor: money(i.monthlyAmountMinor, 'liability'), personalNeedsAllowanceMinor: money(i.personalNeedsAllowanceMinor ?? 0, 'personal needs allowance'), effectiveFrom: i.effectiveFrom, note: i.note }),
+  },
+
   // Resident trust
+  'trust.authorisation_record': {
+    permissions: TRUST_OP, community: byLedger,
+    run: (u, a, i) => trustMore.recordAuthorisation(u, a, { ledgerId: i.ledgerId, representativeId: i.representativeId || null, signedOn: i.signedOn, kinds: Array.isArray(i.kinds) ? i.kinds : String(i.kinds ?? '').split(',').map(k => k.trim()).filter(Boolean), perWithdrawalLimitMinor: i.perWithdrawalLimitMinor === undefined || i.perWithdrawalLimitMinor === null || i.perWithdrawalLimitMinor === '' ? null : money(i.perWithdrawalLimitMinor, 'limit'), documentId: i.documentId || null }),
+  },
+  'trust.authorisation_revoke': { permissions: TRUST_OP, community: byRecord('TrustAuthorisation', 'authorisationId'), run: (u, a, i) => trustMore.revokeAuthorisation(u, a, { authorisationId: i.authorisationId, reason: String(i.reason ?? '') }) },
+  'trust.allocate_interest': { permissions: TRUST_OP, community: byRecord('TrustAccount', 'accountId'), serializable: true, run: (u, a, i) => trustMore.allocateAccountInterest(u, a, { accountId: i.accountId, month: i.month, interestMinor: money(i.interestMinor, 'interest') }) },
+  'trust.quarterly_statements': { permissions: TRUST_OP, community: byRecord('TrustAccount', 'accountId'), run: (u, a, i) => trustMore.generateQuarterForAccount(u, a, { accountId: i.accountId, quarter: i.quarter }) },
+  'trust.record_bond': { permissions: TRUST_SIGN, community: byRecord('TrustAccount', 'accountId'), run: (u, a, i) => trustMore.recordSuretyBond(u, a, { accountId: i.accountId, carrier: String(i.carrier ?? ''), bondNumber: String(i.bondNumber ?? ''), amountMinor: money(i.amountMinor, 'bond amount'), effectiveFrom: i.effectiveFrom, expiresOn: i.expiresOn }) },
   'trust.open_ledger': { permissions: TRUST_OP, community: byCommunity, run: (u, a, i) => trust.openLedger(u, a, { communityId: i.communityId, residentId: i.residentId, accountId: i.accountId, consentOnFile: i.consentOnFile === true }) },
   'trust.deposit': { permissions: TRUST_OP, community: byLedger, serializable: true, run: (u, a, i) => trust.recordDeposit(u, a, { ledgerId: i.ledgerId, amountMinor: money(i.amountMinor, 'amount'), purpose: i.purpose, effectiveOn: i.effectiveOn }) },
   'trust.withdraw': { permissions: TRUST_OP, community: byLedger, serializable: true, run: (u, a, i) => trust.prepareWithdrawal(u, a, { ledgerId: i.ledgerId, amountMinor: money(i.amountMinor, 'amount'), purpose: String(i.purpose ?? ''), effectiveOn: i.effectiveOn }) },

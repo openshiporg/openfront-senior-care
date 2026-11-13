@@ -97,9 +97,14 @@ model User {
   from_BalanceAdjustment_requestedBy           BalanceAdjustment[]        @relation("BalanceAdjustment_requestedBy")
   from_BillingPeriod_closedBy                  BillingPeriod[]            @relation("BillingPeriod_closedBy")
   from_Payment_initiatedBy                     Payment[]                  @relation("Payment_initiatedBy")
+  from_PaymentPlan_createdBy                   PaymentPlan[]              @relation("PaymentPlan_createdBy")
   from_Refund_requestedBy                      Refund[]                   @relation("Refund_requestedBy")
+  from_InterestAllocationRun_postedBy          InterestAllocationRun[]    @relation("InterestAllocationRun_postedBy")
+  from_SuretyBond_recordedBy                   SuretyBond[]               @relation("SuretyBond_recordedBy")
+  from_TrustAuthorisation_recordedBy           TrustAuthorisation[]       @relation("TrustAuthorisation_recordedBy")
   from_TrustReconciliation_preparedBy          TrustReconciliation[]      @relation("TrustReconciliation_preparedBy")
   from_TrustReconciliation_signedBy            TrustReconciliation[]      @relation("TrustReconciliation_signedBy")
+  from_TrustStatement_generatedBy              TrustStatement[]           @relation("TrustStatement_generatedBy")
   from_TrustTransaction_preparedBy             TrustTransaction[]         @relation("TrustTransaction_preparedBy")
   from_TrustTransaction_signedBy               TrustTransaction[]         @relation("TrustTransaction_signedBy")
 
@@ -297,33 +302,34 @@ model ApprovalPolicy {
 }
 
 model ApprovalRequest {
-  id                              String              @id @default(cuid())
-  action                          String              @default("")
-  summary                         String              @default("")
-  community                       Community?          @relation("ApprovalRequest_community", fields: [communityId], references: [id])
-  communityId                     String?             @map("community")
-  targetList                      String              @default("")
-  targetId                        String              @default("")
-  payload                         Json?
-  payloadHash                     String              @default("")
-  requiredPermission              String              @default("")
-  requestedBy                     User?               @relation("ApprovalRequest_requestedBy", fields: [requestedById], references: [id])
-  requestedById                   String?             @map("requestedBy")
-  requestedByAgent                AgentIdentity?      @relation("ApprovalRequest_requestedByAgent", fields: [requestedByAgentId], references: [id])
-  requestedByAgentId              String?             @map("requestedByAgent")
-  status                          String              @default("pending")
-  expiresAt                       DateTime?
-  consumedAt                      DateTime?
-  decisions                       ApprovalDecision[]  @relation("ApprovalDecision_request")
-  version                         Int                 @default(0)
-  createdAt                       DateTime            @default(now())
-  updatedAt                       DateTime            @default(now()) @updatedAt
-  from_AgentToolGrant_approval    AgentToolGrant[]    @relation("AgentToolGrant_approval")
-  from_CensusEvent_approval       CensusEvent[]       @relation("CensusEvent_approval")
-  from_BalanceAdjustment_approval BalanceAdjustment[] @relation("BalanceAdjustment_approval")
-  from_RateSchedule_approval      RateSchedule[]      @relation("RateSchedule_approval")
-  from_Refund_approval            Refund[]            @relation("Refund_approval")
-  from_TrustTransaction_approval  TrustTransaction[]  @relation("TrustTransaction_approval")
+  id                               String               @id @default(cuid())
+  action                           String               @default("")
+  summary                          String               @default("")
+  community                        Community?           @relation("ApprovalRequest_community", fields: [communityId], references: [id])
+  communityId                      String?              @map("community")
+  targetList                       String               @default("")
+  targetId                         String               @default("")
+  payload                          Json?
+  payloadHash                      String               @default("")
+  requiredPermission               String               @default("")
+  requestedBy                      User?                @relation("ApprovalRequest_requestedBy", fields: [requestedById], references: [id])
+  requestedById                    String?              @map("requestedBy")
+  requestedByAgent                 AgentIdentity?       @relation("ApprovalRequest_requestedByAgent", fields: [requestedByAgentId], references: [id])
+  requestedByAgentId               String?              @map("requestedByAgent")
+  status                           String               @default("pending")
+  expiresAt                        DateTime?
+  consumedAt                       DateTime?
+  decisions                        ApprovalDecision[]   @relation("ApprovalDecision_request")
+  version                          Int                  @default(0)
+  createdAt                        DateTime             @default(now())
+  updatedAt                        DateTime             @default(now()) @updatedAt
+  from_AgentToolGrant_approval     AgentToolGrant[]     @relation("AgentToolGrant_approval")
+  from_CensusEvent_approval        CensusEvent[]        @relation("CensusEvent_approval")
+  from_BalanceAdjustment_approval  BalanceAdjustment[]  @relation("BalanceAdjustment_approval")
+  from_RateSchedule_approval       RateSchedule[]       @relation("RateSchedule_approval")
+  from_Refund_approval             Refund[]             @relation("Refund_approval")
+  from_TrustAuthorisation_approval TrustAuthorisation[] @relation("TrustAuthorisation_approval")
+  from_TrustTransaction_approval   TrustTransaction[]   @relation("TrustTransaction_approval")
 
   @@index([action])
   @@index([communityId])
@@ -506,19 +512,27 @@ model Community {
   from_Charge_community                   Charge[]                   @relation("Charge_community")
   from_ChargeItem_community               ChargeItem[]               @relation("ChargeItem_community")
   from_Deposit_community                  Deposit[]                  @relation("Deposit_community")
+  from_MedicaidApplication_community      MedicaidApplication[]      @relation("MedicaidApplication_community")
   from_MedicaidLiability_community        MedicaidLiability[]        @relation("MedicaidLiability_community")
+  from_PatientLiabilitySchedule_community PatientLiabilitySchedule[] @relation("PatientLiabilitySchedule_community")
   from_Payment_community                  Payment[]                  @relation("Payment_community")
   from_PaymentAllocation_community        PaymentAllocation[]        @relation("PaymentAllocation_community")
   from_PaymentEvent_community             PaymentEvent[]             @relation("PaymentEvent_community")
   from_PaymentMethodToken_community       PaymentMethodToken[]       @relation("PaymentMethodToken_community")
+  from_PaymentPlan_community              PaymentPlan[]              @relation("PaymentPlan_community")
+  from_PaymentPlanInstalment_community    PaymentPlanInstalment[]    @relation("PaymentPlanInstalment_community")
   from_RateSchedule_community             RateSchedule[]             @relation("RateSchedule_community")
   from_Refund_community                   Refund[]                   @relation("Refund_community")
   from_ResidentCredit_community           ResidentCredit[]           @relation("ResidentCredit_community")
   from_Statement_community                Statement[]                @relation("Statement_community")
+  from_InterestAllocationRun_community    InterestAllocationRun[]    @relation("InterestAllocationRun_community")
   from_ResidentTrustLedger_community      ResidentTrustLedger[]      @relation("ResidentTrustLedger_community")
+  from_SuretyBond_community               SuretyBond[]               @relation("SuretyBond_community")
   from_TrustAccount_community             TrustAccount[]             @relation("TrustAccount_community")
+  from_TrustAuthorisation_community       TrustAuthorisation[]       @relation("TrustAuthorisation_community")
   from_TrustLedgerLine_community          TrustLedgerLine[]          @relation("TrustLedgerLine_community")
   from_TrustReconciliation_community      TrustReconciliation[]      @relation("TrustReconciliation_community")
+  from_TrustStatement_community           TrustStatement[]           @relation("TrustStatement_community")
   from_TrustTransaction_community         TrustTransaction[]         @relation("TrustTransaction_community")
 
   @@index([jurisdictionPackId])
@@ -620,6 +634,7 @@ model Document {
   from_StaffBio_photo                    StaffBio[]              @relation("StaffBio_photo")
   from_StaffBio_consentDocument          StaffBio[]              @relation("StaffBio_consentDocument")
   from_StorefrontSite_gallery            StorefrontSite[]        @relation("StorefrontSite_gallery")
+  from_TrustAuthorisation_document       TrustAuthorisation[]    @relation("TrustAuthorisation_document")
 
   @@index([communityId])
   @@index([residentId])
@@ -1473,30 +1488,31 @@ model PreAdmissionScreen {
 }
 
 model Representative {
-  id                                          String             @id @default(cuid())
-  reference                                   String             @unique @default("")
-  resident                                    Resident?          @relation("Representative_resident", fields: [residentId], references: [id])
-  residentId                                  String?            @map("resident")
-  contact                                     Contact?           @relation("Representative_contact", fields: [contactId], references: [id])
-  contactId                                   String?            @map("contact")
-  self                                        Boolean            @default(false)
-  roles                                       Json?              @default("[]")
-  authorityDocument                           Document?          @relation("Representative_authorityDocument", fields: [authorityDocumentId], references: [id])
-  authorityDocumentId                         String?            @map("authorityDocument")
-  authorityVerifiedBy                         User?              @relation("Representative_authorityVerifiedBy", fields: [authorityVerifiedById], references: [id])
-  authorityVerifiedById                       String?            @map("authorityVerifiedBy")
+  id                                          String               @id @default(cuid())
+  reference                                   String               @unique @default("")
+  resident                                    Resident?            @relation("Representative_resident", fields: [residentId], references: [id])
+  residentId                                  String?              @map("resident")
+  contact                                     Contact?             @relation("Representative_contact", fields: [contactId], references: [id])
+  contactId                                   String?              @map("contact")
+  self                                        Boolean              @default(false)
+  roles                                       Json?                @default("[]")
+  authorityDocument                           Document?            @relation("Representative_authorityDocument", fields: [authorityDocumentId], references: [id])
+  authorityDocumentId                         String?              @map("authorityDocument")
+  authorityVerifiedBy                         User?                @relation("Representative_authorityVerifiedBy", fields: [authorityVerifiedById], references: [id])
+  authorityVerifiedById                       String?              @map("authorityVerifiedBy")
   authorityVerifiedAt                         DateTime?
-  effectiveFrom                               DateTime?          @postgresql.Date
-  effectiveTo                                 DateTime?          @postgresql.Date
-  contactPriority                             Int?               @default(1)
-  portalAccount                               PortalAccount?     @relation("Representative_portalAccount", fields: [portalAccountId], references: [id])
-  portalAccountId                             String?            @map("portalAccount")
-  status                                      String             @default("active")
-  version                                     Int                @default(0)
-  createdAt                                   DateTime           @default(now())
-  updatedAt                                   DateTime           @default(now()) @updatedAt
-  from_NoticeDelivery_recipientRepresentative NoticeDelivery[]   @relation("NoticeDelivery_recipientRepresentative")
-  from_PortalScopeGrant_representative        PortalScopeGrant[] @relation("PortalScopeGrant_representative")
+  effectiveFrom                               DateTime?            @postgresql.Date
+  effectiveTo                                 DateTime?            @postgresql.Date
+  contactPriority                             Int?                 @default(1)
+  portalAccount                               PortalAccount?       @relation("Representative_portalAccount", fields: [portalAccountId], references: [id])
+  portalAccountId                             String?              @map("portalAccount")
+  status                                      String               @default("active")
+  version                                     Int                  @default(0)
+  createdAt                                   DateTime             @default(now())
+  updatedAt                                   DateTime             @default(now()) @updatedAt
+  from_NoticeDelivery_recipientRepresentative NoticeDelivery[]     @relation("NoticeDelivery_recipientRepresentative")
+  from_PortalScopeGrant_representative        PortalScopeGrant[]   @relation("PortalScopeGrant_representative")
+  from_TrustAuthorisation_representative      TrustAuthorisation[] @relation("TrustAuthorisation_representative")
 
   @@index([residentId])
   @@index([contactId])
@@ -1581,15 +1597,21 @@ model Resident {
   from_CareLevelAssignment_resident      CareLevelAssignment[]      @relation("CareLevelAssignment_resident")
   from_Charge_resident                   Charge[]                   @relation("Charge_resident")
   from_Deposit_resident                  Deposit[]                  @relation("Deposit_resident")
+  from_MedicaidApplication_resident      MedicaidApplication[]      @relation("MedicaidApplication_resident")
   from_MedicaidLiability_resident        MedicaidLiability[]        @relation("MedicaidLiability_resident")
+  from_PatientLiabilitySchedule_resident PatientLiabilitySchedule[] @relation("PatientLiabilitySchedule_resident")
   from_Payment_resident                  Payment[]                  @relation("Payment_resident")
   from_PaymentAllocation_resident        PaymentAllocation[]        @relation("PaymentAllocation_resident")
   from_PaymentMethodToken_resident       PaymentMethodToken[]       @relation("PaymentMethodToken_resident")
+  from_PaymentPlan_resident              PaymentPlan[]              @relation("PaymentPlan_resident")
+  from_PaymentPlanInstalment_resident    PaymentPlanInstalment[]    @relation("PaymentPlanInstalment_resident")
   from_Refund_resident                   Refund[]                   @relation("Refund_resident")
   from_ResidentCredit_resident           ResidentCredit[]           @relation("ResidentCredit_resident")
   from_Statement_resident                Statement[]                @relation("Statement_resident")
   from_ResidentTrustLedger_resident      ResidentTrustLedger[]      @relation("ResidentTrustLedger_resident")
+  from_TrustAuthorisation_resident       TrustAuthorisation[]       @relation("TrustAuthorisation_resident")
   from_TrustLedgerLine_resident          TrustLedgerLine[]          @relation("TrustLedgerLine_resident")
+  from_TrustStatement_resident           TrustStatement[]           @relation("TrustStatement_resident")
   from_TrustTransaction_resident         TrustTransaction[]         @relation("TrustTransaction_resident")
 
   @@index([communityId])
@@ -1614,51 +1636,53 @@ model ResidentIdentifier {
 }
 
 model Stay {
-  id                                   String                @id @default(cuid())
-  reference                            String                @unique @default("")
-  resident                             Resident?             @relation("Stay_resident", fields: [residentId], references: [id])
-  residentId                           String?               @map("resident")
-  community                            Community?            @relation("Stay_community", fields: [communityId], references: [id])
-  communityId                          String?               @map("community")
+  id                                   String                     @id @default(cuid())
+  reference                            String                     @unique @default("")
+  resident                             Resident?                  @relation("Stay_resident", fields: [residentId], references: [id])
+  residentId                           String?                    @map("resident")
+  community                            Community?                 @relation("Stay_community", fields: [communityId], references: [id])
+  communityId                          String?                    @map("community")
   setting                              String
-  status                               String                @default("pre_admit")
-  presence                             String                @default("not_admitted")
+  status                               String                     @default("pre_admit")
+  presence                             String                     @default("not_admitted")
   admittedAt                           DateTime?
   dischargedAt                         DateTime?
   admissionSource                      String?
   dischargeDisposition                 String?
-  priorStay                            Stay?                 @relation("Stay_priorStay", fields: [priorStayId], references: [id])
-  priorStayId                          String?               @map("priorStay")
-  currentBed                           Bed?                  @relation("Stay_currentBed", fields: [currentBedId], references: [id])
-  currentBedId                         String?               @map("currentBed")
-  currentApartment                     Apartment?            @relation("Stay_currentApartment", fields: [currentApartmentId], references: [id])
-  currentApartmentId                   String?               @map("currentApartment")
-  heldBed                              Bed?                  @relation("Stay_heldBed", fields: [heldBedId], references: [id])
-  heldBedId                            String?               @map("heldBed")
-  agreement                            Document?             @relation("Stay_agreement", fields: [agreementId], references: [id])
-  agreementId                          String?               @map("agreement")
-  events                               CensusEvent[]         @relation("CensusEvent_stay")
-  coverage                             CoveragePeriod[]      @relation("CoveragePeriod_stay")
-  leaveDaysUsedThisYear                Int?                  @default(0)
+  priorStay                            Stay?                      @relation("Stay_priorStay", fields: [priorStayId], references: [id])
+  priorStayId                          String?                    @map("priorStay")
+  currentBed                           Bed?                       @relation("Stay_currentBed", fields: [currentBedId], references: [id])
+  currentBedId                         String?                    @map("currentBed")
+  currentApartment                     Apartment?                 @relation("Stay_currentApartment", fields: [currentApartmentId], references: [id])
+  currentApartmentId                   String?                    @map("currentApartment")
+  heldBed                              Bed?                       @relation("Stay_heldBed", fields: [heldBedId], references: [id])
+  heldBedId                            String?                    @map("heldBed")
+  agreement                            Document?                  @relation("Stay_agreement", fields: [agreementId], references: [id])
+  agreementId                          String?                    @map("agreement")
+  events                               CensusEvent[]              @relation("CensusEvent_stay")
+  coverage                             CoveragePeriod[]           @relation("CoveragePeriod_stay")
+  leaveDaysUsedThisYear                Int?                       @default(0)
   projection                           Json?
-  placementReason                      String                @default("")
-  initialPayerKind                     String                @default("")
-  projectionVersion                    Int?                  @default(0)
-  projectionHash                       String                @default("")
-  lastEventHash                        String                @default("")
-  synthetic                            Boolean               @default(false)
-  version                              Int                   @default(0)
-  createdAt                            DateTime              @default(now())
-  updatedAt                            DateTime              @default(now()) @updatedAt
-  from_Bed_currentStay                 Bed[]                 @relation("Bed_currentStay")
-  from_BedOccupancy_stay               BedOccupancy[]        @relation("BedOccupancy_stay")
-  from_PlaceReservation_consumedByStay PlaceReservation[]    @relation("PlaceReservation_consumedByStay")
-  from_CensusDay_stay                  CensusDay[]           @relation("CensusDay_stay")
-  from_Resident_currentStay            Resident[]            @relation("Resident_currentStay")
-  from_Stay_priorStay                  Stay[]                @relation("Stay_priorStay")
-  from_CareLevelAssignment_stay        CareLevelAssignment[] @relation("CareLevelAssignment_stay")
-  from_Charge_stay                     Charge[]              @relation("Charge_stay")
-  from_MedicaidLiability_stay          MedicaidLiability[]   @relation("MedicaidLiability_stay")
+  placementReason                      String                     @default("")
+  initialPayerKind                     String                     @default("")
+  projectionVersion                    Int?                       @default(0)
+  projectionHash                       String                     @default("")
+  lastEventHash                        String                     @default("")
+  synthetic                            Boolean                    @default(false)
+  version                              Int                        @default(0)
+  createdAt                            DateTime                   @default(now())
+  updatedAt                            DateTime                   @default(now()) @updatedAt
+  from_Bed_currentStay                 Bed[]                      @relation("Bed_currentStay")
+  from_BedOccupancy_stay               BedOccupancy[]             @relation("BedOccupancy_stay")
+  from_PlaceReservation_consumedByStay PlaceReservation[]         @relation("PlaceReservation_consumedByStay")
+  from_CensusDay_stay                  CensusDay[]                @relation("CensusDay_stay")
+  from_Resident_currentStay            Resident[]                 @relation("Resident_currentStay")
+  from_Stay_priorStay                  Stay[]                     @relation("Stay_priorStay")
+  from_CareLevelAssignment_stay        CareLevelAssignment[]      @relation("CareLevelAssignment_stay")
+  from_Charge_stay                     Charge[]                   @relation("Charge_stay")
+  from_MedicaidApplication_stay        MedicaidApplication[]      @relation("MedicaidApplication_stay")
+  from_MedicaidLiability_stay          MedicaidLiability[]        @relation("MedicaidLiability_stay")
+  from_PatientLiabilitySchedule_stay   PatientLiabilitySchedule[] @relation("PatientLiabilitySchedule_stay")
 
   @@index([residentId])
   @@index([communityId])
@@ -3462,6 +3486,38 @@ model Deposit {
   @@index([appliedPaymentId])
 }
 
+model MedicaidApplication {
+  id                                        String                     @id @default(cuid())
+  community                                 Community?                 @relation("MedicaidApplication_community", fields: [communityId], references: [id])
+  communityId                               String?                    @map("community")
+  resident                                  Resident?                  @relation("MedicaidApplication_resident", fields: [residentId], references: [id])
+  residentId                                String?                    @map("resident")
+  stay                                      Stay?                      @relation("MedicaidApplication_stay", fields: [stayId], references: [id])
+  stayId                                    String?                    @map("stay")
+  reference                                 String                     @unique @default("")
+  state                                     String                     @default("")
+  caseworker                                String                     @default("")
+  status                                    String                     @default("preparing")
+  requestedFrom                             DateTime?                  @postgresql.Date
+  submittedOn                               DateTime?                  @postgresql.Date
+  infoRequestedOn                           DateTime?                  @postgresql.Date
+  infoDueOn                                 DateTime?                  @postgresql.Date
+  infoRespondedOn                           DateTime?                  @postgresql.Date
+  decisionOn                                DateTime?                  @postgresql.Date
+  effectiveOn                               DateTime?                  @postgresql.Date
+  appealDueOn                               DateTime?                  @postgresql.Date
+  appealFiledOn                             DateTime?                  @postgresql.Date
+  note                                      String                     @default("")
+  version                                   Int                        @default(0)
+  createdAt                                 DateTime                   @default(now())
+  updatedAt                                 DateTime                   @default(now()) @updatedAt
+  from_PatientLiabilitySchedule_application PatientLiabilitySchedule[] @relation("PatientLiabilitySchedule_application")
+
+  @@index([communityId])
+  @@index([residentId])
+  @@index([stayId])
+}
+
 model MedicaidLiability {
   id                                  String              @id @default(cuid())
   community                           Community?          @relation("MedicaidLiability_community", fields: [communityId], references: [id])
@@ -3491,38 +3547,65 @@ model MedicaidLiability {
   @@index([supersededById])
 }
 
+model PatientLiabilitySchedule {
+  id                          String               @id @default(cuid())
+  community                   Community?           @relation("PatientLiabilitySchedule_community", fields: [communityId], references: [id])
+  communityId                 String?              @map("community")
+  resident                    Resident?            @relation("PatientLiabilitySchedule_resident", fields: [residentId], references: [id])
+  residentId                  String?              @map("resident")
+  stay                        Stay?                @relation("PatientLiabilitySchedule_stay", fields: [stayId], references: [id])
+  stayId                      String?              @map("stay")
+  application                 MedicaidApplication? @relation("PatientLiabilitySchedule_application", fields: [applicationId], references: [id])
+  applicationId               String?              @map("application")
+  monthlyAmountMinor          BigInt
+  personalNeedsAllowanceMinor BigInt
+  effectiveFrom               DateTime?            @postgresql.Date
+  effectiveTo                 DateTime?            @postgresql.Date
+  status                      String               @default("draft")
+  note                        String               @default("")
+  version                     Int                  @default(0)
+  createdAt                   DateTime             @default(now())
+  updatedAt                   DateTime             @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([residentId])
+  @@index([stayId])
+  @@index([applicationId])
+}
+
 model Payment {
-  id                             String              @id @default(cuid())
-  community                      Community?          @relation("Payment_community", fields: [communityId], references: [id])
-  communityId                    String?             @map("community")
-  resident                       Resident?           @relation("Payment_resident", fields: [residentId], references: [id])
-  residentId                     String?             @map("resident")
-  statement                      Statement?          @relation("Payment_statement", fields: [statementId], references: [id])
-  statementId                    String?             @map("statement")
-  method                         String
-  status                         String              @default("pending")
-  amountMinor                    BigInt
-  currency                       String              @default("")
-  idempotencyKey                 String              @unique @default("")
-  providerRef                    String              @default("")
-  token                          PaymentMethodToken? @relation("Payment_token", fields: [tokenId], references: [id])
-  tokenId                        String?             @map("token")
-  reference                      String              @default("")
-  failureCode                    String              @default("")
-  autopay                        Boolean             @default(false)
-  initiatedBy                    User?               @relation("Payment_initiatedBy", fields: [initiatedById], references: [id])
-  initiatedById                  String?             @map("initiatedBy")
-  initiatedAt                    DateTime?
-  settledAt                      DateTime?
-  lastCheckedAt                  DateTime?
-  version                        Int                 @default(0)
-  createdAt                      DateTime            @default(now())
-  updatedAt                      DateTime            @default(now()) @updatedAt
-  from_Deposit_appliedPayment    Deposit[]           @relation("Deposit_appliedPayment")
-  from_PaymentAllocation_payment PaymentAllocation[] @relation("PaymentAllocation_payment")
-  from_PaymentEvent_payment      PaymentEvent[]      @relation("PaymentEvent_payment")
-  from_Refund_payment            Refund[]            @relation("Refund_payment")
-  from_ResidentCredit_payment    ResidentCredit[]    @relation("ResidentCredit_payment")
+  id                                 String                  @id @default(cuid())
+  community                          Community?              @relation("Payment_community", fields: [communityId], references: [id])
+  communityId                        String?                 @map("community")
+  resident                           Resident?               @relation("Payment_resident", fields: [residentId], references: [id])
+  residentId                         String?                 @map("resident")
+  statement                          Statement?              @relation("Payment_statement", fields: [statementId], references: [id])
+  statementId                        String?                 @map("statement")
+  method                             String
+  status                             String                  @default("pending")
+  amountMinor                        BigInt
+  currency                           String                  @default("")
+  idempotencyKey                     String                  @unique @default("")
+  providerRef                        String                  @default("")
+  token                              PaymentMethodToken?     @relation("Payment_token", fields: [tokenId], references: [id])
+  tokenId                            String?                 @map("token")
+  reference                          String                  @default("")
+  failureCode                        String                  @default("")
+  autopay                            Boolean                 @default(false)
+  initiatedBy                        User?                   @relation("Payment_initiatedBy", fields: [initiatedById], references: [id])
+  initiatedById                      String?                 @map("initiatedBy")
+  initiatedAt                        DateTime?
+  settledAt                          DateTime?
+  lastCheckedAt                      DateTime?
+  version                            Int                     @default(0)
+  createdAt                          DateTime                @default(now())
+  updatedAt                          DateTime                @default(now()) @updatedAt
+  from_Deposit_appliedPayment        Deposit[]               @relation("Deposit_appliedPayment")
+  from_PaymentAllocation_payment     PaymentAllocation[]     @relation("PaymentAllocation_payment")
+  from_PaymentEvent_payment          PaymentEvent[]          @relation("PaymentEvent_payment")
+  from_PaymentPlanInstalment_payment PaymentPlanInstalment[] @relation("PaymentPlanInstalment_payment")
+  from_Refund_payment                Refund[]                @relation("Refund_payment")
+  from_ResidentCredit_payment        ResidentCredit[]        @relation("ResidentCredit_payment")
 
   @@index([communityId])
   @@index([residentId])
@@ -3585,6 +3668,57 @@ model PaymentMethodToken {
 
   @@index([communityId])
   @@index([residentId])
+}
+
+model PaymentPlan {
+  id              String                  @id @default(cuid())
+  community       Community?              @relation("PaymentPlan_community", fields: [communityId], references: [id])
+  communityId     String?                 @map("community")
+  resident        Resident?               @relation("PaymentPlan_resident", fields: [residentId], references: [id])
+  residentId      String?                 @map("resident")
+  statement       Statement?              @relation("PaymentPlan_statement", fields: [statementId], references: [id])
+  statementId     String?                 @map("statement")
+  reference       String                  @unique @default("")
+  totalMinor      BigInt
+  instalmentCount Int
+  status          String                  @default("active")
+  cancelledReason String                  @default("")
+  createdBy       User?                   @relation("PaymentPlan_createdBy", fields: [createdById], references: [id])
+  createdById     String?                 @map("createdBy")
+  instalments     PaymentPlanInstalment[] @relation("PaymentPlanInstalment_plan")
+  version         Int                     @default(0)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([residentId])
+  @@index([statementId])
+  @@index([createdById])
+}
+
+model PaymentPlanInstalment {
+  id          String       @id @default(cuid())
+  community   Community?   @relation("PaymentPlanInstalment_community", fields: [communityId], references: [id])
+  communityId String?      @map("community")
+  resident    Resident?    @relation("PaymentPlanInstalment_resident", fields: [residentId], references: [id])
+  residentId  String?      @map("resident")
+  plan        PaymentPlan? @relation("PaymentPlanInstalment_plan", fields: [planId], references: [id])
+  planId      String?      @map("plan")
+  number      Int
+  dueOn       DateTime?    @postgresql.Date
+  amountMinor BigInt
+  payment     Payment?     @relation("PaymentPlanInstalment_payment", fields: [paymentId], references: [id])
+  paymentId   String?      @map("payment")
+  attempts    Int?         @default(0)
+  version     Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now()) @updatedAt
+
+  @@unique([planId, number], map: "PaymentPlanInstalment_plan_number_key")
+  @@index([communityId])
+  @@index([residentId])
+  @@index([planId])
+  @@index([paymentId])
 }
 
 model RateLine {
@@ -3706,6 +3840,7 @@ model Statement {
   from_BalanceAdjustment_statement BalanceAdjustment[] @relation("BalanceAdjustment_statement")
   from_Payment_statement           Payment[]           @relation("Payment_statement")
   from_PaymentAllocation_statement PaymentAllocation[] @relation("PaymentAllocation_statement")
+  from_PaymentPlan_statement       PaymentPlan[]       @relation("PaymentPlan_statement")
 
   @@unique([periodId, residentId], map: "Statement_period_resident_key")
   @@index([communityId])
@@ -3713,26 +3848,49 @@ model Statement {
   @@index([periodId])
 }
 
+model InterestAllocationRun {
+  id            String        @id @default(cuid())
+  community     Community?    @relation("InterestAllocationRun_community", fields: [communityId], references: [id])
+  communityId   String?       @map("community")
+  account       TrustAccount? @relation("InterestAllocationRun_account", fields: [accountId], references: [id])
+  accountId     String?       @map("account")
+  month         DateTime?     @postgresql.Date
+  interestMinor BigInt
+  method        String        @default("")
+  residualRule  String        @default("")
+  allocations   Json?
+  postedBy      User?         @relation("InterestAllocationRun_postedBy", fields: [postedById], references: [id])
+  postedById    String?       @map("postedBy")
+  createdAt     DateTime?     @default(now())
+
+  @@unique([accountId, month], map: "InterestAllocationRun_account_month_key")
+  @@index([communityId])
+  @@index([accountId])
+  @@index([postedById])
+}
+
 model ResidentTrustLedger {
-  id                           String             @id @default(cuid())
-  community                    Community?         @relation("ResidentTrustLedger_community", fields: [communityId], references: [id])
-  communityId                  String?            @map("community")
-  resident                     Resident?          @relation("ResidentTrustLedger_resident", fields: [residentId], references: [id])
-  residentId                   String?            @map("resident")
-  account                      TrustAccount?      @relation("ResidentTrustLedger_account", fields: [accountId], references: [id])
-  accountId                    String?            @map("account")
-  reference                    String             @unique @default("")
-  status                       String             @default("open")
-  closedOn                     DateTime?          @postgresql.Date
-  closedReason                 String?
-  conveyedOn                   DateTime?          @postgresql.Date
-  conveyedTo                   String             @default("")
-  consentOnFile                Boolean            @default(false)
-  version                      Int                @default(0)
-  createdAt                    DateTime           @default(now())
-  updatedAt                    DateTime           @default(now()) @updatedAt
-  from_TrustLedgerLine_ledger  TrustLedgerLine[]  @relation("TrustLedgerLine_ledger")
-  from_TrustTransaction_ledger TrustTransaction[] @relation("TrustTransaction_ledger")
+  id                             String               @id @default(cuid())
+  community                      Community?           @relation("ResidentTrustLedger_community", fields: [communityId], references: [id])
+  communityId                    String?              @map("community")
+  resident                       Resident?            @relation("ResidentTrustLedger_resident", fields: [residentId], references: [id])
+  residentId                     String?              @map("resident")
+  account                        TrustAccount?        @relation("ResidentTrustLedger_account", fields: [accountId], references: [id])
+  accountId                      String?              @map("account")
+  reference                      String               @unique @default("")
+  status                         String               @default("open")
+  closedOn                       DateTime?            @postgresql.Date
+  closedReason                   String?
+  conveyedOn                     DateTime?            @postgresql.Date
+  conveyedTo                     String               @default("")
+  consentOnFile                  Boolean              @default(false)
+  version                        Int                  @default(0)
+  createdAt                      DateTime             @default(now())
+  updatedAt                      DateTime             @default(now()) @updatedAt
+  from_TrustAuthorisation_ledger TrustAuthorisation[] @relation("TrustAuthorisation_ledger")
+  from_TrustLedgerLine_ledger    TrustLedgerLine[]    @relation("TrustLedgerLine_ledger")
+  from_TrustStatement_ledger     TrustStatement[]     @relation("TrustStatement_ledger")
+  from_TrustTransaction_ledger   TrustTransaction[]   @relation("TrustTransaction_ledger")
 
   @@unique([residentId, accountId], map: "ResidentTrustLedger_resident_account_key")
   @@index([communityId])
@@ -3740,23 +3898,86 @@ model ResidentTrustLedger {
   @@index([accountId])
 }
 
-model TrustAccount {
-  id                               String                @id @default(cuid())
-  community                        Community?            @relation("TrustAccount_community", fields: [communityId], references: [id])
-  communityId                      String?               @map("community")
-  name                             String                @default("")
-  bankName                         String                @default("")
-  last4                            String                @default("")
-  status                           String                @default("active")
-  version                          Int                   @default(0)
-  createdAt                        DateTime              @default(now())
-  updatedAt                        DateTime              @default(now()) @updatedAt
-  from_ResidentTrustLedger_account ResidentTrustLedger[] @relation("ResidentTrustLedger_account")
-  from_TrustLedgerLine_account     TrustLedgerLine[]     @relation("TrustLedgerLine_account")
-  from_TrustReconciliation_account TrustReconciliation[] @relation("TrustReconciliation_account")
-  from_TrustTransaction_account    TrustTransaction[]    @relation("TrustTransaction_account")
+model SuretyBond {
+  id                         String        @id @default(cuid())
+  community                  Community?    @relation("SuretyBond_community", fields: [communityId], references: [id])
+  communityId                String?       @map("community")
+  account                    TrustAccount? @relation("SuretyBond_account", fields: [accountId], references: [id])
+  accountId                  String?       @map("account")
+  carrier                    String        @default("")
+  bondNumber                 String        @default("")
+  amountMinor                BigInt
+  effectiveFrom              DateTime?     @postgresql.Date
+  expiresOn                  DateTime?     @postgresql.Date
+  status                     String        @default("active")
+  replacedBy                 SuretyBond?   @relation("SuretyBond_replacedBy", fields: [replacedById], references: [id])
+  replacedById               String?       @map("replacedBy")
+  recordedBy                 User?         @relation("SuretyBond_recordedBy", fields: [recordedById], references: [id])
+  recordedById               String?       @map("recordedBy")
+  version                    Int           @default(0)
+  createdAt                  DateTime      @default(now())
+  updatedAt                  DateTime      @default(now()) @updatedAt
+  from_SuretyBond_replacedBy SuretyBond[]  @relation("SuretyBond_replacedBy")
 
   @@index([communityId])
+  @@index([accountId])
+  @@index([replacedById])
+  @@index([recordedById])
+}
+
+model TrustAccount {
+  id                                 String                  @id @default(cuid())
+  community                          Community?              @relation("TrustAccount_community", fields: [communityId], references: [id])
+  communityId                        String?                 @map("community")
+  name                               String                  @default("")
+  bankName                           String                  @default("")
+  last4                              String                  @default("")
+  status                             String                  @default("active")
+  version                            Int                     @default(0)
+  createdAt                          DateTime                @default(now())
+  updatedAt                          DateTime                @default(now()) @updatedAt
+  from_InterestAllocationRun_account InterestAllocationRun[] @relation("InterestAllocationRun_account")
+  from_ResidentTrustLedger_account   ResidentTrustLedger[]   @relation("ResidentTrustLedger_account")
+  from_SuretyBond_account            SuretyBond[]            @relation("SuretyBond_account")
+  from_TrustLedgerLine_account       TrustLedgerLine[]       @relation("TrustLedgerLine_account")
+  from_TrustReconciliation_account   TrustReconciliation[]   @relation("TrustReconciliation_account")
+  from_TrustTransaction_account      TrustTransaction[]      @relation("TrustTransaction_account")
+
+  @@index([communityId])
+}
+
+model TrustAuthorisation {
+  id                      String               @id @default(cuid())
+  community               Community?           @relation("TrustAuthorisation_community", fields: [communityId], references: [id])
+  communityId             String?              @map("community")
+  resident                Resident?            @relation("TrustAuthorisation_resident", fields: [residentId], references: [id])
+  residentId              String?              @map("resident")
+  ledger                  ResidentTrustLedger? @relation("TrustAuthorisation_ledger", fields: [ledgerId], references: [id])
+  ledgerId                String?              @map("ledger")
+  representative          Representative?      @relation("TrustAuthorisation_representative", fields: [representativeId], references: [id])
+  representativeId        String?              @map("representative")
+  signedOn                DateTime?            @postgresql.Date
+  kinds                   Json?                @default("[]")
+  perWithdrawalLimitMinor BigInt?
+  document                Document?            @relation("TrustAuthorisation_document", fields: [documentId], references: [id])
+  documentId              String?              @map("document")
+  status                  String               @default("pending_approval")
+  approval                ApprovalRequest?     @relation("TrustAuthorisation_approval", fields: [approvalId], references: [id])
+  approvalId              String?              @map("approval")
+  revokedReason           String               @default("")
+  recordedBy              User?                @relation("TrustAuthorisation_recordedBy", fields: [recordedById], references: [id])
+  recordedById            String?              @map("recordedBy")
+  version                 Int                  @default(0)
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([residentId])
+  @@index([ledgerId])
+  @@index([representativeId])
+  @@index([documentId])
+  @@index([approvalId])
+  @@index([recordedById])
 }
 
 model TrustLedgerLine {
@@ -3811,6 +4032,31 @@ model TrustReconciliation {
   @@index([accountId])
   @@index([preparedById])
   @@index([signedById])
+}
+
+model TrustStatement {
+  id            String               @id @default(cuid())
+  community     Community?           @relation("TrustStatement_community", fields: [communityId], references: [id])
+  communityId   String?              @map("community")
+  resident      Resident?            @relation("TrustStatement_resident", fields: [residentId], references: [id])
+  residentId    String?              @map("resident")
+  ledger        ResidentTrustLedger? @relation("TrustStatement_ledger", fields: [ledgerId], references: [id])
+  ledgerId      String?              @map("ledger")
+  quarter       DateTime?            @postgresql.Date
+  openingMinor  BigInt
+  inMinor       BigInt
+  outMinor      BigInt
+  closingMinor  BigInt
+  lines         Json?
+  generatedBy   User?                @relation("TrustStatement_generatedBy", fields: [generatedById], references: [id])
+  generatedById String?              @map("generatedBy")
+  generatedAt   DateTime?
+
+  @@unique([ledgerId, quarter], map: "TrustStatement_ledger_quarter_key")
+  @@index([communityId])
+  @@index([residentId])
+  @@index([ledgerId])
+  @@index([generatedById])
 }
 
 model TrustTransaction {

@@ -40,7 +40,7 @@ export async function portalResidents(tx: Tx, principal: PortalPrincipal) {
   return { mfaEnrolled: account.mfaEnrolled, residents: [...byResident.values()] }
 }
 
-async function requireScope(tx: Tx, principal: PortalPrincipal, residentId: string, scope: Scope) {
+export async function requirePortalScope(tx: Tx, principal: PortalPrincipal, residentId: string, scope: Scope) {
   const account = await portalAccountFor(tx, principal)
   const grant = await tx.portalScopeGrant.findFirst({ where: { accountId: account.id, residentId, scope, status: 'granted' }, select: { id: true } })
   // Not granted and not found look the same: a portal user can't probe for residents.
@@ -49,7 +49,7 @@ async function requireScope(tx: Tx, principal: PortalPrincipal, residentId: stri
   return account
 }
 
-async function auditPortalRead(tx: Tx, principal: PortalPrincipal, operationName: string, residentId: string, fields: string[], count: number) {
+export async function auditPortalRead(tx: Tx, principal: PortalPrincipal, operationName: string, residentId: string, fields: string[], count: number) {
   const secret = phiReferenceSecret()
   if (secret.length < 32) throw new DomainError(Codes.GUARD_FAILED, 'Protected data auditing is unavailable.')
   const reference = referenceToken(secret, 'Resident', residentId)
@@ -66,7 +66,7 @@ async function auditPortalRead(tx: Tx, principal: PortalPrincipal, operationName
 
 /** `updates`: where the resident is now (community and setting, never the room) and recent moves. */
 export async function portalUpdates(tx: Tx, principal: PortalPrincipal, residentId: string) {
-  await requireScope(tx, principal, residentId, 'updates')
+  await requirePortalScope(tx, principal, residentId, 'updates')
   const resident = await tx.resident.findUnique({ where: { id: residentId }, select: { preferredName: true, firstName: true, status: true, currentStay: { select: { setting: true, presence: true, admittedAt: true, community: { select: { name: true, phone: true } } } } } })
   if (!resident) throw new DomainError(Codes.NOT_FOUND, 'Not found.')
   const stay = resident.currentStay
@@ -86,7 +86,7 @@ export async function portalUpdates(tx: Tx, principal: PortalPrincipal, resident
 
 /** `calendar`: community-wide tour and event times for the coming weeks (no other residents). */
 export async function portalCalendar(tx: Tx, principal: PortalPrincipal, residentId: string, now = new Date()) {
-  await requireScope(tx, principal, residentId, 'calendar')
+  await requirePortalScope(tx, principal, residentId, 'calendar')
   const resident = await tx.resident.findUnique({ where: { id: residentId }, select: { community: { select: { id: true, timeZone: true, holidayCalendarId: true } } } })
   const community = resident?.community
   if (!community) throw new DomainError(Codes.NOT_FOUND, 'Not found.')
@@ -98,7 +98,7 @@ export async function portalCalendar(tx: Tx, principal: PortalPrincipal, residen
 
 /** `documents`: signed documents for the resident that families may see (agreements, notices). */
 export async function portalDocuments(tx: Tx, principal: PortalPrincipal, residentId: string) {
-  await requireScope(tx, principal, residentId, 'documents')
+  await requirePortalScope(tx, principal, residentId, 'documents')
   const docs = await tx.document.findMany({ where: { residentId, status: { in: ['signed', 'final'] }, kind: { in: ['admission_agreement', 'residency_agreement', 'notice', 'bed_hold_policy'] } }, orderBy: { createdAt: 'desc' }, take: 100, select: { id: true, title: true, kind: true, signedAt: true, createdAt: true } })
   const notices = await tx.noticeDelivery.findMany({ where: { residentId }, orderBy: { deliveredAt: 'desc' }, take: 100, select: { id: true, kind: true, method: true, deliveredAt: true, acknowledgement: true } })
   await auditPortalRead(tx, principal, 'portalDocuments', residentId, ['Document.title', 'NoticeDelivery.kind'], docs.length + notices.length)
@@ -107,7 +107,7 @@ export async function portalDocuments(tx: Tx, principal: PortalPrincipal, reside
 
 /** Statements for a resident the account holds the `statements` scope for. Amounts are integer minor units as strings. */
 export async function portalStatements(tx: Tx, principal: PortalPrincipal, residentId: string) {
-  await requireScope(tx, principal, residentId, 'statements')
+  await requirePortalScope(tx, principal, residentId, 'statements')
   const rows = await tx.statement.findMany({ where: { residentId }, orderBy: { issuedAt: 'desc' }, take: 24, select: { id: true, number: true, status: true, totalMinor: true, paidMinor: true, adjustedMinor: true, dueOn: true, issuedAt: true, lines: true } })
   await auditPortalRead(tx, principal, 'portalStatements', residentId, ['Statement.number', 'Statement.totalMinor', 'Statement.lines'], rows.length)
   return {
@@ -120,7 +120,7 @@ export async function portalStatements(tx: Tx, principal: PortalPrincipal, resid
 
 /** The resident's funds balance (client-liability credits less debits) for a `trust_balance` grant. Read only. */
 export async function portalTrustBalance(tx: Tx, principal: PortalPrincipal, residentId: string) {
-  await requireScope(tx, principal, residentId, 'trust_balance')
+  await requirePortalScope(tx, principal, residentId, 'trust_balance')
   const ledger = await tx.residentTrustLedger.findFirst({ where: { residentId }, select: { id: true, status: true } })
   let balance = 0n
   if (ledger) {
@@ -129,4 +129,26 @@ export async function portalTrustBalance(tx: Tx, principal: PortalPrincipal, res
   }
   await auditPortalRead(tx, principal, 'portalTrustBalance', residentId, ['ResidentTrustLedger.balance'], 1)
   return { hasLedger: Boolean(ledger), status: ledger?.status ?? null, balanceMinor: balance.toString() }
+}
+
+/**
+ * `payments` (an MFA scope): the resident's payments, saved payment methods (brand and last four only) and any plan instalments.
+ * Read only; amounts are integer minor units as strings.
+ */
+export async function portalPayments(tx: Tx, principal: PortalPrincipal, residentId: string) {
+  await requirePortalScope(tx, principal, residentId, 'payments')
+  const [payments, methods, plans] = await Promise.all([
+    tx.payment.findMany({ where: { residentId }, orderBy: { initiatedAt: 'desc' }, take: 50, select: { id: true, reference: true, method: true, status: true, amountMinor: true, initiatedAt: true, settledAt: true, statement: { select: { id: true, number: true } } } }),
+    tx.paymentMethodToken.findMany({ where: { residentId, status: 'active' }, select: { id: true, provider: true, brand: true, last4: true, autopay: true } }),
+    tx.paymentPlan.findMany({ where: { residentId, status: 'active' }, select: { id: true, reference: true, totalMinor: true, statement: { select: { id: true, number: true } }, instalments: { orderBy: { number: 'asc' }, select: { id: true, number: true, dueOn: true, amountMinor: true, payment: { select: { status: true } } } } } }),
+  ])
+  await auditPortalRead(tx, principal, 'portalPayments', residentId, ['Payment.amountMinor', 'Payment.status', 'PaymentMethodToken.last4', 'PaymentPlan.totalMinor'], payments.length + plans.length)
+  return {
+    payments: payments.map(p => ({ id: p.id, reference: p.reference, method: p.method, status: p.status, amountMinor: String(p.amountMinor ?? 0n), initiatedAt: p.initiatedAt, settledAt: p.settledAt, statement: p.statement })),
+    methods,
+    plans: plans.map(plan => ({
+      id: plan.id, reference: plan.reference, totalMinor: String(plan.totalMinor ?? 0n), statement: plan.statement,
+      instalments: plan.instalments.map(row => ({ id: row.id, number: row.number, dueOn: row.dueOn ? row.dueOn.toISOString().slice(0, 10) : null, amountMinor: String(row.amountMinor ?? 0n), paymentStatus: row.payment?.status ?? null })),
+    })),
+  }
 }

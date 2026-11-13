@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { q, currentCommunity } from '../../lib/server';
 import { label, money, when } from '../../lib/format';
+import { instalmentState } from '@/features/keystone/billing/ar';
 import { Page, Section, Row, Empty, Meta, Title, Stat } from '../../components/ui';
 import { BillingAction } from '../../components/BillingAction';
 
@@ -8,6 +9,7 @@ type Line = { kind: string; description: string; from: string; to: string; days:
 type Payment = { id: string; method: string; status: string; amountMinor: string; settledAt: string | null; initiatedAt: string | null; failureCode: string; autopay: boolean };
 type Credit = { id: string; amountMinor: string; remainingMinor: string; status: string };
 type Adjustment = { id: string; kind: string; amountMinor: string; reason: string; status: string };
+type Plan = { id: string; reference: string; status: string; totalMinor: string; instalmentCount: number; cancelledReason: string; instalments: { id: string; number: number; dueOn: string; amountMinor: string; attempts: number; payment: { status: string; failureCode: string } | null }[] };
 type Statement = {
   id: string; number: string; status: string; totalMinor: string; paidMinor: string; adjustedMinor: string; dueOn: string | null; issuedAt: string | null; lines: Line[];
   resident: { id: string; firstName: string; lastName: string } | null; period: { month: string } | null;
@@ -19,12 +21,16 @@ const kindLabel: Record<string, string> = { rent: 'Apartment rent', second_perso
 export default async function StatementPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { community } = await currentCommunity(null);
-  const data = await q<{ statement: Statement | null; payments: Payment[]; adjustments: Adjustment[]; credits: Credit[] }>(`query S($id: ID!) {
+  const data = await q<{ statement: Statement | null; payments: Payment[]; adjustments: Adjustment[]; credits: Credit[]; paymentPlans?: Plan[] }>(`query S($id: ID!) {
     statement(where: { id: $id }) { id number status totalMinor paidMinor adjustedMinor dueOn issuedAt lines resident { id firstName lastName } period { month } }
     adjustments: balanceAdjustments(where: { statement: { id: { equals: $id } } }, orderBy: { createdAt: desc }, take: 50) { id kind amountMinor reason status }
     payments(where: { statement: { id: { equals: $id } } }, orderBy: { initiatedAt: desc }, take: 50) { id method status amountMinor settledAt initiatedAt failureCode autopay }
   }`, { id }).catch(() => null);
   if (!data?.statement) notFound();
+  // Payment plans are read with payments access; without it the section is simply not shown.
+  const plans = (await q<{ paymentPlans: Plan[] }>(`query P($id: ID!) { paymentPlans(where: { statement: { id: { equals: $id } } }, orderBy: { createdAt: desc }, take: 10) { id reference status totalMinor instalmentCount cancelledReason instalments(orderBy: { number: asc }) { id number dueOn amountMinor attempts payment { status failureCode } } } }`, { id }).catch(() => ({ paymentPlans: [] as Plan[] }))).paymentPlans;
+  const activePlan = plans.find(p => p.status === 'active') ?? null;
+  const today = new Date().toISOString().slice(0, 10);
   const s = data.statement;
   // Money on account for this resident that no statement took (an overpayment); it is applied or refunded from here.
   const credits = s.resident ? (await q<{ residentCredits: Credit[] }>(`query C($r: ID!) { residentCredits(where: { resident: { id: { equals: $r } }, status: { equals: "open" } }, take: 20) { id amountMinor remainingMinor status } }`, { r: s.resident.id }).catch(() => ({ residentCredits: [] as Credit[] }))).residentCredits : [];
@@ -54,9 +60,36 @@ export default async function StatementPage({ params }: { params: Promise<{ id: 
                 { name: 'reason', label: 'Why', required: true },
               ]}>{text}</BillingAction>
             ))}
+            {!activePlan ? (
+              <BillingAction op="plan.create" input={{ statementId: s.id }} fields={[
+                { name: 'instalments', label: 'Number of monthly instalments (2 to 24)', required: true, defaultValue: '3' },
+                { name: 'firstDueOn', label: 'First instalment due', type: 'date', required: true },
+              ]}>Set up a payment plan</BillingAction>
+            ) : null}
           </div>
         ) : null}
       </Section>
+      {plans.map(plan => (
+        <Section key={plan.id} title={`Payment plan ${plan.reference}`} aside={plan.status === 'active' ? <BillingAction op="plan.cancel" input={{ planId: plan.id }} fields={[{ name: 'reason', label: 'Why', required: true }]}>Cancel plan</BillingAction> : <Title status={plan.status}>{label(plan.status)}</Title>}>
+          <Meta>{money(plan.totalMinor)} in {plan.instalmentCount} instalments. A declined instalment is not charged again until someone presses Retry; stored-card runs skip this statement.{plan.cancelledReason ? ` Cancelled: ${plan.cancelledReason}` : ''}</Meta>
+          {plan.instalments.map(row => {
+            const state = instalmentState({ dueOn: row.dueOn.slice(0, 10), paymentStatus: row.payment?.status ?? null }, today);
+            return (
+              <Row key={row.id}>
+                <div className="min-w-0 flex-1 basis-60 space-y-0.5">
+                  <Title status={state === 'paid' ? 'paid' : state === 'declined' || state === 'overdue' ? 'overdue' : state === 'in_flight' ? 'pending' : 'open'}>Instalment {row.number} · {label(state)}</Title>
+                  <Meta>Due {when(row.dueOn, tz, 'date')}{row.attempts ? ` · ${row.attempts} attempt${row.attempts === 1 ? '' : 's'}` : ''}{row.payment?.failureCode ? ` · ${row.payment.failureCode}` : ''}</Meta>
+                </div>
+                <span className="flex flex-wrap items-center gap-2 text-sm tabular-nums">
+                  {money(row.amountMinor)}
+                  {plan.status === 'active' && (state === 'due' || state === 'overdue' || state === 'upcoming') ? <BillingAction op="plan.charge_instalment" input={{ instalmentId: row.id }} confirm={`Charge instalment ${row.number} to the saved card now?`}>Charge</BillingAction> : null}
+                  {plan.status === 'active' && state === 'declined' ? <BillingAction op="plan.retry_instalment" input={{ instalmentId: row.id }} confirm={`Instalment ${row.number} was declined. Charge it again now?`}>Retry</BillingAction> : null}
+                </span>
+              </Row>
+            );
+          })}
+        </Section>
+      ))}
       {credits.length ? (
         <Section title="Credit on account">
           {credits.map(c => (

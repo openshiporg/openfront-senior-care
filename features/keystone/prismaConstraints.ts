@@ -18,6 +18,9 @@ export const COMPOUND_UNIQUES: Record<string, string[]> = {
   ResidentTrustLedger: ['@@unique([residentId, accountId], map: "ResidentTrustLedger_resident_account_key")'],
   TrustReconciliation: ['@@unique([accountId, month], map: "TrustReconciliation_account_month_key")'],
   CensusEvent: ['@@unique([stayId, seq], map: "CensusEvent_stay_seq_key")'],
+  PaymentPlanInstalment: ['@@unique([planId, number], map: "PaymentPlanInstalment_plan_number_key")'],
+  TrustStatement: ['@@unique([ledgerId, quarter], map: "TrustStatement_ledger_quarter_key")'],
+  InterestAllocationRun: ['@@unique([accountId, month], map: "InterestAllocationRun_account_month_key")'],
 }
 
 export function addDatabaseConstraints(schema: string): string {
