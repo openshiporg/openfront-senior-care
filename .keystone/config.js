@@ -188,7 +188,7 @@ var init_errors = __esm({
       PLACE_UNAVAILABLE: "PLACE_UNAVAILABLE",
       RATE_LIMITED: "RATE_LIMITED",
       PROJECTION_MISMATCH: "PROJECTION_MISMATCH",
-      /** Protected data would reach a provider that may not receive it (no_phi, sandbox with real subjects, lapsed BAA). */
+      /** Protected data would reach a provider that may not receive it (no_phi, lapsed BAA). */
       INFERENCE_PHI_BLOCKED: "INFERENCE_PHI_BLOCKED",
       /** OperatorSettings.inferencePolicy does not allow this provider class. */
       INFERENCE_POLICY_REFUSED: "INFERENCE_POLICY_REFUSED"
@@ -3734,8 +3734,8 @@ var InferenceProvider = (0, import_core15.list)({
   fields: {
     key: systemText({ indexed: "unique", required: true }),
     name: systemText({ required: true }),
-    adapter: fixedChoice(["self_hosted_openai_compat", "bedrock", "azure_openai", "sandbox_fixture"]),
-    mode: fixedChoice(["self_hosted", "baa_hosted", "sandbox", "no_phi"]),
+    adapter: fixedChoice(["self_hosted_openai_compat", "bedrock", "azure_openai", "builtin_rules"]),
+    mode: fixedChoice(["self_hosted", "baa_hosted", "no_phi"]),
     endpoint: systemText(),
     model: systemText(),
     processorRegistration: (0, import_fields15.relationship)({ ref: "ProcessorRegistration", ...ro }),
@@ -3752,8 +3752,8 @@ var InferenceCall = (0, import_core15.list)({
     purpose: fixedChoice(["extract", "summarise", "draft_note", "classify", "workflow_build", "workflow_step"]),
     provider: systemText({ required: true }),
     inferenceProvider: (0, import_fields15.relationship)({ ref: "InferenceProvider", ...ro }),
-    providerClass: fixedChoice(["sandbox_fixture", "self_hosted", "baa_hosted", "other"]),
-    mode: fixedChoice(["self_hosted", "baa_hosted", "sandbox", "no_phi", "none"]),
+    providerClass: fixedChoice(["self_hosted", "baa_hosted", "other"]),
+    mode: fixedChoice(["self_hosted", "baa_hosted", "no_phi", "none"]),
     model: systemText(),
     outcome: fixedChoice(["ok", "refused_policy", "error", "timeout", "invalid_output"]),
     policyAtCall: systemText(),
@@ -9331,8 +9331,8 @@ async function seedClinical(uow, actor = systemActor("seed")) {
     await receiveSupply(uow, actor, { communityId: community3.id, kind: "ekit", label: "Emergency kit A (invented)", unit: "dose", quantity: 12, unitLocationId: kit?.id ?? null });
     out.supplies += 1;
   }
-  if (!await tx.inferenceProvider.findUnique({ where: { key: "sandbox" } })) {
-    await tx.inferenceProvider.create({ data: { key: "sandbox", name: "Sandbox fixtures (synthetic data only)", adapter: "sandbox_fixture", mode: "sandbox", model: "sandbox-fixture@1", isDefault: true, status: "active" } });
+  if (!await tx.inferenceProvider.findUnique({ where: { key: "builtin-rules" } })) {
+    await tx.inferenceProvider.create({ data: { key: "builtin-rules", name: "Built-in rules engine (runs on this server)", adapter: "builtin_rules", mode: "self_hosted", model: "builtin-rules@1", isDefault: true, status: "active" } });
     out.inferenceProviders = 1;
   }
   await generateAdministrationSlots(uow, community3.id);
@@ -10139,11 +10139,17 @@ var stripeAdapter = {
   key: "stripe",
   async charge(input) {
     try {
+      let customer = input.customer;
+      if (!customer && input.paymentMethod && /^pm_/.test(input.paymentMethod) && !/^pm_card_/.test(input.paymentMethod)) {
+        const pm = await stripeCall(`/payment_methods/${encodeURIComponent(input.paymentMethod)}`, "GET", null);
+        if (pm.status === 200 && typeof pm.json.customer === "string") customer = pm.json.customer;
+      }
       const { status, json: json14 } = await stripeCall("/payment_intents", "POST", {
         amount: input.amountMinor.toString(),
         currency: input.currencyCode.toLowerCase(),
         confirm: "true",
         payment_method: input.paymentMethod || "pm_card_visa",
+        ...customer ? { customer, off_session: "true" } : {},
         "automatic_payment_methods[enabled]": "true",
         "automatic_payment_methods[allow_redirects]": "never",
         description: input.description,
@@ -10230,6 +10236,30 @@ var terminalAdapter = {
 var ADAPTERS = { stripe: stripeAdapter, manual: manualAdapter, terminal: terminalAdapter };
 var adapterFor = (key) => ADAPTERS[key] ?? manualAdapter;
 var cardConfigured = () => /^(sk|rk)_test_/.test(process.env.STRIPE_SECRET_KEY ?? "");
+async function saveCard(input) {
+  try {
+    const meta = Object.fromEntries(Object.entries(input.metadata ?? {}).map(([k, v]) => [`metadata[${k}]`, v]));
+    const cus = await stripeCall("/customers", "POST", { name: input.name.slice(0, 120), ...input.email ? { email: input.email } : {}, ...meta }, `${input.idempotencyKey}:customer`);
+    if (cus.status >= 400 || !cus.json.id) return { ok: false, message: "The card processor could not start saving the card." };
+    const seti = await stripeCall("/setup_intents", "POST", {
+      customer: cus.json.id,
+      payment_method: input.paymentMethod,
+      confirm: "true",
+      usage: "off_session",
+      "automatic_payment_methods[enabled]": "true",
+      "automatic_payment_methods[allow_redirects]": "never",
+      ...meta
+    }, `${input.idempotencyKey}:setup`);
+    if (seti.status >= 400) return { ok: false, message: String(seti.json.error?.message ?? "The card was not accepted.") };
+    if (seti.json.status !== "succeeded") return { ok: false, message: "The bank needs the cardholder to confirm this card. Try another card." };
+    const pmId = String(seti.json.payment_method ?? "");
+    const pm = await stripeCall(`/payment_methods/${encodeURIComponent(pmId)}`, "GET", null);
+    const card = pm.json.card;
+    return { ok: true, customer: String(cus.json.id), paymentMethod: pmId, brand: card?.brand ?? "card", last4: card?.last4 ?? "" };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error && /set up|test keys/.test(error.message) ? error.message : "The card processor did not answer. Try again in a moment." };
+  }
+}
 
 // features/keystone/billing/payments.ts
 var CURRENCY = "USD";
@@ -10540,7 +10570,7 @@ async function chargeAutopayForPeriod(db, actor, input) {
       results.push({ statementId: statement.id, status: "in_flight" });
       continue;
     }
-    const prior = await db.payment.count({ where: { statementId: statement.id, autopay: true, status: "failed" } });
+    const prior = await db.payment.count({ where: { statementId: statement.id, method: { in: ["card", "ach"] }, status: "failed" } });
     if (prior > 0) {
       results.push({ statementId: statement.id, status: "declined_earlier" });
       continue;
@@ -11288,7 +11318,7 @@ var import_node_crypto18 = require("node:crypto");
 init_errors();
 init_actor();
 
-// features/keystone/lib/inference/fixtures.ts
+// features/keystone/lib/inference/rules.ts
 var get = (data, label2) => data.find((d) => d.label === label2)?.text ?? "";
 var FALL = /\b(fell|had a fall|was found on the floor|found (?:her|him|them|the resident)? ?(?:sitting |lying )?on the floor|slid (?:out of|off|from) [^.]{1,40} (?:to|onto) the floor|lowered (?:her|him|them)? ?to the floor)\b/i;
 var NEGATED = /\b(no|denies|without|free of)\s+(?:a\s+)?(?:recent\s+)?falls?\b/i;
@@ -11346,7 +11376,7 @@ function draftCarePlan(data) {
   }
   return { summary: "Review the finding with the resident and family and update the plan.", items: [{ kind: "intervention", text: `Review: ${finding.slice(0, 120) || "workflow finding"}`, frequency: "once" }] };
 }
-var SANDBOX_FIXTURES = {
+var BUILTIN_RULES = {
   "extract.fall_from_note@1": (data) => {
     const events = fallSpans(get(data, "note"));
     return { outcome: events.length ? "found" : "none", events };
@@ -11397,25 +11427,25 @@ var bedrock = {
     throw new Error("The Bedrock adapter is not configured on this server.");
   }
 };
-var sandbox = {
+var builtinRules = {
   async complete(target, request) {
-    const fixture = SANDBOX_FIXTURES[request.task];
-    if (!fixture) throw new Error(`No sandbox fixture for ${request.task}.`);
-    const value = fixture(request.data);
+    const rule3 = BUILTIN_RULES[request.task];
+    if (!rule3) throw new Error(`The built-in rules engine has no rule for ${request.task}.`);
+    const value = rule3(request.data);
     const text17 = JSON.stringify(value);
-    return { text: text17, model: target.model || "sandbox-fixture", tokens: { input: request.data.reduce((n, d) => n + Math.ceil(d.text.length / 4), 0), output: Math.ceil(text17.length / 4) } };
+    return { text: text17, model: target.model || "builtin-rules", tokens: { input: request.data.reduce((n, d) => n + Math.ceil(d.text.length / 4), 0), output: Math.ceil(text17.length / 4) } };
   }
 };
 var ADAPTERS2 = {
   self_hosted_openai_compat: selfHosted,
   azure_openai: azure,
   bedrock,
-  sandbox_fixture: sandbox
+  builtin_rules: builtinRules
 };
 
 // features/keystone/lib/inference/gateway.ts
 var digest = (value) => (0, import_node_crypto18.createHash)("sha256").update(typeof value === "string" ? value : JSON.stringify(value)).digest("hex");
-var CLASS = { sandbox: "sandbox_fixture", self_hosted: "self_hosted", baa_hosted: "baa_hosted" };
+var CLASS = { self_hosted: "self_hosted", baa_hosted: "baa_hosted" };
 function policyProblem(provider, policy, request, now = /* @__PURE__ */ new Date()) {
   if (!provider) return { code: Codes.INFERENCE_POLICY_REFUSED, reason: "No inference provider is set up." };
   if (provider.status !== "active") return { code: Codes.INFERENCE_POLICY_REFUSED, reason: `Inference provider ${provider.key} is ${provider.status}.` };
@@ -11424,15 +11454,9 @@ function policyProblem(provider, policy, request, now = /* @__PURE__ */ new Date
     if (request.carriesPhi) return { code: Codes.INFERENCE_PHI_BLOCKED, reason: `Inference provider ${provider.key} is registered as no-PHI. Use a self-hosted model or one under a signed BAA.` };
     return null;
   }
-  if (provider.mode === "sandbox") {
-    if (!request.context.synthetic) return { code: Codes.INFERENCE_PHI_BLOCKED, reason: `Inference provider ${provider.key} is a sandbox and only sees synthetic data.` };
-    return null;
-  }
   if (provider.mode === "self_hosted") return null;
   if (provider.mode === "baa_hosted") {
-    const qaSynthetic = policy === "any_registered" && process.env.SENIOR_CARE_ENV === "qa" && request.context.synthetic;
     if (policy === "self_hosted_only") return { code: Codes.INFERENCE_POLICY_REFUSED, reason: `The operator's inference policy is self-hosted only; ${provider.key} is a BAA-hosted provider.` };
-    if (qaSynthetic) return null;
     const reg = provider.processorRegistration;
     if (!reg || reg.status !== "active" || reg.effectiveTo && reg.effectiveTo.getTime() < now.getTime()) {
       return { code: Codes.INFERENCE_PHI_BLOCKED, reason: `Inference provider ${provider.key} has no active BAA registration.` };
@@ -12192,12 +12216,18 @@ async function recordSchedule(uow, actor, input) {
     if (stay?.residentId !== resident3.id) throw new DomainError(Codes.INVALID_INPUT, "That stay is not this resident's.");
   }
   const live = await uow.tx.patientLiabilitySchedule.findMany({ where: { residentId: resident3.id, status: "effective" }, orderBy: { effectiveFrom: "asc" } });
+  const superseded = [];
+  const endDated = [];
+  const nextLater = live.map((row) => iso3(row.effectiveFrom)).find((rowFrom) => rowFrom > from) ?? null;
+  const to = nextLater ? addDays(nextLater, -1) : null;
   for (const row of live) {
     const rowFrom = iso3(row.effectiveFrom);
-    if (rowFrom >= from) {
+    if (rowFrom === from) {
       await uow.tx.patientLiabilitySchedule.update({ where: { id: row.id }, data: { status: "superseded", version: { increment: 1 } } });
-    } else if (!row.effectiveTo || iso3(row.effectiveTo) >= from) {
+      superseded.push(row.id);
+    } else if (rowFrom < from && (!row.effectiveTo || iso3(row.effectiveTo) >= from)) {
       await uow.tx.patientLiabilitySchedule.update({ where: { id: row.id }, data: { effectiveTo: day9(addDays(from, -1)), version: { increment: 1 } } });
+      endDated.push({ scheduleId: row.id, effectiveTo: addDays(from, -1) });
     }
   }
   const created = await uow.tx.patientLiabilitySchedule.create({
@@ -12209,12 +12239,13 @@ async function recordSchedule(uow, actor, input) {
       monthlyAmountMinor: input.monthlyAmountMinor,
       personalNeedsAllowanceMinor: input.personalNeedsAllowanceMinor,
       effectiveFrom: day9(from),
+      effectiveTo: to ? day9(to) : null,
       status: "effective",
       note: input.note ?? ""
     }
   });
-  auditCreate(uow, actor, "PatientLiabilitySchedule", created.id, "patient_liability.scheduled", { effectiveFrom: from, monthlyAmountMinor: input.monthlyAmountMinor.toString(), personalNeedsAllowanceMinor: input.personalNeedsAllowanceMinor.toString() });
-  return { scheduleId: created.id, effectiveFrom: from };
+  auditCreate(uow, actor, "PatientLiabilitySchedule", created.id, "patient_liability.scheduled", { effectiveFrom: from, effectiveTo: to, monthlyAmountMinor: input.monthlyAmountMinor.toString(), personalNeedsAllowanceMinor: input.personalNeedsAllowanceMinor.toString(), superseded, endDated });
+  return { scheduleId: created.id, effectiveFrom: from, effectiveTo: to, superseded, endDated };
 }
 
 // features/keystone/billing/period.ts
@@ -12761,6 +12792,73 @@ async function assertAuthorised(tx, ledgerId, amountMinor) {
   }
 }
 
+// features/keystone/trust/extras.ts
+var monthLength = (month) => {
+  const [y, m] = month.split("-").map(Number);
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
+};
+var monthEndOf = (month) => addDays(month, monthLength(month) - 1);
+function dailyBalanceSums(lines, ledgerIds, month) {
+  const days = monthLength(month);
+  const end = monthEndOf(month);
+  const out = new Map(ledgerIds.map((id) => [id, 0n]));
+  for (const id of ledgerIds) {
+    const own = lines.filter((line) => line.bucket === "client_liability" && line.ledgerId === id && line.effectiveOn <= end);
+    let sum = 0n;
+    for (let i = 0; i < days; i += 1) {
+      const d = addDays(month, i);
+      let balance = 0n;
+      for (const line of own) if (line.effectiveOn <= d) balance += line.side === "credit" ? line.amountMinor : -line.amountMinor;
+      if (balance > 0n) sum += balance;
+    }
+    out.set(id, sum);
+  }
+  return out;
+}
+function allocateInterest(interestMinor, weights) {
+  if (typeof interestMinor !== "bigint" || interestMinor <= 0n) throw new RangeError("The interest must be more than zero.");
+  const entries = [...weights.entries()].filter(([, weight]) => weight > 0n).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
+  if (!entries.length) throw new RangeError("No resident held funds in this account during the month.");
+  const shares = allocateMinor(interestMinor, entries.map(([, weight]) => weight.toString()));
+  return entries.map(([ledgerId, weightMinorDays], index) => ({ ledgerId, weightMinorDays, amountMinor: shares[index] })).filter((share) => share.amountMinor > 0n);
+}
+var quarterStart = (date3) => {
+  const [y, m] = date3.split("-").map(Number);
+  return `${y}-${String(Math.floor((m - 1) / 3) * 3 + 1).padStart(2, "0")}-01`;
+};
+var quarterEnd = (start) => {
+  const [y, m] = start.split("-").map(Number);
+  return monthEndOf(`${y}-${String(m + 2).padStart(2, "0")}-01`);
+};
+function quarterStatement(ledgerId, txs, start) {
+  const end = quarterEnd(start);
+  const delta = (tx) => tx.lines.filter((line) => line.bucket === "client_liability" && line.ledgerId === ledgerId).reduce((sum, line) => sum + (line.side === "credit" ? line.amountMinor : -line.amountMinor), 0n);
+  let opening = 0n;
+  for (const tx of txs) if (tx.effectiveOn < start) opening += delta(tx);
+  const within = txs.filter((tx) => tx.effectiveOn >= start && tx.effectiveOn <= end).sort((a, b) => a.effectiveOn < b.effectiveOn ? -1 : a.effectiveOn > b.effectiveOn ? 1 : a.reference < b.reference ? -1 : 1);
+  let running = opening;
+  let inMinor = 0n;
+  let outMinor = 0n;
+  const lines = [];
+  for (const tx of within) {
+    const d = delta(tx);
+    if (d === 0n) continue;
+    running += d;
+    if (d > 0n) inMinor += d;
+    else outMinor += -d;
+    lines.push({ date: tx.effectiveOn, reference: tx.reference, description: `${tx.kind.replace(/_/g, " ")}${tx.purpose ? `: ${tx.purpose}` : ""}`, inMinor: d > 0n ? d.toString() : "", outMinor: d < 0n ? (-d).toString() : "", balanceMinor: running.toString() });
+  }
+  return { start, end, openingMinor: opening, inMinor, outMinor, closingMinor: running, lines };
+}
+function trustRules(rules2) {
+  const r = rules2 ?? {};
+  const toMinor = (value, fallback) => typeof value === "number" || typeof value === "string" && /^\d+$/.test(value) ? BigInt(value) : fallback;
+  return {
+    resource: { limitMinor: toMinor(r.trustResourceThreshold?.value?.limitMinor, 200000n), marginMinor: toMinor(r.trustResourceThreshold?.value?.marginMinor, 20000n) },
+    authorisationOverMinor: toMinor(r.trustAuthorisationApproval?.value?.overMinor, 0n)
+  };
+}
+
 // features/keystone/trust/service.ts
 var CONVEYANCE_DAYS = 30;
 var iso5 = (value) => value ? value.toISOString().slice(0, 10) : "";
@@ -12788,8 +12886,17 @@ async function loadLedger(uow, ledgerId) {
   await lockRow(uow.tx, "TrustAccount", ledger.accountId);
   return ledger;
 }
+async function statedThrough(tx, ledgerId) {
+  const latest = await tx.trustStatement.findFirst({ where: { ledgerId }, orderBy: { quarter: "desc" }, select: { quarter: true } });
+  return latest?.quarter ? quarterEnd(iso5(latest.quarter)) : null;
+}
+async function assertNotStated(tx, ledgerId, on) {
+  const through = await statedThrough(tx, ledgerId);
+  if (through && on <= through) throw new DomainError(Codes.GUARD_FAILED, `That quarter's statement is already made (through ${through}); date it today.`, { reason: "quarter_stated", field: "effectiveOn" });
+}
 async function post2(uow, actor, tx, lines) {
   assertBalanced(lines);
+  for (const line of lines) if (line.ledgerId) await assertNotStated(uow.tx, line.ledgerId, line.effectiveOn);
   try {
     assertHistoricalMinimumBalances(await linesOfAccount(uow.tx, tx.accountId), lines);
   } catch (error) {
@@ -12829,6 +12936,7 @@ async function prepareWithdrawal(uow, actor, input) {
   const ledger = await loadLedger(uow, input.ledgerId);
   if (ledger.status !== (input.conveyance ? "closed" : "open")) throw new DomainError(Codes.GUARD_FAILED, input.conveyance ? "Close the ledger first." : "This trust ledger is closed.");
   const on = await effective(uow, ledger.communityId, input.effectiveOn);
+  await assertNotStated(uow.tx, ledger.id, on);
   if (!input.conveyance) await assertAuthorised(uow.tx, ledger.id, input.amountMinor);
   try {
     assertHistoricalMinimumBalances(await linesOfAccount(uow.tx, ledger.accountId), linesOf("withdrawal", ledger.id, input.amountMinor, on));
@@ -12989,75 +13097,6 @@ init_actor();
 init_cas();
 init_errors();
 init_sequence();
-
-// features/keystone/trust/extras.ts
-var monthLength = (month) => {
-  const [y, m] = month.split("-").map(Number);
-  return new Date(Date.UTC(y, m, 0)).getUTCDate();
-};
-var monthEndOf = (month) => addDays(month, monthLength(month) - 1);
-function dailyBalanceSums(lines, ledgerIds, month) {
-  const days = monthLength(month);
-  const end = monthEndOf(month);
-  const out = new Map(ledgerIds.map((id) => [id, 0n]));
-  for (const id of ledgerIds) {
-    const own = lines.filter((line) => line.bucket === "client_liability" && line.ledgerId === id && line.effectiveOn <= end);
-    let sum = 0n;
-    for (let i = 0; i < days; i += 1) {
-      const d = addDays(month, i);
-      let balance = 0n;
-      for (const line of own) if (line.effectiveOn <= d) balance += line.side === "credit" ? line.amountMinor : -line.amountMinor;
-      if (balance > 0n) sum += balance;
-    }
-    out.set(id, sum);
-  }
-  return out;
-}
-function allocateInterest(interestMinor, weights) {
-  if (typeof interestMinor !== "bigint" || interestMinor <= 0n) throw new RangeError("The interest must be more than zero.");
-  const entries = [...weights.entries()].filter(([, weight]) => weight > 0n).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
-  if (!entries.length) throw new RangeError("No resident held funds in this account during the month.");
-  const shares = allocateMinor(interestMinor, entries.map(([, weight]) => weight.toString()));
-  return entries.map(([ledgerId, weightMinorDays], index) => ({ ledgerId, weightMinorDays, amountMinor: shares[index] })).filter((share) => share.amountMinor > 0n);
-}
-var quarterStart = (date3) => {
-  const [y, m] = date3.split("-").map(Number);
-  return `${y}-${String(Math.floor((m - 1) / 3) * 3 + 1).padStart(2, "0")}-01`;
-};
-var quarterEnd = (start) => {
-  const [y, m] = start.split("-").map(Number);
-  return monthEndOf(`${y}-${String(m + 2).padStart(2, "0")}-01`);
-};
-function quarterStatement(ledgerId, txs, start) {
-  const end = quarterEnd(start);
-  const delta = (tx) => tx.lines.filter((line) => line.bucket === "client_liability" && line.ledgerId === ledgerId).reduce((sum, line) => sum + (line.side === "credit" ? line.amountMinor : -line.amountMinor), 0n);
-  let opening = 0n;
-  for (const tx of txs) if (tx.effectiveOn < start) opening += delta(tx);
-  const within = txs.filter((tx) => tx.effectiveOn >= start && tx.effectiveOn <= end).sort((a, b) => a.effectiveOn < b.effectiveOn ? -1 : a.effectiveOn > b.effectiveOn ? 1 : a.reference < b.reference ? -1 : 1);
-  let running = opening;
-  let inMinor = 0n;
-  let outMinor = 0n;
-  const lines = [];
-  for (const tx of within) {
-    const d = delta(tx);
-    if (d === 0n) continue;
-    running += d;
-    if (d > 0n) inMinor += d;
-    else outMinor += -d;
-    lines.push({ date: tx.effectiveOn, reference: tx.reference, description: `${tx.kind.replace(/_/g, " ")}${tx.purpose ? `: ${tx.purpose}` : ""}`, inMinor: d > 0n ? d.toString() : "", outMinor: d < 0n ? (-d).toString() : "", balanceMinor: running.toString() });
-  }
-  return { start, end, openingMinor: opening, inMinor, outMinor, closingMinor: running, lines };
-}
-function trustRules(rules2) {
-  const r = rules2 ?? {};
-  const toMinor = (value, fallback) => typeof value === "number" || typeof value === "string" && /^\d+$/.test(value) ? BigInt(value) : fallback;
-  return {
-    resource: { limitMinor: toMinor(r.trustResourceThreshold?.value?.limitMinor, 200000n), marginMinor: toMinor(r.trustResourceThreshold?.value?.marginMinor, 20000n) },
-    authorisationOverMinor: toMinor(r.trustAuthorisationApproval?.value?.overMinor, 0n)
-  };
-}
-
-// features/keystone/trust/more.ts
 var iso6 = (value) => value ? value.toISOString().slice(0, 10) : "";
 var day14 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 var DATE7 = /^\d{4}-\d{2}-\d{2}$/;
@@ -13086,6 +13125,7 @@ async function recordAuthorisation(uow, actor, input) {
   }
   const rules2 = await packRules(uow.tx, ledger.communityId);
   const needsSecond = limit === null || limit > rules2.authorisationOverMinor;
+  if (!needsSecond) await supersedeOthers(uow, "", ledger.id);
   const created = await uow.tx.trustAuthorisation.create({
     data: {
       communityId: ledger.communityId,
@@ -13102,7 +13142,6 @@ async function recordAuthorisation(uow, actor, input) {
   });
   auditCreate(uow, actor, "TrustAuthorisation", created.id, "trust.authorisation_recorded", { kinds, perWithdrawalLimitMinor: limit?.toString() ?? null, needsSecond });
   if (!needsSecond) {
-    await supersedeOthers(uow, created.id, ledger.id);
     return { authorisationId: created.id, status: "active", approvalRequestId: null };
   }
   const approval = await requestApproval(uow, actor, {
@@ -13124,10 +13163,12 @@ registerApplier("trust.authorise", async (uow, actor, request) => {
   const payload = request.payload;
   await lockRow(uow.tx, "TrustAuthorisation", payload.authorisationId);
   const row = await uow.tx.trustAuthorisation.findUniqueOrThrow({ where: { id: payload.authorisationId } });
-  const approved = await consumeApproval(uow, { requestId: request.id, action: "trust.authorise", targetList: "TrustAuthorisation", targetId: row.id, payload: request.payload });
-  if (approved.approverId && approved.approverId === row.recordedById) throw new DomainError(Codes.SELF_APPROVAL, "The person who recorded an authorisation cannot approve it.");
-  await casUpdate(uow, { model: "TrustAuthorisation", id: row.id, version: row.version, from: ["pending_approval"], to: "active", actor, eventType: "trust.authorisation_approved", approverId: approved.approverId });
+  if (row.approvalId !== request.id) throw new DomainError(Codes.APPROVAL_MISMATCH, "The approval was given for a different authorisation.");
+  const decision = await uow.tx.approvalDecision.findFirst({ where: { requestId: request.id, decision: "approve" }, orderBy: { at: "desc" }, select: { decidedById: true } });
+  const approved = { approverId: decision?.decidedById ?? null };
+  if (!approved.approverId || approved.approverId === row.recordedById) throw new DomainError(Codes.SELF_APPROVAL, "The person who recorded an authorisation cannot approve it.");
   await supersedeOthers(uow, row.id, payload.ledgerId);
+  await casUpdate(uow, { model: "TrustAuthorisation", id: row.id, version: row.version, from: ["pending_approval"], to: "active", actor, eventType: "trust.authorisation_approved", approverId: approved.approverId });
   return { authorisationId: row.id, status: "active" };
 }, { applyOnApprove: true });
 async function revokeAuthorisation(uow, actor, input) {
@@ -13145,7 +13186,8 @@ async function allocateAccountInterest(uow, actor, input) {
   if (!account || account.status !== "active") throw new DomainError(Codes.NOT_FOUND, "Trust account not found.");
   const rules2 = await packRules(uow.tx, account.communityId);
   const end = monthEndOf(input.month);
-  if (end >= localDate(rules2.timeZone, uow.now)) throw new DomainError(Codes.GUARD_FAILED, "Allocate a month's interest after the month has ended.", { reason: "month_not_over" });
+  const today = localDate(rules2.timeZone, uow.now);
+  if (end >= today) throw new DomainError(Codes.GUARD_FAILED, "Allocate a month's interest after the month has ended.", { reason: "month_not_over" });
   if (await uow.tx.interestAllocationRun.findFirst({ where: { accountId: account.id, month: day14(input.month) }, select: { id: true } })) throw new DomainError(Codes.GUARD_FAILED, "Interest for this month was already allocated. Reverse its entries to correct it.", { reason: "already_allocated" });
   const ledgers = await uow.tx.residentTrustLedger.findMany({ where: { accountId: account.id }, select: { id: true, residentId: true, communityId: true, status: true } });
   const existing = await linesOfAccount(uow.tx, account.id);
@@ -13159,7 +13201,9 @@ async function allocateAccountInterest(uow, actor, input) {
   const out = [];
   for (const share of shares) {
     const ledger = ledgers.find((l) => l.id === share.ledgerId);
-    const lines = linesFor("interest", { ledgerId: ledger.id, amountMinor: share.amountMinor, effectiveOn: end });
+    const through = await statedThrough(uow.tx, ledger.id);
+    const on = through && end <= through ? today : end;
+    const lines = linesFor("interest", { ledgerId: ledger.id, amountMinor: share.amountMinor, effectiveOn: on });
     assertBalanced(lines);
     const tx = await uow.tx.trustTransaction.create({
       data: {
@@ -13173,7 +13217,7 @@ async function allocateAccountInterest(uow, actor, input) {
         purpose: `Interest for ${input.month.slice(0, 7)}`,
         status: "posted",
         preparedById: actorUserId(actor),
-        effectiveOn: day14(end),
+        effectiveOn: day14(on),
         postedAt: uow.now
       }
     });
@@ -13233,13 +13277,15 @@ async function recordSuretyBond(uow, actor, input) {
   const account = await uow.tx.trustAccount.findUnique({ where: { id: input.accountId }, select: { id: true, communityId: true } });
   if (!account) throw new DomainError(Codes.NOT_FOUND, "Trust account not found.");
   const prior = await uow.tx.suretyBond.findFirst({ where: { accountId: account.id, status: "active" } });
+  if (prior) await casUpdate(uow, { model: "SuretyBond", id: prior.id, version: prior.version, from: ["active"], to: "replaced", actor, eventType: "trust.bond_replaced" });
   const bond = await uow.tx.suretyBond.create({ data: { communityId: account.communityId, accountId: account.id, carrier: input.carrier.trim(), bondNumber: input.bondNumber.trim(), amountMinor: input.amountMinor, effectiveFrom: day14(input.effectiveFrom), expiresOn: day14(input.expiresOn), status: "active", recordedById: actorUserId(actor) } });
-  if (prior) await casUpdate(uow, { model: "SuretyBond", id: prior.id, version: prior.version, from: ["active"], to: "replaced", actor, eventType: "trust.bond_replaced", data: { replacedById: bond.id } });
+  if (prior) await uow.tx.suretyBond.update({ where: { id: prior.id }, data: { replacedById: bond.id, version: { increment: 1 } } });
   auditCreate(uow, actor, "SuretyBond", bond.id, "trust.bond_recorded", { amountMinor: input.amountMinor.toString(), expiresOn: input.expiresOn, replaces: prior?.id ?? null });
   return { bondId: bond.id, replaces: prior?.id ?? null };
 }
 
 // features/keystone/mutations/billing.ts
+init_cas();
 var money2 = (value, field) => {
   try {
     return minorOf(value);
@@ -13298,6 +13344,27 @@ var HANDLERS2 = {
     community: byStatement,
     run: async () => ({}),
     external: (db, a, i) => chargeStatement(db, a, { statementId: i.statementId, method: i.method === "ach" ? "ach" : "card", amountMinor: money2(i.amountMinor, "amount"), tokenId: i.tokenId, idempotencyKey: String(i.__key) })
+  },
+  // Keep a card on file for a resident (Stripe customer + SetupIntent); card numbers never touch this app
+  "card.save": {
+    permissions: ["canManagePayments"],
+    community: byRecord2("Resident", "residentId"),
+    run: async () => ({}),
+    external: async (db, a, i) => {
+      const resident3 = await db.resident.findUnique({ where: { id: String(i.residentId ?? "") }, select: { id: true, communityId: true, firstName: true, lastName: true } });
+      if (!resident3) throw new DomainError(Codes.NOT_FOUND, "Resident not found.");
+      const pm = String(i.paymentMethodId ?? "").trim();
+      if (!/^pm_[A-Za-z0-9_]{3,100}$/.test(pm)) throw new DomainError(Codes.INVALID_INPUT, "Enter the card token from the card form (it starts with pm_).", { field: "paymentMethodId" });
+      const card = await saveCard({ idempotencyKey: String(i.__key), name: `${resident3.firstName} ${resident3.lastName}`.trim() || "Resident account", paymentMethod: pm, metadata: { resident: resident3.id } });
+      if (!card.ok) throw new DomainError(Codes.GUARD_FAILED, card.message, { reason: "card_not_saved" });
+      const autopay = i.autopay === true || i.autopay === "true";
+      const done = await command(db, { name: "card.save.record", actor: a, idempotencyKey: `${String(i.__key)}:record`, params: { residentId: resident3.id, paymentMethod: card.paymentMethod, autopay } }, async (uow) => {
+        const token = await uow.tx.paymentMethodToken.create({ data: { communityId: resident3.communityId, residentId: resident3.id, provider: "card", brand: card.brand, last4: card.last4, token: card.paymentMethod, autopay, status: "active" } });
+        auditCreate(uow, a, "PaymentMethodToken", token.id, "payment_method.saved", { brand: card.brand, last4: card.last4, autopay });
+        return { tokenId: token.id, brand: card.brand, last4: card.last4 };
+      });
+      return done.value;
+    }
   },
   "payment.check_status": { permissions: ["canManagePayments"], community: byRecord2("Payment", "paymentId"), run: async () => ({}), external: (db, a, i) => checkPaymentStatus(db, a, i.paymentId) },
   "refund.issue": { permissions: ["canIssueRefunds"], community: byRecord2("Refund", "refundId"), run: async () => ({}), external: (db, a, i) => issueRefund(db, a, i.refundId) },
