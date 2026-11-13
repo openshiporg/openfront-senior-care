@@ -8,7 +8,7 @@ import { DomainError, Codes } from '../lib/errors'
 import { nextReference } from '../lib/sequence'
 import type { UnitOfWork } from '../lib/unitOfWork'
 import { assertBalanced, assertHistoricalMinimumBalances, linesFor, TrustLedgerError, type TrustLine } from './ledger'
-import { linesOfAccount } from './service'
+import { linesOfAccount, statedThrough } from './service'
 export { assertAuthorised } from './authorisation'
 import { allocateInterest, bondStatus, dailyBalanceSums, monthEndOf, quarterEnd, quarterStart, quarterStatement, resourceAlert, trustRules, type StatementTx } from './extras'
 
@@ -118,11 +118,13 @@ export async function allocateAccountInterest(uow: UnitOfWork, actor: Actor, inp
   if (!account || account.status !== 'active') throw new DomainError(Codes.NOT_FOUND, 'Trust account not found.')
   const rules = await packRules(uow.tx, account.communityId)
   const end = monthEndOf(input.month)
-  if (end >= localDate(rules.timeZone, uow.now)) throw new DomainError(Codes.GUARD_FAILED, 'Allocate a month\'s interest after the month has ended.', { reason: 'month_not_over' })
+  const today = localDate(rules.timeZone, uow.now)
+  if (end >= today) throw new DomainError(Codes.GUARD_FAILED, 'Allocate a month\'s interest after the month has ended.', { reason: 'month_not_over' })
   if (await uow.tx.interestAllocationRun.findFirst({ where: { accountId: account.id, month: day(input.month) }, select: { id: true } })) throw new DomainError(Codes.GUARD_FAILED, 'Interest for this month was already allocated. Reverse its entries to correct it.', { reason: 'already_allocated' })
   const ledgers = await uow.tx.residentTrustLedger.findMany({ where: { accountId: account.id }, select: { id: true, residentId: true, communityId: true, status: true } })
   const existing = await linesOfAccount(uow.tx, account.id)
-  // Interest is earned by the funds held during the month; a ledger closed before the month ends still earns its share, posted on the month's last day.
+  // Interest is earned by the funds held during the month; a ledger closed before the month ends still earns its share, posted on the month's last day
+  // (or today, when that quarter's statement is already made).
   let shares
   try {
     shares = allocateInterest(input.interestMinor, dailyBalanceSums(existing, ledgers.map(l => l.id), input.month))
@@ -133,12 +135,15 @@ export async function allocateAccountInterest(uow: UnitOfWork, actor: Actor, inp
   const out: { ledgerId: string; amountMinor: string; transactionId: string; weightMinorDays: string }[] = []
   for (const share of shares!) {
     const ledger = ledgers.find(l => l.id === share.ledgerId)!
-    const lines = linesFor('interest', { ledgerId: ledger.id, amountMinor: share.amountMinor, effectiveOn: end })
+    // A month already on a frozen quarterly statement for this ledger: the interest is dated today, so it shows on the next statement.
+    const through = await statedThrough(uow.tx, ledger.id)
+    const on = through && end <= through ? today : end
+    const lines = linesFor('interest', { ledgerId: ledger.id, amountMinor: share.amountMinor, effectiveOn: on })
     assertBalanced(lines)
     const tx = await uow.tx.trustTransaction.create({
       data: {
         communityId: ledger.communityId, residentId: ledger.residentId, ledgerId: ledger.id, accountId: account.id, reference: await nextReference(uow.tx, 'TRX', uow.now, 6), kind: 'interest',
-        amountMinor: share.amountMinor, purpose: `Interest for ${input.month.slice(0, 7)}`, status: 'posted', preparedById: actorUserId(actor), effectiveOn: day(end), postedAt: uow.now,
+        amountMinor: share.amountMinor, purpose: `Interest for ${input.month.slice(0, 7)}`, status: 'posted', preparedById: actorUserId(actor), effectiveOn: day(on), postedAt: uow.now,
       },
     })
     await uow.tx.trustLedgerLine.createMany({ data: lines.map(line => ({ communityId: ledger.communityId, residentId: ledger.residentId, transactionId: tx.id, ledgerId: line.ledgerId, accountId: account.id, bucket: line.bucket, side: line.side, amountMinor: line.amountMinor, effectiveOn: day(line.effectiveOn) })) })

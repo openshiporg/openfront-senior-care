@@ -83,6 +83,47 @@ describe('GL export', () => {
     ))
   })
 
+  it('r1 M1: cash = payments + deposits received + overpayments - refunds, and deposits held never go negative', () => {
+    const net = (lines: ReturnType<typeof glJournal>, account: string) => lines.filter(l => l.account === account).reduce((s, l) => s + l.debitMinor - l.creditMinor, 0n)
+    // The reviewer's P2 month: card 1,000, check 500, deposit 400 received then applied, adjustment 100, write-off 300, card refund 200.
+    const p2 = glJournal({
+      monthEnd: '2026-11-30', charges: [],
+      payments: [{ method: 'card', amountMinor: 100_000n, settledOn: '2026-11-13' }, { method: 'check', amountMinor: 50_000n, settledOn: '2026-11-13' }, { method: 'deposit', amountMinor: 40_000n, settledOn: '2026-11-13' }],
+      adjustments: [{ kind: 'adjustment', amountMinor: 10_000n, postedOn: '2026-11-13' }, { kind: 'write_off', amountMinor: 30_000n, postedOn: '2026-11-13' }],
+      deposits: [{ event: 'received', amountMinor: 40_000n, on: '2026-11-13' }],
+      refunds: [{ source: 'payment', amountMinor: 20_000n, issuedOn: '2026-11-13' }],
+    })
+    expect(net(p2, '1010')).toBe(170_000n)
+    expect(net(p2, '2300')).toBe(0n)
+    expect(net(p2, '1200')).toBe(-230_000n)
+    expect(p2.some(l => l.account === '4910' && l.debitMinor === 20_000n)).toBe(true)
+    // Any month: each deposit is received, then applied, refunded or forfeited (or still held); a refund of a payment or credit is cash out.
+    fc.assert(fc.property(
+      fc.array(fc.record({ amountMinor: fc.bigInt({ min: 1n, max: 1_000_000n }), fate: fc.constantFrom('held', 'applied', 'refunded', 'forfeited') }), { maxLength: 8 }),
+      fc.array(fc.record({ method: fc.constantFrom('card', 'check', 'ach'), amountMinor: fc.bigInt({ min: 1n, max: 1_000_000n }) }), { maxLength: 8 }),
+      fc.array(fc.bigInt({ min: 1n, max: 100_000n }), { maxLength: 4 }),
+      fc.array(fc.bigInt({ min: 1n, max: 100_000n }), { maxLength: 4 }),
+      (deposits, paid, overpaid, refunded) => {
+        const on = '2026-11-13'
+        const lines = glJournal({
+          monthEnd: '2026-11-30', charges: [], adjustments: [],
+          payments: [...paid.map(p => ({ ...p, settledOn: on })), ...deposits.filter(d => d.fate === 'applied').map(d => ({ method: 'deposit', amountMinor: d.amountMinor, settledOn: on }))],
+          deposits: [...deposits.map(d => ({ event: 'received' as const, amountMinor: d.amountMinor, on })), ...deposits.filter(d => d.fate === 'forfeited').map(d => ({ event: 'forfeited' as const, amountMinor: d.amountMinor, on }))],
+          credits: overpaid.map(amountMinor => ({ method: 'card', amountMinor, createdOn: on })),
+          refunds: [...deposits.filter(d => d.fate === 'refunded').map(d => ({ source: 'deposit' as const, amountMinor: d.amountMinor, issuedOn: on })), ...refunded.map(amountMinor => ({ source: 'payment' as const, amountMinor, issuedOn: on }))],
+        })
+        const sum = (xs: bigint[]) => xs.reduce((a, b) => a + b, 0n)
+        expect(sum(lines.map(l => l.debitMinor))).toBe(sum(lines.map(l => l.creditMinor)))
+        const depositsIn = sum(deposits.map(d => d.amountMinor))
+        const depositsRefunded = sum(deposits.filter(d => d.fate === 'refunded').map(d => d.amountMinor))
+        expect(net(lines, '1010')).toBe(sum(paid.map(p => p.amountMinor)) + depositsIn + sum(overpaid) - depositsRefunded - sum(refunded))
+        // 2300 is a liability: its credit balance is exactly what is still held, never a debit balance.
+        expect(-net(lines, '2300')).toBe(sum(deposits.filter(d => d.fate === 'held').map(d => d.amountMinor)))
+        expect(-net(lines, '2310')).toBe(sum(overpaid))
+      },
+    ))
+  })
+
   it('writes exact decimal text and neutralises spreadsheet formulas', () => {
     const csv = glCsv([{ date: '2026-10-31', account: '1200', accountName: 'AR', debitMinor: 123_456_789n, creditMinor: 0n, memo: '=HYPERLINK("x")' }], 'MRSL-2026-10')
     expect(csv).toContain('1234567.89')

@@ -381,8 +381,8 @@ export async function chargeAutopayForPeriod(db: Db, actor: Actor, input: { peri
     if (await db.paymentPlan.findFirst({ where: { statementId: statement.id, status: 'active' }, select: { id: true } })) { results.push({ statementId: statement.id, status: 'on_plan' }); continue }
     const open = await db.payment.findFirst({ where: { statementId: statement.id, method: { in: ['card', 'ach'] }, status: { in: ['pending', 'unknown'] } }, select: { id: true } })
     if (open) { results.push({ statementId: statement.id, status: 'in_flight' }); continue }
-    const prior = await db.payment.count({ where: { statementId: statement.id, autopay: true, status: 'failed' } })
-    // A decline is final: autopay does not retry it. Staff retry by hand.
+    const prior = await db.payment.count({ where: { statementId: statement.id, method: { in: ['card', 'ach'] }, status: 'failed' } })
+    // A decline is final: autopay does not retry it, nor charge past one (a declined plan instalment left by a cancelled plan). Staff retry by hand.
     if (prior > 0) { results.push({ statementId: statement.id, status: 'declined_earlier' }); continue }
     const out = await chargeStatement(db, actor, { statementId: statement.id, method: token.provider === 'ach' ? 'ach' : 'card', amountMinor: balance, tokenId: token.id, autopay: true, idempotencyKey: `autopay:${input.periodId}:${statement.id}` })
     results.push({ statementId: statement.id, status: out.status })

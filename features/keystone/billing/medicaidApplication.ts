@@ -137,8 +137,9 @@ export async function advanceApplication(uow: UnitOfWork, actor: Actor, input: {
 }
 
 /**
- * Records a patient liability determination as a schedule row from a date. The earlier open row ends the day before and the row
- * it replaced entirely becomes superseded; nothing is edited in place. Re-derive (or adjust a closed month) to bill it.
+ * Records a patient liability determination as a schedule row from a date. The earlier row in effect then ends the day before, a
+ * row starting the same day is superseded, and a later row already recorded keeps its dates (the new row ends the day before it).
+ * The result says which rows were end-dated or superseded; nothing is edited in place. Re-derive (or adjust a closed month) to bill it.
  */
 export async function recordSchedule(uow: UnitOfWork, actor: Actor, input: { residentId: string; stayId?: string | null; applicationId?: string | null; monthlyAmountMinor: bigint; personalNeedsAllowanceMinor: bigint; effectiveFrom: string; note?: string }) {
   if (input.monthlyAmountMinor < 0n) throw new DomainError(Codes.INVALID_INPUT, 'The liability cannot be negative.', { field: 'monthlyAmountMinor' })
@@ -152,23 +153,30 @@ export async function recordSchedule(uow: UnitOfWork, actor: Actor, input: { res
     if (stay?.residentId !== resident.id) throw new DomainError(Codes.INVALID_INPUT, 'That stay is not this resident\'s.')
   }
   const live = await uow.tx.patientLiabilitySchedule.findMany({ where: { residentId: resident.id, status: 'effective' }, orderBy: { effectiveFrom: 'asc' } })
+  const superseded: string[] = []
+  const endDated: { scheduleId: string; effectiveTo: string }[] = []
+  // A later determination already recorded keeps its dates: the new row runs up to the day before it (a late or retroactive notice).
+  const nextLater = live.map(row => iso(row.effectiveFrom)!).find(rowFrom => rowFrom > from) ?? null
+  const to = nextLater ? addDays(nextLater, -1) : null
   for (const row of live) {
     const rowFrom = iso(row.effectiveFrom)!
-    if (rowFrom >= from) {
+    if (rowFrom === from) {
       // Replaced from its first day: superseded, kept as history.
       await uow.tx.patientLiabilitySchedule.update({ where: { id: row.id }, data: { status: 'superseded', version: { increment: 1 } } })
-    } else if (!row.effectiveTo || iso(row.effectiveTo)! >= from) {
+      superseded.push(row.id)
+    } else if (rowFrom < from && (!row.effectiveTo || iso(row.effectiveTo)! >= from)) {
       await uow.tx.patientLiabilitySchedule.update({ where: { id: row.id }, data: { effectiveTo: day(addDays(from, -1)), version: { increment: 1 } } })
+      endDated.push({ scheduleId: row.id, effectiveTo: addDays(from, -1) })
     }
   }
   const created = await uow.tx.patientLiabilitySchedule.create({
     data: {
       communityId: resident.communityId, residentId: resident.id, stayId: input.stayId ?? null, applicationId: input.applicationId ?? null, monthlyAmountMinor: input.monthlyAmountMinor,
-      personalNeedsAllowanceMinor: input.personalNeedsAllowanceMinor, effectiveFrom: day(from), status: 'effective', note: input.note ?? '',
+      personalNeedsAllowanceMinor: input.personalNeedsAllowanceMinor, effectiveFrom: day(from), effectiveTo: to ? day(to) : null, status: 'effective', note: input.note ?? '',
     },
   })
-  auditCreate(uow, actor, 'PatientLiabilitySchedule', created.id, 'patient_liability.scheduled', { effectiveFrom: from, monthlyAmountMinor: input.monthlyAmountMinor.toString(), personalNeedsAllowanceMinor: input.personalNeedsAllowanceMinor.toString() })
-  return { scheduleId: created.id, effectiveFrom: from }
+  auditCreate(uow, actor, 'PatientLiabilitySchedule', created.id, 'patient_liability.scheduled', { effectiveFrom: from, effectiveTo: to, monthlyAmountMinor: input.monthlyAmountMinor.toString(), personalNeedsAllowanceMinor: input.personalNeedsAllowanceMinor.toString(), superseded, endDated })
+  return { scheduleId: created.id, effectiveFrom: from, effectiveTo: to, superseded, endDated }
 }
 
 /**

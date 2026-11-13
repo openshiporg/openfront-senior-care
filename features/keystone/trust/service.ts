@@ -8,6 +8,7 @@ import { nextReference } from '../lib/sequence'
 import type { UnitOfWork } from '../lib/unitOfWork'
 import { assertBalanced, assertHistoricalMinimumBalances, linesFor, reconcile, reverseLines, TrustLedgerError, type TrustLine } from './ledger'
 import { assertAuthorised } from './authorisation'
+import { quarterEnd } from './extras'
 
 /**
  * Resident trust (STATE-MACHINES §13). Money is BigInt minor units; every ledger is append-only; a balance is the sum of
@@ -47,8 +48,21 @@ async function loadLedger(uow: UnitOfWork, ledgerId: string) {
   return ledger
 }
 
+/** The last day already on a frozen quarterly statement for this ledger (the end of its latest statement's quarter), or null. */
+export async function statedThrough(tx: Tx, ledgerId: string) {
+  const latest = await tx.trustStatement.findFirst({ where: { ledgerId }, orderBy: { quarter: 'desc' }, select: { quarter: true } })
+  return latest?.quarter ? quarterEnd(iso(latest.quarter)) : null
+}
+
+/** A quarterly statement is frozen, so nothing may be dated into a quarter it already covers: the entry is dated today instead. */
+export async function assertNotStated(tx: Tx, ledgerId: string, on: string) {
+  const through = await statedThrough(tx, ledgerId)
+  if (through && on <= through) throw new DomainError(Codes.GUARD_FAILED, `That quarter's statement is already made (through ${through}); date it today.`, { reason: 'quarter_stated', field: 'effectiveOn' })
+}
+
 async function post(uow: UnitOfWork, actor: Actor, tx: { id: string; communityId: string | null; residentId: string | null; ledgerId: string; accountId: string }, lines: TrustLine[]) {
   assertBalanced(lines)
+  for (const line of lines) if (line.ledgerId) await assertNotStated(uow.tx, line.ledgerId, line.effectiveOn)
   try {
     assertHistoricalMinimumBalances(await linesOfAccount(uow.tx, tx.accountId), lines)
   } catch (error) {
@@ -98,6 +112,7 @@ export async function prepareWithdrawal(uow: UnitOfWork, actor: Actor, input: { 
   const ledger = await loadLedger(uow, input.ledgerId)
   if (ledger.status !== (input.conveyance ? 'closed' : 'open')) throw new DomainError(Codes.GUARD_FAILED, input.conveyance ? 'Close the ledger first.' : 'This trust ledger is closed.')
   const on = await effective(uow, ledger.communityId, input.effectiveOn)
+  await assertNotStated(uow.tx, ledger.id, on)
   // A withdrawal relies on the resident's written authorisation (SM §13.2). Paying out a closed ledger is a legal duty and does not.
   if (!input.conveyance) await assertAuthorised(uow.tx, ledger.id, input.amountMinor)
   // Fail early on a short balance, before anyone is asked to sign.

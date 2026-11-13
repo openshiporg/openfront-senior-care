@@ -7,6 +7,8 @@ import { usePaymentAdapter } from '../billing/payments'
 import { portalPay } from '../billing/portalPay'
 import { glExport } from '../billing/glExport'
 import { trustAlerts } from '../trust/more'
+import { quarterStatement } from '../trust/extras'
+import { scheduleForMonth } from '../billing/medicaidApplication'
 import { ROLES, COMMUNITY } from '../seed/operator'
 import type { Permission } from '../access'
 import { loadOperatorSetup } from './setup'
@@ -102,6 +104,22 @@ describe.skipIf(!hasTestDatabase)('phase 3b money (database)', () => {
     expect((await prisma.statement.findUniqueOrThrow({ where: { id: statement.id } })).paidMinor).toBe(33_334n)
   }, 120_000)
 
+  it('r1 backlog: a plan cancelled with a declined instalment is not then charged in full by autopay', async () => {
+    const { statement, token } = await newStatement(600_00n)
+    await prisma.paymentMethodToken.update({ where: { id: token.id }, data: { autopay: true } })
+    const plan = await bc(office, 'plan.create', { statementId: statement.id, instalments: 3, firstDueOn: '2026-11-01' })
+    const rows = await prisma.paymentPlanInstalment.findMany({ where: { planId: plan.planId }, orderBy: { number: 'asc' } })
+    fake.script('decline')
+    expect((await bc(office, 'plan.charge_instalment', { instalmentId: rows[0].id })).status).toBe('failed')
+    await bc(office, 'plan.cancel', { planId: plan.planId, reason: 'Family asked to stop' })
+    const calls = fake.calls.charge
+    fake.script('succeed')
+    const run = await bc(office, 'billing.autopay', { periodId })
+    expect(run.results.find((r: { statementId: string }) => r.statementId === statement.id)).toMatchObject({ status: 'declined_earlier' })
+    expect(fake.calls.charge).toBe(calls)
+    expect((await prisma.statement.findUniqueOrThrow({ where: { id: statement.id } })).paidMinor).toBe(0n)
+  }, 120_000)
+
   it('portal payments need the payments scope and two-step sign-in, and see only their own resident', async () => {
     const { resident, statement, token } = await newStatement(250_00n)
     const other = await newStatement(99_00n)
@@ -140,6 +158,35 @@ describe.skipIf(!hasTestDatabase)('phase 3b money (database)', () => {
     expect(await prisma.auditEvent.count({ where: { eventType: 'billing.gl_exported' } })).toBe(1)
   }, 120_000)
 
+  it('r1 M1: the GL export carries deposits received and refunds issued, so cash and deposits held tie to the ledger', async () => {
+    await prisma.operatorSettings.update({ where: { id: 1 }, data: { writeOffApprovalThresholdMinor: 10_000_00n, refundApprovalThresholdMinor: 10_000_00n } })
+    const { resident, statement, token } = await newStatement(5_000_00n)
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date())
+    const month = `${new Date().toISOString().slice(0, 7)}-01`
+    const parse = (csv: string) => csv.trim().split('\r\n').slice(1).map(line => line.match(/("(?:[^"]|"")*"|[^,]*)(,|$)/g)!.map(cell => cell.replace(/,$/, '')))
+    const netOf = (rows: string[][], account: string) => rows.filter(r => r[1] === account).reduce((s, r) => s + BigInt((r[3] || '0').replace('.', '')) - BigInt((r[4] || '0').replace('.', '')), 0n)
+    // Earlier tests in this file also paid today, so measure what this month's export gains from these postings.
+    const before = parse((await glExport(prisma as never, office.session, { communityId: COMMUNITY.id, month })).csv)
+    fake.script('succeed')
+    const card = await bc(office, 'payment.charge', { statementId: statement.id, method: 'card', amountMinor: '100000', tokenId: token.id })
+    await bc(office, 'payment.record', { statementId: statement.id, method: 'check', amountMinor: '50000', reference: '2207' })
+    const dep = await bc(office, 'deposit.receive', { communityId: COMMUNITY.id, residentId: resident.id, kind: 'security', amountMinor: '40000', method: 'check', receivedOn: today })
+    await bc(office, 'deposit.apply', { depositId: dep.depositId, statementId: statement.id })
+    await bc(office, 'adjustment.create', { statementId: statement.id, amountMinor: '10000', reason: 'Goodwill credit' })
+    await bc(office, 'writeoff.create', { statementId: statement.id, amountMinor: '30000', reason: 'Uncollectable' })
+    const refund = await bc(admin, 'refund.request', { paymentId: card.paymentId, amountMinor: '20000', reason: 'Double charge' })
+    await bc(admin, 'refund.issue', { refundId: refund.refundId })
+    const out = await glExport(prisma as never, office.session, { communityId: COMMUNITY.id, month })
+    const rows = parse(out.csv)
+    const net = (account: string) => netOf(rows, account) - netOf(before, account)
+    // 1010 = payments 1,500.00 + deposit 400.00 - refund 200.00; 2300 nets to zero (received then applied); AR falls by every credit to it.
+    expect(net('1010')).toBe(1_700_00n)
+    expect(net('2300')).toBe(0n)
+    expect(net('1200')).toBe(-2_300_00n)
+    expect(rows.some(r => r[1] === '4910' && r[3] === '200.00')).toBe(true)
+    expect(rows.reduce((s, r) => s + BigInt((r[3] || '0').replace('.', '')), 0n)).toBe(rows.reduce((s, r) => s + BigInt((r[4] || '0').replace('.', '')), 0n))
+  }, 120_000)
+
   it('a Medicaid application runs its clocks and its approved schedule feeds the liability, never edited', async () => {
     const { resident } = await newStatement(1n)
     const stay = await prisma.stay.create({ data: { reference: `P3BSTAY-${uniqueKey('s')}`, residentId: resident.id, communityId: COMMUNITY.id, setting: 'assisted_living', status: 'admitted', presence: 'in_house', admittedAt: new Date('2026-08-01T00:00:00Z') } })
@@ -161,6 +208,31 @@ describe.skipIf(!hasTestDatabase)('phase 3b money (database)', () => {
     expect(rows.map(r => [r.id, r.monthlyAmountMinor, r.effectiveTo?.toISOString().slice(0, 10) ?? null])).toEqual([[first.scheduleId, 120_000n, '2026-10-31'], [second.scheduleId, 135_000n, null]])
     await expect(prisma.patientLiabilitySchedule.update({ where: { id: first.scheduleId }, data: { monthlyAmountMinor: 1n } })).rejects.toThrow()
     await expect(prisma.patientLiabilitySchedule.delete({ where: { id: first.scheduleId } })).rejects.toThrow()
+  }, 120_000)
+
+  it('r1 M3: an earlier-dated determination recorded late fills its gap and never wipes a later one', async () => {
+    const { resident } = await newStatement(1n)
+    const rec = (effectiveFrom: string, monthlyAmountMinor: number) => bc(office, 'liability_schedule.record', { residentId: resident.id, monthlyAmountMinor, personalNeedsAllowanceMinor: 5_000, effectiveFrom })
+    await rec('2026-09-01', 120_000)
+    await rec('2026-11-01', 135_000)
+    const oct = await rec('2026-10-01', 128_000)
+    expect(oct).toMatchObject({ effectiveTo: '2026-10-31', superseded: [] })
+    const late = await rec('2026-09-15', 110_000)
+    // The command says what it end-dated: only the September row, to the 14th.
+    expect(late).toMatchObject({ effectiveFrom: '2026-09-15', effectiveTo: '2026-09-30', superseded: [] })
+    expect(late.endDated.map((e: { effectiveTo: string }) => e.effectiveTo)).toEqual(['2026-09-14'])
+    const same = await rec('2026-12-01', 140_000)
+    const replaced = await rec('2026-12-01', 141_000)
+    expect(replaced.superseded).toEqual([same.scheduleId])
+    const rows = await prisma.patientLiabilitySchedule.findMany({ where: { residentId: resident.id, status: 'effective' }, orderBy: { effectiveFrom: 'asc' } })
+    const live = rows.map(r => ({ id: r.id, residentId: r.residentId!, stayId: r.stayId, monthlyAmountMinor: r.monthlyAmountMinor, personalNeedsAllowanceMinor: r.personalNeedsAllowanceMinor, effectiveFrom: r.effectiveFrom!.toISOString().slice(0, 10), effectiveTo: r.effectiveTo?.toISOString().slice(0, 10) ?? null, status: r.status }))
+    expect(live.map(r => [r.effectiveFrom, r.effectiveTo, r.monthlyAmountMinor])).toEqual([
+      ['2026-09-01', '2026-09-14', 120_000n], ['2026-09-15', '2026-09-30', 110_000n], ['2026-10-01', '2026-10-31', 128_000n], ['2026-11-01', '2026-11-30', 135_000n], ['2026-12-01', null, 141_000n],
+    ])
+    // No gaps, no overlaps.
+    for (let i = 1; i < live.length; i += 1) expect(new Date(Date.parse(`${live[i - 1].effectiveTo}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10)).toBe(live[i].effectiveFrom)
+    expect(scheduleForMonth(live, '2026-10-01', '2026-10-31')?.monthlyAmountMinor).toBe(128_000n)
+    expect(scheduleForMonth(live, '2026-11-01', '2026-11-30')?.monthlyAmountMinor).toBe(135_000n)
   }, 120_000)
 
   it('trust: withdrawals need an authorisation, a large one needs a second approver; interest balances; statements, alerts and the bond', async () => {
@@ -225,5 +297,31 @@ describe.skipIf(!hasTestDatabase)('phase 3b money (database)', () => {
     const bond2 = await bc(trustApprover, 'trust.record_bond', { accountId: account.id, carrier: 'Acme Surety', bondNumber: 'B-2', amountMinor: 600_000, effectiveFrom: '2027-01-01', expiresOn: '2028-01-01' })
     expect(bond2.replaces).toBe(bond1.bondId)
     expect((await trustAlerts(prisma as never, account.id, today)).bondStatus.state).toBe('ok')
+  }, 180_000)
+
+  it('r1 M2: after a quarter is stated nothing is dated into it; late interest is dated today and opens the next quarter', async () => {
+    const account = await prisma.trustAccount.create({ data: { communityId: COMMUNITY.id, name: 'Resident funds M2', bankName: 'Ohio Valley Bank', last4: '5678', status: 'active' } })
+    const { resident } = await newStatement(1n)
+    const { ledgerId } = await bc(trustOfficer, 'trust.open_ledger', { communityId: COMMUNITY.id, residentId: resident.id, accountId: account.id, consentOnFile: true })
+    await bc(trustOfficer, 'trust.deposit', { ledgerId, amountMinor: 185_000, purpose: 'Savings', effectiveOn: '2026-07-01' })
+    await bc(trustOfficer, 'trust.quarterly_statements', { accountId: account.id, quarter: '2026-07-01' })
+    const q3 = await prisma.trustStatement.findFirstOrThrow({ where: { ledgerId, quarter: new Date('2026-07-01') } })
+    expect(q3.closingMinor).toBe(185_000n)
+    // A deposit or withdrawal dated into the stated quarter is refused.
+    await expect(bc(trustOfficer, 'trust.deposit', { ledgerId, amountMinor: 2_500, purpose: 'Late cheque', effectiveOn: '2026-08-15' })).rejects.toMatchObject({ code: 'GUARD_FAILED', details: { reason: 'quarter_stated' } })
+    await expect(bc(trustOfficer, 'trust.deposit', { ledgerId, amountMinor: 2_500, purpose: 'Late cheque', effectiveOn: '2026-09-30' })).rejects.toMatchObject({ details: { reason: 'quarter_stated' } })
+    await bc(trustOfficer, 'trust.deposit', { ledgerId, amountMinor: 2_500, purpose: 'Late cheque', effectiveOn: '2026-10-01' })
+    // September's interest, allocated after the Q3 statement: posted, but dated today, not 09-30.
+    const run = await bc(trustOfficer, 'trust.allocate_interest', { accountId: account.id, month: '2026-09-01', interestMinor: 624 })
+    const interest = await prisma.trustTransaction.findUniqueOrThrow({ where: { id: run.allocations[0].transactionId } })
+    expect(interest.effectiveOn!.toISOString().slice(0, 10) > '2026-09-30').toBe(true)
+    const lines = await prisma.trustLedgerLine.findMany({ where: { ledgerId, bucket: 'client_liability' } })
+    const balanceAt = (asOf: string) => lines.filter(l => l.effectiveOn!.toISOString().slice(0, 10) <= asOf).reduce((s, l) => s + (l.side === 'credit' ? l.amountMinor : -l.amountMinor), 0n)
+    // Q3 closing equals the ledger at 09-30, and Q4 opens where Q3 closed and shows the interest.
+    expect(balanceAt('2026-09-30')).toBe(q3.closingMinor)
+    const txs = await prisma.trustTransaction.findMany({ where: { ledgerId, status: 'posted' }, include: { lines: true } })
+    const q4 = quarterStatement(ledgerId, txs.map(tx => ({ reference: tx.reference ?? '', kind: tx.kind ?? '', purpose: tx.purpose ?? '', effectiveOn: tx.effectiveOn!.toISOString().slice(0, 10), ledgerId: tx.ledgerId ?? '', lines: tx.lines.map(l => ({ ledgerId: l.ledgerId, bucket: l.bucket as never, side: l.side as never, amountMinor: l.amountMinor, effectiveOn: l.effectiveOn!.toISOString().slice(0, 10) })) })), '2026-10-01')
+    expect(q4.openingMinor).toBe(q3.closingMinor)
+    expect(q4.inMinor).toBe(2_500n + 624n)
   }, 180_000)
 })

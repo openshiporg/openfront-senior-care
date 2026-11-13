@@ -116,7 +116,9 @@ export const GL_ACCOUNTS = {
     adjustment: { number: '4090', name: 'Prior month adjustments' },
     deposit_application: { number: '4095', name: 'Deposits applied' },
   } as Record<string, { number: string; name: string }>,
+  depositsForfeited: { number: '4096', name: 'Deposits forfeited' },
   adjustments: { number: '4900', name: 'Billing adjustments' },
+  refunds: { number: '4910', name: 'Refunds issued' },
   badDebt: { number: '6900', name: 'Bad debt written off' },
 } as const
 
@@ -124,13 +126,18 @@ export type GlLine = { date: string; account: string; accountName: string; debit
 
 /**
  * A balanced journal for one month: charges by kind and responsibility, settled payments by method, posted adjustments and
- * write-offs. Every entry is a debit and a credit of the same amount, so the journal always balances.
+ * write-offs, deposits received and forfeited, credits made from an overpayment, and refunds paid out. Every entry is a debit
+ * and a credit of the same amount, so the journal always balances; cash (1010) moves by payments + deposits + overpayments -
+ * refunds, and deposits held (2300) by received - applied - refunded - forfeited.
  */
 export function glJournal(input: {
   monthEnd: string
   charges: readonly { kind: string; responsibility: string; amountMinor: bigint }[]
   payments: readonly { method: string; amountMinor: bigint; settledOn: string }[]
   adjustments: readonly { kind: string; amountMinor: bigint; postedOn: string }[]
+  deposits?: readonly { event: 'received' | 'forfeited'; amountMinor: bigint; on: string }[]
+  credits?: readonly { method: string; amountMinor: bigint; createdOn: string }[]
+  refunds?: readonly { source: 'payment' | 'deposit' | 'credit'; amountMinor: bigint; issuedOn: string }[]
 }): GlLine[] {
   const out: GlLine[] = []
   const pair = (date: string, debit: { number: string; name: string }, credit: { number: string; name: string }, amount: bigint, memo: string) => {
@@ -140,6 +147,7 @@ export function glJournal(input: {
     out.push({ date, account: d.number, accountName: d.name, debitMinor: a, creditMinor: 0n, memo })
     out.push({ date, account: c.number, accountName: c.name, debitMinor: 0n, creditMinor: a, memo })
   }
+  const sourceOf = (method: string) => (method === 'deposit' ? GL_ACCOUNTS.depositsHeld : method === 'credit' ? GL_ACCOUNTS.residentCredits : GL_ACCOUNTS.cash)
   const sums = new Map<string, bigint>()
   for (const charge of input.charges) sums.set(`${charge.kind}|${charge.responsibility}`, (sums.get(`${charge.kind}|${charge.responsibility}`) ?? 0n) + charge.amountMinor)
   for (const key of [...sums.keys()].sort()) {
@@ -151,14 +159,32 @@ export function glJournal(input: {
   for (const p of input.payments) byPayment.set(`${p.settledOn}|${p.method}`, (byPayment.get(`${p.settledOn}|${p.method}`) ?? 0n) + p.amountMinor)
   for (const key of [...byPayment.keys()].sort()) {
     const [date, method] = key.split('|')
-    const source = method === 'deposit' ? GL_ACCOUNTS.depositsHeld : method === 'credit' ? GL_ACCOUNTS.residentCredits : GL_ACCOUNTS.cash
-    pair(date, source, GL_ACCOUNTS.arResident, byPayment.get(key)!, `Payments received: ${method}`)
+    pair(date, sourceOf(method), GL_ACCOUNTS.arResident, byPayment.get(key)!, `Payments received: ${method}`)
   }
   const byAdjustment = new Map<string, bigint>()
   for (const a of input.adjustments) byAdjustment.set(`${a.postedOn}|${a.kind}`, (byAdjustment.get(`${a.postedOn}|${a.kind}`) ?? 0n) + a.amountMinor)
   for (const key of [...byAdjustment.keys()].sort()) {
     const [date, kind] = key.split('|')
     pair(date, kind === 'write_off' ? GL_ACCOUNTS.badDebt : GL_ACCOUNTS.adjustments, GL_ACCOUNTS.arResident, byAdjustment.get(key)!, kind === 'write_off' ? 'Balances written off' : 'Balance adjustments')
+  }
+  const grouped = <T>(rows: readonly T[], keyOf: (row: T) => string, amountOf: (row: T) => bigint) => {
+    const sums = new Map<string, bigint>()
+    for (const row of rows) sums.set(keyOf(row), (sums.get(keyOf(row)) ?? 0n) + amountOf(row))
+    return [...sums.keys()].sort().map(key => [key.split('|'), sums.get(key)!] as const)
+  }
+  // A deposit received is cash held for the resident; one kept under the pack's rule becomes revenue. (Applied is a payment above.)
+  for (const [[date, event], amount] of grouped(input.deposits ?? [], d => `${d.on}|${d.event}`, d => d.amountMinor)) {
+    if (event === 'received') pair(date, GL_ACCOUNTS.cash, GL_ACCOUNTS.depositsHeld, amount, 'Deposits received')
+    else pair(date, GL_ACCOUNTS.depositsHeld, GL_ACCOUNTS.depositsForfeited, amount, 'Deposits forfeited')
+  }
+  // The part of a payment the statement could not take is held as a resident credit.
+  for (const [[date, method], amount] of grouped(input.credits ?? [], c => `${c.createdOn}|${c.method}`, c => c.amountMinor)) {
+    pair(date, sourceOf(method), GL_ACCOUNTS.residentCredits, amount, `Overpayment held as credit: ${method}`)
+  }
+  // Money paid back: a refunded deposit or credit leaves the liability; a refunded payment is a refund expense (the statement stays paid).
+  for (const [[date, source], amount] of grouped(input.refunds ?? [], r => `${r.issuedOn}|${r.source}`, r => r.amountMinor)) {
+    const debit = source === 'deposit' ? GL_ACCOUNTS.depositsHeld : source === 'credit' ? GL_ACCOUNTS.residentCredits : GL_ACCOUNTS.refunds
+    pair(date, debit, GL_ACCOUNTS.cash, amount, `Refunds issued: ${source}`)
   }
   return out
 }
