@@ -2,6 +2,7 @@ import { actorUserId, type Actor } from '../lib/actor'
 import { addDays, localDate } from '../lib/calendar'
 import { sha256 } from '../lib/canonical'
 import { auditCreate, lockRow, transition } from '../lib/cas'
+import { deriveCensusRange } from '../lib/censusDay'
 import { DomainError, Codes } from '../lib/errors'
 import { nextReference } from '../lib/sequence'
 import { assertCanDecide, assertIndependentComplianceReview } from '../lib/separationOfDuties'
@@ -254,8 +255,11 @@ export async function generateNhsnWeek(uow: UnitOfWork, actor: Actor, input: { c
   const ids = (community.identifiers ?? {}) as Record<string, string>
   const zone = community.timeZone || 'America/New_York'
   const end = weekEnd(input.weekStart)
-  const stays = await uow.tx.censusDay.findMany({ where: { communityId: input.communityId, date: { gte: day(input.weekStart), lte: day(end) }, presence: { in: ['in_house', 'on_leave_hold'] }, supersededById: null }, select: { stayId: true, stay: { select: { residentId: true } } } })
-  const residents = new Set(stays.map(s => s.stay?.residentId).filter((r): r is string => Boolean(r)))
+  const dates = Array.from({ length: 7 }, (_, n) => addDays(input.weekStart, n))
+  const byDay = await deriveCensusRange(uow.tx, input.communityId, dates)
+  const stayIds = [...new Set([...byDay.values()].flat().filter(r => r.presence === 'in_house' || r.presence === 'on_leave_hold').map(r => r.stayId))]
+  const stayRows = stayIds.length ? await uow.tx.stay.findMany({ where: { id: { in: stayIds } }, select: { residentId: true } }) : []
+  const residents = new Set(stayRows.map(s => s.residentId).filter((r): r is string => Boolean(r)))
   const facts = await uow.tx.immunisation.findMany({ where: { communityId: input.communityId, residentId: { in: [...residents] } }, select: { residentId: true, vaccine: true, status: true, givenAt: true, decidedAt: true, offeredAt: true } })
   const since = seasonStart(input.weekStart)
   const flu = vaccinatedSet(facts.map(f => ({ ...f, residentId: f.residentId! })), 'influenza', end, since)
