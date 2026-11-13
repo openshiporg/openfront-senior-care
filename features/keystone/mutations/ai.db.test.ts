@@ -20,7 +20,7 @@ import '../lib/censusCorrection'
  *  M2  an open count discrepancy freezes routine doses from that supply; an emergency dose with a reason is logged and tells the DON.
  *  G3  a fall described only in a progress note → finding with a span → post-fall huddle for the charge nurse → done → re-check closes it.
  *  G4  an AI-drafted care-plan update stays a Proposal until a nurse accepts it and signs the plan.
- *  G5  one InferenceCall per call, no content; self_hosted_only refuses a BAA provider; a sandbox never sees a real resident.
+ *  G5  one InferenceCall per call, no content; self_hosted_only refuses a BAA provider; the built-in rules engine reads a real resident in-process.
  *  G6  describe the job → catalogue-only graph → 30-day dry run → DON then administrator, never the proposer, never an agent.
  */
 
@@ -155,7 +155,7 @@ describe.skipIf(!hasTestDatabase)('review r1 fixes (database)', () => {
     expect(finding.task).toMatchObject({ kind: 'post_fall_huddle', ownerRole: 'Charge Nurse (RN/LPN)', status: 'open' })
     // One InferenceCall per note read, with hashes and never the text.
     const call = await prisma.inferenceCall.findFirstOrThrow({ where: { purpose: 'extract', outcome: 'ok' } })
-    expect(call).toMatchObject({ outcome: 'ok', mode: 'sandbox', syntheticOnly: true })
+    expect(call).toMatchObject({ outcome: 'ok', mode: 'self_hosted', provider: 'builtin-rules', syntheticOnly: true })
     expect(call.inputHash).toMatch(/^[0-9a-f]{64}$/)
     expect(JSON.stringify(call)).not.toContain('found on the floor')
 
@@ -199,10 +199,10 @@ describe.skipIf(!hasTestDatabase)('review r1 fixes (database)', () => {
     const actor = { kind: 'user' as const, userId: 'seed_user_oyelaran', permissions: new Set<never>() }
     const out = z.object({ events: z.array(z.unknown()) })
     const base = { purpose: 'extract' as const, task: 'extract.fall_from_note@1', system: 's', output: out, dataCategories: ['clinical_notes'], data: [{ label: 'note', text: 'Resident found on the floor at 03:00.' }] }
-    // A sandbox provider never sees a real resident.
+    // The default is the built-in rules engine: self-hosted, so a real (non-synthetic) resident is read in-process.
     const before = await prisma.inferenceCall.count()
     const real = await infer(prisma as never, { ...base, carriesPhi: true, context: { communityId: COMMUNITY.id, actor, synthetic: false } })
-    expect(real).toMatchObject({ ok: false, code: 'INFERENCE_PHI_BLOCKED' })
+    expect(real).toMatchObject({ ok: true })
     expect(await prisma.inferenceCall.count()).toBe(before + 1)
     // A BAA provider is refused under self_hosted_only, even with a registration.
     const reg = await prisma.processorRegistration.findFirst({ select: { id: true } })
@@ -216,7 +216,7 @@ describe.skipIf(!hasTestDatabase)('review r1 fixes (database)', () => {
     expect(ok.ok).toBe(true)
     const rows = await prisma.inferenceCall.findMany({ where: { createdAt: { gte: new Date(Date.now() - 60_000) } }, orderBy: { createdAt: 'asc' } })
     expect(await prisma.inferenceCall.count()).toBe(before + 4)
-    expect(rows.slice(-4).map(r => r.outcome)).toEqual(['refused_policy', 'refused_policy', 'refused_policy', 'ok'])
+    expect(rows.slice(-4).map(r => r.outcome)).toEqual(['ok', 'refused_policy', 'refused_policy', 'ok'])
     expect(JSON.stringify(rows)).not.toContain('found on the floor')
     // Append-only at the database.
     await expect(prisma.inferenceCall.updateMany({ data: { outcome: 'ok' } })).rejects.toThrow()

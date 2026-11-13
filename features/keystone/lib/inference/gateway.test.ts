@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { policyProblem } from './gateway'
-import { fallSpans } from './fixtures'
+import { fallSpans } from './rules'
 import { validateGraph, LIBRARY } from '../workflows/blocks'
 import { Codes } from '../errors'
 
@@ -21,11 +21,11 @@ describe('inference policy (fail closed)', () => {
     expect(policyProblem({ ...p, processorRegistration: { status: 'active', effectiveTo: new Date(Date.now() - 1000), dataCategories: ['clinical_notes'] } }, 'self_hosted_or_baa', req())).toMatchObject({ code: Codes.INFERENCE_PHI_BLOCKED })
     expect(policyProblem({ ...p, processorRegistration: { status: 'active', effectiveTo: null, dataCategories: ['demographics'] } }, 'self_hosted_or_baa', req())).toMatchObject({ code: Codes.INFERENCE_PHI_BLOCKED })
   })
-  it('never sends protected data to a no_phi provider, and never a real resident to the sandbox', () => {
+  it('never sends protected data to a no_phi provider; the built-in rules engine is self-hosted and reads real residents', () => {
     expect(policyProblem({ ...base, mode: 'no_phi' }, 'any_registered', req(true, true))).toMatchObject({ code: Codes.INFERENCE_PHI_BLOCKED })
     expect(policyProblem({ ...base, mode: 'no_phi' }, 'any_registered', req(false, false))).toBeNull()
-    expect(policyProblem({ ...base, adapter: 'sandbox_fixture', mode: 'sandbox' }, 'self_hosted_only', req(false))).toMatchObject({ code: Codes.INFERENCE_PHI_BLOCKED })
-    expect(policyProblem({ ...base, adapter: 'sandbox_fixture', mode: 'sandbox' }, 'self_hosted_only', req(true))).toBeNull()
+    expect(policyProblem({ ...base, adapter: 'builtin_rules', mode: 'self_hosted' }, 'self_hosted_only', req(false))).toBeNull()
+    expect(policyProblem({ ...base, adapter: 'gone', mode: 'sandbox' }, 'any_registered', req(true))).toMatchObject({ code: Codes.INFERENCE_POLICY_REFUSED })
   })
   it('refuses a draft or suspended provider, an unknown adapter, and no provider at all', () => {
     expect(policyProblem({ ...base, mode: 'self_hosted', status: 'suspended' }, 'self_hosted_only', req())).toMatchObject({ code: Codes.INFERENCE_POLICY_REFUSED })

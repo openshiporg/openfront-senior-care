@@ -158,7 +158,7 @@ export const ExtractedFact = list({
 
 /**
  * A registered model endpoint (INTEGRATIONS §1). The mode decides what data it may receive: self_hosted runs in the operator's network;
- * baa_hosted needs an active ProcessorRegistration; sandbox (recorded fixtures) only ever sees synthetic subjects; no_phi never sees PHI.
+ * baa_hosted needs an active ProcessorRegistration; no_phi never sees PHI. builtin_rules is the in-process rules engine (self_hosted).
  */
 export const InferenceProvider = list({
   access: governed(['canManageIntegrations', 'canManageWorkflows']),
@@ -166,8 +166,8 @@ export const InferenceProvider = list({
   fields: {
     key: systemText({ indexed: 'unique', required: true }),
     name: systemText({ required: true }),
-    adapter: fixedChoice(['self_hosted_openai_compat', 'bedrock', 'azure_openai', 'sandbox_fixture']),
-    mode: fixedChoice(['self_hosted', 'baa_hosted', 'sandbox', 'no_phi']),
+    adapter: fixedChoice(['self_hosted_openai_compat', 'bedrock', 'azure_openai', 'builtin_rules']),
+    mode: fixedChoice(['self_hosted', 'baa_hosted', 'no_phi']),
     endpoint: systemText(),
     model: systemText(),
     processorRegistration: relationship({ ref: 'ProcessorRegistration', ...ro }),
@@ -186,8 +186,8 @@ export const InferenceCall = list({
     purpose: fixedChoice(['extract', 'summarise', 'draft_note', 'classify', 'workflow_build', 'workflow_step']),
     provider: systemText({ required: true }),
     inferenceProvider: relationship({ ref: 'InferenceProvider', ...ro }),
-    providerClass: fixedChoice(['sandbox_fixture', 'self_hosted', 'baa_hosted', 'other']),
-    mode: fixedChoice(['self_hosted', 'baa_hosted', 'sandbox', 'no_phi', 'none']),
+    providerClass: fixedChoice(['self_hosted', 'baa_hosted', 'other']),
+    mode: fixedChoice(['self_hosted', 'baa_hosted', 'no_phi', 'none']),
     model: systemText(),
     outcome: fixedChoice(['ok', 'refused_policy', 'error', 'timeout', 'invalid_output']),
     policyAtCall: systemText(),

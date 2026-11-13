@@ -1,5 +1,5 @@
 import type { InferenceRequest } from './gateway'
-import { SANDBOX_FIXTURES } from './fixtures'
+import { BUILTIN_RULES } from './rules'
 
 /**
  * Model adapters behind one interface (INTEGRATIONS §1). Only lib/inference/gateway.ts calls these, and only after the policy check.
@@ -59,16 +59,16 @@ const bedrock: InferenceAdapter = {
 }
 
 /**
- * Recorded answers for tests, seed and QA. It never leaves the process. The gateway only lets synthetic subjects reach it. Each task's
- * fixture is a deterministic function of the delimited data, so the same note always gives the same answer.
+ * The built-in rules engine (rules.ts). It runs in this process and never calls the network, so it is self-hosted by construction.
+ * Each task's rule is a deterministic function of the delimited data, so the same note always gives the same answer.
  */
-const sandbox: InferenceAdapter = {
+const builtinRules: InferenceAdapter = {
   async complete(target, request) {
-    const fixture = SANDBOX_FIXTURES[request.task]
-    if (!fixture) throw new Error(`No sandbox fixture for ${request.task}.`)
-    const value = fixture(request.data)
+    const rule = BUILTIN_RULES[request.task]
+    if (!rule) throw new Error(`The built-in rules engine has no rule for ${request.task}.`)
+    const value = rule(request.data)
     const text = JSON.stringify(value)
-    return { text, model: target.model || 'sandbox-fixture', tokens: { input: request.data.reduce((n, d) => n + Math.ceil(d.text.length / 4), 0), output: Math.ceil(text.length / 4) } }
+    return { text, model: target.model || 'builtin-rules', tokens: { input: request.data.reduce((n, d) => n + Math.ceil(d.text.length / 4), 0), output: Math.ceil(text.length / 4) } }
   },
 }
 
@@ -76,5 +76,5 @@ export const ADAPTERS: Record<string, InferenceAdapter> = {
   self_hosted_openai_compat: selfHosted,
   azure_openai: azure,
   bedrock,
-  sandbox_fixture: sandbox,
+  builtin_rules: builtinRules,
 }

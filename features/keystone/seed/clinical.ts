@@ -67,9 +67,9 @@ export async function seedClinical(uow: UnitOfWork, actor: Actor = systemActor('
     await receiveSupply(uow, actor, { communityId: community.id, kind: 'ekit', label: 'Emergency kit A (invented)', unit: 'dose', quantity: 12, unitLocationId: kit?.id ?? null })
     out.supplies += 1
   }
-  // The only model the demo has: recorded fixtures in-process. The gateway lets synthetic residents reach it and nobody else.
-  if (!(await tx.inferenceProvider.findUnique({ where: { key: 'sandbox' } }))) {
-    await tx.inferenceProvider.create({ data: { key: 'sandbox', name: 'Sandbox fixtures (synthetic data only)', adapter: 'sandbox_fixture', mode: 'sandbox', model: 'sandbox-fixture@1', isDefault: true, status: 'active' } })
+  // The default reader: the built-in rules engine, in-process, so no resident data leaves the server. A self-hosted or BAA model can replace it.
+  if (!(await tx.inferenceProvider.findUnique({ where: { key: 'builtin-rules' } }))) {
+    await tx.inferenceProvider.create({ data: { key: 'builtin-rules', name: 'Built-in rules engine (runs on this server)', adapter: 'builtin_rules', mode: 'self_hosted', model: 'builtin-rules@1', isDefault: true, status: 'active' } })
     out.inferenceProviders = 1
   }
   await generateAdministrationSlots(uow, community.id)

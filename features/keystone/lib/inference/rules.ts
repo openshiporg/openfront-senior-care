@@ -1,7 +1,8 @@
 /**
- * Recorded answers for the sandbox_fixture adapter. Each is a pure function of the delimited data, so a test or the QA seed gets the
- * same answer every time without a model. They imitate what the real prompt asks for: exact spans, catalogue-only graphs, short
- * care-plan items. The gateway only lets synthetic subjects reach them.
+ * The built-in rules engine (adapter `builtin_rules`): deterministic readers that run inside this server, with no model and no network
+ * call, so no data ever leaves the operator. Each is a pure function of the delimited data and answers in the same shape the model
+ * prompt asks for: exact spans, catalogue-only graphs, short care-plan items. An operator can register a self-hosted or BAA model
+ * instead and make it the default.
  */
 type Data = { label: string; text: string }[]
 const get = (data: Data, label: string) => data.find(d => d.label === label)?.text ?? ''
@@ -69,7 +70,7 @@ function draftCarePlan(data: Data) {
   return { summary: 'Review the finding with the resident and family and update the plan.', items: [{ kind: 'intervention', text: `Review: ${finding.slice(0, 120) || 'workflow finding'}`, frequency: 'once' }] }
 }
 
-export const SANDBOX_FIXTURES: Record<string, (data: Data) => unknown> = {
+export const BUILTIN_RULES: Record<string, (data: Data) => unknown> = {
   'extract.fall_from_note@1': data => {
     const events = fallSpans(get(data, 'note'))
     return { outcome: events.length ? 'found' : 'none', events }

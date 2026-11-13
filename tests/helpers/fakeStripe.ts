@@ -1,4 +1,4 @@
-import type { ChargeInput, ChargeResult, PaymentAdapter, RefundInput, RefundResult, WebhookEvent } from './index'
+import type { ChargeInput, ChargeResult, PaymentAdapter, RefundInput, RefundResult, WebhookEvent } from '../../features/integrations/payment'
 
 /**
  * A deterministic stand-in for Stripe TEST that obeys Stripe's idempotency rules, for proofs only:

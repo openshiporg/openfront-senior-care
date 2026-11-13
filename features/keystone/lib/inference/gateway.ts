@@ -9,7 +9,7 @@ import { ADAPTERS, type AdapterResult } from './adapters'
  * The inference gateway (INTEGRATIONS §1, Euler decision 3). It is the ONLY caller of a model adapter. In order it:
  *  1. resolves the provider (an explicit key, else the operator default);
  *  2. enforces the policy BEFORE any network call: OperatorSettings.inferencePolicy against the provider mode, a BAA registration for
- *     baa_hosted, never protected data to a no_phi provider, and never a real (non-synthetic) subject to a sandbox provider;
+ *     baa_hosted, and never protected data to a no_phi provider;
  *  3. calls the adapter with a timeout;
  *  4. validates the output against the block's schema (invalid output is `invalid_output`, never a guess);
  *  5. writes one InferenceCall row, allowed, refused or failed, outside any business transaction. No prompt or response text is stored:
@@ -18,11 +18,11 @@ import { ADAPTERS, type AdapterResult } from './adapters'
  */
 
 export type InferencePurpose = 'extract' | 'summarise' | 'draft_note' | 'classify' | 'workflow_build' | 'workflow_step'
-export type InferenceMode = 'self_hosted' | 'baa_hosted' | 'sandbox' | 'no_phi'
+export type InferenceMode = 'self_hosted' | 'baa_hosted' | 'no_phi'
 
 export type InferenceRequest<T> = {
   purpose: InferencePurpose
-  /** The versioned prompt template, e.g. "extract.fall_from_note@1". Sandbox fixtures are keyed by it. */
+  /** The versioned prompt template, e.g. "extract.fall_from_note@1". The built-in rules are keyed by it. */
   task: string
   system: string
   /** Delimited source text. Passed as data, never as instructions. */
@@ -50,7 +50,7 @@ type ProviderRow = {
 }
 
 const digest = (value: unknown) => createHash('sha256').update(typeof value === 'string' ? value : JSON.stringify(value)).digest('hex')
-const CLASS: Record<string, string> = { sandbox: 'sandbox_fixture', self_hosted: 'self_hosted', baa_hosted: 'baa_hosted' }
+const CLASS: Record<string, string> = { self_hosted: 'self_hosted', baa_hosted: 'baa_hosted' }
 
 /** Why a call may not go to this provider, or null when it may. Pure: the caller loads the provider row and the policy. */
 export function policyProblem(provider: ProviderRow | null, policy: string, request: Pick<InferenceRequest<unknown>, 'carriesPhi' | 'dataCategories' | 'context'>, now = new Date()): { code: string; reason: string } | null {
@@ -61,16 +61,9 @@ export function policyProblem(provider: ProviderRow | null, policy: string, requ
     if (request.carriesPhi) return { code: Codes.INFERENCE_PHI_BLOCKED, reason: `Inference provider ${provider.key} is registered as no-PHI. Use a self-hosted model or one under a signed BAA.` }
     return null
   }
-  if (provider.mode === 'sandbox') {
-    // Recorded fixtures are for tests, seed and QA: a real resident's data never goes there, whatever the policy says.
-    if (!request.context.synthetic) return { code: Codes.INFERENCE_PHI_BLOCKED, reason: `Inference provider ${provider.key} is a sandbox and only sees synthetic data.` }
-    return null
-  }
   if (provider.mode === 'self_hosted') return null
   if (provider.mode === 'baa_hosted') {
-    const qaSynthetic = policy === 'any_registered' && process.env.SENIOR_CARE_ENV === 'qa' && request.context.synthetic
     if (policy === 'self_hosted_only') return { code: Codes.INFERENCE_POLICY_REFUSED, reason: `The operator's inference policy is self-hosted only; ${provider.key} is a BAA-hosted provider.` }
-    if (qaSynthetic) return null
     const reg = provider.processorRegistration
     if (!reg || reg.status !== 'active' || (reg.effectiveTo && reg.effectiveTo.getTime() < now.getTime())) {
       return { code: Codes.INFERENCE_PHI_BLOCKED, reason: `Inference provider ${provider.key} has no active BAA registration.` }

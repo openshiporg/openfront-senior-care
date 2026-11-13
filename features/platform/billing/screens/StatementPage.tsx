@@ -7,6 +7,7 @@ import { BillingAction } from '../../components/BillingAction';
 
 type Line = { kind: string; description: string; from: string; to: string; days: number; amountMinor: string };
 type Payment = { id: string; method: string; status: string; amountMinor: string; settledAt: string | null; initiatedAt: string | null; failureCode: string; autopay: boolean };
+type Card = { id: string; provider: string; brand: string; last4: string; autopay: boolean };
 type Credit = { id: string; amountMinor: string; remainingMinor: string; status: string };
 type Adjustment = { id: string; kind: string; amountMinor: string; reason: string; status: string };
 type Plan = { id: string; reference: string; status: string; totalMinor: string; instalmentCount: number; cancelledReason: string; instalments: { id: string; number: number; dueOn: string; amountMinor: string; attempts: number; payment: { status: string; failureCode: string } | null }[] };
@@ -34,6 +35,8 @@ export default async function StatementPage({ params }: { params: Promise<{ id: 
   const s = data.statement;
   // Money on account for this resident that no statement took (an overpayment); it is applied or refunded from here.
   const credits = s.resident ? (await q<{ residentCredits: Credit[] }>(`query C($r: ID!) { residentCredits(where: { resident: { id: { equals: $r } }, status: { equals: "open" } }, take: 20) { id amountMinor remainingMinor status } }`, { r: s.resident.id }).catch(() => ({ residentCredits: [] as Credit[] }))).residentCredits : [];
+  // Cards on file for this resident (Stripe customer + payment method); read with payments access, otherwise the buttons are not shown.
+  const cards = s.resident ? (await q<{ paymentMethodTokens: Card[] }>(`query T($r: ID!) { paymentMethodTokens(where: { resident: { id: { equals: $r } }, status: { equals: "active" } }, take: 10) { id provider brand last4 autopay } }`, { r: s.resident.id }).catch(() => null))?.paymentMethodTokens ?? null : null;
   const tz = community?.timeZone ?? 'America/New_York';
   const balance = BigInt(s.totalMinor) - BigInt(s.paidMinor) - BigInt(s.adjustedMinor ?? '0');
   return (
@@ -60,6 +63,18 @@ export default async function StatementPage({ params }: { params: Promise<{ id: 
                 { name: 'reason', label: 'Why', required: true },
               ]}>{text}</BillingAction>
             ))}
+            {cards && cards.length && !activePlan ? (
+              <BillingAction op="payment.charge" input={{ statementId: s.id, method: 'card' }} fields={[
+                { name: 'tokenId', label: 'Card on file', type: 'select', required: true, defaultValue: cards[0].id, options: cards.map(c => ({ value: c.id, label: `${label(c.brand || c.provider)} ending ${c.last4 || '----'}${c.autopay ? ' (autopay)' : ''}` })) },
+                { name: 'amountMinor', label: 'Amount', type: 'money', required: true, defaultValue: (Number(balance) / 100).toFixed(2) },
+              ]}>Charge card on file</BillingAction>
+            ) : null}
+            {cards && s.resident ? (
+              <BillingAction op="card.save" input={{ residentId: s.resident.id }} fields={[
+                { name: 'paymentMethodId', label: 'Card token from the Stripe card form (starts with pm_; Stripe test card: pm_card_visa)', required: true, placeholder: 'pm_card_visa' },
+                { name: 'autopay', label: 'Use for autopay', type: 'checkbox' },
+              ]}>Save a card</BillingAction>
+            ) : null}
             {!activePlan ? (
               <BillingAction op="plan.create" input={{ statementId: s.id }} fields={[
                 { name: 'instalments', label: 'Number of monthly instalments (2 to 24)', required: true, defaultValue: '3' },
