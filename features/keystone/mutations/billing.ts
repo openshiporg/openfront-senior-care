@@ -14,6 +14,8 @@ import * as trustMore from '../trust/more'
 import * as plans from '../billing/plans'
 import * as mcdApp from '../billing/medicaidApplication'
 import { minorOf } from '../lib/money'
+import * as mds from '../mds/service'
+import * as cov from '../coverage/service'
 import { actorFor } from './actorFor'
 import { assertCommunityAccess, assertHuman, authorize, runDomain } from './run'
 import { requireKey } from './op'
@@ -60,6 +62,16 @@ const PAYMENTS: Permission[] = ['canPostPayments', 'canManagePayments']
 const ADJUST: Permission[] = ['canManageBilling']
 const TRUST_OP: Permission[] = ['canOperateTrust']
 const TRUST_SIGN: Permission[] = ['canApproveTrust']
+const MDS: Permission[] = ['canManageAssessments']
+const MDS_SUBMIT: Permission[] = ['canSubmitRegulatory']
+const COVERAGE: Permission[] = ['canManageBilling', 'canManageAssessments']
+const byMds = byRecord('MdsAssessment', 'assessmentId')
+const byCoverage = async (tx: Tx, i: Input) => {
+  const id = i.coverageId
+  if (typeof id !== 'string' || !id) return null
+  const row = await tx.coveragePeriod.findUnique({ where: { id }, select: { stay: { select: { communityId: true } } } })
+  return row?.stay?.communityId ?? null
+}
 
 export const HANDLERS: Record<string, Handler> = {
   // Billing periods
@@ -149,6 +161,31 @@ export const HANDLERS: Record<string, Handler> = {
     permissions: BILLING, community: byRecord('Resident', 'residentId'), serializable: true,
     run: (u, a, i) => mcdApp.recordSchedule(u, a, { residentId: i.residentId, stayId: i.stayId || null, applicationId: i.applicationId || null, monthlyAmountMinor: money(i.monthlyAmountMinor, 'liability'), personalNeedsAllowanceMinor: money(i.personalNeedsAllowanceMinor ?? 0, 'personal needs allowance'), effectiveFrom: i.effectiveFrom, note: i.note }),
   },
+
+  // Phase 4a: MDS 3.0 and PDPM (STATE-MACHINES §6.1-§6.4)
+  'mds.load_reference': { permissions: MDS, community: async () => null, run: (u, a) => mds.loadMdsReference(u, a) },
+  'mds.open': { permissions: MDS, community: byRecord('Stay', 'stayId'), run: (u, a, i) => mds.openMds(u, a, { stayId: i.stayId, kind: i.kind, ardDate: i.ardDate }) },
+  'mds.save_items': { permissions: MDS, community: byMds, run: (u, a, i) => mds.saveMdsItems(u, a, { assessmentId: i.assessmentId, items: i.items ?? Object.fromEntries(Object.entries(i).filter(([k]) => /^[A-Z][A-Z0-9_]+$/.test(k))), expectedVersion: i.expectedVersion }) },
+  'mds.sign_sections': { permissions: MDS, community: byMds, run: (u, a, i) => mds.signMdsSections(u, a, { assessmentId: i.assessmentId, sections: i.sections, title: i.title, name: i.name }) },
+  'mds.complete': { permissions: MDS, community: byMds, serializable: true, run: (u, a, i) => mds.completeMds(u, a, { assessmentId: i.assessmentId, completedOn: i.completedOn, aids: i.aids === true || i.aids === 'true' }) },
+  'mds.correct': { permissions: MDS, community: byMds, run: (u, a, i) => mds.correctMds(u, a, { assessmentId: i.assessmentId, reason: i.reason }) },
+  'mds.entered_in_error': { permissions: MDS, community: byMds, run: (u, a, i) => mds.markMdsInError(u, a, { assessmentId: i.assessmentId, reason: i.reason }) },
+  'mds.export': { permissions: MDS_SUBMIT, community: byCommunity, serializable: true, run: (u, a, i) => mds.exportMds(u, a, { communityId: i.communityId, assessmentIds: i.assessmentIds }) },
+  'mds.mark_uploaded': { permissions: MDS_SUBMIT, community: byRecord('MdsSubmission', 'submissionId'), run: (u, a, i) => mds.markUploaded(u, a, { submissionId: i.submissionId }) },
+  'mds.record_fvr': { permissions: MDS_SUBMIT, community: byRecord('MdsSubmission', 'submissionId'), serializable: true, run: (u, a, i) => mds.recordFvr(u, a, { submissionId: i.submissionId, text: i.text }) },
+
+  // Phase 4a: Medicare Part A depth, hospice and Medicare Advantage (STATE-MACHINES §5.5)
+  'coverage.change_payer': { permissions: ['canManageBilling'], community: byRecord('Stay', 'stayId'), serializable: true, run: (u, a, i) => cov.changePayer(u, a, i as never) },
+  'coverage.qualifying_stay': { permissions: COVERAGE, community: byCoverage, run: (u, a, i) => cov.recordQualifyingStay(u, a, { coverageId: i.coverageId, from: i.from, to: i.to, hospital: i.hospital, evidenceNote: i.evidenceNote, documentTitle: i.documentTitle }) },
+  'coverage.skilled_cert': { permissions: COVERAGE, community: byCoverage, run: (u, a, i) => cov.recordSkilledCert(u, a, { coverageId: i.coverageId, signedOn: i.signedOn, signedBy: i.signedBy }) },
+  'coverage.prior_days': { permissions: COVERAGE, community: byRecord('Resident', 'residentId'), run: (u, a, i) => cov.recordPriorDays(u, a, { residentId: i.residentId, source: i.source, daysUsed: i.daysUsed, asOf: i.asOf, spellStart: i.spellStart, note: i.note }) },
+  'coverage.last_covered_day': { permissions: COVERAGE, community: byCoverage, run: (u, a, i) => cov.setLastCoveredDay(u, a, { coverageId: i.coverageId, lastCoveredDay: i.lastCoveredDay, reason: i.reason }) },
+  'coverage.notice': { permissions: COVERAGE, community: byCoverage, run: (u, a, i) => cov.recordCoverageNotice(u, a, { coverageId: i.coverageId, kind: i.kind, deliveredOn: i.deliveredOn, method: i.method, acknowledgement: i.acknowledgement, recipientRepresentativeId: i.recipientRepresentativeId, note: i.note }) },
+  'coverage.hospice_revoke': { permissions: ['canManageBilling'], community: byCoverage, serializable: true, run: (u, a, i) => cov.revokeHospice(u, a, { coverageId: i.coverageId, revokedOn: i.revokedOn, nextPayerId: i.nextPayerId, memberReference: i.memberReference }) },
+  'coverage.benefit_recount': { permissions: COVERAGE, community: byRecord('Resident', 'residentId'), run: (u, a, i) => cov.recountBenefitPeriod(u, a, { residentId: i.residentId }) },
+  'authorisation.request': { permissions: COVERAGE, community: byCoverage, run: (u, a, i) => cov.requestAuthorisation(u, a, { coverageId: i.coverageId, requestedOn: i.requestedOn, levelOfCare: i.levelOfCare, payerAuthNumber: i.payerAuthNumber, reviewIntervalDays: i.reviewIntervalDays, note: i.note }) },
+  'authorisation.decide': { permissions: COVERAGE, community: byRecord('Authorisation', 'authorisationId'), run: (u, a, i) => cov.decideAuthorisation(u, a, { authorisationId: i.authorisationId, decision: i.decision, authFrom: i.authFrom, authTo: i.authTo, payerAuthNumber: i.payerAuthNumber }) },
+  'authorisation.review': { permissions: COVERAGE, community: byRecord('Authorisation', 'authorisationId'), run: (u, a, i) => cov.recordReview(u, a, { authorisationId: i.authorisationId, reviewedOn: i.reviewedOn, outcome: i.outcome, newAuthTo: i.newAuthTo, reviewer: i.reviewer, note: i.note }) },
 
   // Resident trust
   'trust.authorisation_record': {

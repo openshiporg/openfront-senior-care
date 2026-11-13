@@ -10,6 +10,7 @@ import { nextReference } from '../lib/sequence'
 import type { UnitOfWork } from '../lib/unitOfWork'
 import { deriveCharges, monthDays, monthEnd, nextMonth, statementLines, type DayRow, type Derivation, type DerivationInput, type DerivedLine } from './derive'
 import { scheduleForMonth, type ScheduleRow } from './medicaidApplication'
+import { loadMedicareInput } from './medicareLoad'
 
 /**
  * Month-end close (STATE-MACHINES §12.2). A staff button, idempotent per period: it derives the charges from the census,
@@ -20,6 +21,15 @@ import { scheduleForMonth, type ScheduleRow } from './medicaidApplication'
 const DATE = /^\d{4}-01$|^\d{4}-\d{2}-01$/
 const day = (date: string) => new Date(`${date}T00:00:00Z`)
 const iso = (value: Date | null | undefined) => (value ? value.toISOString().slice(0, 10) : '')
+
+/** One line of the close-blocking message per problem kind. */
+export const problemText = (p: { code: string; count: number }) =>
+  p.code === 'uncovered_days' ? `${p.count} uncovered day(s)`
+    : p.code === 'missing_rate' ? `${p.count} day(s) without a published rate`
+      : p.code === 'missing_assessment' ? `${p.count} Part A day(s) without a PDPM assessment`
+        : p.code === 'benefit_exhausted' ? `${p.count} day(s) past day 100 of the benefit period still on Medicare Part A`
+          : p.code === 'medicare_unqualified' ? `${p.count} Part A day(s) without qualifying-stay evidence and a skilled certification`
+            : 'a Medicaid month without a patient liability'
 
 export function assertMonth(month: string) {
   if (!DATE.test(month) && !/^\d{4}-\d{2}-01$/.test(month)) throw new DomainError(Codes.INVALID_INPUT, 'The month is the first day of the month, like 2026-10-01.', { field: 'month' })
@@ -65,7 +75,7 @@ export async function loadDerivationInput(tx: Tx, communityId: string, month: st
       days.push({
         stayId: row.stayId, residentId: residentOf.get(row.stayId) ?? '', date: entry.date, setting: row.setting ?? '',
         presence: row.presence as DayRow['presence'], apartmentTypeId: row.apartmentId ? typeOf.get(row.apartmentId) ?? null : null,
-        payerKind: row.payerKind, payerId: row.coverageId ? payerOf.get(row.coverageId) ?? null : null, occupantRank: rank.get(row.stayId) ?? 1,
+        payerKind: row.payerKind, payerId: row.coverageId ? payerOf.get(row.coverageId) ?? null : null, occupantRank: rank.get(row.stayId) ?? 1, coverageId: row.coverageId,
       })
     }
   }
@@ -85,6 +95,7 @@ export async function loadDerivationInput(tx: Tx, communityId: string, month: st
     careAssignments: assignments.filter(row => row.stayId && row.careLevelId).map(row => ({ stayId: row.stayId!, careLevelId: row.careLevelId!, points: row.points, levelMinPoints: row.careLevel?.minPoints ?? undefined, effectiveFrom: iso(row.effectiveFrom), noticeDeliveredOn: iso(row.noticeDeliveredOn) || null })),
     careNoticeDays,
     liabilities: liabilitiesFor(stays, liabilities, liabilitySchedules, month),
+    ...(await loadMedicareInput(tx, communityId, month, monthEnd(month), days)),
   }
 }
 
@@ -231,7 +242,7 @@ export async function closePeriod(uow: UnitOfWork, actor: Actor, input: { commun
 
   const derivation = await deriveForMonth(uow.tx, input.communityId, input.month)
   if (derivation.problems.length) {
-    throw new DomainError(Codes.GUARD_FAILED, `The month cannot close yet: ${derivation.problems.map(p => (p.code === 'uncovered_days' ? `${p.count} uncovered day(s)` : p.code === 'missing_rate' ? `${p.count} day(s) without a published rate` : 'a Medicaid month without a patient liability')).filter((v, i, a) => a.indexOf(v) === i).join('; ')}.`, { reason: 'derivation_problems', problems: derivation.problems.map(p => ({ ...p })) })
+    throw new DomainError(Codes.GUARD_FAILED, `The month cannot close yet: ${derivation.problems.map(p => problemText(p)).filter((v, i, a) => a.indexOf(v) === i).join('; ')}.`, { reason: 'derivation_problems', problems: derivation.problems.map(p => ({ ...p })) })
   }
   await applyDerivation(uow, input.communityId, period, derivation, ['open'], 'open')
   await uow.tx.charge.updateMany({ where: { periodId: period.id, status: 'open' }, data: { status: 'posted' } })

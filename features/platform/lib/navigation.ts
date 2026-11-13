@@ -1,5 +1,5 @@
 import {
-  Receipt, Tags, Landmark, PiggyBank, Activity, AlertTriangle, BedDouble, Bell, Pill, Lock, ShieldPlus, Stethoscope, Sparkles, BookOpenCheck, CalendarClock, ClipboardCheck, ClipboardList, Hourglass, KeyRound, ListChecks, LucideIcon, Moon, Settings, Store, Users,
+  Receipt, Tags, CalendarRange, Calculator, ShieldCheck, Landmark, PiggyBank, Activity, AlertTriangle, BedDouble, Bell, Pill, Lock, ShieldPlus, Stethoscope, Sparkles, BookOpenCheck, CalendarClock, ClipboardCheck, ClipboardList, Hourglass, KeyRound, ListChecks, LucideIcon, Moon, Settings, Store, Users,
 } from 'lucide-react'
 
 export interface PlatformNavItem {
@@ -34,6 +34,7 @@ export const platformNavItems: PlatformNavItem[] = [
   { title: 'Incidents', href: '/platform/incidents', color: 'rose', description: 'Incidents with F609 clocks, investigations and reports.', icon: AlertTriangle, group: 'clinical' },
   { title: 'Infection control', href: '/platform/ipac', color: 'amber', description: 'Cases, precautions, antibiotic time-outs and outbreaks.', icon: ShieldPlus, group: 'clinical' },
   { title: 'Tasks', href: '/platform/tasks', color: 'slate', description: 'Staff inbox: escalations and follow-ups.', icon: Bell, group: 'clinical' },
+  { title: 'MDS calendar', href: '/platform/mds', color: 'blue', description: 'MDS windows, records, sign-off and the iQIES export.', icon: CalendarRange, group: 'clinical' },
   { title: 'Findings', href: '/platform/findings', color: 'indigo', description: 'Workflow findings with evidence; run on request.', icon: Sparkles, group: 'clinical' },
 
   { title: 'Pipeline', href: '/platform/sales', color: 'amber', description: 'Leads, inquiries, tours and referrals with response clocks.', icon: ClipboardList, group: 'sales' },
@@ -42,6 +43,8 @@ export const platformNavItems: PlatformNavItem[] = [
 
   { title: 'Billing', href: '/platform/billing', color: 'emerald', description: 'Month-end close, statements and payments.', icon: Receipt, group: 'billing' },
   { title: 'Rates and notices', href: '/platform/billing/rates', color: 'blue', description: 'Rate schedules and rate-change notices.', icon: Tags, group: 'billing' },
+  { title: 'PDPM', href: '/platform/mds/pdpm', color: 'indigo', description: 'Current HIPPS and per diem across the variable per diem.', icon: Calculator, group: 'billing' },
+  { title: 'Coverage', href: '/platform/mds/coverage', color: 'emerald', description: 'Part A days, NOMNC clock, MA authorisations and hospice.', icon: ShieldCheck, group: 'billing' },
   { title: 'Medicaid liability', href: '/platform/billing/medicaid', color: 'indigo', description: 'Patient liability with reply and appeal deadlines.', icon: Landmark, group: 'billing' },
   { title: 'Resident funds', href: '/platform/trust', color: 'amber', description: 'Resident trust ledgers, withdrawals and reconciliation.', icon: PiggyBank, group: 'billing' },
 
@@ -60,6 +63,7 @@ export const SHIPPED_ROUTES = new Set<string>([
   '/platform/clinical', '/platform/emar', '/platform/counts', '/platform/incidents', '/platform/ipac', '/platform/tasks', '/platform/findings',
   '/platform/sales', '/platform/sales/waitlist', '/platform/sales/storefront',
   '/platform/billing', '/platform/billing/rates', '/platform/billing/medicaid', '/platform/trust',
+  '/platform/mds', '/platform/mds/pdpm', '/platform/mds/coverage',
   '/platform/approvals', '/platform/compliance', '/platform/privacy/break-glass', '/platform/audit',
 ])
 

@@ -396,7 +396,7 @@ export const Document = list({
   },
   fields: {
     title: text({ validation: { isRequired: true } }),
-    kind: choice(['admission_agreement', 'residency_agreement', 'notice', 'bed_hold_policy', 'authority', 'advance_directive', 'referral_packet', 'pasrr', 'photo', 'floor_plan', 'policy', 'pack_source', 'other'], 'other'),
+    kind: choice(['admission_agreement', 'residency_agreement', 'notice', 'bed_hold_policy', 'authority', 'advance_directive', 'referral_packet', 'pasrr', 'photo', 'floor_plan', 'policy', 'pack_source', 'qualifying_stay', 'mds_submission', 'other'], 'other'),
     community: relationship({ ref: 'Community', ...readOnly }),
     resident: relationship({ ref: 'Resident', ...readOnly }),
     phiTier: select({ type: 'string', options: ['pub', 'op', 'dem', 'clin', 'sens', 'ident', 'fin'].map(value => ({ label: label(value), value })), defaultValue: 'op', validation: { isRequired: true }, ...readOnly }),

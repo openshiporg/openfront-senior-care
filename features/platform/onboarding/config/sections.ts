@@ -42,4 +42,15 @@ export const SETUP_SECTIONS = [
       'Break-glass uses with the privacy officer\'s review',
     ],
   },
+  {
+    id: 'mds',
+    title: 'MDS, PDPM and Medicare Part A',
+    mutation: 'mutation LoadMds($idempotencyKey: String!) { loadMdsSetup(idempotencyKey: $idempotencyKey) }',
+    field: 'loadMdsSetup',
+    items: [
+      'MDS 3.0 item sets V1.19.1 and V1.20.1, chosen by the assessment reference date',
+      'FY2026 PDPM case-mix tables and unadjusted federal rates, CY2026 SNF coinsurance ($217.00)',
+      '12 Medicare Part A residents in Birch with completed 5-day assessments and their PDPM classification',
+    ],
+  },
 ] as const

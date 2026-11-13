@@ -2,6 +2,7 @@ import { canonicalJson, sha256 } from '../lib/canonical'
 import { addDays } from '../lib/calendar'
 import { dec } from '../lib/decimal'
 import { allocateMinor, roundToMinor } from '../lib/money'
+import { benefitDays, hospiceRoomBoard, medicareDay, type MedicareInput } from './medicare'
 
 /**
  * Billing derivation (STATE-MACHINES §12.1). A pure function of its input: the same census days, coverage, care levels,
@@ -20,6 +21,8 @@ export type DayRow = {
   payerId: string | null
   /** 1 for the first occupant of the apartment that day (by admission, then id), 2 for the second. Comes from the census. */
   occupantRank: number
+  /** The primary coverage in force that day (Medicare A and hospice days need it). */
+  coverageId?: string | null
 }
 
 export type RateLineIn = {
@@ -47,6 +50,10 @@ export type DerivationInput = {
   liabilities: LiabilityIn[]
   /** Days of written notice before a care-level increase bills (pack rule careLevelIncreaseNoticeDays). */
   careNoticeDays: number
+  /** Phase 4a: Part A days bill the PDPM per diem (absent = the Phase 3 behaviour, a published daily rate). */
+  medicare?: MedicareInput & { coverages: Record<string, { qualifyingStayOk: boolean; skilledCertOk: boolean }> }
+  /** Phase 4a: hospice-elected days bill the hospice agency room and board at its pass-through share. */
+  hospice?: Record<string, { roomBoardBps: number }>
 }
 
 export type DerivedLine = {
@@ -54,7 +61,7 @@ export type DerivedLine = {
   stayId: string
   residentId: string
   date: string
-  kind: 'rent' | 'second_person' | 'care_level' | 'room_board' | 'bed_hold' | 'patient_liability' | 'per_diem_claim'
+  kind: 'rent' | 'second_person' | 'care_level' | 'room_board' | 'bed_hold' | 'patient_liability' | 'per_diem_claim' | 'coinsurance'
   responsibility: 'resident' | 'payer'
   payerKey: string
   payerId: string | null
@@ -64,7 +71,7 @@ export type DerivedLine = {
   derivationHash: string
 }
 
-export type DerivationProblem = { code: 'uncovered_days' | 'missing_rate' | 'missing_liability'; stayId?: string; residentId?: string; count: number }
+export type DerivationProblem = { code: 'uncovered_days' | 'missing_rate' | 'missing_liability' | 'missing_assessment' | 'benefit_exhausted' | 'medicare_unqualified'; stayId?: string; residentId?: string; count: number }
 
 export type Derivation = { lines: DerivedLine[]; problems: DerivationProblem[]; hash: string }
 
@@ -112,7 +119,7 @@ const finish = (line: Omit<DerivedLine, 'key' | 'derivationHash'>): DerivedLine 
   return { ...line, key, derivationHash: sha256(canonicalJson({ key, amountMinor: line.amountMinor, derivation: line.derivation, description: line.description })) }
 }
 
-const labelOf: Record<string, string> = { rent: 'Apartment rent', second_person: 'Second person', care_level: 'Care level', room_board: 'Room and board', bed_hold: 'Bed hold', patient_liability: 'Patient liability', per_diem_claim: 'Per diem' }
+const labelOf: Record<string, string> = { rent: 'Apartment rent', second_person: 'Second person', care_level: 'Care level', room_board: 'Room and board', bed_hold: 'Bed hold', patient_liability: 'Patient liability', per_diem_claim: 'Per diem', coinsurance: 'Medicare coinsurance' }
 
 /** A monthly charge over `dates` (one group of identical rates): the prorated total, spread over the days so it sums exactly. */
 function monthly(
@@ -149,6 +156,13 @@ export function deriveCharges(input: DerivationInput): Derivation {
       groups.set(id, group)
     }
     let missingRate = 0
+    const extra = new Map<DerivationProblem['code'], number>()
+    const bump = (code: DerivationProblem['code']) => extra.set(code, (extra.get(code) ?? 0) + 1)
+    let countedCache: { stay: unknown; map: ReturnType<typeof benefitDays> } | null = null
+    const countedOf = (stay: NonNullable<DerivationInput['medicare']>['stays'][number]) => {
+      if (countedCache?.stay !== stay) countedCache = { stay, map: benefitDays(stay, monthEnd(input.month)) }
+      return countedCache.map
+    }
 
     for (const day of days) {
       if (day.payerKind === 'private_pay') {
@@ -176,6 +190,24 @@ export function deriveCharges(input: DerivationInput): Derivation {
           const rate = care ? rateOn(input.rates, day.date, { setting, kind: 'care_level', careLevelId: care.careLevelId }) : null
           if (rate) add(rate, { stayId, residentId, kind: 'care_level', responsibility: 'resident', payerKey: 'resident', payerId: null, description: labelOf.care_level }, day.date)
         }
+      } else if (day.payerKind === 'medicare_a' && input.medicare) {
+        // Part A: the PDPM per diem of the classification in force, split into the Medicare claim and the resident's coinsurance.
+        const stay = input.medicare.stays.find(row => row.stayId === stayId)
+        const cov = day.coverageId ? input.medicare.coverages[day.coverageId] : undefined
+        if (!stay || !cov || !cov.qualifyingStayOk || !cov.skilledCertOk) { bump('medicare_unqualified'); continue }
+        if (day.presence !== 'in_house') continue // a leave day is not a Part A day (count_admit_not_discharge)
+        const counted = countedOf(stay)
+        const result = medicareDay(stay, counted, input.medicare.rates, day.date)
+        if (result.kind === 'problem') { bump(result.code === 'missing_rate' ? 'missing_rate' : result.code); continue }
+        const basis = { hipps: result.classification.hipps, classificationId: result.classification.id, benefitDay: result.benefitDay, vpdDay: result.vpdDay, version: input.medicare.rates!.version, components: result.components, pdpmMinor: result.pdpmMinor }
+        if (day.payerId) lines.push(finish({ stayId, residentId, date: day.date, kind: 'per_diem_claim', responsibility: 'payer', payerKey: day.payerId, payerId: day.payerId, description: `Medicare Part A ${result.classification.hipps} day ${result.benefitDay}`, amountMinor: result.pdpmMinor - result.coinsuranceMinor, derivation: basis }))
+        if (result.coinsuranceMinor > 0n) lines.push(finish({ stayId, residentId, date: day.date, kind: 'coinsurance', responsibility: 'resident', payerKey: 'resident', payerId: null, description: `${labelOf.coinsurance} (day ${result.benefitDay})`, amountMinor: result.coinsuranceMinor, derivation: { ...basis, coinsuranceMinor: result.coinsuranceMinor } }))
+      } else if (day.payerKind === 'hospice_agency' && input.hospice) {
+        // Hospice election: the facility bills the hospice its share of the nursing-facility daily rate (pass-through room and board).
+        const share = day.coverageId ? input.hospice[day.coverageId] : undefined
+        const rate = rateOn(input.rates, day.date, { setting: day.setting, kind: day.presence === 'on_leave_hold' ? 'bed_hold_daily' : 'room_daily' })
+        if (!rate || !share) { missingRate += 1; continue }
+        if (day.payerId) lines.push(finish({ stayId, residentId, date: day.date, kind: 'room_board', responsibility: 'payer', payerKey: day.payerId, payerId: day.payerId, description: 'Hospice room and board', amountMinor: hospiceRoomBoard(rate.amountMinor, share.roomBoardBps), derivation: { rateLineId: rate.id, roomBoardBps: share.roomBoardBps } }))
       } else if (day.payerKind === 'medicaid_ffs' || day.payerKind === 'medicaid_mco' || day.payerKind === 'medicare_a' || day.payerKind === 'medicare_advantage') {
         // The payer's per diem is a claim line (billed in Phase 4); it exists only where a daily rate is published.
         const rate = rateOn(input.rates, day.date, { setting: day.setting, kind: day.presence === 'on_leave_hold' ? 'bed_hold_daily' : 'room_daily' })
@@ -185,6 +217,7 @@ export function deriveCharges(input: DerivationInput): Derivation {
       }
     }
     if (missingRate) problems.push({ code: 'missing_rate', stayId, residentId, count: missingRate })
+    for (const [code, count] of [...extra.entries()].sort()) problems.push({ code, stayId, residentId, count })
 
     for (const id of [...groups.keys()].sort()) {
       const group = groups.get(id)!

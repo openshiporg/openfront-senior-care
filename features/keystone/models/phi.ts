@@ -91,6 +91,18 @@ export function phiFields<T extends Record<string, Spec>>(listKey: string, spec:
   return out as never
 }
 
+/**
+ * As phiFields, and the read gate also gates `where` and `orderBy` (no inference by bisection): a session that cannot read the
+ * tier cannot filter or sort on the field either. Break-glass opens reads only, never filters.
+ */
+export function phiGatedFields<T extends Record<string, Spec>>(listKey: string, spec: T): { [K in keyof T]: ReturnType<T[K][1]> } {
+  const gated = Object.fromEntries(Object.entries(spec).map(([key, [tier, factory, config = {}]]) => {
+    const gate = ({ session }: { session?: Session }) => tierAllows(session, tier)
+    return [key, [tier, factory, { ...config, isFilterable: gate, isOrderable: gate }]]
+  }))
+  return phiFields(listKey, gated as T)
+}
+
 /** Every protected field name across lists (for the read-audit selection classifier). */
 export function protectedFieldNames() {
   const names = new Set<string>()

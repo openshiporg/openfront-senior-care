@@ -7,6 +7,7 @@ import { assignedCommunities, communityWhere } from './scope'
 import { opt, phiList, residentList, ro } from './residentAccess'
 import { SETTINGS } from './platform'
 import { trackingFields } from './trackingFields'
+import { coverageDepthFields } from './mds'
 import { label } from '../../../lib/labels'
 
 /* Residents & census (SCHEMA §4). Rows are created and changed by census commands only. */
@@ -379,7 +380,8 @@ export const CoveragePeriod = list({
     }),
     qualifyingStayFrom: calendarDay({ ...ro }),
     qualifyingStayTo: calendarDay({ ...ro }),
-    endReason: select({ ...opt(['skilled_need_ended', 'benefit_exhausted', 'discharge', 'payer_change', 'death', 'other']), ...ro }),
+    endReason: select({ ...opt(['skilled_need_ended', 'benefit_exhausted', 'discharge', 'payer_change', 'death', 'hospice_revoked', 'other']), ...ro }),
+    ...coverageDepthFields,
     version: versionField(),
     ...trackingFields,
   },

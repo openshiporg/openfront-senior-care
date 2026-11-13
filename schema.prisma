@@ -107,6 +107,11 @@ model User {
   from_TrustStatement_generatedBy              TrustStatement[]           @relation("TrustStatement_generatedBy")
   from_TrustTransaction_preparedBy             TrustTransaction[]         @relation("TrustTransaction_preparedBy")
   from_TrustTransaction_signedBy               TrustTransaction[]         @relation("TrustTransaction_signedBy")
+  from_ConcurrentReview_recordedBy             ConcurrentReview[]         @relation("ConcurrentReview_recordedBy")
+  from_MdsAssessment_completedBy               MdsAssessment[]            @relation("MdsAssessment_completedBy")
+  from_MdsSubmission_generatedBy               MdsSubmission[]            @relation("MdsSubmission_generatedBy")
+  from_MdsSubmission_uploadedBy                MdsSubmission[]            @relation("MdsSubmission_uploadedBy")
+  from_PriorSnfDaysObservation_recordedBy      PriorSnfDaysObservation[]  @relation("PriorSnfDaysObservation_recordedBy")
 
   @@index([roleId])
 }
@@ -534,6 +539,13 @@ model Community {
   from_TrustReconciliation_community      TrustReconciliation[]      @relation("TrustReconciliation_community")
   from_TrustStatement_community           TrustStatement[]           @relation("TrustStatement_community")
   from_TrustTransaction_community         TrustTransaction[]         @relation("TrustTransaction_community")
+  from_Authorisation_community            Authorisation[]            @relation("Authorisation_community")
+  from_BenefitPeriodCounter_community     BenefitPeriodCounter[]     @relation("BenefitPeriodCounter_community")
+  from_ConcurrentReview_community         ConcurrentReview[]         @relation("ConcurrentReview_community")
+  from_MdsAssessment_community            MdsAssessment[]            @relation("MdsAssessment_community")
+  from_MdsSubmission_community            MdsSubmission[]            @relation("MdsSubmission_community")
+  from_PdpmClassification_community       PdpmClassification[]       @relation("PdpmClassification_community")
+  from_PriorSnfDaysObservation_community  PriorSnfDaysObservation[]  @relation("PriorSnfDaysObservation_community")
 
   @@index([jurisdictionPackId])
   @@index([holidayCalendarId])
@@ -597,44 +609,46 @@ model DeviceRegistration {
 }
 
 model Document {
-  id                                     String                  @id @default(cuid())
-  title                                  String                  @default("")
-  kind                                   String                  @default("other")
-  community                              Community?              @relation("Document_community", fields: [communityId], references: [id])
-  communityId                            String?                 @map("community")
-  resident                               Resident?               @relation("Document_resident", fields: [residentId], references: [id])
-  residentId                             String?                 @map("resident")
-  phiTier                                String                  @default("op")
-  template                               DocumentTemplate?       @relation("Document_template", fields: [templateId], references: [id])
-  templateId                             String?                 @map("template")
-  storageKey                             String                  @default("")
-  sha256                                 String                  @default("")
-  mimeType                               String                  @default("")
-  sizeBytes                              Int?
-  documentVersion                        Int?                    @default(1)
-  supersedes                             Document?               @relation("Document_supersedes", fields: [supersedesId], references: [id])
-  supersedesId                           String?                 @map("supersedes")
-  status                                 String                  @default("final")
-  signedAt                               DateTime?
-  retentionUntil                         DateTime?               @postgresql.Date
-  createdAt                              DateTime                @default(now())
-  updatedAt                              DateTime                @default(now()) @updatedAt
-  from_Document_supersedes               Document[]              @relation("Document_supersedes")
-  from_ProcessorRegistration_baaDocument ProcessorRegistration[] @relation("ProcessorRegistration_baaDocument")
-  from_ApartmentType_floorPlan           ApartmentType[]         @relation("ApartmentType_floorPlan")
-  from_ApartmentType_photos              ApartmentType[]         @relation("ApartmentType_photos")
-  from_AdvanceDirective_document         AdvanceDirective[]      @relation("AdvanceDirective_document")
-  from_NoticeDelivery_document           NoticeDelivery[]        @relation("NoticeDelivery_document")
-  from_PreAdmissionScreen_document       PreAdmissionScreen[]    @relation("PreAdmissionScreen_document")
-  from_Representative_authorityDocument  Representative[]        @relation("Representative_authorityDocument")
-  from_Stay_agreement                    Stay[]                  @relation("Stay_agreement")
-  from_PortalScopeGrant_consentDocument  PortalScopeGrant[]      @relation("PortalScopeGrant_consentDocument")
-  from_Referral_packet                   Referral[]              @relation("Referral_packet")
-  from_Referral_pasrrLevel1              Referral[]              @relation("Referral_pasrrLevel1")
-  from_StaffBio_photo                    StaffBio[]              @relation("StaffBio_photo")
-  from_StaffBio_consentDocument          StaffBio[]              @relation("StaffBio_consentDocument")
-  from_StorefrontSite_gallery            StorefrontSite[]        @relation("StorefrontSite_gallery")
-  from_TrustAuthorisation_document       TrustAuthorisation[]    @relation("TrustAuthorisation_document")
+  id                                         String                    @id @default(cuid())
+  title                                      String                    @default("")
+  kind                                       String                    @default("other")
+  community                                  Community?                @relation("Document_community", fields: [communityId], references: [id])
+  communityId                                String?                   @map("community")
+  resident                                   Resident?                 @relation("Document_resident", fields: [residentId], references: [id])
+  residentId                                 String?                   @map("resident")
+  phiTier                                    String                    @default("op")
+  template                                   DocumentTemplate?         @relation("Document_template", fields: [templateId], references: [id])
+  templateId                                 String?                   @map("template")
+  storageKey                                 String                    @default("")
+  sha256                                     String                    @default("")
+  mimeType                                   String                    @default("")
+  sizeBytes                                  Int?
+  documentVersion                            Int?                      @default(1)
+  supersedes                                 Document?                 @relation("Document_supersedes", fields: [supersedesId], references: [id])
+  supersedesId                               String?                   @map("supersedes")
+  status                                     String                    @default("final")
+  signedAt                                   DateTime?
+  retentionUntil                             DateTime?                 @postgresql.Date
+  createdAt                                  DateTime                  @default(now())
+  updatedAt                                  DateTime                  @default(now()) @updatedAt
+  from_Document_supersedes                   Document[]                @relation("Document_supersedes")
+  from_ProcessorRegistration_baaDocument     ProcessorRegistration[]   @relation("ProcessorRegistration_baaDocument")
+  from_ApartmentType_floorPlan               ApartmentType[]           @relation("ApartmentType_floorPlan")
+  from_ApartmentType_photos                  ApartmentType[]           @relation("ApartmentType_photos")
+  from_AdvanceDirective_document             AdvanceDirective[]        @relation("AdvanceDirective_document")
+  from_CoveragePeriod_qualifyingStayEvidence CoveragePeriod[]          @relation("CoveragePeriod_qualifyingStayEvidence")
+  from_NoticeDelivery_document               NoticeDelivery[]          @relation("NoticeDelivery_document")
+  from_PreAdmissionScreen_document           PreAdmissionScreen[]      @relation("PreAdmissionScreen_document")
+  from_Representative_authorityDocument      Representative[]          @relation("Representative_authorityDocument")
+  from_Stay_agreement                        Stay[]                    @relation("Stay_agreement")
+  from_PortalScopeGrant_consentDocument      PortalScopeGrant[]        @relation("PortalScopeGrant_consentDocument")
+  from_Referral_packet                       Referral[]                @relation("Referral_packet")
+  from_Referral_pasrrLevel1                  Referral[]                @relation("Referral_pasrrLevel1")
+  from_StaffBio_photo                        StaffBio[]                @relation("StaffBio_photo")
+  from_StaffBio_consentDocument              StaffBio[]                @relation("StaffBio_consentDocument")
+  from_StorefrontSite_gallery                StorefrontSite[]          @relation("StorefrontSite_gallery")
+  from_TrustAuthorisation_document           TrustAuthorisation[]      @relation("TrustAuthorisation_document")
+  from_PriorSnfDaysObservation_document      PriorSnfDaysObservation[] @relation("PriorSnfDaysObservation_document")
 
   @@index([communityId])
   @@index([residentId])
@@ -1378,28 +1392,41 @@ model Contact {
 }
 
 model CoveragePeriod {
-  id                             String        @id @default(cuid())
-  stay                           Stay?         @relation("CoveragePeriod_stay", fields: [stayId], references: [id])
-  stayId                         String?       @map("stay")
-  payer                          Payer?        @relation("CoveragePeriod_payer", fields: [payerId], references: [id])
-  payerId                        String?       @map("payer")
+  id                             String          @id @default(cuid())
+  stay                           Stay?           @relation("CoveragePeriod_stay", fields: [stayId], references: [id])
+  stayId                         String?         @map("stay")
+  payer                          Payer?          @relation("CoveragePeriod_payer", fields: [payerId], references: [id])
+  payerId                        String?         @map("payer")
   rank                           String
-  startDate                      DateTime      @postgresql.Date
-  endDate                        DateTime?     @postgresql.Date
-  status                         String        @default("active")
-  levelCode                      String        @default("")
-  memberReference                String        @default("")
-  qualifyingStayFrom             DateTime?     @postgresql.Date
-  qualifyingStayTo               DateTime?     @postgresql.Date
+  startDate                      DateTime        @postgresql.Date
+  endDate                        DateTime?       @postgresql.Date
+  status                         String          @default("active")
+  levelCode                      String          @default("")
+  memberReference                String          @default("")
+  qualifyingStayFrom             DateTime?       @postgresql.Date
+  qualifyingStayTo               DateTime?       @postgresql.Date
   endReason                      String?
-  version                        Int           @default(0)
-  createdAt                      DateTime      @default(now())
-  updatedAt                      DateTime      @default(now()) @updatedAt
-  from_CensusDay_primaryCoverage CensusDay[]   @relation("CensusDay_primaryCoverage")
-  from_CensusEvent_coverage      CensusEvent[] @relation("CensusEvent_coverage")
+  skilledCertSignedAt            DateTime?       @postgresql.Date
+  skilledCertBy                  String          @default("")
+  qualifyingStayHospital         String          @default("")
+  qualifyingStayEvidence         Document?       @relation("CoveragePeriod_qualifyingStayEvidence", fields: [qualifyingStayEvidenceId], references: [id])
+  qualifyingStayEvidenceId       String?         @map("qualifyingStayEvidence")
+  qualifyingStayEvidenceNote     String          @default("")
+  lastCoveredDay                 DateTime?       @postgresql.Date
+  hospiceAgency                  String          @default("")
+  hospiceElectionOn              DateTime?       @postgresql.Date
+  hospiceRoomBoardBps            Int?
+  endOverrideReason              String?
+  version                        Int             @default(0)
+  createdAt                      DateTime        @default(now())
+  updatedAt                      DateTime        @default(now()) @updatedAt
+  from_CensusDay_primaryCoverage CensusDay[]     @relation("CensusDay_primaryCoverage")
+  from_CensusEvent_coverage      CensusEvent[]   @relation("CensusEvent_coverage")
+  from_Authorisation_coverage    Authorisation[] @relation("Authorisation_coverage")
 
   @@index([stayId])
   @@index([payerId])
+  @@index([qualifyingStayEvidenceId])
 }
 
 model Diagnosis {
@@ -1465,6 +1492,7 @@ model Payer {
   updatedAt                 DateTime         @default(now()) @updatedAt
   from_CoveragePeriod_payer CoveragePeriod[] @relation("CoveragePeriod_payer")
   from_Charge_payer         Charge[]         @relation("Charge_payer")
+  from_Authorisation_payer  Authorisation[]  @relation("Authorisation_payer")
 }
 
 model PreAdmissionScreen {
@@ -1613,6 +1641,12 @@ model Resident {
   from_TrustLedgerLine_resident          TrustLedgerLine[]          @relation("TrustLedgerLine_resident")
   from_TrustStatement_resident           TrustStatement[]           @relation("TrustStatement_resident")
   from_TrustTransaction_resident         TrustTransaction[]         @relation("TrustTransaction_resident")
+  from_Authorisation_resident            Authorisation[]            @relation("Authorisation_resident")
+  from_BenefitPeriodCounter_resident     BenefitPeriodCounter[]     @relation("BenefitPeriodCounter_resident")
+  from_ConcurrentReview_resident         ConcurrentReview[]         @relation("ConcurrentReview_resident")
+  from_MdsAssessment_resident            MdsAssessment[]            @relation("MdsAssessment_resident")
+  from_PdpmClassification_resident       PdpmClassification[]       @relation("PdpmClassification_resident")
+  from_PriorSnfDaysObservation_resident  PriorSnfDaysObservation[]  @relation("PriorSnfDaysObservation_resident")
 
   @@index([communityId])
   @@index([currentStayId])
@@ -1683,6 +1717,9 @@ model Stay {
   from_MedicaidApplication_stay        MedicaidApplication[]      @relation("MedicaidApplication_stay")
   from_MedicaidLiability_stay          MedicaidLiability[]        @relation("MedicaidLiability_stay")
   from_PatientLiabilitySchedule_stay   PatientLiabilitySchedule[] @relation("PatientLiabilitySchedule_stay")
+  from_Authorisation_stay              Authorisation[]            @relation("Authorisation_stay")
+  from_MdsAssessment_stay              MdsAssessment[]            @relation("MdsAssessment_stay")
+  from_PdpmClassification_stay         PdpmClassification[]       @relation("PdpmClassification_stay")
 
   @@index([residentId])
   @@index([communityId])
@@ -2116,20 +2153,21 @@ model Assessment {
 }
 
 model AssessmentTemplate {
-  id                       String       @id @default(cuid())
-  code                     String       @default("")
-  name                     String       @default("")
-  templateVersion          Int?         @default(1)
-  scorer                   String
-  definition               Json?
-  settings                 Json?
-  sourceNote               String       @default("")
-  verifyNote               String       @default("")
-  status                   String       @default("active")
-  version                  Int          @default(0)
-  createdAt                DateTime     @default(now())
-  updatedAt                DateTime     @default(now()) @updatedAt
-  from_Assessment_template Assessment[] @relation("Assessment_template")
+  id                         String          @id @default(cuid())
+  code                       String          @default("")
+  name                       String          @default("")
+  templateVersion            Int?            @default(1)
+  scorer                     String
+  definition                 Json?
+  settings                   Json?
+  sourceNote                 String          @default("")
+  verifyNote                 String          @default("")
+  status                     String          @default("active")
+  version                    Int             @default(0)
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @default(now()) @updatedAt
+  from_Assessment_template   Assessment[]    @relation("Assessment_template")
+  from_MdsAssessment_itemSet MdsAssessment[] @relation("MdsAssessment_itemSet")
 
   @@index([code])
 }
@@ -4098,6 +4136,251 @@ model TrustTransaction {
   @@index([signedById])
   @@index([approvalId])
   @@index([reversesId])
+}
+
+model Authorisation {
+  id                 String             @id @default(cuid())
+  resident           Resident?          @relation("Authorisation_resident", fields: [residentId], references: [id])
+  residentId         String?            @map("resident")
+  community          Community?         @relation("Authorisation_community", fields: [communityId], references: [id])
+  communityId        String?            @map("community")
+  stay               Stay?              @relation("Authorisation_stay", fields: [stayId], references: [id])
+  stayId             String?            @map("stay")
+  reference          String             @unique @default("")
+  coverage           CoveragePeriod?    @relation("Authorisation_coverage", fields: [coverageId], references: [id])
+  coverageId         String?            @map("coverage")
+  payer              Payer?             @relation("Authorisation_payer", fields: [payerId], references: [id])
+  payerId            String?            @map("payer")
+  payerAuthNumber    String             @default("")
+  levelOfCare        String             @default("")
+  requestedOn        DateTime?          @postgresql.Date
+  authFrom           DateTime?          @postgresql.Date
+  authTo             DateTime?          @postgresql.Date
+  reviewIntervalDays Int?               @default(7)
+  status             String             @default("requested")
+  reviews            ConcurrentReview[] @relation("ConcurrentReview_authorisation")
+  note               String             @default("")
+  version            Int                @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @default(now()) @updatedAt
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([stayId])
+  @@index([coverageId])
+  @@index([payerId])
+}
+
+model BenefitPeriodCounter {
+  id                  String     @id @default(cuid())
+  resident            Resident?  @relation("BenefitPeriodCounter_resident", fields: [residentId], references: [id])
+  residentId          String?    @map("resident")
+  community           Community? @relation("BenefitPeriodCounter_community", fields: [communityId], references: [id])
+  communityId         String?    @map("community")
+  spellStart          DateTime?  @postgresql.Date
+  spellEnd            DateTime?  @postgresql.Date
+  fullDaysUsed        Int?       @default(0)
+  coinsuranceDaysUsed Int?       @default(0)
+  priorDaysUsed       Int?       @default(0)
+  lastCoveredDay      DateTime?  @postgresql.Date
+  derivedFromHash     String     @default("")
+  computedAt          DateTime?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @default(now()) @updatedAt
+
+  @@index([residentId])
+  @@index([communityId])
+}
+
+model ConcurrentReview {
+  id              String         @id @default(cuid())
+  resident        Resident?      @relation("ConcurrentReview_resident", fields: [residentId], references: [id])
+  residentId      String?        @map("resident")
+  community       Community?     @relation("ConcurrentReview_community", fields: [communityId], references: [id])
+  communityId     String?        @map("community")
+  authorisation   Authorisation? @relation("ConcurrentReview_authorisation", fields: [authorisationId], references: [id])
+  authorisationId String?        @map("authorisation")
+  reviewedOn      DateTime?      @postgresql.Date
+  outcome         String
+  newAuthTo       DateTime?      @postgresql.Date
+  reviewer        String         @default("")
+  note            String         @default("")
+  recordedBy      User?          @relation("ConcurrentReview_recordedBy", fields: [recordedById], references: [id])
+  recordedById    String?        @map("recordedBy")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @default(now()) @updatedAt
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([authorisationId])
+  @@index([recordedById])
+}
+
+model MdsAssessment {
+  id                                 String               @id @default(cuid())
+  resident                           Resident?            @relation("MdsAssessment_resident", fields: [residentId], references: [id])
+  residentId                         String?              @map("resident")
+  community                          Community?           @relation("MdsAssessment_community", fields: [communityId], references: [id])
+  communityId                        String?              @map("community")
+  stay                               Stay?                @relation("MdsAssessment_stay", fields: [stayId], references: [id])
+  stayId                             String?              @map("stay")
+  reference                          String               @unique @default("")
+  kind                               String
+  ardDate                            DateTime             @postgresql.Date
+  itemSet                            AssessmentTemplate?  @relation("MdsAssessment_itemSet", fields: [itemSetId], references: [id])
+  itemSetId                          String?              @map("itemSet")
+  itemSetVersion                     String               @default("")
+  items                              Json?
+  caaTriggers                        Json?
+  editResults                        Json?
+  hipps                              String               @default("")
+  signatures                         Json?                @default("[]")
+  status                             String               @default("in_progress")
+  completedAt                        DateTime?
+  completedBy                        User?                @relation("MdsAssessment_completedBy", fields: [completedById], references: [id])
+  completedById                      String?              @map("completedBy")
+  correctionOf                       MdsAssessment?       @relation("MdsAssessment_correctionOf", fields: [correctionOfId], references: [id])
+  correctionOfId                     String?              @map("correctionOf")
+  correctionNumber                   Int?                 @default(0)
+  correctionReason                   String               @default("")
+  submission                         MdsSubmission?       @relation("MdsAssessment_submission", fields: [submissionId], references: [id])
+  submissionId                       String?              @map("submission")
+  acceptedAt                         DateTime?
+  version                            Int                  @default(0)
+  createdAt                          DateTime             @default(now())
+  updatedAt                          DateTime             @default(now()) @updatedAt
+  from_MdsAssessment_correctionOf    MdsAssessment[]      @relation("MdsAssessment_correctionOf")
+  from_PdpmClassification_assessment PdpmClassification[] @relation("PdpmClassification_assessment")
+
+  @@unique([residentId, kind, ardDate, correctionNumber], map: "MdsAssessment_resident_kind_ard_correction_key")
+  @@index([residentId])
+  @@index([communityId])
+  @@index([stayId])
+  @@index([itemSetId])
+  @@index([completedById])
+  @@index([correctionOfId])
+  @@index([submissionId])
+}
+
+model MdsSubmission {
+  id            String          @id @default(cuid())
+  community     Community?      @relation("MdsSubmission_community", fields: [communityId], references: [id])
+  communityId   String?         @map("community")
+  reference     String          @unique @default("")
+  assessments   MdsAssessment[] @relation("MdsAssessment_submission")
+  recordCount   Int?            @default(0)
+  payload       Json?
+  fvr           Json?
+  fileHash      String          @default("")
+  fileName      String          @default("")
+  status        String          @default("generated")
+  generatedAt   DateTime?
+  generatedBy   User?           @relation("MdsSubmission_generatedBy", fields: [generatedById], references: [id])
+  generatedById String?         @map("generatedBy")
+  uploadedAt    DateTime?
+  uploadedBy    User?           @relation("MdsSubmission_uploadedBy", fields: [uploadedById], references: [id])
+  uploadedById  String?         @map("uploadedBy")
+  fvrParsedAt   DateTime?
+  fvrSummary    Json?
+  version       Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([generatedById])
+  @@index([uploadedById])
+}
+
+model PdpmClassification {
+  id                                   String               @id @default(cuid())
+  resident                             Resident?            @relation("PdpmClassification_resident", fields: [residentId], references: [id])
+  residentId                           String?              @map("resident")
+  community                            Community?           @relation("PdpmClassification_community", fields: [communityId], references: [id])
+  communityId                          String?              @map("community")
+  stay                                 Stay?                @relation("PdpmClassification_stay", fields: [stayId], references: [id])
+  stayId                               String?              @map("stay")
+  assessment                           MdsAssessment?       @relation("PdpmClassification_assessment", fields: [assessmentId], references: [id])
+  assessmentId                         String?              @map("assessment")
+  mappingVersion                       PdpmMappingVersion?  @relation("PdpmClassification_mappingVersion", fields: [mappingVersionId], references: [id])
+  mappingVersionId                     String?              @map("mappingVersion")
+  indicator                            String
+  effectiveFrom                        DateTime             @postgresql.Date
+  hipps                                String               @default("")
+  groups                               Json?
+  cmi                                  Json?
+  functionScores                       Json?
+  inputHash                            String               @default("")
+  status                               String               @default("current")
+  supersededBy                         PdpmClassification?  @relation("PdpmClassification_supersededBy", fields: [supersededById], references: [id])
+  supersededById                       String?              @map("supersededBy")
+  createdAt                            DateTime             @default(now())
+  updatedAt                            DateTime             @default(now()) @updatedAt
+  from_PdpmClassification_supersededBy PdpmClassification[] @relation("PdpmClassification_supersededBy")
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([stayId])
+  @@index([assessmentId])
+  @@index([mappingVersionId])
+  @@index([supersededById])
+}
+
+model PdpmMappingVersion {
+  id                                     String               @id @default(cuid())
+  code                                   String               @unique @default("")
+  effectiveFrom                          DateTime?            @postgresql.Date
+  effectiveTo                            DateTime?            @postgresql.Date
+  tables                                 Json?
+  sourceNote                             String               @default("")
+  verifyNote                             String               @default("")
+  status                                 String               @default("active")
+  createdAt                              DateTime             @default(now())
+  updatedAt                              DateTime             @default(now()) @updatedAt
+  from_PdpmClassification_mappingVersion PdpmClassification[] @relation("PdpmClassification_mappingVersion")
+  from_ReferenceRate_mappingVersion      ReferenceRate[]      @relation("ReferenceRate_mappingVersion")
+}
+
+model PriorSnfDaysObservation {
+  id           String     @id @default(cuid())
+  resident     Resident?  @relation("PriorSnfDaysObservation_resident", fields: [residentId], references: [id])
+  residentId   String?    @map("resident")
+  community    Community? @relation("PriorSnfDaysObservation_community", fields: [communityId], references: [id])
+  communityId  String?    @map("community")
+  source       String
+  daysUsed     Int
+  asOf         DateTime?  @postgresql.Date
+  spellStart   DateTime?  @postgresql.Date
+  document     Document?  @relation("PriorSnfDaysObservation_document", fields: [documentId], references: [id])
+  documentId   String?    @map("document")
+  note         String     @default("")
+  recordedBy   User?      @relation("PriorSnfDaysObservation_recordedBy", fields: [recordedById], references: [id])
+  recordedById String?    @map("recordedBy")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @default(now()) @updatedAt
+
+  @@index([residentId])
+  @@index([communityId])
+  @@index([documentId])
+  @@index([recordedById])
+}
+
+model ReferenceRate {
+  id               String              @id @default(cuid())
+  mappingVersion   PdpmMappingVersion? @relation("ReferenceRate_mappingVersion", fields: [mappingVersionId], references: [id])
+  mappingVersionId String?             @map("mappingVersion")
+  component        String
+  geography        String              @default("")
+  rate             Decimal             @postgresql.Decimal(18, 4)
+  laborShare       Decimal?            @postgresql.Decimal(12, 6)
+  effectiveFrom    DateTime?           @postgresql.Date
+  effectiveTo      DateTime?           @postgresql.Date
+  sourceNote       String              @default("")
+  verifyNote       String              @default("")
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @default(now()) @updatedAt
+
+  @@unique([component, geography, effectiveFrom], map: "ReferenceRate_component_geo_from_key")
+  @@index([mappingVersionId])
 }
 
 enum UserKindType {

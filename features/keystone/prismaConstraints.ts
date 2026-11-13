@@ -20,6 +20,8 @@ export const COMPOUND_UNIQUES: Record<string, string[]> = {
   CensusEvent: ['@@unique([stayId, seq], map: "CensusEvent_stay_seq_key")'],
   PaymentPlanInstalment: ['@@unique([planId, number], map: "PaymentPlanInstalment_plan_number_key")'],
   TrustStatement: ['@@unique([ledgerId, quarter], map: "TrustStatement_ledger_quarter_key")'],
+  MdsAssessment: ['@@unique([residentId, kind, ardDate, correctionNumber], map: "MdsAssessment_resident_kind_ard_correction_key")'],
+  ReferenceRate: ['@@unique([component, geography, effectiveFrom], map: "ReferenceRate_component_geo_from_key")'],
   InterestAllocationRun: ['@@unique([accountId, month], map: "InterestAllocationRun_account_month_key")'],
 }
 

@@ -3,6 +3,7 @@ import { command } from '../lib/command'
 import { seedOperatorPlatform } from '../seed/platform'
 import { runCensusSeed } from '../seed/census'
 import { seedClinical } from '../seed/clinical'
+import { runMdsSeed } from '../seed/mds'
 import { seedBilling } from '../seed/billing'
 
 /** Onboarding: load the Ridgeline Senior Living / Maple Ridge spine (synthetic=true). Idempotent per key and per record. */
@@ -40,4 +41,12 @@ export async function loadBillingSetup(_root: unknown, args: { idempotencyKey: s
   requirePermission(actor, 'canManageOnboarding')
   const result = await command(context.prisma, { name: 'setup.load_billing', actor, idempotencyKey: args.idempotencyKey, params: {} }, uow => seedBilling(uow, actor))
   return { replay: result.replay, ...result.value }
+}
+
+/** Onboarding: Phase 4a MDS item sets, FY2026 PDPM tables and the golden PDPM cases as invented Medicare residents. Idempotent. */
+export async function loadMdsSetup(_root: unknown, args: { idempotencyKey: string }, context: any) {
+  const actor = actorFromSession(context.session)
+  requirePermission(actor, 'canManageOnboarding')
+  const created = await runMdsSeed(context.prisma, { idempotencyPrefix: `seed-mds-v1` })
+  return { created, key: args.idempotencyKey }
 }

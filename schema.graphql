@@ -5222,6 +5222,16 @@ type CoveragePeriod {
   qualifyingStayFrom: CalendarDay
   qualifyingStayTo: CalendarDay
   endReason: String
+  skilledCertSignedAt: CalendarDay
+  skilledCertBy: String
+  qualifyingStayHospital: String
+  qualifyingStayEvidence: Document
+  qualifyingStayEvidenceNote: String
+  lastCoveredDay: CalendarDay
+  hospiceAgency: String
+  hospiceElectionOn: CalendarDay
+  hospiceRoomBoardBps: Int
+  endOverrideReason: String
   version: Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -5247,6 +5257,16 @@ input CoveragePeriodWhereInput {
   qualifyingStayFrom: CalendarDayNullableFilter
   qualifyingStayTo: CalendarDayNullableFilter
   endReason: StringNullableFilter
+  skilledCertSignedAt: CalendarDayNullableFilter
+  skilledCertBy: StringFilter
+  qualifyingStayHospital: StringFilter
+  qualifyingStayEvidence: DocumentWhereInput
+  qualifyingStayEvidenceNote: StringFilter
+  lastCoveredDay: CalendarDayNullableFilter
+  hospiceAgency: StringFilter
+  hospiceElectionOn: CalendarDayNullableFilter
+  hospiceRoomBoardBps: IntNullableFilter
+  endOverrideReason: StringNullableFilter
   version: IntFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
@@ -5263,6 +5283,15 @@ input CoveragePeriodOrderByInput {
   qualifyingStayFrom: OrderDirection
   qualifyingStayTo: OrderDirection
   endReason: OrderDirection
+  skilledCertSignedAt: OrderDirection
+  skilledCertBy: OrderDirection
+  qualifyingStayHospital: OrderDirection
+  qualifyingStayEvidenceNote: OrderDirection
+  lastCoveredDay: OrderDirection
+  hospiceAgency: OrderDirection
+  hospiceElectionOn: OrderDirection
+  hospiceRoomBoardBps: OrderDirection
+  endOverrideReason: OrderDirection
   version: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
@@ -5280,6 +5309,16 @@ input CoveragePeriodUpdateInput {
   qualifyingStayFrom: CalendarDay
   qualifyingStayTo: CalendarDay
   endReason: String
+  skilledCertSignedAt: CalendarDay
+  skilledCertBy: String
+  qualifyingStayHospital: String
+  qualifyingStayEvidence: DocumentRelateToOneForUpdateInput
+  qualifyingStayEvidenceNote: String
+  lastCoveredDay: CalendarDay
+  hospiceAgency: String
+  hospiceElectionOn: CalendarDay
+  hospiceRoomBoardBps: Int
+  endOverrideReason: String
   version: Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -5308,6 +5347,16 @@ input CoveragePeriodCreateInput {
   qualifyingStayFrom: CalendarDay
   qualifyingStayTo: CalendarDay
   endReason: String
+  skilledCertSignedAt: CalendarDay
+  skilledCertBy: String
+  qualifyingStayHospital: String
+  qualifyingStayEvidence: DocumentRelateToOneForCreateInput
+  qualifyingStayEvidenceNote: String
+  lastCoveredDay: CalendarDay
+  hospiceAgency: String
+  hospiceElectionOn: CalendarDay
+  hospiceRoomBoardBps: Int
+  endOverrideReason: String
   version: Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -15586,6 +15635,967 @@ input TrustLedgerLineRelateToManyForCreateInput {
   connect: [TrustLedgerLineWhereUniqueInput!]
 }
 
+type Authorisation {
+  id: ID!
+  resident: Resident
+  community: Community
+  stay: Stay
+  reference: String
+  coverage: CoveragePeriod
+  payer: Payer
+  payerAuthNumber: String
+  levelOfCare: String
+  requestedOn: CalendarDay
+  authFrom: CalendarDay
+  authTo: CalendarDay
+  reviewIntervalDays: Int
+  status: String
+  reviews(where: ConcurrentReviewWhereInput! = {}, orderBy: [ConcurrentReviewOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ConcurrentReviewWhereUniqueInput): [ConcurrentReview!]
+  reviewsCount(where: ConcurrentReviewWhereInput! = {}): Int
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AuthorisationWhereUniqueInput {
+  id: ID
+  reference: String
+}
+
+input AuthorisationWhereInput {
+  AND: [AuthorisationWhereInput!]
+  OR: [AuthorisationWhereInput!]
+  NOT: [AuthorisationWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  stay: StayWhereInput
+  reference: StringFilter
+  coverage: CoveragePeriodWhereInput
+  payer: PayerWhereInput
+  payerAuthNumber: StringFilter
+  levelOfCare: StringFilter
+  requestedOn: CalendarDayNullableFilter
+  authFrom: CalendarDayNullableFilter
+  authTo: CalendarDayNullableFilter
+  reviewIntervalDays: IntNullableFilter
+  status: StringFilter
+  reviews: ConcurrentReviewManyRelationFilter
+  note: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input ConcurrentReviewManyRelationFilter {
+  every: ConcurrentReviewWhereInput
+  some: ConcurrentReviewWhereInput
+  none: ConcurrentReviewWhereInput
+}
+
+input AuthorisationOrderByInput {
+  id: OrderDirection
+  reference: OrderDirection
+  payerAuthNumber: OrderDirection
+  levelOfCare: OrderDirection
+  requestedOn: OrderDirection
+  authFrom: OrderDirection
+  authTo: OrderDirection
+  reviewIntervalDays: OrderDirection
+  status: OrderDirection
+  note: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input AuthorisationUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  stay: StayRelateToOneForUpdateInput
+  reference: String
+  coverage: CoveragePeriodRelateToOneForUpdateInput
+  payer: PayerRelateToOneForUpdateInput
+  payerAuthNumber: String
+  levelOfCare: String
+  requestedOn: CalendarDay
+  authFrom: CalendarDay
+  authTo: CalendarDay
+  reviewIntervalDays: Int
+  status: String
+  reviews: ConcurrentReviewRelateToManyForUpdateInput
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ConcurrentReviewRelateToManyForUpdateInput {
+  disconnect: [ConcurrentReviewWhereUniqueInput!]
+  set: [ConcurrentReviewWhereUniqueInput!]
+  create: [ConcurrentReviewCreateInput!]
+  connect: [ConcurrentReviewWhereUniqueInput!]
+}
+
+input AuthorisationUpdateArgs {
+  where: AuthorisationWhereUniqueInput!
+  data: AuthorisationUpdateInput!
+}
+
+input AuthorisationCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  stay: StayRelateToOneForCreateInput
+  reference: String
+  coverage: CoveragePeriodRelateToOneForCreateInput
+  payer: PayerRelateToOneForCreateInput
+  payerAuthNumber: String
+  levelOfCare: String
+  requestedOn: CalendarDay
+  authFrom: CalendarDay
+  authTo: CalendarDay
+  reviewIntervalDays: Int
+  status: String
+  reviews: ConcurrentReviewRelateToManyForCreateInput
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ConcurrentReviewRelateToManyForCreateInput {
+  create: [ConcurrentReviewCreateInput!]
+  connect: [ConcurrentReviewWhereUniqueInput!]
+}
+
+type BenefitPeriodCounter {
+  id: ID!
+  resident: Resident
+  community: Community
+  spellStart: CalendarDay
+  spellEnd: CalendarDay
+  fullDaysUsed: Int
+  coinsuranceDaysUsed: Int
+  priorDaysUsed: Int
+  lastCoveredDay: CalendarDay
+  derivedFromHash: String
+  computedAt: DateTime
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input BenefitPeriodCounterWhereUniqueInput {
+  id: ID
+}
+
+input BenefitPeriodCounterWhereInput {
+  AND: [BenefitPeriodCounterWhereInput!]
+  OR: [BenefitPeriodCounterWhereInput!]
+  NOT: [BenefitPeriodCounterWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  spellStart: CalendarDayNullableFilter
+  spellEnd: CalendarDayNullableFilter
+  fullDaysUsed: IntNullableFilter
+  coinsuranceDaysUsed: IntNullableFilter
+  priorDaysUsed: IntNullableFilter
+  lastCoveredDay: CalendarDayNullableFilter
+  derivedFromHash: StringFilter
+  computedAt: DateTimeNullableFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input BenefitPeriodCounterOrderByInput {
+  id: OrderDirection
+  spellStart: OrderDirection
+  spellEnd: OrderDirection
+  fullDaysUsed: OrderDirection
+  coinsuranceDaysUsed: OrderDirection
+  priorDaysUsed: OrderDirection
+  lastCoveredDay: OrderDirection
+  derivedFromHash: OrderDirection
+  computedAt: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input BenefitPeriodCounterUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  spellStart: CalendarDay
+  spellEnd: CalendarDay
+  fullDaysUsed: Int
+  coinsuranceDaysUsed: Int
+  priorDaysUsed: Int
+  lastCoveredDay: CalendarDay
+  derivedFromHash: String
+  computedAt: DateTime
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input BenefitPeriodCounterUpdateArgs {
+  where: BenefitPeriodCounterWhereUniqueInput!
+  data: BenefitPeriodCounterUpdateInput!
+}
+
+input BenefitPeriodCounterCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  spellStart: CalendarDay
+  spellEnd: CalendarDay
+  fullDaysUsed: Int
+  coinsuranceDaysUsed: Int
+  priorDaysUsed: Int
+  lastCoveredDay: CalendarDay
+  derivedFromHash: String
+  computedAt: DateTime
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type ConcurrentReview {
+  id: ID!
+  resident: Resident
+  community: Community
+  authorisation: Authorisation
+  reviewedOn: CalendarDay
+  outcome: String
+  newAuthTo: CalendarDay
+  reviewer: String
+  note: String
+  recordedBy: User
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ConcurrentReviewWhereUniqueInput {
+  id: ID
+}
+
+input ConcurrentReviewWhereInput {
+  AND: [ConcurrentReviewWhereInput!]
+  OR: [ConcurrentReviewWhereInput!]
+  NOT: [ConcurrentReviewWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  authorisation: AuthorisationWhereInput
+  reviewedOn: CalendarDayNullableFilter
+  outcome: StringFilter
+  newAuthTo: CalendarDayNullableFilter
+  reviewer: StringFilter
+  note: StringFilter
+  recordedBy: UserWhereInput
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input ConcurrentReviewOrderByInput {
+  id: OrderDirection
+  reviewedOn: OrderDirection
+  outcome: OrderDirection
+  newAuthTo: OrderDirection
+  reviewer: OrderDirection
+  note: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input ConcurrentReviewUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  authorisation: AuthorisationRelateToOneForUpdateInput
+  reviewedOn: CalendarDay
+  outcome: String
+  newAuthTo: CalendarDay
+  reviewer: String
+  note: String
+  recordedBy: UserRelateToOneForUpdateInput
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AuthorisationRelateToOneForUpdateInput {
+  create: AuthorisationCreateInput
+  connect: AuthorisationWhereUniqueInput
+  disconnect: Boolean
+}
+
+input ConcurrentReviewUpdateArgs {
+  where: ConcurrentReviewWhereUniqueInput!
+  data: ConcurrentReviewUpdateInput!
+}
+
+input ConcurrentReviewCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  authorisation: AuthorisationRelateToOneForCreateInput
+  reviewedOn: CalendarDay
+  outcome: String
+  newAuthTo: CalendarDay
+  reviewer: String
+  note: String
+  recordedBy: UserRelateToOneForCreateInput
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AuthorisationRelateToOneForCreateInput {
+  create: AuthorisationCreateInput
+  connect: AuthorisationWhereUniqueInput
+}
+
+type MdsAssessment {
+  id: ID!
+  resident: Resident
+  community: Community
+  stay: Stay
+  reference: String
+  kind: String
+  ardDate: CalendarDay
+  itemSet: AssessmentTemplate
+  itemSetVersion: String
+  items: JSON
+  caaTriggers: JSON
+  editResults: JSON
+  hipps: String
+  signatures: JSON
+  status: String
+  completedAt: DateTime
+  completedBy: User
+  correctionOf: MdsAssessment
+  correctionNumber: Int
+  correctionReason: String
+  submission: MdsSubmission
+  acceptedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MdsAssessmentWhereUniqueInput {
+  id: ID
+  reference: String
+}
+
+input MdsAssessmentWhereInput {
+  AND: [MdsAssessmentWhereInput!]
+  OR: [MdsAssessmentWhereInput!]
+  NOT: [MdsAssessmentWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  stay: StayWhereInput
+  reference: StringFilter
+  kind: StringFilter
+  ardDate: CalendarDayFilter
+  itemSet: AssessmentTemplateWhereInput
+  itemSetVersion: StringFilter
+  hipps: StringFilter
+  status: StringFilter
+  completedAt: DateTimeNullableFilter
+  completedBy: UserWhereInput
+  correctionOf: MdsAssessmentWhereInput
+  correctionNumber: IntNullableFilter
+  correctionReason: StringFilter
+  submission: MdsSubmissionWhereInput
+  acceptedAt: DateTimeNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input MdsAssessmentOrderByInput {
+  id: OrderDirection
+  reference: OrderDirection
+  kind: OrderDirection
+  ardDate: OrderDirection
+  itemSetVersion: OrderDirection
+  hipps: OrderDirection
+  status: OrderDirection
+  completedAt: OrderDirection
+  correctionNumber: OrderDirection
+  correctionReason: OrderDirection
+  acceptedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input MdsAssessmentUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  stay: StayRelateToOneForUpdateInput
+  reference: String
+  kind: String
+  ardDate: CalendarDay
+  itemSet: AssessmentTemplateRelateToOneForUpdateInput
+  itemSetVersion: String
+  items: JSON
+  caaTriggers: JSON
+  editResults: JSON
+  hipps: String
+  signatures: JSON
+  status: String
+  completedAt: DateTime
+  completedBy: UserRelateToOneForUpdateInput
+  correctionOf: MdsAssessmentRelateToOneForUpdateInput
+  correctionNumber: Int
+  correctionReason: String
+  submission: MdsSubmissionRelateToOneForUpdateInput
+  acceptedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MdsAssessmentRelateToOneForUpdateInput {
+  create: MdsAssessmentCreateInput
+  connect: MdsAssessmentWhereUniqueInput
+  disconnect: Boolean
+}
+
+input MdsSubmissionRelateToOneForUpdateInput {
+  create: MdsSubmissionCreateInput
+  connect: MdsSubmissionWhereUniqueInput
+  disconnect: Boolean
+}
+
+input MdsAssessmentUpdateArgs {
+  where: MdsAssessmentWhereUniqueInput!
+  data: MdsAssessmentUpdateInput!
+}
+
+input MdsAssessmentCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  stay: StayRelateToOneForCreateInput
+  reference: String
+  kind: String
+  ardDate: CalendarDay
+  itemSet: AssessmentTemplateRelateToOneForCreateInput
+  itemSetVersion: String
+  items: JSON
+  caaTriggers: JSON
+  editResults: JSON
+  hipps: String
+  signatures: JSON
+  status: String
+  completedAt: DateTime
+  completedBy: UserRelateToOneForCreateInput
+  correctionOf: MdsAssessmentRelateToOneForCreateInput
+  correctionNumber: Int
+  correctionReason: String
+  submission: MdsSubmissionRelateToOneForCreateInput
+  acceptedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MdsAssessmentRelateToOneForCreateInput {
+  create: MdsAssessmentCreateInput
+  connect: MdsAssessmentWhereUniqueInput
+}
+
+input MdsSubmissionRelateToOneForCreateInput {
+  create: MdsSubmissionCreateInput
+  connect: MdsSubmissionWhereUniqueInput
+}
+
+type MdsSubmission {
+  id: ID!
+  community: Community
+  reference: String
+  assessments(where: MdsAssessmentWhereInput! = {}, orderBy: [MdsAssessmentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MdsAssessmentWhereUniqueInput): [MdsAssessment!]
+  assessmentsCount(where: MdsAssessmentWhereInput! = {}): Int
+  recordCount: Int
+  payload: JSON
+  fvr: JSON
+  fileHash: String
+  fileName: String
+  status: String
+  generatedAt: DateTime
+  generatedBy: User
+  uploadedAt: DateTime
+  uploadedBy: User
+  fvrParsedAt: DateTime
+  fvrSummary: JSON
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MdsSubmissionWhereUniqueInput {
+  id: ID
+  reference: String
+}
+
+input MdsSubmissionWhereInput {
+  AND: [MdsSubmissionWhereInput!]
+  OR: [MdsSubmissionWhereInput!]
+  NOT: [MdsSubmissionWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  reference: StringFilter
+  assessments: MdsAssessmentManyRelationFilter
+  recordCount: IntNullableFilter
+  fileHash: StringFilter
+  fileName: StringFilter
+  status: StringFilter
+  generatedAt: DateTimeNullableFilter
+  generatedBy: UserWhereInput
+  uploadedAt: DateTimeNullableFilter
+  uploadedBy: UserWhereInput
+  fvrParsedAt: DateTimeNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input MdsAssessmentManyRelationFilter {
+  every: MdsAssessmentWhereInput
+  some: MdsAssessmentWhereInput
+  none: MdsAssessmentWhereInput
+}
+
+input MdsSubmissionOrderByInput {
+  id: OrderDirection
+  reference: OrderDirection
+  recordCount: OrderDirection
+  fileHash: OrderDirection
+  fileName: OrderDirection
+  status: OrderDirection
+  generatedAt: OrderDirection
+  uploadedAt: OrderDirection
+  fvrParsedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input MdsSubmissionUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  reference: String
+  assessments: MdsAssessmentRelateToManyForUpdateInput
+  recordCount: Int
+  payload: JSON
+  fvr: JSON
+  fileHash: String
+  fileName: String
+  status: String
+  generatedAt: DateTime
+  generatedBy: UserRelateToOneForUpdateInput
+  uploadedAt: DateTime
+  uploadedBy: UserRelateToOneForUpdateInput
+  fvrParsedAt: DateTime
+  fvrSummary: JSON
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MdsAssessmentRelateToManyForUpdateInput {
+  disconnect: [MdsAssessmentWhereUniqueInput!]
+  set: [MdsAssessmentWhereUniqueInput!]
+  create: [MdsAssessmentCreateInput!]
+  connect: [MdsAssessmentWhereUniqueInput!]
+}
+
+input MdsSubmissionUpdateArgs {
+  where: MdsSubmissionWhereUniqueInput!
+  data: MdsSubmissionUpdateInput!
+}
+
+input MdsSubmissionCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  reference: String
+  assessments: MdsAssessmentRelateToManyForCreateInput
+  recordCount: Int
+  payload: JSON
+  fvr: JSON
+  fileHash: String
+  fileName: String
+  status: String
+  generatedAt: DateTime
+  generatedBy: UserRelateToOneForCreateInput
+  uploadedAt: DateTime
+  uploadedBy: UserRelateToOneForCreateInput
+  fvrParsedAt: DateTime
+  fvrSummary: JSON
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MdsAssessmentRelateToManyForCreateInput {
+  create: [MdsAssessmentCreateInput!]
+  connect: [MdsAssessmentWhereUniqueInput!]
+}
+
+type PdpmClassification {
+  id: ID!
+  resident: Resident
+  community: Community
+  stay: Stay
+  assessment: MdsAssessment
+  mappingVersion: PdpmMappingVersion
+  indicator: String
+  effectiveFrom: CalendarDay
+  hipps: String
+  groups: JSON
+  cmi: JSON
+  functionScores: JSON
+  inputHash: String
+  status: String
+  supersededBy: PdpmClassification
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PdpmClassificationWhereUniqueInput {
+  id: ID
+}
+
+input PdpmClassificationWhereInput {
+  AND: [PdpmClassificationWhereInput!]
+  OR: [PdpmClassificationWhereInput!]
+  NOT: [PdpmClassificationWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  stay: StayWhereInput
+  assessment: MdsAssessmentWhereInput
+  mappingVersion: PdpmMappingVersionWhereInput
+  indicator: StringFilter
+  effectiveFrom: CalendarDayFilter
+  hipps: StringFilter
+  inputHash: StringFilter
+  status: StringFilter
+  supersededBy: PdpmClassificationWhereInput
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input PdpmClassificationOrderByInput {
+  id: OrderDirection
+  indicator: OrderDirection
+  effectiveFrom: OrderDirection
+  hipps: OrderDirection
+  inputHash: OrderDirection
+  status: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input PdpmClassificationUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  stay: StayRelateToOneForUpdateInput
+  assessment: MdsAssessmentRelateToOneForUpdateInput
+  mappingVersion: PdpmMappingVersionRelateToOneForUpdateInput
+  indicator: String
+  effectiveFrom: CalendarDay
+  hipps: String
+  groups: JSON
+  cmi: JSON
+  functionScores: JSON
+  inputHash: String
+  status: String
+  supersededBy: PdpmClassificationRelateToOneForUpdateInput
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PdpmMappingVersionRelateToOneForUpdateInput {
+  create: PdpmMappingVersionCreateInput
+  connect: PdpmMappingVersionWhereUniqueInput
+  disconnect: Boolean
+}
+
+input PdpmClassificationRelateToOneForUpdateInput {
+  create: PdpmClassificationCreateInput
+  connect: PdpmClassificationWhereUniqueInput
+  disconnect: Boolean
+}
+
+input PdpmClassificationUpdateArgs {
+  where: PdpmClassificationWhereUniqueInput!
+  data: PdpmClassificationUpdateInput!
+}
+
+input PdpmClassificationCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  stay: StayRelateToOneForCreateInput
+  assessment: MdsAssessmentRelateToOneForCreateInput
+  mappingVersion: PdpmMappingVersionRelateToOneForCreateInput
+  indicator: String
+  effectiveFrom: CalendarDay
+  hipps: String
+  groups: JSON
+  cmi: JSON
+  functionScores: JSON
+  inputHash: String
+  status: String
+  supersededBy: PdpmClassificationRelateToOneForCreateInput
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PdpmMappingVersionRelateToOneForCreateInput {
+  create: PdpmMappingVersionCreateInput
+  connect: PdpmMappingVersionWhereUniqueInput
+}
+
+input PdpmClassificationRelateToOneForCreateInput {
+  create: PdpmClassificationCreateInput
+  connect: PdpmClassificationWhereUniqueInput
+}
+
+type PdpmMappingVersion {
+  id: ID!
+  code: String
+  effectiveFrom: CalendarDay
+  effectiveTo: CalendarDay
+  tables: JSON
+  sourceNote: String
+  verifyNote: String
+  status: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PdpmMappingVersionWhereUniqueInput {
+  id: ID
+  code: String
+}
+
+input PdpmMappingVersionWhereInput {
+  AND: [PdpmMappingVersionWhereInput!]
+  OR: [PdpmMappingVersionWhereInput!]
+  NOT: [PdpmMappingVersionWhereInput!]
+  id: IDFilter
+  code: StringFilter
+  effectiveFrom: CalendarDayNullableFilter
+  effectiveTo: CalendarDayNullableFilter
+  sourceNote: StringFilter
+  verifyNote: StringFilter
+  status: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input PdpmMappingVersionOrderByInput {
+  id: OrderDirection
+  code: OrderDirection
+  effectiveFrom: OrderDirection
+  effectiveTo: OrderDirection
+  sourceNote: OrderDirection
+  verifyNote: OrderDirection
+  status: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input PdpmMappingVersionUpdateInput {
+  code: String
+  effectiveFrom: CalendarDay
+  effectiveTo: CalendarDay
+  tables: JSON
+  sourceNote: String
+  verifyNote: String
+  status: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PdpmMappingVersionUpdateArgs {
+  where: PdpmMappingVersionWhereUniqueInput!
+  data: PdpmMappingVersionUpdateInput!
+}
+
+input PdpmMappingVersionCreateInput {
+  code: String
+  effectiveFrom: CalendarDay
+  effectiveTo: CalendarDay
+  tables: JSON
+  sourceNote: String
+  verifyNote: String
+  status: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type PriorSnfDaysObservation {
+  id: ID!
+  resident: Resident
+  community: Community
+  source: String
+  daysUsed: Int
+  asOf: CalendarDay
+  spellStart: CalendarDay
+  document: Document
+  note: String
+  recordedBy: User
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PriorSnfDaysObservationWhereUniqueInput {
+  id: ID
+}
+
+input PriorSnfDaysObservationWhereInput {
+  AND: [PriorSnfDaysObservationWhereInput!]
+  OR: [PriorSnfDaysObservationWhereInput!]
+  NOT: [PriorSnfDaysObservationWhereInput!]
+  id: IDFilter
+  resident: ResidentWhereInput
+  community: CommunityWhereInput
+  source: StringFilter
+  daysUsed: IntFilter
+  asOf: CalendarDayNullableFilter
+  spellStart: CalendarDayNullableFilter
+  document: DocumentWhereInput
+  note: StringFilter
+  recordedBy: UserWhereInput
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input PriorSnfDaysObservationOrderByInput {
+  id: OrderDirection
+  source: OrderDirection
+  daysUsed: OrderDirection
+  asOf: OrderDirection
+  spellStart: OrderDirection
+  note: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input PriorSnfDaysObservationUpdateInput {
+  resident: ResidentRelateToOneForUpdateInput
+  community: CommunityRelateToOneForUpdateInput
+  source: String
+  daysUsed: Int
+  asOf: CalendarDay
+  spellStart: CalendarDay
+  document: DocumentRelateToOneForUpdateInput
+  note: String
+  recordedBy: UserRelateToOneForUpdateInput
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PriorSnfDaysObservationUpdateArgs {
+  where: PriorSnfDaysObservationWhereUniqueInput!
+  data: PriorSnfDaysObservationUpdateInput!
+}
+
+input PriorSnfDaysObservationCreateInput {
+  resident: ResidentRelateToOneForCreateInput
+  community: CommunityRelateToOneForCreateInput
+  source: String
+  daysUsed: Int
+  asOf: CalendarDay
+  spellStart: CalendarDay
+  document: DocumentRelateToOneForCreateInput
+  note: String
+  recordedBy: UserRelateToOneForCreateInput
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type ReferenceRate {
+  id: ID!
+  mappingVersion: PdpmMappingVersion
+  component: String
+  geography: String
+  rate: Decimal
+  laborShare: Decimal
+  effectiveFrom: CalendarDay
+  effectiveTo: CalendarDay
+  sourceNote: String
+  verifyNote: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ReferenceRateWhereUniqueInput {
+  id: ID
+}
+
+input ReferenceRateWhereInput {
+  AND: [ReferenceRateWhereInput!]
+  OR: [ReferenceRateWhereInput!]
+  NOT: [ReferenceRateWhereInput!]
+  id: IDFilter
+  mappingVersion: PdpmMappingVersionWhereInput
+  component: StringFilter
+  geography: StringFilter
+  rate: DecimalFilter
+  laborShare: DecimalNullableFilter
+  effectiveFrom: CalendarDayNullableFilter
+  effectiveTo: CalendarDayNullableFilter
+  sourceNote: StringFilter
+  verifyNote: StringFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input ReferenceRateOrderByInput {
+  id: OrderDirection
+  component: OrderDirection
+  geography: OrderDirection
+  rate: OrderDirection
+  laborShare: OrderDirection
+  effectiveFrom: OrderDirection
+  effectiveTo: OrderDirection
+  sourceNote: OrderDirection
+  verifyNote: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input ReferenceRateUpdateInput {
+  mappingVersion: PdpmMappingVersionRelateToOneForUpdateInput
+  component: String
+  geography: String
+  rate: Decimal
+  laborShare: Decimal
+  effectiveFrom: CalendarDay
+  effectiveTo: CalendarDay
+  sourceNote: String
+  verifyNote: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ReferenceRateUpdateArgs {
+  where: ReferenceRateWhereUniqueInput!
+  data: ReferenceRateUpdateInput!
+}
+
+input ReferenceRateCreateInput {
+  mappingVersion: PdpmMappingVersionRelateToOneForCreateInput
+  component: String
+  geography: String
+  rate: Decimal
+  laborShare: Decimal
+  effectiveFrom: CalendarDay
+  effectiveTo: CalendarDay
+  sourceNote: String
+  verifyNote: String
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -16462,6 +17472,60 @@ type Mutation {
   updateTrustTransactions(data: [TrustTransactionUpdateArgs!]!): [TrustTransaction]
   deleteTrustTransaction(where: TrustTransactionWhereUniqueInput!): TrustTransaction
   deleteTrustTransactions(where: [TrustTransactionWhereUniqueInput!]!): [TrustTransaction]
+  createAuthorisation(data: AuthorisationCreateInput!): Authorisation
+  createAuthorisations(data: [AuthorisationCreateInput!]!): [Authorisation]
+  updateAuthorisation(where: AuthorisationWhereUniqueInput!, data: AuthorisationUpdateInput!): Authorisation
+  updateAuthorisations(data: [AuthorisationUpdateArgs!]!): [Authorisation]
+  deleteAuthorisation(where: AuthorisationWhereUniqueInput!): Authorisation
+  deleteAuthorisations(where: [AuthorisationWhereUniqueInput!]!): [Authorisation]
+  createBenefitPeriodCounter(data: BenefitPeriodCounterCreateInput!): BenefitPeriodCounter
+  createBenefitPeriodCounters(data: [BenefitPeriodCounterCreateInput!]!): [BenefitPeriodCounter]
+  updateBenefitPeriodCounter(where: BenefitPeriodCounterWhereUniqueInput!, data: BenefitPeriodCounterUpdateInput!): BenefitPeriodCounter
+  updateBenefitPeriodCounters(data: [BenefitPeriodCounterUpdateArgs!]!): [BenefitPeriodCounter]
+  deleteBenefitPeriodCounter(where: BenefitPeriodCounterWhereUniqueInput!): BenefitPeriodCounter
+  deleteBenefitPeriodCounters(where: [BenefitPeriodCounterWhereUniqueInput!]!): [BenefitPeriodCounter]
+  createConcurrentReview(data: ConcurrentReviewCreateInput!): ConcurrentReview
+  createConcurrentReviews(data: [ConcurrentReviewCreateInput!]!): [ConcurrentReview]
+  updateConcurrentReview(where: ConcurrentReviewWhereUniqueInput!, data: ConcurrentReviewUpdateInput!): ConcurrentReview
+  updateConcurrentReviews(data: [ConcurrentReviewUpdateArgs!]!): [ConcurrentReview]
+  deleteConcurrentReview(where: ConcurrentReviewWhereUniqueInput!): ConcurrentReview
+  deleteConcurrentReviews(where: [ConcurrentReviewWhereUniqueInput!]!): [ConcurrentReview]
+  createMdsAssessment(data: MdsAssessmentCreateInput!): MdsAssessment
+  createMdsAssessments(data: [MdsAssessmentCreateInput!]!): [MdsAssessment]
+  updateMdsAssessment(where: MdsAssessmentWhereUniqueInput!, data: MdsAssessmentUpdateInput!): MdsAssessment
+  updateMdsAssessments(data: [MdsAssessmentUpdateArgs!]!): [MdsAssessment]
+  deleteMdsAssessment(where: MdsAssessmentWhereUniqueInput!): MdsAssessment
+  deleteMdsAssessments(where: [MdsAssessmentWhereUniqueInput!]!): [MdsAssessment]
+  createMdsSubmission(data: MdsSubmissionCreateInput!): MdsSubmission
+  createMdsSubmissions(data: [MdsSubmissionCreateInput!]!): [MdsSubmission]
+  updateMdsSubmission(where: MdsSubmissionWhereUniqueInput!, data: MdsSubmissionUpdateInput!): MdsSubmission
+  updateMdsSubmissions(data: [MdsSubmissionUpdateArgs!]!): [MdsSubmission]
+  deleteMdsSubmission(where: MdsSubmissionWhereUniqueInput!): MdsSubmission
+  deleteMdsSubmissions(where: [MdsSubmissionWhereUniqueInput!]!): [MdsSubmission]
+  createPdpmClassification(data: PdpmClassificationCreateInput!): PdpmClassification
+  createPdpmClassifications(data: [PdpmClassificationCreateInput!]!): [PdpmClassification]
+  updatePdpmClassification(where: PdpmClassificationWhereUniqueInput!, data: PdpmClassificationUpdateInput!): PdpmClassification
+  updatePdpmClassifications(data: [PdpmClassificationUpdateArgs!]!): [PdpmClassification]
+  deletePdpmClassification(where: PdpmClassificationWhereUniqueInput!): PdpmClassification
+  deletePdpmClassifications(where: [PdpmClassificationWhereUniqueInput!]!): [PdpmClassification]
+  createPdpmMappingVersion(data: PdpmMappingVersionCreateInput!): PdpmMappingVersion
+  createPdpmMappingVersions(data: [PdpmMappingVersionCreateInput!]!): [PdpmMappingVersion]
+  updatePdpmMappingVersion(where: PdpmMappingVersionWhereUniqueInput!, data: PdpmMappingVersionUpdateInput!): PdpmMappingVersion
+  updatePdpmMappingVersions(data: [PdpmMappingVersionUpdateArgs!]!): [PdpmMappingVersion]
+  deletePdpmMappingVersion(where: PdpmMappingVersionWhereUniqueInput!): PdpmMappingVersion
+  deletePdpmMappingVersions(where: [PdpmMappingVersionWhereUniqueInput!]!): [PdpmMappingVersion]
+  createPriorSnfDaysObservation(data: PriorSnfDaysObservationCreateInput!): PriorSnfDaysObservation
+  createPriorSnfDaysObservations(data: [PriorSnfDaysObservationCreateInput!]!): [PriorSnfDaysObservation]
+  updatePriorSnfDaysObservation(where: PriorSnfDaysObservationWhereUniqueInput!, data: PriorSnfDaysObservationUpdateInput!): PriorSnfDaysObservation
+  updatePriorSnfDaysObservations(data: [PriorSnfDaysObservationUpdateArgs!]!): [PriorSnfDaysObservation]
+  deletePriorSnfDaysObservation(where: PriorSnfDaysObservationWhereUniqueInput!): PriorSnfDaysObservation
+  deletePriorSnfDaysObservations(where: [PriorSnfDaysObservationWhereUniqueInput!]!): [PriorSnfDaysObservation]
+  createReferenceRate(data: ReferenceRateCreateInput!): ReferenceRate
+  createReferenceRates(data: [ReferenceRateCreateInput!]!): [ReferenceRate]
+  updateReferenceRate(where: ReferenceRateWhereUniqueInput!, data: ReferenceRateUpdateInput!): ReferenceRate
+  updateReferenceRates(data: [ReferenceRateUpdateArgs!]!): [ReferenceRate]
+  deleteReferenceRate(where: ReferenceRateWhereUniqueInput!): ReferenceRate
+  deleteReferenceRates(where: [ReferenceRateWhereUniqueInput!]!): [ReferenceRate]
   endSession: Boolean!
   authenticateUserWithPassword(email: String!, password: String!): UserAuthenticationWithPasswordResult
   createInitialUser(data: CreateInitialUserInput!): UserAuthenticationWithPasswordSuccess!
@@ -16472,6 +17536,7 @@ type Mutation {
   loadCensusSetup(idempotencyKey: String!): JSON
   loadClinicalSetup(idempotencyKey: String!): JSON
   loadBillingSetup(idempotencyKey: String!): JSON
+  loadMdsSetup(idempotencyKey: String!): JSON
   refreshTimedStates(idempotencyKey: String!): JSON
   decideApprovalRequest(requestId: ID!, decision: String!, reason: String, expectedVersion: Int!, idempotencyKey: String!): JSON
   cancelApprovalRequest(requestId: ID!, expectedVersion: Int!, reason: String, idempotencyKey: String!): JSON
@@ -16989,6 +18054,33 @@ type Query {
   trustTransaction(where: TrustTransactionWhereUniqueInput!): TrustTransaction
   trustTransactions(where: TrustTransactionWhereInput! = {}, orderBy: [TrustTransactionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TrustTransactionWhereUniqueInput): [TrustTransaction!]
   trustTransactionsCount(where: TrustTransactionWhereInput! = {}): Int
+  authorisation(where: AuthorisationWhereUniqueInput!): Authorisation
+  authorisations(where: AuthorisationWhereInput! = {}, orderBy: [AuthorisationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AuthorisationWhereUniqueInput): [Authorisation!]
+  authorisationsCount(where: AuthorisationWhereInput! = {}): Int
+  benefitPeriodCounter(where: BenefitPeriodCounterWhereUniqueInput!): BenefitPeriodCounter
+  benefitPeriodCounters(where: BenefitPeriodCounterWhereInput! = {}, orderBy: [BenefitPeriodCounterOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: BenefitPeriodCounterWhereUniqueInput): [BenefitPeriodCounter!]
+  benefitPeriodCountersCount(where: BenefitPeriodCounterWhereInput! = {}): Int
+  concurrentReview(where: ConcurrentReviewWhereUniqueInput!): ConcurrentReview
+  concurrentReviews(where: ConcurrentReviewWhereInput! = {}, orderBy: [ConcurrentReviewOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ConcurrentReviewWhereUniqueInput): [ConcurrentReview!]
+  concurrentReviewsCount(where: ConcurrentReviewWhereInput! = {}): Int
+  mdsAssessment(where: MdsAssessmentWhereUniqueInput!): MdsAssessment
+  mdsAssessments(where: MdsAssessmentWhereInput! = {}, orderBy: [MdsAssessmentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MdsAssessmentWhereUniqueInput): [MdsAssessment!]
+  mdsAssessmentsCount(where: MdsAssessmentWhereInput! = {}): Int
+  mdsSubmission(where: MdsSubmissionWhereUniqueInput!): MdsSubmission
+  mdsSubmissions(where: MdsSubmissionWhereInput! = {}, orderBy: [MdsSubmissionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MdsSubmissionWhereUniqueInput): [MdsSubmission!]
+  mdsSubmissionsCount(where: MdsSubmissionWhereInput! = {}): Int
+  pdpmClassification(where: PdpmClassificationWhereUniqueInput!): PdpmClassification
+  pdpmClassifications(where: PdpmClassificationWhereInput! = {}, orderBy: [PdpmClassificationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PdpmClassificationWhereUniqueInput): [PdpmClassification!]
+  pdpmClassificationsCount(where: PdpmClassificationWhereInput! = {}): Int
+  pdpmMappingVersion(where: PdpmMappingVersionWhereUniqueInput!): PdpmMappingVersion
+  pdpmMappingVersions(where: PdpmMappingVersionWhereInput! = {}, orderBy: [PdpmMappingVersionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PdpmMappingVersionWhereUniqueInput): [PdpmMappingVersion!]
+  pdpmMappingVersionsCount(where: PdpmMappingVersionWhereInput! = {}): Int
+  priorSnfDaysObservation(where: PriorSnfDaysObservationWhereUniqueInput!): PriorSnfDaysObservation
+  priorSnfDaysObservations(where: PriorSnfDaysObservationWhereInput! = {}, orderBy: [PriorSnfDaysObservationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PriorSnfDaysObservationWhereUniqueInput): [PriorSnfDaysObservation!]
+  priorSnfDaysObservationsCount(where: PriorSnfDaysObservationWhereInput! = {}): Int
+  referenceRate(where: ReferenceRateWhereUniqueInput!): ReferenceRate
+  referenceRates(where: ReferenceRateWhereInput! = {}, orderBy: [ReferenceRateOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ReferenceRateWhereUniqueInput): [ReferenceRate!]
+  referenceRatesCount(where: ReferenceRateWhereInput! = {}): Int
   keystone: KeystoneMeta!
   authenticatedItem: AuthenticatedItem
   validateUserPasswordResetToken(email: String!, token: String!): ValidateUserPasswordResetTokenResult

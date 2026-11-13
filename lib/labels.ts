@@ -24,6 +24,7 @@ const LABELS: Record<string, string> = {
   full_time: 'Full time', part_time: 'Part time', prn: 'PRN (as needed)', either: 'In person or video', warn: 'Warning', csr: 'Customer service',
   in_house: 'In house', on_leave_hold: 'On leave, bed held', on_leave_no_hold: 'On leave, no hold', not_admitted: 'Not admitted', pre_admit: 'Pre-admission', satisfied_late: 'Satisfied late',
   hospital: 'Hospital', medicaid_mco: 'Medicaid managed care', commercial: 'Commercial insurance', hold_release: 'Bed-hold released', leave_start: 'Leave started', leave_end: 'Returned from leave',
+  pps_5day: 'PPS 5-day', ipa: 'Interim payment assessment', obra_admission: 'OBRA admission', obra_quarterly: 'OBRA quarterly', obra_annual: 'OBRA annual', obra_significant_change: 'Significant change', pps_discharge: 'PPS discharge', discharge_return_anticipated: 'Discharge, return anticipated', discharge_return_not_anticipated: 'Discharge, return not anticipated', death_in_facility: 'Death in facility', entry: 'Entry tracking', nomnc: 'NOMNC (CMS-10123)', snfabn: 'SNF ABN (CMS-10055)', due_today: 'Due today', delivered_in_time: 'Delivered in time', delivered_late: 'Delivered late',
   operations: 'Operations', pub: 'Public', op: 'Operational', sens: 'Sensitive', ident: 'Identifier', approve: 'Approve', reject: 'Reject', treatment_operations: 'Treatment and operations', family_access: 'Family access',
 }
 

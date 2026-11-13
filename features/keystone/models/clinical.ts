@@ -166,7 +166,7 @@ export const AssessmentTemplate = list({
     code: systemText({ indexed: true, required: true }),
     name: systemText({ required: true }),
     templateVersion: integer({ defaultValue: 1, ...ro }),
-    scorer: fixedChoice(['sum']),
+    scorer: fixedChoice(['sum', 'mds']),
     definition: json({ ...ro, ui: { ...ro.ui, description: 'Items with options and points, score bands and the source note. Validated by the template meta-schema before it is stored.' } }),
     settings: json({ ...ro }),
     sourceNote: systemText(),

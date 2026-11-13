@@ -55,6 +55,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         loadCensusSetup(idempotencyKey: String!): JSON
         loadClinicalSetup(idempotencyKey: String!): JSON
         loadBillingSetup(idempotencyKey: String!): JSON
+        loadMdsSetup(idempotencyKey: String!): JSON
         refreshTimedStates(idempotencyKey: String!): JSON
         decideApprovalRequest(requestId: ID!, decision: String!, reason: String, expectedVersion: Int!, idempotencyKey: String!): JSON
         cancelApprovalRequest(requestId: ID!, expectedVersion: Int!, reason: String, idempotencyKey: String!): JSON
@@ -144,6 +145,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         loadCensusSetup: op(setup.loadCensusSetup),
         loadClinicalSetup: op(setup.loadClinicalSetup),
         loadBillingSetup: op(setup.loadBillingSetup),
+        loadMdsSetup: op(setup.loadMdsSetup),
         refreshTimedStates: op(front.refreshTimedStatesMutation),
         decideApprovalRequest: op(approvals.decideApprovalRequest),
         cancelApprovalRequest: op(approvals.cancelApprovalRequest),
