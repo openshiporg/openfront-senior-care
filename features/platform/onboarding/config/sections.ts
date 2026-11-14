@@ -53,4 +53,16 @@ export const SETUP_SECTIONS = [
       '12 Medicare Part A residents in Birch with completed 5-day assessments and their PDPM classification',
     ],
   },
+  {
+    id: 'workforce',
+    title: 'Workforce: staff, credentials and staffing targets',
+    mutation: 'mutation LoadWorkforce($idempotencyKey: String!) { loadWorkforceSetup(idempotencyKey: $idempotencyKey) }',
+    field: 'loadWorkforceSetup',
+    items: [
+      'Job codes with their shift role: RN, LPN, CNA, medication aide, dietary',
+      '11 staff with primary-source verified licences, CPR, background and OIG exclusion checks (one CNA has nothing on file)',
+      'Ohio direct-care minimum of 2.5 hours per resident day, and the operator targets',
+      'The 2024 federal minimum staffing rule as repealed history (effective 2026-02-02), never a breach',
+    ],
+  },
 ] as const

@@ -16,6 +16,7 @@ import * as trust from './trust'
 import * as mds from './mds'
 import * as claims from './claims'
 import * as workforce from './workforce'
+import * as scheduling from './scheduling'
 
 const { SETTINGS: _settings, ...platformLists } = platform
 const { AGENT_SCOPES: _scopes, PHI_AGENT_SCOPES: _phiScopes, PROPOSAL_KINDS: _kinds, ...agentLists } = agents
@@ -29,6 +30,7 @@ const { INCIDENT_KINDS: _ik, ...safetyLists } = safety
 const { RATE_KINDS: _rk, CHARGE_KINDS: _chk, PAYMENT_METHODS: _pm, DEPOSIT_KINDS: _dk, ...billingLists } = billing
 const { MDS_KINDS: _mdsk, coverageDepthFields: _cdf, ...mdsLists } = mds
 const { CLAIM_STATUSES: _ccs, DENIAL_STATUSES: _cds, ...claimLists } = claims
+const { CREDENTIAL_KINDS: _crk, CREDENTIAL_STATUSES: _crs, ASSIGNMENT_STATUSES: _as, STAFFING_METRICS: _sm, ...schedulingLists } = scheduling
 const { TRUST_BUCKETS: _tb, TRUST_TX_KINDS: _ttk, ...trustLists } = trust
 
 export const models = {
@@ -50,6 +52,7 @@ export const models = {
   ...mdsLists,
   ...claimLists,
   ...workforce,
+  ...schedulingLists,
 }
 
 export default models

@@ -5,6 +5,7 @@ import { runCensusSeed } from '../seed/census'
 import { seedClinical } from '../seed/clinical'
 import { runMdsSeed } from '../seed/mds'
 import { seedBilling } from '../seed/billing'
+import { seedWorkforce } from '../seed/workforce'
 
 /** Onboarding: load the Ridgeline Senior Living / Maple Ridge spine (synthetic=true). Idempotent per key and per record. */
 export async function loadOperatorSetup(_root: unknown, args: { idempotencyKey: string }, context: any) {
@@ -49,4 +50,12 @@ export async function loadMdsSetup(_root: unknown, args: { idempotencyKey: strin
   requirePermission(actor, 'canManageOnboarding')
   const created = await runMdsSeed(context.prisma, { idempotencyPrefix: `seed-mds-v1` })
   return { created, key: args.idempotencyKey }
+}
+
+/** Onboarding: Phase 5 job codes, staff with verified credentials and the staffing targets (the federal rule as repealed history). Idempotent. */
+export async function loadWorkforceSetup(_root: unknown, args: { idempotencyKey: string }, context: any) {
+  const actor = actorFromSession(context.session)
+  requirePermission(actor, 'canManageOnboarding')
+  const result = await command(context.prisma, { name: 'setup.load_workforce', actor, idempotencyKey: args.idempotencyKey, params: {} }, uow => seedWorkforce(uow, actor))
+  return { replay: result.replay, ...result.value }
 }

@@ -17246,6 +17246,7 @@ type JobCode {
   title: String
   pbjJobTitleCode: String
   countsTowardNursing: Boolean
+  category: String
   status: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -17265,6 +17266,7 @@ input JobCodeWhereInput {
   title: StringFilter
   pbjJobTitleCode: StringFilter
   countsTowardNursing: BooleanFilter
+  category: StringFilter
   status: StringFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
@@ -17276,6 +17278,7 @@ input JobCodeOrderByInput {
   title: OrderDirection
   pbjJobTitleCode: OrderDirection
   countsTowardNursing: OrderDirection
+  category: OrderDirection
   status: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
@@ -17287,6 +17290,7 @@ input JobCodeUpdateInput {
   title: String
   pbjJobTitleCode: String
   countsTowardNursing: Boolean
+  category: String
   status: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -17303,6 +17307,7 @@ input JobCodeCreateInput {
   title: String
   pbjJobTitleCode: String
   countsTowardNursing: Boolean
+  category: String
   status: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -17529,6 +17534,7 @@ type StaffMember {
   jobCode: JobCode
   payType: String
   agency: Boolean
+  agencyVendor: AgencyVendor
   hireDate: CalendarDay
   terminationDate: CalendarDay
   status: String
@@ -17553,6 +17559,7 @@ input StaffMemberWhereInput {
   jobCode: JobCodeWhereInput
   payType: StringFilter
   agency: BooleanFilter
+  agencyVendor: AgencyVendorWhereInput
   hireDate: CalendarDayNullableFilter
   terminationDate: CalendarDayNullableFilter
   status: StringFilter
@@ -17583,6 +17590,7 @@ input StaffMemberUpdateInput {
   jobCode: JobCodeRelateToOneForUpdateInput
   payType: String
   agency: Boolean
+  agencyVendor: AgencyVendorRelateToOneForUpdateInput
   hireDate: CalendarDay
   terminationDate: CalendarDay
   status: String
@@ -17594,6 +17602,12 @@ input StaffMemberUpdateInput {
 input JobCodeRelateToOneForUpdateInput {
   create: JobCodeCreateInput
   connect: JobCodeWhereUniqueInput
+  disconnect: Boolean
+}
+
+input AgencyVendorRelateToOneForUpdateInput {
+  create: AgencyVendorCreateInput
+  connect: AgencyVendorWhereUniqueInput
   disconnect: Boolean
 }
 
@@ -17610,6 +17624,7 @@ input StaffMemberCreateInput {
   jobCode: JobCodeRelateToOneForCreateInput
   payType: String
   agency: Boolean
+  agencyVendor: AgencyVendorRelateToOneForCreateInput
   hireDate: CalendarDay
   terminationDate: CalendarDay
   status: String
@@ -17621,6 +17636,11 @@ input StaffMemberCreateInput {
 input JobCodeRelateToOneForCreateInput {
   create: JobCodeCreateInput
   connect: JobCodeWhereUniqueInput
+}
+
+input AgencyVendorRelateToOneForCreateInput {
+  create: AgencyVendorCreateInput
+  connect: AgencyVendorWhereUniqueInput
 }
 
 type TimeCorrection {
@@ -17895,6 +17915,921 @@ input TimecardCreateInput {
   submittedBy: UserRelateToOneForCreateInput
   approvedBy: UserRelateToOneForCreateInput
   approvedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type AgencyInvoice {
+  id: ID!
+  community: Community
+  vendor: AgencyVendor
+  invoiceNumber: String
+  periodStart: CalendarDay
+  periodEnd: CalendarDay
+  invoicedMinutes: Int
+  amountMinor: BigInt
+  expectedMinutes: Int
+  expectedAmountMinor: BigInt
+  variance: JSON
+  status: String
+  receivedBy: User
+  approvedBy: User
+  approvalNote: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AgencyInvoiceWhereUniqueInput {
+  id: ID
+}
+
+input AgencyInvoiceWhereInput {
+  AND: [AgencyInvoiceWhereInput!]
+  OR: [AgencyInvoiceWhereInput!]
+  NOT: [AgencyInvoiceWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  vendor: AgencyVendorWhereInput
+  invoiceNumber: StringFilter
+  periodStart: CalendarDayNullableFilter
+  periodEnd: CalendarDayNullableFilter
+  invoicedMinutes: IntNullableFilter
+  amountMinor: BigIntNullableFilter
+  expectedMinutes: IntNullableFilter
+  expectedAmountMinor: BigIntNullableFilter
+  status: StringFilter
+  receivedBy: UserWhereInput
+  approvedBy: UserWhereInput
+  approvalNote: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input AgencyInvoiceOrderByInput {
+  id: OrderDirection
+  invoiceNumber: OrderDirection
+  periodStart: OrderDirection
+  periodEnd: OrderDirection
+  invoicedMinutes: OrderDirection
+  amountMinor: OrderDirection
+  expectedMinutes: OrderDirection
+  expectedAmountMinor: OrderDirection
+  status: OrderDirection
+  approvalNote: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input AgencyInvoiceUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  vendor: AgencyVendorRelateToOneForUpdateInput
+  invoiceNumber: String
+  periodStart: CalendarDay
+  periodEnd: CalendarDay
+  invoicedMinutes: Int
+  amountMinor: BigInt
+  expectedMinutes: Int
+  expectedAmountMinor: BigInt
+  variance: JSON
+  status: String
+  receivedBy: UserRelateToOneForUpdateInput
+  approvedBy: UserRelateToOneForUpdateInput
+  approvalNote: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AgencyInvoiceUpdateArgs {
+  where: AgencyInvoiceWhereUniqueInput!
+  data: AgencyInvoiceUpdateInput!
+}
+
+input AgencyInvoiceCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  vendor: AgencyVendorRelateToOneForCreateInput
+  invoiceNumber: String
+  periodStart: CalendarDay
+  periodEnd: CalendarDay
+  invoicedMinutes: Int
+  amountMinor: BigInt
+  expectedMinutes: Int
+  expectedAmountMinor: BigInt
+  variance: JSON
+  status: String
+  receivedBy: UserRelateToOneForCreateInput
+  approvedBy: UserRelateToOneForCreateInput
+  approvalNote: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type AgencyVendor {
+  id: ID!
+  community: Community
+  name: String
+  status: String
+  contractStart: CalendarDay
+  contractEnd: CalendarDay
+  rateCard: JSON
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AgencyVendorWhereUniqueInput {
+  id: ID
+}
+
+input AgencyVendorWhereInput {
+  AND: [AgencyVendorWhereInput!]
+  OR: [AgencyVendorWhereInput!]
+  NOT: [AgencyVendorWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  name: StringFilter
+  status: StringFilter
+  contractStart: CalendarDayNullableFilter
+  contractEnd: CalendarDayNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input AgencyVendorOrderByInput {
+  id: OrderDirection
+  name: OrderDirection
+  status: OrderDirection
+  contractStart: OrderDirection
+  contractEnd: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input AgencyVendorUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  name: String
+  status: String
+  contractStart: CalendarDay
+  contractEnd: CalendarDay
+  rateCard: JSON
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input AgencyVendorUpdateArgs {
+  where: AgencyVendorWhereUniqueInput!
+  data: AgencyVendorUpdateInput!
+}
+
+input AgencyVendorCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  name: String
+  status: String
+  contractStart: CalendarDay
+  contractEnd: CalendarDay
+  rateCard: JSON
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type Credential {
+  id: ID!
+  community: Community
+  staffMember: StaffMember
+  kind: String
+  jurisdiction: String
+  number: String
+  issuedAt: CalendarDay
+  expiresAt: CalendarDay
+  status: String
+  document: String
+  minutesCompleted: Int
+  completedOn: CalendarDay
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input CredentialWhereUniqueInput {
+  id: ID
+}
+
+input CredentialWhereInput {
+  AND: [CredentialWhereInput!]
+  OR: [CredentialWhereInput!]
+  NOT: [CredentialWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  staffMember: StaffMemberWhereInput
+  kind: StringFilter
+  jurisdiction: StringFilter
+  number: StringFilter
+  issuedAt: CalendarDayNullableFilter
+  expiresAt: CalendarDayNullableFilter
+  status: StringFilter
+  document: StringFilter
+  minutesCompleted: IntNullableFilter
+  completedOn: CalendarDayNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input CredentialOrderByInput {
+  id: OrderDirection
+  kind: OrderDirection
+  jurisdiction: OrderDirection
+  number: OrderDirection
+  issuedAt: OrderDirection
+  expiresAt: OrderDirection
+  status: OrderDirection
+  document: OrderDirection
+  minutesCompleted: OrderDirection
+  completedOn: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input CredentialUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  staffMember: StaffMemberRelateToOneForUpdateInput
+  kind: String
+  jurisdiction: String
+  number: String
+  issuedAt: CalendarDay
+  expiresAt: CalendarDay
+  status: String
+  document: String
+  minutesCompleted: Int
+  completedOn: CalendarDay
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input CredentialUpdateArgs {
+  where: CredentialWhereUniqueInput!
+  data: CredentialUpdateInput!
+}
+
+input CredentialCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  staffMember: StaffMemberRelateToOneForCreateInput
+  kind: String
+  jurisdiction: String
+  number: String
+  issuedAt: CalendarDay
+  expiresAt: CalendarDay
+  status: String
+  document: String
+  minutesCompleted: Int
+  completedOn: CalendarDay
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type CredentialVerification {
+  id: ID!
+  community: Community
+  credential: Credential
+  staffMember: StaffMember
+  source: String
+  sourceVersion: String
+  result: String
+  verifiedAt: DateTime
+  verifiedBy: User
+  evidence: JSON
+  createdAt: DateTime
+}
+
+input CredentialVerificationWhereUniqueInput {
+  id: ID
+}
+
+input CredentialVerificationWhereInput {
+  AND: [CredentialVerificationWhereInput!]
+  OR: [CredentialVerificationWhereInput!]
+  NOT: [CredentialVerificationWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  credential: CredentialWhereInput
+  staffMember: StaffMemberWhereInput
+  source: StringFilter
+  sourceVersion: StringFilter
+  result: StringFilter
+  verifiedAt: DateTimeNullableFilter
+  verifiedBy: UserWhereInput
+  createdAt: DateTimeNullableFilter
+}
+
+input CredentialVerificationOrderByInput {
+  id: OrderDirection
+  source: OrderDirection
+  sourceVersion: OrderDirection
+  result: OrderDirection
+  verifiedAt: OrderDirection
+  createdAt: OrderDirection
+}
+
+input CredentialVerificationUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  credential: CredentialRelateToOneForUpdateInput
+  staffMember: StaffMemberRelateToOneForUpdateInput
+  source: String
+  sourceVersion: String
+  result: String
+  verifiedAt: DateTime
+  verifiedBy: UserRelateToOneForUpdateInput
+  evidence: JSON
+  createdAt: DateTime
+}
+
+input CredentialRelateToOneForUpdateInput {
+  create: CredentialCreateInput
+  connect: CredentialWhereUniqueInput
+  disconnect: Boolean
+}
+
+input CredentialVerificationUpdateArgs {
+  where: CredentialVerificationWhereUniqueInput!
+  data: CredentialVerificationUpdateInput!
+}
+
+input CredentialVerificationCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  credential: CredentialRelateToOneForCreateInput
+  staffMember: StaffMemberRelateToOneForCreateInput
+  source: String
+  sourceVersion: String
+  result: String
+  verifiedAt: DateTime
+  verifiedBy: UserRelateToOneForCreateInput
+  evidence: JSON
+  createdAt: DateTime
+}
+
+input CredentialRelateToOneForCreateInput {
+  create: CredentialCreateInput
+  connect: CredentialWhereUniqueInput
+}
+
+type LeieImport {
+  id: ID!
+  community: Community
+  month: String
+  fileHash: String
+  rows: Int
+  checked: Int
+  matches: Int
+  uploadedBy: User
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input LeieImportWhereUniqueInput {
+  id: ID
+}
+
+input LeieImportWhereInput {
+  AND: [LeieImportWhereInput!]
+  OR: [LeieImportWhereInput!]
+  NOT: [LeieImportWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  month: StringFilter
+  fileHash: StringFilter
+  rows: IntNullableFilter
+  checked: IntNullableFilter
+  matches: IntNullableFilter
+  uploadedBy: UserWhereInput
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input LeieImportOrderByInput {
+  id: OrderDirection
+  month: OrderDirection
+  fileHash: OrderDirection
+  rows: OrderDirection
+  checked: OrderDirection
+  matches: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input LeieImportUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  month: String
+  fileHash: String
+  rows: Int
+  checked: Int
+  matches: Int
+  uploadedBy: UserRelateToOneForUpdateInput
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input LeieImportUpdateArgs {
+  where: LeieImportWhereUniqueInput!
+  data: LeieImportUpdateInput!
+}
+
+input LeieImportCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  month: String
+  fileHash: String
+  rows: Int
+  checked: Int
+  matches: Int
+  uploadedBy: UserRelateToOneForCreateInput
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type PayrollExport {
+  id: ID!
+  community: Community
+  reference: String
+  periodStart: CalendarDay
+  periodEnd: CalendarDay
+  rows: Int
+  totalMinutes: Int
+  csvHash: String
+  locked: Boolean
+  status: String
+  exportedBy: User
+  deliveredAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PayrollExportWhereUniqueInput {
+  id: ID
+  reference: String
+}
+
+input PayrollExportWhereInput {
+  AND: [PayrollExportWhereInput!]
+  OR: [PayrollExportWhereInput!]
+  NOT: [PayrollExportWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  reference: StringFilter
+  periodStart: CalendarDayNullableFilter
+  periodEnd: CalendarDayNullableFilter
+  rows: IntNullableFilter
+  totalMinutes: IntNullableFilter
+  csvHash: StringFilter
+  locked: BooleanFilter
+  status: StringFilter
+  exportedBy: UserWhereInput
+  deliveredAt: DateTimeNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input PayrollExportOrderByInput {
+  id: OrderDirection
+  reference: OrderDirection
+  periodStart: OrderDirection
+  periodEnd: OrderDirection
+  rows: OrderDirection
+  totalMinutes: OrderDirection
+  csvHash: OrderDirection
+  locked: OrderDirection
+  status: OrderDirection
+  deliveredAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input PayrollExportUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  reference: String
+  periodStart: CalendarDay
+  periodEnd: CalendarDay
+  rows: Int
+  totalMinutes: Int
+  csvHash: String
+  locked: Boolean
+  status: String
+  exportedBy: UserRelateToOneForUpdateInput
+  deliveredAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input PayrollExportUpdateArgs {
+  where: PayrollExportWhereUniqueInput!
+  data: PayrollExportUpdateInput!
+}
+
+input PayrollExportCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  reference: String
+  periodStart: CalendarDay
+  periodEnd: CalendarDay
+  rows: Int
+  totalMinutes: Int
+  csvHash: String
+  locked: Boolean
+  status: String
+  exportedBy: UserRelateToOneForCreateInput
+  deliveredAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type Shift {
+  id: ID!
+  community: Community
+  unit: Unit
+  role: String
+  startsAt: DateTime
+  endsAt: DateTime
+  required: Int
+  status: String
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ShiftWhereUniqueInput {
+  id: ID
+}
+
+input ShiftWhereInput {
+  AND: [ShiftWhereInput!]
+  OR: [ShiftWhereInput!]
+  NOT: [ShiftWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  unit: UnitWhereInput
+  role: StringFilter
+  startsAt: DateTimeFilter
+  endsAt: DateTimeFilter
+  required: IntNullableFilter
+  status: StringFilter
+  note: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input ShiftOrderByInput {
+  id: OrderDirection
+  role: OrderDirection
+  startsAt: OrderDirection
+  endsAt: OrderDirection
+  required: OrderDirection
+  status: OrderDirection
+  note: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input ShiftUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  unit: UnitRelateToOneForUpdateInput
+  role: String
+  startsAt: DateTime
+  endsAt: DateTime
+  required: Int
+  status: String
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ShiftUpdateArgs {
+  where: ShiftWhereUniqueInput!
+  data: ShiftUpdateInput!
+}
+
+input ShiftCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  unit: UnitRelateToOneForCreateInput
+  role: String
+  startsAt: DateTime
+  endsAt: DateTime
+  required: Int
+  status: String
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type ShiftAssignment {
+  id: ID!
+  community: Community
+  shift: Shift
+  staffMember: StaffMember
+  status: String
+  startsAt: DateTime
+  endsAt: DateTime
+  credentialCheck: JSON
+  agencyRateMinor: BigInt
+  offerTokenHash: String
+  offerExpiresAt: DateTime
+  startPunch: TimePunch
+  coverageReason: String
+  decidedBy: User
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ShiftAssignmentWhereUniqueInput {
+  id: ID
+}
+
+input ShiftAssignmentWhereInput {
+  AND: [ShiftAssignmentWhereInput!]
+  OR: [ShiftAssignmentWhereInput!]
+  NOT: [ShiftAssignmentWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  shift: ShiftWhereInput
+  staffMember: StaffMemberWhereInput
+  status: StringFilter
+  startsAt: DateTimeFilter
+  endsAt: DateTimeFilter
+  agencyRateMinor: BigIntNullableFilter
+  offerTokenHash: StringFilter
+  offerExpiresAt: DateTimeNullableFilter
+  startPunch: TimePunchWhereInput
+  coverageReason: StringFilter
+  decidedBy: UserWhereInput
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input ShiftAssignmentOrderByInput {
+  id: OrderDirection
+  status: OrderDirection
+  startsAt: OrderDirection
+  endsAt: OrderDirection
+  agencyRateMinor: OrderDirection
+  offerTokenHash: OrderDirection
+  offerExpiresAt: OrderDirection
+  coverageReason: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input ShiftAssignmentUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  shift: ShiftRelateToOneForUpdateInput
+  staffMember: StaffMemberRelateToOneForUpdateInput
+  status: String
+  startsAt: DateTime
+  endsAt: DateTime
+  credentialCheck: JSON
+  agencyRateMinor: BigInt
+  offerTokenHash: String
+  offerExpiresAt: DateTime
+  startPunch: TimePunchRelateToOneForUpdateInput
+  coverageReason: String
+  decidedBy: UserRelateToOneForUpdateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ShiftRelateToOneForUpdateInput {
+  create: ShiftCreateInput
+  connect: ShiftWhereUniqueInput
+  disconnect: Boolean
+}
+
+input TimePunchRelateToOneForUpdateInput {
+  create: TimePunchCreateInput
+  connect: TimePunchWhereUniqueInput
+  disconnect: Boolean
+}
+
+input ShiftAssignmentUpdateArgs {
+  where: ShiftAssignmentWhereUniqueInput!
+  data: ShiftAssignmentUpdateInput!
+}
+
+input ShiftAssignmentCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  shift: ShiftRelateToOneForCreateInput
+  staffMember: StaffMemberRelateToOneForCreateInput
+  status: String
+  startsAt: DateTime
+  endsAt: DateTime
+  credentialCheck: JSON
+  agencyRateMinor: BigInt
+  offerTokenHash: String
+  offerExpiresAt: DateTime
+  startPunch: TimePunchRelateToOneForCreateInput
+  coverageReason: String
+  decidedBy: UserRelateToOneForCreateInput
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ShiftRelateToOneForCreateInput {
+  create: ShiftCreateInput
+  connect: ShiftWhereUniqueInput
+}
+
+input TimePunchRelateToOneForCreateInput {
+  create: TimePunchCreateInput
+  connect: TimePunchWhereUniqueInput
+}
+
+type StaffingDay {
+  id: ID!
+  community: Community
+  date: CalendarDay
+  census: Int
+  minutes: JSON
+  hprd: JSON
+  breaches: JSON
+  status: String
+  computedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input StaffingDayWhereUniqueInput {
+  id: ID
+}
+
+input StaffingDayWhereInput {
+  AND: [StaffingDayWhereInput!]
+  OR: [StaffingDayWhereInput!]
+  NOT: [StaffingDayWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  date: CalendarDayNullableFilter
+  census: IntNullableFilter
+  status: StringFilter
+  computedAt: DateTimeNullableFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input StaffingDayOrderByInput {
+  id: OrderDirection
+  date: OrderDirection
+  census: OrderDirection
+  status: OrderDirection
+  computedAt: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input StaffingDayUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  date: CalendarDay
+  census: Int
+  minutes: JSON
+  hprd: JSON
+  breaches: JSON
+  status: String
+  computedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input StaffingDayUpdateArgs {
+  where: StaffingDayWhereUniqueInput!
+  data: StaffingDayUpdateInput!
+}
+
+input StaffingDayCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  date: CalendarDay
+  census: Int
+  minutes: JSON
+  hprd: JSON
+  breaches: JSON
+  status: String
+  computedAt: DateTime
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+type StaffingTarget {
+  id: ID!
+  community: Community
+  unit: Unit
+  source: String
+  metric: String
+  value: String
+  effectiveFrom: CalendarDay
+  effectiveTo: CalendarDay
+  status: String
+  ruleRef: String
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input StaffingTargetWhereUniqueInput {
+  id: ID
+}
+
+input StaffingTargetWhereInput {
+  AND: [StaffingTargetWhereInput!]
+  OR: [StaffingTargetWhereInput!]
+  NOT: [StaffingTargetWhereInput!]
+  id: IDFilter
+  community: CommunityWhereInput
+  unit: UnitWhereInput
+  source: StringFilter
+  metric: StringFilter
+  value: StringFilter
+  effectiveFrom: CalendarDayNullableFilter
+  effectiveTo: CalendarDayNullableFilter
+  status: StringFilter
+  ruleRef: StringFilter
+  note: StringFilter
+  version: IntFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input StaffingTargetOrderByInput {
+  id: OrderDirection
+  source: OrderDirection
+  metric: OrderDirection
+  value: OrderDirection
+  effectiveFrom: OrderDirection
+  effectiveTo: OrderDirection
+  status: OrderDirection
+  ruleRef: OrderDirection
+  note: OrderDirection
+  version: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input StaffingTargetUpdateInput {
+  community: CommunityRelateToOneForUpdateInput
+  unit: UnitRelateToOneForUpdateInput
+  source: String
+  metric: String
+  value: String
+  effectiveFrom: CalendarDay
+  effectiveTo: CalendarDay
+  status: String
+  ruleRef: String
+  note: String
+  version: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input StaffingTargetUpdateArgs {
+  where: StaffingTargetWhereUniqueInput!
+  data: StaffingTargetUpdateInput!
+}
+
+input StaffingTargetCreateInput {
+  community: CommunityRelateToOneForCreateInput
+  unit: UnitRelateToOneForCreateInput
+  source: String
+  metric: String
+  value: String
+  effectiveFrom: CalendarDay
+  effectiveTo: CalendarDay
+  status: String
+  ruleRef: String
+  note: String
   version: Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -18902,6 +19837,66 @@ type Mutation {
   updateTimecards(data: [TimecardUpdateArgs!]!): [Timecard]
   deleteTimecard(where: TimecardWhereUniqueInput!): Timecard
   deleteTimecards(where: [TimecardWhereUniqueInput!]!): [Timecard]
+  createAgencyInvoice(data: AgencyInvoiceCreateInput!): AgencyInvoice
+  createAgencyInvoices(data: [AgencyInvoiceCreateInput!]!): [AgencyInvoice]
+  updateAgencyInvoice(where: AgencyInvoiceWhereUniqueInput!, data: AgencyInvoiceUpdateInput!): AgencyInvoice
+  updateAgencyInvoices(data: [AgencyInvoiceUpdateArgs!]!): [AgencyInvoice]
+  deleteAgencyInvoice(where: AgencyInvoiceWhereUniqueInput!): AgencyInvoice
+  deleteAgencyInvoices(where: [AgencyInvoiceWhereUniqueInput!]!): [AgencyInvoice]
+  createAgencyVendor(data: AgencyVendorCreateInput!): AgencyVendor
+  createAgencyVendors(data: [AgencyVendorCreateInput!]!): [AgencyVendor]
+  updateAgencyVendor(where: AgencyVendorWhereUniqueInput!, data: AgencyVendorUpdateInput!): AgencyVendor
+  updateAgencyVendors(data: [AgencyVendorUpdateArgs!]!): [AgencyVendor]
+  deleteAgencyVendor(where: AgencyVendorWhereUniqueInput!): AgencyVendor
+  deleteAgencyVendors(where: [AgencyVendorWhereUniqueInput!]!): [AgencyVendor]
+  createCredential(data: CredentialCreateInput!): Credential
+  createCredentials(data: [CredentialCreateInput!]!): [Credential]
+  updateCredential(where: CredentialWhereUniqueInput!, data: CredentialUpdateInput!): Credential
+  updateCredentials(data: [CredentialUpdateArgs!]!): [Credential]
+  deleteCredential(where: CredentialWhereUniqueInput!): Credential
+  deleteCredentials(where: [CredentialWhereUniqueInput!]!): [Credential]
+  createCredentialVerification(data: CredentialVerificationCreateInput!): CredentialVerification
+  createCredentialVerifications(data: [CredentialVerificationCreateInput!]!): [CredentialVerification]
+  updateCredentialVerification(where: CredentialVerificationWhereUniqueInput!, data: CredentialVerificationUpdateInput!): CredentialVerification
+  updateCredentialVerifications(data: [CredentialVerificationUpdateArgs!]!): [CredentialVerification]
+  deleteCredentialVerification(where: CredentialVerificationWhereUniqueInput!): CredentialVerification
+  deleteCredentialVerifications(where: [CredentialVerificationWhereUniqueInput!]!): [CredentialVerification]
+  createLeieImport(data: LeieImportCreateInput!): LeieImport
+  createLeieImports(data: [LeieImportCreateInput!]!): [LeieImport]
+  updateLeieImport(where: LeieImportWhereUniqueInput!, data: LeieImportUpdateInput!): LeieImport
+  updateLeieImports(data: [LeieImportUpdateArgs!]!): [LeieImport]
+  deleteLeieImport(where: LeieImportWhereUniqueInput!): LeieImport
+  deleteLeieImports(where: [LeieImportWhereUniqueInput!]!): [LeieImport]
+  createPayrollExport(data: PayrollExportCreateInput!): PayrollExport
+  createPayrollExports(data: [PayrollExportCreateInput!]!): [PayrollExport]
+  updatePayrollExport(where: PayrollExportWhereUniqueInput!, data: PayrollExportUpdateInput!): PayrollExport
+  updatePayrollExports(data: [PayrollExportUpdateArgs!]!): [PayrollExport]
+  deletePayrollExport(where: PayrollExportWhereUniqueInput!): PayrollExport
+  deletePayrollExports(where: [PayrollExportWhereUniqueInput!]!): [PayrollExport]
+  createShift(data: ShiftCreateInput!): Shift
+  createShifts(data: [ShiftCreateInput!]!): [Shift]
+  updateShift(where: ShiftWhereUniqueInput!, data: ShiftUpdateInput!): Shift
+  updateShifts(data: [ShiftUpdateArgs!]!): [Shift]
+  deleteShift(where: ShiftWhereUniqueInput!): Shift
+  deleteShifts(where: [ShiftWhereUniqueInput!]!): [Shift]
+  createShiftAssignment(data: ShiftAssignmentCreateInput!): ShiftAssignment
+  createShiftAssignments(data: [ShiftAssignmentCreateInput!]!): [ShiftAssignment]
+  updateShiftAssignment(where: ShiftAssignmentWhereUniqueInput!, data: ShiftAssignmentUpdateInput!): ShiftAssignment
+  updateShiftAssignments(data: [ShiftAssignmentUpdateArgs!]!): [ShiftAssignment]
+  deleteShiftAssignment(where: ShiftAssignmentWhereUniqueInput!): ShiftAssignment
+  deleteShiftAssignments(where: [ShiftAssignmentWhereUniqueInput!]!): [ShiftAssignment]
+  createStaffingDay(data: StaffingDayCreateInput!): StaffingDay
+  createStaffingDays(data: [StaffingDayCreateInput!]!): [StaffingDay]
+  updateStaffingDay(where: StaffingDayWhereUniqueInput!, data: StaffingDayUpdateInput!): StaffingDay
+  updateStaffingDays(data: [StaffingDayUpdateArgs!]!): [StaffingDay]
+  deleteStaffingDay(where: StaffingDayWhereUniqueInput!): StaffingDay
+  deleteStaffingDays(where: [StaffingDayWhereUniqueInput!]!): [StaffingDay]
+  createStaffingTarget(data: StaffingTargetCreateInput!): StaffingTarget
+  createStaffingTargets(data: [StaffingTargetCreateInput!]!): [StaffingTarget]
+  updateStaffingTarget(where: StaffingTargetWhereUniqueInput!, data: StaffingTargetUpdateInput!): StaffingTarget
+  updateStaffingTargets(data: [StaffingTargetUpdateArgs!]!): [StaffingTarget]
+  deleteStaffingTarget(where: StaffingTargetWhereUniqueInput!): StaffingTarget
+  deleteStaffingTargets(where: [StaffingTargetWhereUniqueInput!]!): [StaffingTarget]
   endSession: Boolean!
   authenticateUserWithPassword(email: String!, password: String!): UserAuthenticationWithPasswordResult
   createInitialUser(data: CreateInitialUserInput!): UserAuthenticationWithPasswordSuccess!
@@ -19493,6 +20488,36 @@ type Query {
   timecard(where: TimecardWhereUniqueInput!): Timecard
   timecards(where: TimecardWhereInput! = {}, orderBy: [TimecardOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TimecardWhereUniqueInput): [Timecard!]
   timecardsCount(where: TimecardWhereInput! = {}): Int
+  agencyInvoice(where: AgencyInvoiceWhereUniqueInput!): AgencyInvoice
+  agencyInvoices(where: AgencyInvoiceWhereInput! = {}, orderBy: [AgencyInvoiceOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AgencyInvoiceWhereUniqueInput): [AgencyInvoice!]
+  agencyInvoicesCount(where: AgencyInvoiceWhereInput! = {}): Int
+  agencyVendor(where: AgencyVendorWhereUniqueInput!): AgencyVendor
+  agencyVendors(where: AgencyVendorWhereInput! = {}, orderBy: [AgencyVendorOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AgencyVendorWhereUniqueInput): [AgencyVendor!]
+  agencyVendorsCount(where: AgencyVendorWhereInput! = {}): Int
+  credential(where: CredentialWhereUniqueInput!): Credential
+  credentials(where: CredentialWhereInput! = {}, orderBy: [CredentialOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CredentialWhereUniqueInput): [Credential!]
+  credentialsCount(where: CredentialWhereInput! = {}): Int
+  credentialVerification(where: CredentialVerificationWhereUniqueInput!): CredentialVerification
+  credentialVerifications(where: CredentialVerificationWhereInput! = {}, orderBy: [CredentialVerificationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CredentialVerificationWhereUniqueInput): [CredentialVerification!]
+  credentialVerificationsCount(where: CredentialVerificationWhereInput! = {}): Int
+  leieImport(where: LeieImportWhereUniqueInput!): LeieImport
+  leieImports(where: LeieImportWhereInput! = {}, orderBy: [LeieImportOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: LeieImportWhereUniqueInput): [LeieImport!]
+  leieImportsCount(where: LeieImportWhereInput! = {}): Int
+  payrollExport(where: PayrollExportWhereUniqueInput!): PayrollExport
+  payrollExports(where: PayrollExportWhereInput! = {}, orderBy: [PayrollExportOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PayrollExportWhereUniqueInput): [PayrollExport!]
+  payrollExportsCount(where: PayrollExportWhereInput! = {}): Int
+  shift(where: ShiftWhereUniqueInput!): Shift
+  shifts(where: ShiftWhereInput! = {}, orderBy: [ShiftOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ShiftWhereUniqueInput): [Shift!]
+  shiftsCount(where: ShiftWhereInput! = {}): Int
+  shiftAssignment(where: ShiftAssignmentWhereUniqueInput!): ShiftAssignment
+  shiftAssignments(where: ShiftAssignmentWhereInput! = {}, orderBy: [ShiftAssignmentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ShiftAssignmentWhereUniqueInput): [ShiftAssignment!]
+  shiftAssignmentsCount(where: ShiftAssignmentWhereInput! = {}): Int
+  staffingDay(where: StaffingDayWhereUniqueInput!): StaffingDay
+  staffingDays(where: StaffingDayWhereInput! = {}, orderBy: [StaffingDayOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: StaffingDayWhereUniqueInput): [StaffingDay!]
+  staffingDaysCount(where: StaffingDayWhereInput! = {}): Int
+  staffingTarget(where: StaffingTargetWhereUniqueInput!): StaffingTarget
+  staffingTargets(where: StaffingTargetWhereInput! = {}, orderBy: [StaffingTargetOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: StaffingTargetWhereUniqueInput): [StaffingTarget!]
+  staffingTargetsCount(where: StaffingTargetWhereInput! = {}): Int
   keystone: KeystoneMeta!
   authenticatedItem: AuthenticatedItem
   validateUserPasswordResetToken(email: String!, token: String!): ValidateUserPasswordResetTokenResult

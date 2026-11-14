@@ -48,6 +48,8 @@ export const platformNavItems: PlatformNavItem[] = [
   { title: 'Medicaid liability', href: '/platform/billing/medicaid', color: 'indigo', description: 'Patient liability with reply and appeal deadlines.', icon: Landmark, group: 'billing' },
   { title: 'Claims', href: '/platform/claims', color: 'emerald', description: 'Part A claims, 837I files, 835 remittances and denials.', icon: FileText, group: 'billing' },
   { title: 'Staffing and PBJ', href: '/platform/workforce', color: 'blue', description: 'Timecards, punch corrections and the PBJ quarter export.', icon: Users, group: 'billing' },
+  { title: 'Schedule and staffing', href: '/platform/schedule', color: 'blue', description: 'Shifts, open-shift offers, hours per resident day against target, and agency invoices.', icon: CalendarClock, group: 'billing' },
+  { title: 'Credentials', href: '/platform/credentials', color: 'emerald', description: 'Licences, OIG exclusion file, Nursys and background results, training hours.', icon: ShieldCheck, group: 'billing' },
   { title: 'NHSN weekly report', href: '/platform/nhsn', color: 'rose', description: 'Weekly respiratory vaccination and case CSV.', icon: ClipboardCheck, group: 'clinical' },
   { title: 'Resident funds', href: '/platform/trust', color: 'amber', description: 'Resident trust ledgers, withdrawals and reconciliation.', icon: PiggyBank, group: 'billing' },
 
@@ -66,7 +68,7 @@ export const SHIPPED_ROUTES = new Set<string>([
   '/platform/clinical', '/platform/emar', '/platform/counts', '/platform/incidents', '/platform/ipac', '/platform/tasks', '/platform/findings',
   '/platform/sales', '/platform/sales/waitlist', '/platform/sales/storefront',
   '/platform/billing', '/platform/billing/rates', '/platform/billing/medicaid', '/platform/trust',
-  '/platform/mds', '/platform/mds/pdpm', '/platform/mds/coverage', '/platform/claims', '/platform/workforce', '/platform/nhsn',
+  '/platform/mds', '/platform/mds/pdpm', '/platform/mds/coverage', '/platform/claims', '/platform/workforce', '/platform/schedule', '/platform/credentials', '/platform/nhsn',
   '/platform/approvals', '/platform/compliance', '/platform/privacy/break-glass', '/platform/audit',
 ])
 

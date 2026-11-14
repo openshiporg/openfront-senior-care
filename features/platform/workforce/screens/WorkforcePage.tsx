@@ -6,6 +6,7 @@ import { BillingAction } from '../../components/BillingAction';
 type Card = { id: string; weekStart: string; totalMinutes: number | null; status: string; issues: unknown[] | null; staffMember: { id: string; name: string; employeeId: string } | null };
 type Correction = { id: string; kind: string; observedAt: string; reason: string; status: string; staffMember: { name: string } | null };
 type Staff = { id: string; name: string; employeeId: string; status: string; jobCode: { title: string; pbjJobTitleCode: string } | null };
+type Payroll = { id: string; reference: string; periodStart: string; periodEnd: string; rows: number; totalMinutes: number; csvHash: string; status: string };
 type Quarter = { id: string; reference: string; status: string; dueOn: string; validation: { ok?: boolean; problems?: { message: string }[]; entries?: number } | null; xmlHash: string };
 
 const hours = (m: number | null) => `${Math.floor((m ?? 0) / 60)}h ${String((m ?? 0) % 60).padStart(2, '0')}m`;
@@ -15,10 +16,11 @@ export default async function WorkforcePage({ searchParams }: { searchParams?: P
   const params = (await searchParams) ?? {};
   const { community, communities } = await currentCommunity(params.community);
   if (!community) return <Page title="Staffing and PBJ"><Empty>No community is assigned to you yet.</Empty></Page>;
-  const data = await q<{ timecards: Card[]; timeCorrections: Correction[]; staffMembers: Staff[]; pbjQuarters: Quarter[] }>(`query W($id: ID!) {
+  const data = await q<{ timecards: Card[]; timeCorrections: Correction[]; staffMembers: Staff[]; pbjQuarters: Quarter[]; payrollExports: Payroll[] }>(`query W($id: ID!) {
     timecards(where: { community: { id: { equals: $id } } }, orderBy: { weekStart: desc }, take: 100) { id weekStart totalMinutes status issues staffMember { id name employeeId } }
     timeCorrections(where: { community: { id: { equals: $id }, status: { equals: "requested" } } }, take: 50) { id kind observedAt reason status staffMember { name } }
     staffMembers(where: { community: { id: { equals: $id } } }, orderBy: { name: asc }, take: 300) { id name employeeId status jobCode { title pbjJobTitleCode } }
+    payrollExports(where: { community: { id: { equals: $id } } }, orderBy: { periodStart: desc }, take: 12) { id reference periodStart periodEnd rows totalMinutes csvHash status }
     pbjQuarters(where: { community: { id: { equals: $id } } }, orderBy: { startDate: desc }, take: 8) { id reference status dueOn validation xmlHash }
   }`, { id: community.id }).catch(() => null);
   if (!data) return <Page title="Staffing and PBJ"><Empty>Your role doesn&apos;t include staffing. Use the menu for the screens you can open.</Empty></Page>;
@@ -53,6 +55,14 @@ export default async function WorkforcePage({ searchParams }: { searchParams?: P
             <div className="flex gap-2"><BillingAction op="workforce.decide_correction" input={{ correctionId: c.id, decision: 'approved' }}>Approve</BillingAction><BillingAction op="workforce.decide_correction" input={{ correctionId: c.id, decision: 'rejected' }}>Reject</BillingAction></div>
           </Row>
         )) : <Empty>No corrections waiting.</Empty>}
+      </Section>
+      <Section title="Payroll export" aside={<BillingAction op="payroll.export" input={{ communityId: community.id }} fields={[{ name: 'periodStart', label: 'Period starts (a Monday)', type: 'date', required: true }, { name: 'periodEnd', label: 'Period ends (a Sunday)', type: 'date', required: true }]}>Lock a pay period</BillingAction>}>
+        {data.payrollExports.length ? data.payrollExports.map(x => (
+          <Row key={x.id}>
+            <div className="min-w-0 flex-1"><Title status="satisfied">{x.reference} · {when(x.periodStart, tz, 'date')} to {when(x.periodEnd, tz, 'date')} · locked</Title><Meta>{x.rows} day rows · {hours(x.totalMinutes)} · hash {x.csvHash.slice(0, 12)}</Meta></div>
+            <a className="inline-flex min-h-11 items-center text-sm underline" href={`/api/exports?kind=payroll&id=${x.id}`}>Export CSV</a>
+          </Row>
+        )) : <Empty>No pay period locked. Approve timecards, then lock a Monday-to-Sunday period.</Empty>}
       </Section>
       <Section title="PBJ quarters" aside={<BillingAction op="pbj.open_quarter" input={{ communityId: community.id }} fields={[{ name: 'date', label: 'Any date in the quarter', type: 'date', required: true }]}>Open a quarter</BillingAction>}>
         {data.pbjQuarters.length ? data.pbjQuarters.map(p => (

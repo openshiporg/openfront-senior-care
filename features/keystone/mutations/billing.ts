@@ -18,6 +18,7 @@ import * as mds from '../mds/service'
 import * as cov from '../coverage/service'
 import * as claims from '../claims/service'
 import * as pbj from '../pbj/service'
+import * as sched from '../scheduling/service'
 import { actorFor } from './actorFor'
 import { assertCommunityAccess, assertHuman, authorize, runDomain } from './run'
 import { requireKey } from './op'
@@ -74,6 +75,8 @@ const TIME: Permission[] = ['canManageTimecards']
 const TIME_APPROVE: Permission[] = ['canApproveTimecards']
 const PEOPLE: Permission[] = ['canManagePeople']
 const REGULATORY: Permission[] = ['canSubmitRegulatory']
+const SCHEDULE: Permission[] = ['canManageSchedule']
+const CREDENTIALS: Permission[] = ['canManageCredentials']
 const bigint = (v: unknown, f: string) => money(v, f)
 const byMds = byRecord('MdsAssessment', 'assessmentId')
 const byCoverage = async (tx: Tx, i: Input) => {
@@ -235,8 +238,8 @@ export const HANDLERS: Record<string, Handler> = {
   'ancillary.pay': { permissions: POSTING, community: byRecord('AncillaryInvoice', 'invoiceId'), run: (u, a, i) => claims.payInvoice(u, a, { invoiceId: i.invoiceId }) },
 
   // Workforce, PBJ and NHSN (Phase 4b)
-  'workforce.job_code': { permissions: PEOPLE, community: byCommunity, run: (u, a, i) => pbj.saveJobCode(u, a, { communityId: i.communityId, code: String(i.code ?? ''), title: String(i.title ?? ''), pbjJobTitleCode: i.pbjJobTitleCode || null, countsTowardNursing: Boolean(i.countsTowardNursing) }) },
-  'workforce.staff': { permissions: PEOPLE, community: byCommunity, run: (u, a, i) => pbj.saveStaffMember(u, a, { communityId: i.communityId, employeeId: String(i.employeeId ?? ''), name: String(i.name ?? ''), jobCodeId: i.jobCodeId, payType: String(i.payType ?? ''), agency: Boolean(i.agency), hireDate: i.hireDate || null, terminationDate: i.terminationDate || null, userId: i.userId || null }) },
+  'workforce.job_code': { permissions: PEOPLE, community: byCommunity, run: (u, a, i) => pbj.saveJobCode(u, a, { communityId: i.communityId, code: String(i.code ?? ''), title: String(i.title ?? ''), pbjJobTitleCode: i.pbjJobTitleCode || null, countsTowardNursing: Boolean(i.countsTowardNursing), category: i.category || null }) },
+  'workforce.staff': { permissions: PEOPLE, community: byCommunity, run: (u, a, i) => pbj.saveStaffMember(u, a, { communityId: i.communityId, employeeId: String(i.employeeId ?? ''), name: String(i.name ?? ''), jobCodeId: i.jobCodeId, payType: String(i.payType ?? ''), agency: Boolean(i.agency), agencyVendorId: i.agencyVendorId || null, hireDate: i.hireDate || null, terminationDate: i.terminationDate || null, userId: i.userId || null }) },
   'workforce.import_punches': { permissions: TIME, community: byCommunity, run: (u, a, i) => pbj.importPunches(u, a, { communityId: i.communityId, csv: String(i.csv ?? '') }) },
   'workforce.request_correction': { permissions: TIME, community: byRecord('StaffMember', 'staffMemberId'), run: (u, a, i) => pbj.requestCorrection(u, a, { staffMemberId: i.staffMemberId, kind: String(i.kind ?? ''), observedAt: String(i.observedAt ?? ''), reason: String(i.reason ?? '') }) },
   'workforce.decide_correction': { permissions: TIME_APPROVE, community: byRecord('TimeCorrection', 'correctionId'), run: (u, a, i) => pbj.decideCorrection(u, a, { correctionId: i.correctionId, decision: i.decision, note: i.note }) },
@@ -250,6 +253,23 @@ export const HANDLERS: Record<string, Handler> = {
   'pbj.record_outcome': { permissions: REGULATORY, community: byRecord('PbjQuarter', 'quarterId'), run: (u, a, i) => pbj.recordPbjOutcome(u, a, { quarterId: i.quarterId, outcome: i.outcome, note: i.note }) },
   'nhsn.generate': { permissions: REGULATORY, community: byCommunity, run: (u, a, i) => pbj.generateNhsnWeek(u, a, { communityId: i.communityId, weekStart: String(i.weekStart ?? ''), covidPositive: i.covidPositive === undefined || i.covidPositive === '' ? undefined : Number(i.covidPositive), fluPositive: i.fluPositive === undefined || i.fluPositive === '' ? undefined : Number(i.fluPositive) }) },
   'nhsn.record': { permissions: REGULATORY, community: byRecord('NhsnExport', 'exportId'), run: (u, a, i) => pbj.recordNhsnUpload(u, a, { exportId: i.exportId, step: i.step, confirmation: i.confirmation }) },
+
+  // Workforce depth (Phase 5)
+  'shift.create': { permissions: SCHEDULE, community: byCommunity, run: (u, a, i) => sched.createShift(u, a, { communityId: i.communityId, unitId: i.unitId || null, role: String(i.role ?? ''), date: String(i.date ?? ''), startTime: String(i.startTime ?? ''), endTime: String(i.endTime ?? ''), required: Number(i.required || 1), note: i.note }) },
+  'shift.assign': { permissions: SCHEDULE, community: byRecord('Shift', 'shiftId'), serializable: true, run: (u, a, i) => sched.assignStaff(u, a, { shiftId: i.shiftId, staffMemberId: String(i.staffMemberId ?? '') }) },
+  'shift.offer': { permissions: SCHEDULE, community: byRecord('Shift', 'shiftId'), serializable: true, run: (u, a, i) => sched.offerShift(u, a, { shiftId: i.shiftId, staffMemberId: String(i.staffMemberId ?? ''), hours: i.hours ? Number(i.hours) : undefined }) },
+  'shift.move': { permissions: SCHEDULE, community: byRecord('ShiftAssignment', 'assignmentId'), serializable: true, run: (u, a, i) => sched.moveAssignment(u, a, { assignmentId: i.assignmentId, to: String(i.to ?? ''), reason: i.reason }) },
+  'shift.cancel': { permissions: SCHEDULE, community: byRecord('Shift', 'shiftId'), run: (u, a, i) => sched.cancelShift(u, a, { shiftId: i.shiftId, reason: String(i.reason ?? '') }) },
+  'credential.save': { permissions: CREDENTIALS, community: byRecord('StaffMember', 'staffMemberId'), run: (u, a, i) => sched.saveCredential(u, a, { staffMemberId: i.staffMemberId, kind: String(i.kind ?? ''), jurisdiction: i.jurisdiction, number: i.number, issuedAt: i.issuedAt || null, expiresAt: i.expiresAt || null, document: i.document }) },
+  'credential.verify': { permissions: CREDENTIALS, community: byRecord('Credential', 'credentialId'), run: (u, a, i) => sched.verifyCredential(u, a, { credentialId: i.credentialId, source: String(i.source ?? ''), result: String(i.result ?? ''), reference: String(i.reference ?? ''), note: i.note }) },
+  'credential.training': { permissions: CREDENTIALS, community: byRecord('StaffMember', 'staffMemberId'), run: (u, a, i) => sched.recordTraining(u, a, { staffMemberId: i.staffMemberId, kind: String(i.kind ?? ''), minutes: Number(i.minutes), completedOn: String(i.completedOn ?? ''), reference: String(i.reference ?? '') }) },
+  'leie.import': { permissions: CREDENTIALS, community: byCommunity, run: (u, a, i) => sched.importLeie(u, a, { communityId: i.communityId, month: String(i.month ?? ''), text: String(i.text ?? '') }) },
+  'agency.vendor': { permissions: SCHEDULE, community: byCommunity, run: (u, a, i) => sched.saveAgencyVendor(u, a, { communityId: i.communityId, name: String(i.name ?? ''), contractStart: i.contractStart || null, contractEnd: i.contractEnd || null, rates: { rn: i.rn, lpn: i.lpn, cna: i.cna, med_aide: i.med_aide } }) },
+  'agency.invoice': { permissions: SCHEDULE, community: byRecord('AgencyVendor', 'vendorId'), run: (u, a, i) => sched.receiveAgencyInvoice(u, a, { vendorId: i.vendorId, invoiceNumber: String(i.invoiceNumber ?? ''), periodStart: String(i.periodStart ?? ''), periodEnd: String(i.periodEnd ?? ''), invoicedMinutes: Math.round(Number(i.hours) * 60), amountMinor: money(i.amountMinor, 'amount') }) },
+  'agency.approve': { permissions: TIME_APPROVE, community: byRecord('AgencyInvoice', 'invoiceId'), run: (u, a, i) => sched.approveAgencyInvoice(u, a, { invoiceId: i.invoiceId, note: i.note }) },
+  'payroll.export': { permissions: TIME_APPROVE, community: byCommunity, serializable: true, run: (u, a, i) => sched.exportPayroll(u, a, { communityId: i.communityId, periodStart: String(i.periodStart ?? ''), periodEnd: String(i.periodEnd ?? '') }) },
+  'staffing.target': { permissions: SCHEDULE, community: byCommunity, run: (u, a, i) => sched.saveStaffingTarget(u, a, { communityId: i.communityId, metric: String(i.metric ?? ''), value: String(i.value ?? ''), effectiveFrom: String(i.effectiveFrom ?? ''), note: i.note }) },
+  'staffing.compute': { permissions: SCHEDULE, community: byCommunity, run: (u, a, i) => sched.computeStaffingRange(u, a, { communityId: i.communityId, from: String(i.from ?? ''), days: Number(i.days || 1) }) },
 }
 
 /** All Phase 3 commands are for a signed-in person at the dashboard: an agent never moves money. */

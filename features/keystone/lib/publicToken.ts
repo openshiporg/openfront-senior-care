@@ -6,11 +6,11 @@ import { derivedSessionSecret } from './derivedSessionSecret'
  * booking, accepting a waitlist offer or a portal invitation (scheduling guestBookingToken donor).
  * Only the SHA-256 of the token is stored on the row, so a database read never yields a usable token.
  */
-export type PublicTokenPurpose = 'tour-manage' | 'waitlist-offer' | 'portal-invite'
+export type PublicTokenPurpose = 'tour-manage' | 'waitlist-offer' | 'portal-invite' | 'shift-offer'
 
 export type PublicTokenPayload = { version: 1; purpose: PublicTokenPurpose; subjectId: string; expiresAtMs: number; nonce: string }
 
-const ENV: Record<PublicTokenPurpose, string> = { 'tour-manage': 'TOUR_MANAGE_SECRET', 'waitlist-offer': 'WAITLIST_OFFER_SECRET', 'portal-invite': 'PORTAL_INVITE_SECRET' }
+const ENV: Record<PublicTokenPurpose, string> = { 'tour-manage': 'TOUR_MANAGE_SECRET', 'waitlist-offer': 'WAITLIST_OFFER_SECRET', 'portal-invite': 'PORTAL_INVITE_SECRET', 'shift-offer': 'SHIFT_OFFER_SECRET' }
 
 export function publicTokenSecret(purpose: PublicTokenPurpose) {
   const secret = process.env[ENV[purpose]]?.trim() || derivedSessionSecret(purpose)

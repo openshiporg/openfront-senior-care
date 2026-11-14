@@ -128,6 +128,12 @@ model User {
   from_TimePunch_recordedBy                    TimePunch[]                @relation("TimePunch_recordedBy")
   from_Timecard_submittedBy                    Timecard[]                 @relation("Timecard_submittedBy")
   from_Timecard_approvedBy                     Timecard[]                 @relation("Timecard_approvedBy")
+  from_AgencyInvoice_receivedBy                AgencyInvoice[]            @relation("AgencyInvoice_receivedBy")
+  from_AgencyInvoice_approvedBy                AgencyInvoice[]            @relation("AgencyInvoice_approvedBy")
+  from_CredentialVerification_verifiedBy       CredentialVerification[]   @relation("CredentialVerification_verifiedBy")
+  from_LeieImport_uploadedBy                   LeieImport[]               @relation("LeieImport_uploadedBy")
+  from_PayrollExport_exportedBy                PayrollExport[]            @relation("PayrollExport_exportedBy")
+  from_ShiftAssignment_decidedBy               ShiftAssignment[]          @relation("ShiftAssignment_decidedBy")
 
   @@index([roleId])
 }
@@ -574,6 +580,16 @@ model Community {
   from_TimeCorrection_community           TimeCorrection[]           @relation("TimeCorrection_community")
   from_TimePunch_community                TimePunch[]                @relation("TimePunch_community")
   from_Timecard_community                 Timecard[]                 @relation("Timecard_community")
+  from_AgencyInvoice_community            AgencyInvoice[]            @relation("AgencyInvoice_community")
+  from_AgencyVendor_community             AgencyVendor[]             @relation("AgencyVendor_community")
+  from_Credential_community               Credential[]               @relation("Credential_community")
+  from_CredentialVerification_community   CredentialVerification[]   @relation("CredentialVerification_community")
+  from_LeieImport_community               LeieImport[]               @relation("LeieImport_community")
+  from_PayrollExport_community            PayrollExport[]            @relation("PayrollExport_community")
+  from_Shift_community                    Shift[]                    @relation("Shift_community")
+  from_ShiftAssignment_community          ShiftAssignment[]          @relation("ShiftAssignment_community")
+  from_StaffingDay_community              StaffingDay[]              @relation("StaffingDay_community")
+  from_StaffingTarget_community           StaffingTarget[]           @relation("StaffingTarget_community")
 
   @@index([jurisdictionPackId])
   @@index([holidayCalendarId])
@@ -1243,6 +1259,8 @@ model Unit {
   from_MedicationSupply_unitLocation MedicationSupply[]   @relation("MedicationSupply_unitLocation")
   from_ShiftCount_unit               ShiftCount[]         @relation("ShiftCount_unit")
   from_Outbreak_unit                 Outbreak[]           @relation("Outbreak_unit")
+  from_Shift_unit                    Shift[]              @relation("Shift_unit")
+  from_StaffingTarget_unit           StaffingTarget[]     @relation("StaffingTarget_unit")
 
   @@unique([communityId, code], map: "Unit_community_code_key")
   @@index([communityId])
@@ -4610,6 +4628,7 @@ model JobCode {
   title                    String        @default("")
   pbjJobTitleCode          String        @default("")
   countsTowardNursing      Boolean       @default(false)
+  category                 String        @default("other")
   status                   String        @default("active")
   createdAt                DateTime      @default(now())
   updatedAt                DateTime      @default(now()) @updatedAt
@@ -4672,31 +4691,37 @@ model PbjQuarter {
 }
 
 model StaffMember {
-  id                              String           @id @default(cuid())
-  community                       Community?       @relation("StaffMember_community", fields: [communityId], references: [id])
-  communityId                     String?          @map("community")
-  user                            User?            @relation("StaffMember_user", fields: [userId], references: [id])
-  userId                          String?          @map("user")
-  name                            String           @default("")
-  employeeId                      String           @default("")
-  jobCode                         JobCode?         @relation("StaffMember_jobCode", fields: [jobCodeId], references: [id])
-  jobCodeId                       String?          @map("jobCode")
-  payType                         String
-  agency                          Boolean          @default(false)
-  hireDate                        DateTime?        @postgresql.Date
-  terminationDate                 DateTime?        @postgresql.Date
-  status                          String           @default("active")
-  version                         Int              @default(0)
-  createdAt                       DateTime         @default(now())
-  updatedAt                       DateTime         @default(now()) @updatedAt
-  from_TimeCorrection_staffMember TimeCorrection[] @relation("TimeCorrection_staffMember")
-  from_TimePunch_staffMember      TimePunch[]      @relation("TimePunch_staffMember")
-  from_Timecard_staffMember       Timecard[]       @relation("Timecard_staffMember")
+  id                                      String                   @id @default(cuid())
+  community                               Community?               @relation("StaffMember_community", fields: [communityId], references: [id])
+  communityId                             String?                  @map("community")
+  user                                    User?                    @relation("StaffMember_user", fields: [userId], references: [id])
+  userId                                  String?                  @map("user")
+  name                                    String                   @default("")
+  employeeId                              String                   @default("")
+  jobCode                                 JobCode?                 @relation("StaffMember_jobCode", fields: [jobCodeId], references: [id])
+  jobCodeId                               String?                  @map("jobCode")
+  payType                                 String
+  agency                                  Boolean                  @default(false)
+  agencyVendor                            AgencyVendor?            @relation("StaffMember_agencyVendor", fields: [agencyVendorId], references: [id])
+  agencyVendorId                          String?                  @map("agencyVendor")
+  hireDate                                DateTime?                @postgresql.Date
+  terminationDate                         DateTime?                @postgresql.Date
+  status                                  String                   @default("active")
+  version                                 Int                      @default(0)
+  createdAt                               DateTime                 @default(now())
+  updatedAt                               DateTime                 @default(now()) @updatedAt
+  from_TimeCorrection_staffMember         TimeCorrection[]         @relation("TimeCorrection_staffMember")
+  from_TimePunch_staffMember              TimePunch[]              @relation("TimePunch_staffMember")
+  from_Timecard_staffMember               Timecard[]               @relation("Timecard_staffMember")
+  from_Credential_staffMember             Credential[]             @relation("Credential_staffMember")
+  from_CredentialVerification_staffMember CredentialVerification[] @relation("CredentialVerification_staffMember")
+  from_ShiftAssignment_staffMember        ShiftAssignment[]        @relation("ShiftAssignment_staffMember")
 
   @@index([communityId])
   @@index([userId])
   @@index([employeeId])
   @@index([jobCodeId])
+  @@index([agencyVendorId])
 }
 
 model TimeCorrection {
@@ -4727,21 +4752,22 @@ model TimeCorrection {
 }
 
 model TimePunch {
-  id            String          @id @default(cuid())
-  community     Community?      @relation("TimePunch_community", fields: [communityId], references: [id])
-  communityId   String?         @map("community")
-  staffMember   StaffMember?    @relation("TimePunch_staffMember", fields: [staffMemberId], references: [id])
-  staffMemberId String?         @map("staffMember")
-  kind          String
-  observedAt    DateTime
-  source        String
-  punchHash     String          @unique @default("")
-  batch         String          @default("")
-  correction    TimeCorrection? @relation("TimePunch_correction", fields: [correctionId], references: [id])
-  correctionId  String?         @map("correction")
-  recordedBy    User?           @relation("TimePunch_recordedBy", fields: [recordedById], references: [id])
-  recordedById  String?         @map("recordedBy")
-  createdAt     DateTime?       @default(now())
+  id                              String            @id @default(cuid())
+  community                       Community?        @relation("TimePunch_community", fields: [communityId], references: [id])
+  communityId                     String?           @map("community")
+  staffMember                     StaffMember?      @relation("TimePunch_staffMember", fields: [staffMemberId], references: [id])
+  staffMemberId                   String?           @map("staffMember")
+  kind                            String
+  observedAt                      DateTime
+  source                          String
+  punchHash                       String            @unique @default("")
+  batch                           String            @default("")
+  correction                      TimeCorrection?   @relation("TimePunch_correction", fields: [correctionId], references: [id])
+  correctionId                    String?           @map("correction")
+  recordedBy                      User?             @relation("TimePunch_recordedBy", fields: [recordedById], references: [id])
+  recordedById                    String?           @map("recordedBy")
+  createdAt                       DateTime?         @default(now())
+  from_ShiftAssignment_startPunch ShiftAssignment[] @relation("ShiftAssignment_startPunch")
 
   @@index([communityId])
   @@index([staffMemberId])
@@ -4773,6 +4799,239 @@ model Timecard {
   @@index([staffMemberId])
   @@index([submittedById])
   @@index([approvedById])
+}
+
+model AgencyInvoice {
+  id                  String        @id @default(cuid())
+  community           Community?    @relation("AgencyInvoice_community", fields: [communityId], references: [id])
+  communityId         String?       @map("community")
+  vendor              AgencyVendor? @relation("AgencyInvoice_vendor", fields: [vendorId], references: [id])
+  vendorId            String?       @map("vendor")
+  invoiceNumber       String        @default("")
+  periodStart         DateTime?     @postgresql.Date
+  periodEnd           DateTime?     @postgresql.Date
+  invoicedMinutes     Int?          @default(0)
+  amountMinor         BigInt?
+  expectedMinutes     Int?          @default(0)
+  expectedAmountMinor BigInt?
+  variance            Json?
+  status              String        @default("received")
+  receivedBy          User?         @relation("AgencyInvoice_receivedBy", fields: [receivedById], references: [id])
+  receivedById        String?       @map("receivedBy")
+  approvedBy          User?         @relation("AgencyInvoice_approvedBy", fields: [approvedById], references: [id])
+  approvedById        String?       @map("approvedBy")
+  approvalNote        String        @default("")
+  version             Int           @default(0)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([vendorId])
+  @@index([invoiceNumber])
+  @@index([receivedById])
+  @@index([approvedById])
+}
+
+model AgencyVendor {
+  id                            String          @id @default(cuid())
+  community                     Community?      @relation("AgencyVendor_community", fields: [communityId], references: [id])
+  communityId                   String?         @map("community")
+  name                          String          @default("")
+  status                        String          @default("active")
+  contractStart                 DateTime?       @postgresql.Date
+  contractEnd                   DateTime?       @postgresql.Date
+  rateCard                      Json?           @default("{}")
+  version                       Int             @default(0)
+  createdAt                     DateTime        @default(now())
+  updatedAt                     DateTime        @default(now()) @updatedAt
+  from_StaffMember_agencyVendor StaffMember[]   @relation("StaffMember_agencyVendor")
+  from_AgencyInvoice_vendor     AgencyInvoice[] @relation("AgencyInvoice_vendor")
+
+  @@index([communityId])
+  @@index([name])
+}
+
+model Credential {
+  id                                     String                   @id @default(cuid())
+  community                              Community?               @relation("Credential_community", fields: [communityId], references: [id])
+  communityId                            String?                  @map("community")
+  staffMember                            StaffMember?             @relation("Credential_staffMember", fields: [staffMemberId], references: [id])
+  staffMemberId                          String?                  @map("staffMember")
+  kind                                   String
+  jurisdiction                           String                   @default("")
+  number                                 String                   @default("")
+  issuedAt                               DateTime?                @postgresql.Date
+  expiresAt                              DateTime?                @postgresql.Date
+  status                                 String                   @default("pending_verification")
+  document                               String                   @default("")
+  minutesCompleted                       Int?                     @default(0)
+  completedOn                            DateTime?                @postgresql.Date
+  version                                Int                      @default(0)
+  createdAt                              DateTime                 @default(now())
+  updatedAt                              DateTime                 @default(now()) @updatedAt
+  from_CredentialVerification_credential CredentialVerification[] @relation("CredentialVerification_credential")
+
+  @@index([communityId])
+  @@index([staffMemberId])
+}
+
+model CredentialVerification {
+  id            String       @id @default(cuid())
+  community     Community?   @relation("CredentialVerification_community", fields: [communityId], references: [id])
+  communityId   String?      @map("community")
+  credential    Credential?  @relation("CredentialVerification_credential", fields: [credentialId], references: [id])
+  credentialId  String?      @map("credential")
+  staffMember   StaffMember? @relation("CredentialVerification_staffMember", fields: [staffMemberId], references: [id])
+  staffMemberId String?      @map("staffMember")
+  source        String
+  sourceVersion String       @default("")
+  result        String
+  verifiedAt    DateTime?
+  verifiedBy    User?        @relation("CredentialVerification_verifiedBy", fields: [verifiedById], references: [id])
+  verifiedById  String?      @map("verifiedBy")
+  evidence      Json?        @default("{}")
+  createdAt     DateTime?    @default(now())
+
+  @@index([communityId])
+  @@index([credentialId])
+  @@index([staffMemberId])
+  @@index([verifiedById])
+}
+
+model LeieImport {
+  id           String     @id @default(cuid())
+  community    Community? @relation("LeieImport_community", fields: [communityId], references: [id])
+  communityId  String?    @map("community")
+  month        String     @default("")
+  fileHash     String     @default("")
+  rows         Int?       @default(0)
+  checked      Int?       @default(0)
+  matches      Int?       @default(0)
+  uploadedBy   User?      @relation("LeieImport_uploadedBy", fields: [uploadedById], references: [id])
+  uploadedById String?    @map("uploadedBy")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([fileHash])
+  @@index([uploadedById])
+}
+
+model PayrollExport {
+  id           String     @id @default(cuid())
+  community    Community? @relation("PayrollExport_community", fields: [communityId], references: [id])
+  communityId  String?    @map("community")
+  reference    String     @unique @default("")
+  periodStart  DateTime?  @postgresql.Date
+  periodEnd    DateTime?  @postgresql.Date
+  rows         Int?       @default(0)
+  totalMinutes Int?       @default(0)
+  csv          String     @default("")
+  csvHash      String     @default("")
+  locked       Boolean    @default(true)
+  status       String     @default("locked")
+  exportedBy   User?      @relation("PayrollExport_exportedBy", fields: [exportedById], references: [id])
+  exportedById String?    @map("exportedBy")
+  deliveredAt  DateTime?
+  version      Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([exportedById])
+}
+
+model Shift {
+  id                         String            @id @default(cuid())
+  community                  Community?        @relation("Shift_community", fields: [communityId], references: [id])
+  communityId                String?           @map("community")
+  unit                       Unit?             @relation("Shift_unit", fields: [unitId], references: [id])
+  unitId                     String?           @map("unit")
+  role                       String
+  startsAt                   DateTime
+  endsAt                     DateTime
+  required                   Int?              @default(1)
+  status                     String            @default("open")
+  note                       String            @default("")
+  version                    Int               @default(0)
+  createdAt                  DateTime          @default(now())
+  updatedAt                  DateTime          @default(now()) @updatedAt
+  from_ShiftAssignment_shift ShiftAssignment[] @relation("ShiftAssignment_shift")
+
+  @@index([communityId])
+  @@index([unitId])
+}
+
+model ShiftAssignment {
+  id              String       @id @default(cuid())
+  community       Community?   @relation("ShiftAssignment_community", fields: [communityId], references: [id])
+  communityId     String?      @map("community")
+  shift           Shift?       @relation("ShiftAssignment_shift", fields: [shiftId], references: [id])
+  shiftId         String?      @map("shift")
+  staffMember     StaffMember? @relation("ShiftAssignment_staffMember", fields: [staffMemberId], references: [id])
+  staffMemberId   String?      @map("staffMember")
+  status          String       @default("offered")
+  startsAt        DateTime
+  endsAt          DateTime
+  credentialCheck Json?
+  agencyRateMinor BigInt?
+  offerTokenHash  String       @default("")
+  offerExpiresAt  DateTime?
+  startPunch      TimePunch?   @relation("ShiftAssignment_startPunch", fields: [startPunchId], references: [id])
+  startPunchId    String?      @map("startPunch")
+  coverageReason  String       @default("")
+  decidedBy       User?        @relation("ShiftAssignment_decidedBy", fields: [decidedById], references: [id])
+  decidedById     String?      @map("decidedBy")
+  version         Int          @default(0)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([shiftId])
+  @@index([staffMemberId])
+  @@index([offerTokenHash])
+  @@index([startPunchId])
+  @@index([decidedById])
+}
+
+model StaffingDay {
+  id          String     @id @default(cuid())
+  community   Community? @relation("StaffingDay_community", fields: [communityId], references: [id])
+  communityId String?    @map("community")
+  date        DateTime?  @postgresql.Date
+  census      Int?       @default(0)
+  minutes     Json?      @default("{}")
+  hprd        Json?      @default("{}")
+  breaches    Json?      @default("[]")
+  status      String     @default("met")
+  computedAt  DateTime?
+  version     Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @default(now()) @updatedAt
+
+  @@index([communityId])
+}
+
+model StaffingTarget {
+  id            String     @id @default(cuid())
+  community     Community? @relation("StaffingTarget_community", fields: [communityId], references: [id])
+  communityId   String?    @map("community")
+  unit          Unit?      @relation("StaffingTarget_unit", fields: [unitId], references: [id])
+  unitId        String?    @map("unit")
+  source        String
+  metric        String
+  value         String     @default("")
+  effectiveFrom DateTime?  @postgresql.Date
+  effectiveTo   DateTime?  @postgresql.Date
+  status        String     @default("active")
+  ruleRef       String     @default("")
+  note          String     @default("")
+  version       Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @default(now()) @updatedAt
+
+  @@index([communityId])
+  @@index([unitId])
 }
 
 enum UserKindType {

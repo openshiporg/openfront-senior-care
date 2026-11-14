@@ -8,6 +8,7 @@ import * as audit from './audit'
 import * as approvals from './approvals'
 import * as census from './census'
 import * as front from './frontOfHouse'
+import * as shiftOffer from './shiftOffer'
 import * as reads from './reads'
 import * as clinical from './clinical'
 import * as billing from './billing'
@@ -34,6 +35,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         residentRoster(communityId: ID!, status: String): JSON
         storefrontCommunity(slug: String!): JSON
         portalMe: JSON
+        shiftOffer(token: String!): JSON
         portalUpdates(residentId: ID!): JSON
         portalCalendar(residentId: ID!): JSON
         portalDocuments(residentId: ID!): JSON
@@ -55,6 +57,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         loadCensusSetup(idempotencyKey: String!): JSON
         loadClinicalSetup(idempotencyKey: String!): JSON
         loadBillingSetup(idempotencyKey: String!): JSON
+        loadWorkforceSetup(idempotencyKey: String!): JSON
         loadMdsSetup(idempotencyKey: String!): JSON
         refreshTimedStates(idempotencyKey: String!): JSON
         decideApprovalRequest(requestId: ID!, decision: String!, reason: String, expectedVersion: Int!, idempotencyKey: String!): JSON
@@ -90,6 +93,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         movePublishedPrice(priceId: ID!, to: String!, expectedVersion: Int!, idempotencyKey: String!): JSON
         cancelTourByToken(token: String!, reason: String): JSON
         acceptPortalInvitation(token: String!, password: String!): JSON
+        answerShiftOffer(token: String!, answer: String!): JSON
         recordInquiry(input: JSON!, idempotencyKey: String!): JSON
         moveLead(leadId: ID!, to: String!, lostReason: String, note: String, expectedVersion: Int!, idempotencyKey: String!): JSON
         logSalesActivity(leadId: ID!, kind: String!, summary: String!, idempotencyKey: String!): JSON
@@ -125,6 +129,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         residentRoster: op(reads.residentRoster),
         storefrontCommunity: op(front.storefrontCommunityQuery),
         portalMe: op(front.portalMeQuery),
+        shiftOffer: op(shiftOffer.shiftOfferQuery),
         portalUpdates: op(front.portalUpdatesQuery),
         portalCalendar: op(front.portalCalendarQuery),
         portalDocuments: op(front.portalDocumentsQuery),
@@ -145,6 +150,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         loadCensusSetup: op(setup.loadCensusSetup),
         loadClinicalSetup: op(setup.loadClinicalSetup),
         loadBillingSetup: op(setup.loadBillingSetup),
+        loadWorkforceSetup: op(setup.loadWorkforceSetup),
         loadMdsSetup: op(setup.loadMdsSetup),
         refreshTimedStates: op(front.refreshTimedStatesMutation),
         decideApprovalRequest: op(approvals.decideApprovalRequest),
@@ -180,6 +186,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         movePublishedPrice: op(front.movePublishedPriceMutation),
         cancelTourByToken: op(front.cancelTourByToken),
         acceptPortalInvitation: op(front.acceptPortalInvitationMutation),
+        answerShiftOffer: op(shiftOffer.answerShiftOffer),
         recordInquiry: op(front.recordInquiryMutation),
         moveLead: op(front.moveLeadMutation),
         logSalesActivity: op(front.logSalesActivityMutation),

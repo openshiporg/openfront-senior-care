@@ -96,8 +96,8 @@ export type TaskInput = {
 
 /**
  * A task in the staff inbox (never a sent message). Idempotent on dedupeKey. It is routed to the
- * first person assigned to the community whose role matches `ownerRole`; a shift roster arrives
- * with Phase 5 (open item), so until then the role is the owner and any holder may take it.
+ * person on shift now (a started or assigned ShiftAssignment) whose role matches `ownerRole`, else the first
+ * holder of that role assigned to the community.
  */
 export async function createTask(uow: UnitOfWork, actor: Actor, input: TaskInput) {
   if (input.dedupeKey) {
@@ -106,11 +106,14 @@ export async function createTask(uow: UnitOfWork, actor: Actor, input: TaskInput
   }
   let assigneeId: string | null = null
   if (input.ownerRole) {
-    const holder = await uow.tx.user.findFirst({
-      where: { role: { name: input.ownerRole }, assignments: { some: { communityId: input.communityId, status: 'active' } } },
+    const holders = { role: { name: input.ownerRole }, assignments: { some: { communityId: input.communityId, status: 'active' } } }
+    // The person on shift right now takes it (the roster, Phase 5); with nobody on shift the first holder by id does.
+    const onShift = await uow.tx.user.findFirst({
+      where: { ...holders, from_StaffMember_user: { some: { communityId: input.communityId, from_ShiftAssignment_staffMember: { some: { status: { in: ['assigned', 'started'] }, startsAt: { lte: uow.now }, endsAt: { gt: uow.now } } } } } },
       select: { id: true },
       orderBy: { id: 'asc' },
     })
+    const holder = onShift ?? (await uow.tx.user.findFirst({ where: holders, select: { id: true }, orderBy: { id: 'asc' } }))
     assigneeId = holder?.id ?? null
   }
   const task = await uow.tx.task.create({

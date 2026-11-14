@@ -238,9 +238,9 @@ function dec(value) {
     if (!Number.isSafeInteger(value)) throw new Error(`Refusing float ${value}: pass the exact decimal as a string`);
     return new Decimal(value);
   }
-  const text18 = String(value).trim();
-  if (!DECIMAL_TEXT.test(text18)) throw new Error(`Not a decimal number: ${JSON.stringify(text18).slice(0, 40)}`);
-  return new Decimal(text18);
+  const text21 = String(value).trim();
+  if (!DECIMAL_TEXT.test(text21)) throw new Error(`Not a decimal number: ${JSON.stringify(text21).slice(0, 40)}`);
+  return new Decimal(text21);
 }
 function toScale(value, scale, rounding = Decimal.ROUND_HALF_EVEN) {
   const places = typeof scale === "number" ? scale : Scale[scale];
@@ -412,9 +412,9 @@ __export(common_exports, {
   qty: () => qty,
   ref: () => ref,
   residentFor: () => residentFor,
-  text: () => text17,
+  text: () => text20,
   userOf: () => userOf,
-  when: () => when8
+  when: () => when11
 });
 async function residentFor(tx, residentId) {
   if (typeof residentId !== "string" || !residentId) return invalid("Choose a resident.", "residentId");
@@ -459,7 +459,7 @@ async function createTask(uow, actor, input) {
   auditCreate(uow, actor, "Task", task.id, "task.created", { kind: task.kind, ownerRole: task.ownerRole, subjectId: task.subjectId });
   return { task, created: true };
 }
-var invalid, notFound, text17, oneOf, when8, num, qty, communityZone, ROLE_NAMES, ref, userOf;
+var invalid, notFound, text20, oneOf, when11, num, qty, communityZone, ROLE_NAMES, ref, userOf;
 var init_common = __esm({
   "features/keystone/lib/clinical/common.ts"() {
     "use strict";
@@ -474,7 +474,7 @@ var init_common = __esm({
     notFound = (what) => {
       throw new DomainError(Codes.NOT_FOUND, `${what} not found.`);
     };
-    text17 = (value, field, options = {}) => {
+    text20 = (value, field, options = {}) => {
       const v = typeof value === "string" ? value.trim() : "";
       if (!v) {
         if (options.required === false) return "";
@@ -488,7 +488,7 @@ var init_common = __esm({
       if (!allowed.includes(value)) invalid(`Choose a valid ${field}.`, field);
       return value;
     };
-    when8 = (value, field, fallback) => {
+    when11 = (value, field, fallback) => {
       if (value == null || value === "") {
         if (fallback) return fallback;
         return invalid(`${field} is required.`, field);
@@ -536,7 +536,7 @@ module.exports = __toCommonJS(keystone_exports);
 
 // features/keystone/index.ts
 var import_auth = require("@keystone-6/auth");
-var import_core20 = require("@keystone-6/core");
+var import_core23 = require("@keystone-6/core");
 var import_config = require("dotenv/config");
 
 // features/keystone/models/User.ts
@@ -709,8 +709,8 @@ function label(value) {
   if (value.includes(".")) return value.split(".").map(label).join(" \xB7 ");
   const words = value.replace(/([a-z])([A-Z])/g, "$1 $2").split(/[_\s-]+/).filter(Boolean).map(word);
   if (!words.length) return "";
-  const first = words[0];
-  words[0] = first === first.toUpperCase() ? first : first[0].toUpperCase() + first.slice(1);
+  const first2 = words[0];
+  words[0] = first2 === first2.toUpperCase() ? first2 : first2[0].toUpperCase() + first2.slice(1);
   return words.join(" ");
 }
 
@@ -3619,10 +3619,10 @@ var ShiftCountEntry = (0, import_core14.list)({
       ...base2,
       filter: {
         query: async (args) => {
-          const scoped3 = await base2.filter.query(args);
-          if (seesBalance(args)) return scoped3;
+          const scoped5 = await base2.filter.query(args);
+          if (seesBalance(args)) return scoped5;
           const own = { countedBy: { id: { equals: args.session?.itemId ?? "" } } };
-          return scoped3 === true ? own : { AND: [scoped3, own] };
+          return scoped5 === true ? own : { AND: [scoped5, own] };
         }
       }
     };
@@ -4675,6 +4675,545 @@ var InterestAllocationRun = (0, import_core18.list)({
   }
 });
 
+// features/keystone/models/claims.ts
+var claims_exports = {};
+__export(claims_exports, {
+  AncillaryInvoice: () => AncillaryInvoice,
+  CLAIM_STATUSES: () => CLAIM_STATUSES,
+  Claim: () => Claim,
+  ClaimLine: () => ClaimLine,
+  DENIAL_STATUSES: () => DENIAL_STATUSES,
+  Remittance: () => Remittance,
+  RemittancePosting: () => RemittancePosting
+});
+var import_core19 = require("@keystone-6/core");
+var import_fields19 = require("@keystone-6/core/fields");
+var CLAIM_READ = ["canReadBilling", "canManageClaims"];
+var rl3 = () => residentList(["community"], ["resident"], CLAIM_READ);
+var community3 = () => (0, import_fields19.relationship)({ ref: "Community", ...ro });
+var day4 = () => (0, import_fields19.calendarDay)({ ...ro });
+var when8 = () => (0, import_fields19.timestamp)({ ...ro });
+var by8 = () => (0, import_fields19.relationship)({ ref: "User", ...ro });
+var money2 = (required = false) => ({ validation: { isRequired: required }, ...ro });
+var CLAIM_STATUSES = ["draft", "validated", "released", "submitted", "accepted", "rejected", "paid", "partially_paid", "denied", "appealed", "finalised", "cancelled"];
+var DENIAL_STATUSES = ["open", "working", "appealed", "resolved", "written_off"];
+var Claim = (0, import_core19.list)({
+  access: rl3(),
+  ui: { labelField: "reference", listView: { initialColumns: ["reference", "resident", "typeOfBill", "periodFrom", "periodTo", "status"] } },
+  fields: {
+    community: community3(),
+    resident: (0, import_fields19.relationship)({ ref: "Resident", ...ro }),
+    stay: (0, import_fields19.relationship)({ ref: "Stay", ...ro }),
+    payer: (0, import_fields19.relationship)({ ref: "Payer", ...ro }),
+    coverage: (0, import_fields19.relationship)({ ref: "CoveragePeriod", ...ro }),
+    reference: systemText({ indexed: "unique", required: true }),
+    periodFrom: day4(),
+    periodTo: day4(),
+    typeOfBill: systemText(),
+    frequencyCode: systemText(),
+    occurrenceCodes: (0, import_fields19.json)({ ...ro, defaultValue: [] }),
+    occurrenceSpans: (0, import_fields19.json)({ ...ro, defaultValue: [] }),
+    valueCodes: (0, import_fields19.json)({ ...ro, defaultValue: [] }),
+    conditionCodes: (0, import_fields19.json)({ ...ro, defaultValue: [] }),
+    ...phiGatedFields("Claim", {
+      diagnoses: ["clin", import_fields19.json, { ...ro, defaultValue: {} }],
+      totalChargesMinor: ["fin", import_fields19.bigInt, money2(true)],
+      paidMinor: ["fin", import_fields19.bigInt, { ...money2(), defaultValue: 0n }],
+      exportText: ["ident", import_fields19.text, { ...ro, access: { read: () => false, create: () => false, update: () => false }, graphql: { omit: true } }],
+      denial: ["fin", import_fields19.json, ro]
+    }),
+    status: lifecycle(CLAIM_STATUSES, "draft"),
+    previousClaim: (0, import_fields19.relationship)({ ref: "Claim", ...ro }),
+    scrubberResult: (0, import_fields19.json)({ ...ro }),
+    exportHash: systemText(),
+    exportedAt: when8(),
+    exportedBy: by8(),
+    uploadedAt: when8(),
+    uploadedBy: by8(),
+    validatedBy: by8(),
+    releasedBy: by8(),
+    payerClaimNumber: systemText(),
+    attendingNpi: systemText(),
+    attendingName: systemText(),
+    ackStatus: fixedChoice(["none", "accepted_999", "rejected_999", "accepted_277ca", "rejected_277ca"]),
+    denialStatus: fixedChoice(["none", ...DENIAL_STATUSES]),
+    lines: (0, import_fields19.relationship)({ ref: "ClaimLine.claim", many: true, ...ro }),
+    postings: (0, import_fields19.relationship)({ ref: "RemittancePosting.claim", many: true, ...ro }),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+phiList("Claim");
+var ClaimLine = (0, import_core19.list)({
+  access: rl3(),
+  ui: { labelField: "revenueCode", listView: { initialColumns: ["claim", "revenueCode", "hippsCode", "serviceFrom", "units"] } },
+  fields: {
+    community: community3(),
+    resident: (0, import_fields19.relationship)({ ref: "Resident", ...ro }),
+    claim: (0, import_fields19.relationship)({ ref: "Claim.lines", ...ro }),
+    lineNumber: (0, import_fields19.integer)({ ...ro, validation: { isRequired: true } }),
+    revenueCode: systemText({ required: true }),
+    hippsCode: systemText(),
+    serviceFrom: day4(),
+    serviceTo: day4(),
+    units: (0, import_fields19.integer)({ ...ro, validation: { isRequired: true } }),
+    ...phiGatedFields("ClaimLine", {
+      chargeMinor: ["fin", import_fields19.bigInt, money2(true)],
+      paidMinor: ["fin", import_fields19.bigInt, { ...money2(), defaultValue: 0n }]
+    }),
+    chargeIds: (0, import_fields19.json)({ ...ro, defaultValue: [] }),
+    createdAt: (0, import_fields19.timestamp)({ defaultValue: { kind: "now" }, ...ro })
+  }
+});
+phiList("ClaimLine");
+var Remittance = (0, import_core19.list)({
+  access: scopedGoverned(CLAIM_READ, ["community"]),
+  ui: { labelField: "traceNumber", listView: { initialColumns: ["traceNumber", "payer", "paymentDate", "totalPaidMinor", "status"] } },
+  fields: {
+    community: community3(),
+    payer: (0, import_fields19.relationship)({ ref: "Payer", ...ro }),
+    traceNumber: systemText({ required: true, indexed: true }),
+    paymentDate: day4(),
+    totalPaidMinor: (0, import_fields19.bigInt)({ ...ro, validation: { isRequired: true }, isFilterable: false, isOrderable: false }),
+    fileHash: systemText({ required: true }),
+    rawText: (0, import_fields19.text)({ ...ro, access: { read: () => false, create: () => false, update: () => false }, graphql: { omit: true } }),
+    status: lifecycle(["imported", "matched", "posted"], "imported"),
+    exceptions: (0, import_fields19.json)({ ...ro, defaultValue: [] }),
+    claimCount: (0, import_fields19.integer)({ ...ro, defaultValue: 0 }),
+    importedBy: by8(),
+    postedBy: by8(),
+    postedAt: when8(),
+    postings: (0, import_fields19.relationship)({ ref: "RemittancePosting.remittance", many: true, ...ro }),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+var RemittancePosting = (0, import_core19.list)({
+  access: rl3(),
+  ui: { labelField: "id", listView: { initialColumns: ["remittance", "claim", "paidMinor", "createdAt"] } },
+  fields: {
+    community: community3(),
+    resident: (0, import_fields19.relationship)({ ref: "Resident", ...ro }),
+    remittance: (0, import_fields19.relationship)({ ref: "Remittance.postings", ...ro }),
+    claim: (0, import_fields19.relationship)({ ref: "Claim.postings", ...ro }),
+    ...phiGatedFields("RemittancePosting", {
+      paidMinor: ["fin", import_fields19.bigInt, money2(true)],
+      contractualMinor: ["fin", import_fields19.bigInt, { ...money2(), defaultValue: 0n }],
+      patientResponsibilityMinor: ["fin", import_fields19.bigInt, { ...money2(), defaultValue: 0n }],
+      otherMinor: ["fin", import_fields19.bigInt, { ...money2(), defaultValue: 0n }],
+      adjustments: ["fin", import_fields19.json, { ...ro, defaultValue: [] }]
+    }),
+    chargeIds: (0, import_fields19.json)({ ...ro, defaultValue: [] }),
+    createdAt: (0, import_fields19.timestamp)({ defaultValue: { kind: "now" }, ...ro })
+  }
+});
+phiList("RemittancePosting");
+var AncillaryInvoice = (0, import_core19.list)({
+  access: rl3(),
+  ui: { labelField: "invoiceNumber", listView: { initialColumns: ["invoiceNumber", "vendor", "resident", "amountMinor", "status"] } },
+  fields: {
+    community: community3(),
+    resident: (0, import_fields19.relationship)({ ref: "Resident", ...ro }),
+    stay: (0, import_fields19.relationship)({ ref: "Stay", ...ro }),
+    vendor: systemText({ required: true, indexed: true }),
+    invoiceNumber: systemText({ required: true }),
+    invoiceDate: day4(),
+    serviceDate: day4(),
+    category: fixedChoice(["therapy", "laboratory", "radiology", "pharmacy", "transport", "dialysis", "other"]),
+    description: systemText(),
+    ...phiGatedFields("AncillaryInvoice", { amountMinor: ["fin", import_fields19.bigInt, money2(true)] }),
+    /** True when the stay is under Part A on the service date: the vendor is paid by the SNF, not billed to Medicare. */
+    consolidatedBilling: (0, import_fields19.checkbox)({ defaultValue: false, ...ro }),
+    claim: (0, import_fields19.relationship)({ ref: "Claim", ...ro }),
+    status: lifecycle(["received", "matched", "approved", "paid"], "received"),
+    receivedBy: by8(),
+    approvedBy: by8(),
+    paidAt: when8(),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+phiList("AncillaryInvoice");
+
+// features/keystone/models/workforce.ts
+var workforce_exports = {};
+__export(workforce_exports, {
+  JobCode: () => JobCode,
+  NhsnExport: () => NhsnExport,
+  PbjQuarter: () => PbjQuarter,
+  StaffMember: () => StaffMember,
+  TimeCorrection: () => TimeCorrection,
+  TimePunch: () => TimePunch,
+  Timecard: () => Timecard
+});
+var import_core20 = require("@keystone-6/core");
+var import_fields20 = require("@keystone-6/core/fields");
+var READ = ["canReadWorkforce", "canManageTimecards", "canApproveTimecards"];
+var REG_READ = ["canSubmitRegulatory", "canReadWorkforce"];
+var scoped3 = (read) => scopedGoverned(read, ["community"]);
+var community4 = () => (0, import_fields20.relationship)({ ref: "Community", ...ro });
+var day5 = () => (0, import_fields20.calendarDay)({ ...ro });
+var when9 = () => (0, import_fields20.timestamp)({ ...ro });
+var by9 = () => (0, import_fields20.relationship)({ ref: "User", ...ro });
+var JobCode = (0, import_core20.list)({
+  access: scoped3([...READ, "canSubmitRegulatory"]),
+  ui: { labelField: "title", listView: { initialColumns: ["code", "title", "pbjJobTitleCode", "countsTowardNursing"] } },
+  fields: {
+    community: community4(),
+    code: systemText({ required: true, indexed: true }),
+    title: systemText({ required: true }),
+    /** CMS PBJ jobTitleCode 1-40; blank means unmapped and blocks the quarter. */
+    pbjJobTitleCode: systemText(),
+    countsTowardNursing: (0, import_fields20.checkbox)({ defaultValue: false, ...ro }),
+    /** The shift role this job fills: rn, lpn, cna, med_aide or other (Phase 5). */
+    category: lifecycle(["rn", "lpn", "cna", "med_aide", "other"], "other"),
+    status: lifecycle(["active", "retired"], "active"),
+    ...trackingFields
+  }
+});
+var StaffMember = (0, import_core20.list)({
+  access: scoped3(READ),
+  ui: { labelField: "name", listView: { initialColumns: ["name", "employeeId", "jobCode", "payType", "status"] } },
+  fields: {
+    community: community4(),
+    user: (0, import_fields20.relationship)({ ref: "User", ...ro }),
+    name: systemText({ required: true }),
+    /** The employee id sent in the PBJ file: an internal number, never a Social Security number. */
+    employeeId: systemText({ required: true, indexed: true }),
+    jobCode: (0, import_fields20.relationship)({ ref: "JobCode", ...ro }),
+    payType: fixedChoice(["exempt", "non_exempt", "contract"]),
+    agency: (0, import_fields20.checkbox)({ defaultValue: false, ...ro }),
+    agencyVendor: (0, import_fields20.relationship)({ ref: "AgencyVendor", ...ro }),
+    hireDate: day5(),
+    terminationDate: day5(),
+    status: lifecycle(["active", "on_leave", "terminated"], "active"),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+var TimePunch = (0, import_core20.list)({
+  access: scoped3(READ),
+  ui: { labelField: "kind", listView: { initialColumns: ["staffMember", "kind", "observedAt", "source"] } },
+  fields: {
+    community: community4(),
+    staffMember: (0, import_fields20.relationship)({ ref: "StaffMember", ...ro }),
+    kind: fixedChoice(["in", "out", "break_start", "break_end"]),
+    observedAt: (0, import_fields20.timestamp)({ ...ro, validation: { isRequired: true } }),
+    source: fixedChoice(["kiosk", "mobile", "geofence", "import", "correction"]),
+    /** Same import file imported twice posts each punch once. */
+    punchHash: systemText({ required: true, indexed: "unique" }),
+    batch: systemText(),
+    correction: (0, import_fields20.relationship)({ ref: "TimeCorrection", ...ro }),
+    recordedBy: by9(),
+    createdAt: (0, import_fields20.timestamp)({ defaultValue: { kind: "now" }, ...ro })
+  }
+});
+var TimeCorrection = (0, import_core20.list)({
+  access: scoped3(READ),
+  ui: { labelField: "reason", listView: { initialColumns: ["staffMember", "kind", "observedAt", "status"] } },
+  fields: {
+    community: community4(),
+    staffMember: (0, import_fields20.relationship)({ ref: "StaffMember", ...ro }),
+    kind: fixedChoice(["in", "out", "break_start", "break_end"]),
+    observedAt: (0, import_fields20.timestamp)({ ...ro, validation: { isRequired: true } }),
+    reason: systemText({ required: true }),
+    status: lifecycle(["requested", "approved", "rejected"], "requested"),
+    requestedBy: by9(),
+    decidedBy: by9(),
+    decidedAt: when9(),
+    decisionNote: systemText(),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+var Timecard = (0, import_core20.list)({
+  access: scoped3(READ),
+  ui: { labelField: "weekStart", listView: { initialColumns: ["staffMember", "weekStart", "totalMinutes", "status"] } },
+  fields: {
+    community: community4(),
+    staffMember: (0, import_fields20.relationship)({ ref: "StaffMember", ...ro }),
+    weekStart: day5(),
+    /** { 'yyyy-mm-dd': minutes } worked after unpaid break deductions. */
+    dayMinutes: (0, import_fields20.json)({ ...ro, defaultValue: {} }),
+    totalMinutes: (0, import_fields20.integer)({ ...ro, defaultValue: 0 }),
+    issues: (0, import_fields20.json)({ ...ro, defaultValue: [] }),
+    status: lifecycle(["open", "submitted", "approved", "exported"], "open"),
+    submittedBy: by9(),
+    approvedBy: by9(),
+    approvedAt: when9(),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+var PbjQuarter = (0, import_core20.list)({
+  access: scoped3(REG_READ),
+  ui: { labelField: "reference", listView: { initialColumns: ["reference", "status", "dueOn"] } },
+  fields: {
+    community: community4(),
+    reference: systemText({ required: true, indexed: "unique" }),
+    federalFiscalYear: (0, import_fields20.integer)({ ...ro, validation: { isRequired: true } }),
+    quarter: (0, import_fields20.integer)({ ...ro, validation: { isRequired: true } }),
+    startDate: day5(),
+    endDate: day5(),
+    /** 45 days after the quarter ends (CMS PBJ submission deadline). */
+    dueOn: day5(),
+    status: lifecycle(["open", "validating", "ready", "exported", "submitted", "accepted", "rejected"], "open"),
+    validation: (0, import_fields20.json)({ ...ro }),
+    xml: (0, import_fields20.text)({ ...ro, access: { read: () => false, create: () => false, update: () => false }, graphql: { omit: true } }),
+    xmlHash: systemText(),
+    exportedAt: when9(),
+    exportedBy: by9(),
+    submittedAt: when9(),
+    reportNote: systemText(),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+var NhsnExport = (0, import_core20.list)({
+  access: scoped3(REG_READ),
+  ui: { labelField: "reference", listView: { initialColumns: ["reference", "weekStart", "weekEnd", "status"] } },
+  fields: {
+    community: community4(),
+    reference: systemText({ required: true, indexed: "unique" }),
+    weekStart: day5(),
+    weekEnd: day5(),
+    counts: (0, import_fields20.json)({ ...ro }),
+    problems: (0, import_fields20.json)({ ...ro, defaultValue: [] }),
+    csv: (0, import_fields20.text)({ ...ro, access: { read: () => false, create: () => false, update: () => false }, graphql: { omit: true } }),
+    csvHash: systemText(),
+    templateNote: systemText(),
+    status: lifecycle(["generated", "uploaded", "confirmed"], "generated"),
+    generatedBy: by9(),
+    uploadedAt: when9(),
+    confirmation: systemText(),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+
+// features/keystone/models/scheduling.ts
+var scheduling_exports = {};
+__export(scheduling_exports, {
+  ASSIGNMENT_STATUSES: () => ASSIGNMENT_STATUSES,
+  AgencyInvoice: () => AgencyInvoice,
+  AgencyVendor: () => AgencyVendor,
+  CREDENTIAL_KINDS: () => CREDENTIAL_KINDS,
+  CREDENTIAL_STATUSES: () => CREDENTIAL_STATUSES,
+  Credential: () => Credential,
+  CredentialVerification: () => CredentialVerification,
+  LeieImport: () => LeieImport,
+  PayrollExport: () => PayrollExport,
+  STAFFING_METRICS: () => STAFFING_METRICS,
+  Shift: () => Shift,
+  ShiftAssignment: () => ShiftAssignment,
+  StaffingDay: () => StaffingDay,
+  StaffingTarget: () => StaffingTarget
+});
+var import_core21 = require("@keystone-6/core");
+var import_fields21 = require("@keystone-6/core/fields");
+var CREDENTIAL_KINDS = ["rn_licence", "lpn_licence", "cna_registry", "med_aide_cert", "cpr", "tb_screen", "background_check_state", "background_check_fbi", "oig_exclusion", "state_exclusion", "dementia_training", "abuse_training", "in_service_hours"];
+var CREDENTIAL_STATUSES = ["pending_verification", "verified", "expiring", "expired", "revoked", "suspended"];
+var ASSIGNMENT_STATUSES = ["offered", "accepted", "assigned", "started", "completed", "declined", "called_off", "no_show", "needs_coverage"];
+var STAFFING_METRICS = ["total_nurse_hprd", "rn_hprd", "cna_hprd", "direct_care_hprd"];
+var SCHEDULE = ["canManageSchedule", "canReadWorkforce", "canManageTimecards"];
+var CREDENTIALS = ["canManageCredentials", "canReadWorkforce", "canManageSchedule"];
+var scoped4 = (read) => scopedGoverned(read, ["community"]);
+var community5 = () => (0, import_fields21.relationship)({ ref: "Community", ...ro });
+var day6 = () => (0, import_fields21.calendarDay)({ ...ro });
+var when10 = () => (0, import_fields21.timestamp)({ ...ro });
+var by10 = () => (0, import_fields21.relationship)({ ref: "User", ...ro });
+var money3 = () => (0, import_fields21.bigInt)({ ...ro });
+var AgencyVendor = (0, import_core21.list)({
+  access: scoped4(SCHEDULE),
+  ui: { labelField: "name", listView: { initialColumns: ["name", "status", "contractStart", "contractEnd"] } },
+  fields: {
+    community: community5(),
+    name: systemText({ required: true, indexed: true }),
+    status: lifecycle(["active", "suspended", "terminated"], "active"),
+    contractStart: day6(),
+    contractEnd: day6(),
+    /** { rn: 6800, lpn: 5200, cna: 3400 }: contract rate per hour in cents, by role category. */
+    rateCard: (0, import_fields21.json)({ ...ro, defaultValue: {} }),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+var AgencyInvoice = (0, import_core21.list)({
+  access: scoped4(SCHEDULE),
+  ui: { labelField: "invoiceNumber", listView: { initialColumns: ["invoiceNumber", "vendor", "amountMinor", "status"] } },
+  fields: {
+    community: community5(),
+    vendor: (0, import_fields21.relationship)({ ref: "AgencyVendor", ...ro }),
+    invoiceNumber: systemText({ required: true, indexed: true }),
+    periodStart: day6(),
+    periodEnd: day6(),
+    invoicedMinutes: (0, import_fields21.integer)({ ...ro, defaultValue: 0 }),
+    amountMinor: money3(),
+    /** What the shifts worked in the period come to at the contract rate. */
+    expectedMinutes: (0, import_fields21.integer)({ ...ro, defaultValue: 0 }),
+    expectedAmountMinor: money3(),
+    variance: (0, import_fields21.json)({ ...ro }),
+    status: lifecycle(["received", "matched", "disputed", "approved"], "received"),
+    receivedBy: by10(),
+    approvedBy: by10(),
+    approvalNote: systemText(),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+var Credential = (0, import_core21.list)({
+  access: scoped4(CREDENTIALS),
+  ui: { labelField: "kind", listView: { initialColumns: ["staffMember", "kind", "status", "expiresAt"] } },
+  fields: {
+    community: community5(),
+    staffMember: (0, import_fields21.relationship)({ ref: "StaffMember", ...ro }),
+    kind: fixedChoice(CREDENTIAL_KINDS),
+    jurisdiction: systemText(),
+    number: systemText(),
+    issuedAt: day6(),
+    expiresAt: day6(),
+    status: lifecycle(CREDENTIAL_STATUSES, "pending_verification"),
+    /** The certificate or report on file (file name or document reference). */
+    document: systemText(),
+    /** Training records: hours completed (in-service, dementia, abuse), in minutes. */
+    minutesCompleted: (0, import_fields21.integer)({ ...ro, defaultValue: 0 }),
+    completedOn: day6(),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+var CredentialVerification = (0, import_core21.list)({
+  access: scoped4(["canManageCredentials"]),
+  ui: { labelField: "result", listView: { initialColumns: ["credential", "source", "result", "verifiedAt"] } },
+  fields: {
+    community: community5(),
+    credential: (0, import_fields21.relationship)({ ref: "Credential", ...ro }),
+    staffMember: (0, import_fields21.relationship)({ ref: "StaffMember", ...ro }),
+    source: fixedChoice(["nursys", "state_registry", "background_vendor", "oig_leie_file", "manual"]),
+    /** The source's own version, e.g. the LEIE month (2026-11). */
+    sourceVersion: systemText(),
+    result: fixedChoice(["clear", "match", "mismatch", "error"]),
+    verifiedAt: when10(),
+    verifiedBy: by10(),
+    evidence: (0, import_fields21.json)({ ...ro, defaultValue: {} }),
+    createdAt: (0, import_fields21.timestamp)({ defaultValue: { kind: "now" }, ...ro })
+  }
+});
+var LeieImport = (0, import_core21.list)({
+  access: scoped4(["canManageCredentials"]),
+  ui: { labelField: "month", listView: { initialColumns: ["month", "rows", "checked", "matches", "createdAt"] } },
+  fields: {
+    community: community5(),
+    month: systemText({ required: true }),
+    fileHash: systemText({ required: true, indexed: true }),
+    rows: (0, import_fields21.integer)({ ...ro, defaultValue: 0 }),
+    checked: (0, import_fields21.integer)({ ...ro, defaultValue: 0 }),
+    matches: (0, import_fields21.integer)({ ...ro, defaultValue: 0 }),
+    uploadedBy: by10(),
+    ...trackingFields
+  }
+});
+var Shift = (0, import_core21.list)({
+  access: scoped4(SCHEDULE),
+  ui: { labelField: "role", listView: { initialColumns: ["unit", "role", "startsAt", "endsAt", "required", "status"] } },
+  fields: {
+    community: community5(),
+    unit: (0, import_fields21.relationship)({ ref: "Unit", ...ro }),
+    /** The job-code category the shift needs: rn, lpn, cna, med_aide, or other. */
+    role: fixedChoice(["rn", "lpn", "cna", "med_aide", "other"]),
+    startsAt: (0, import_fields21.timestamp)({ ...ro, validation: { isRequired: true } }),
+    endsAt: (0, import_fields21.timestamp)({ ...ro, validation: { isRequired: true } }),
+    required: (0, import_fields21.integer)({ ...ro, defaultValue: 1 }),
+    status: lifecycle(["open", "filled", "in_progress", "completed", "cancelled"], "open"),
+    note: systemText(),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+var ShiftAssignment = (0, import_core21.list)({
+  access: scoped4(SCHEDULE),
+  ui: { labelField: "status", listView: { initialColumns: ["shift", "staffMember", "status", "startsAt"] } },
+  fields: {
+    community: community5(),
+    shift: (0, import_fields21.relationship)({ ref: "Shift", ...ro }),
+    staffMember: (0, import_fields21.relationship)({ ref: "StaffMember", ...ro }),
+    status: lifecycle(ASSIGNMENT_STATUSES, "offered"),
+    /** Copied from the shift so the database can refuse two overlapping active assignments for one person. */
+    startsAt: (0, import_fields21.timestamp)({ ...ro, validation: { isRequired: true } }),
+    endsAt: (0, import_fields21.timestamp)({ ...ro, validation: { isRequired: true } }),
+    /** What the credential check saw when the person was assigned. */
+    credentialCheck: (0, import_fields21.json)({ ...ro }),
+    agencyRateMinor: money3(),
+    /** SHA-256 of the offer link's token; the link itself is shown once to the scheduler. */
+    offerTokenHash: systemText({ indexed: true }),
+    offerExpiresAt: when10(),
+    startPunch: (0, import_fields21.relationship)({ ref: "TimePunch", ...ro }),
+    coverageReason: systemText(),
+    decidedBy: by10(),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+var StaffingTarget = (0, import_core21.list)({
+  access: scoped4(SCHEDULE),
+  ui: { labelField: "metric", listView: { initialColumns: ["metric", "value", "source", "status", "ruleRef"] } },
+  fields: {
+    community: community5(),
+    unit: (0, import_fields21.relationship)({ ref: "Unit", ...ro }),
+    source: fixedChoice(["jurisdiction_pack", "operator_policy"]),
+    metric: fixedChoice(STAFFING_METRICS),
+    /** Hours per resident day, as text with two decimals (no floating point). */
+    value: systemText({ required: true }),
+    effectiveFrom: day6(),
+    effectiveTo: day6(),
+    /** repealed targets stay as history and never raise a breach. */
+    status: lifecycle(["active", "repealed", "retired"], "active"),
+    ruleRef: systemText(),
+    note: systemText(),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+var StaffingDay = (0, import_core21.list)({
+  access: scoped4(SCHEDULE),
+  ui: { labelField: "date", listView: { initialColumns: ["date", "census", "status"] } },
+  fields: {
+    community: community5(),
+    date: day6(),
+    census: (0, import_fields21.integer)({ ...ro, defaultValue: 0 }),
+    /** { rn: minutes, lpn: minutes, cna: minutes, med_aide: minutes } scheduled and worked for the day. */
+    minutes: (0, import_fields21.json)({ ...ro, defaultValue: {} }),
+    /** { metric: '3.42' } hours per resident day. */
+    hprd: (0, import_fields21.json)({ ...ro, defaultValue: {} }),
+    breaches: (0, import_fields21.json)({ ...ro, defaultValue: [] }),
+    status: lifecycle(["met", "breached"], "met"),
+    computedAt: when10(),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+var PayrollExport = (0, import_core21.list)({
+  access: scoped4(["canApproveTimecards", "canManageTimecards"]),
+  ui: { labelField: "reference", listView: { initialColumns: ["reference", "periodStart", "periodEnd", "rows", "status"] } },
+  fields: {
+    community: community5(),
+    reference: systemText({ required: true, indexed: "unique" }),
+    periodStart: day6(),
+    periodEnd: day6(),
+    rows: (0, import_fields21.integer)({ ...ro, defaultValue: 0 }),
+    totalMinutes: (0, import_fields21.integer)({ ...ro, defaultValue: 0 }),
+    csv: (0, import_fields21.text)({ ...ro, access: { read: () => false, create: () => false, update: () => false }, graphql: { omit: true } }),
+    csvHash: systemText(),
+    /** A locked period is final: its approved timecards are exported and cannot be reopened. */
+    locked: (0, import_fields21.checkbox)({ defaultValue: true, ...ro }),
+    status: lifecycle(["locked", "delivered"], "locked"),
+    exportedBy: by10(),
+    deliveredAt: when10(),
+    version: versionField(),
+    ...trackingFields
+  }
+});
+
 // features/keystone/models/index.ts
 var { SETTINGS: _settings, ...platformLists } = platform_exports;
 var { AGENT_SCOPES: _scopes, PHI_AGENT_SCOPES: _phiScopes, PROPOSAL_KINDS: _kinds, ...agentLists } = agents_exports;
@@ -4686,6 +5225,8 @@ var { DRUG_SCHEDULES: _ds, SUPPLY_KINDS: _sk, MOVEMENT_KINDS: _mk, SLOT_STATUSES
 var { INCIDENT_KINDS: _ik, ...safetyLists } = safety_exports;
 var { RATE_KINDS: _rk, CHARGE_KINDS: _chk, PAYMENT_METHODS: _pm, DEPOSIT_KINDS: _dk, ...billingLists } = billing_exports;
 var { MDS_KINDS: _mdsk, coverageDepthFields: _cdf, ...mdsLists } = mds_exports;
+var { CLAIM_STATUSES: _ccs, DENIAL_STATUSES: _cds, ...claimLists } = claims_exports;
+var { CREDENTIAL_KINDS: _crk, CREDENTIAL_STATUSES: _crs, ASSIGNMENT_STATUSES: _as, STAFFING_METRICS: _sm, ...schedulingLists } = scheduling_exports;
 var { TRUST_BUCKETS: _tb, TRUST_TX_KINDS: _ttk, ...trustLists } = trust_exports;
 var models = {
   User,
@@ -4703,7 +5244,10 @@ var models = {
   ...workflows_exports,
   ...billingLists,
   ...trustLists,
-  ...mdsLists
+  ...mdsLists,
+  ...claimLists,
+  ...workforce_exports,
+  ...schedulingLists
 };
 
 // features/keystone/index.ts
@@ -4781,7 +5325,7 @@ function canonicalize(value) {
   throw new Error(`Canonical JSON cannot hold a ${typeof value}`);
 }
 var canonicalJson = (value) => JSON.stringify(canonicalize(value));
-var sha256 = (text18) => (0, import_node_crypto2.createHash)("sha256").update(text18).digest("hex");
+var sha256 = (text21) => (0, import_node_crypto2.createHash)("sha256").update(text21).digest("hex");
 var payloadHash = (value) => sha256(canonicalJson(value));
 var toJsonValue = (value) => canonicalize(value);
 
@@ -5091,7 +5635,7 @@ var RESIDENT_READ = ["canReadResidentDemographics"];
 var CLINICAL_READ = [...RESIDENT_READ, "canReadClinical"];
 var ROLES = [
   { id: "seed_role_operator_admin", name: "Operator Admin", description: "Runs the platform for the operator: communities, people, roles and integrations.", permissions: [...STAFF_BASE, "canSeeOtherPeople", "canEditOtherPeople", "canManagePeople", "canManageRoles", "canManageOnboarding", "canManageOperator", "canManageCommunities", "canManagePlaces", "canManageIntegrations", "canManageAgents", "canReadAudit", "canReadCompliance", "canReadSales"] },
-  { id: "seed_role_executive_director", name: "Executive Director", description: "Licensed administrator: census, sales, compliance and approvals for the community.", permissions: [...STAFF_BASE, ...RESIDENT_READ, "canSeeOtherPeople", "canReadSales", "canManageSales", "canManageStorefront", "canApproveCensusCorrections", "canApproveIncidentDowngrade", "canApproveRates", "canApproveWriteOffs", "canApproveIntegrations", "canReadCompliance", "canApproveCompliance", "canReadIncidents", "canReadBilling", "canReadWorkforce", "canReadAudit", "canReadFindings", "canApproveWorkflows", "canSubmitRegulatory", "canDeclareOutbreak", "canInvestigateIncidents"] },
+  { id: "seed_role_executive_director", name: "Executive Director", description: "Licensed administrator: census, sales, compliance and approvals for the community.", permissions: [...STAFF_BASE, ...RESIDENT_READ, "canSeeOtherPeople", "canReleaseClaims", "canReadBilling", "canReadSales", "canManageSales", "canManageStorefront", "canApproveCensusCorrections", "canApproveIncidentDowngrade", "canApproveRates", "canApproveWriteOffs", "canApproveIntegrations", "canReadCompliance", "canApproveCompliance", "canReadIncidents", "canReadBilling", "canReadWorkforce", "canReadAudit", "canReadFindings", "canApproveWorkflows", "canSubmitRegulatory", "canDeclareOutbreak", "canInvestigateIncidents"] },
   { id: "seed_role_don", name: "Director of Nursing", description: "Clinical lead: corrections, count discrepancies, care plans and clinical approvals.", permissions: [...STAFF_BASE, ...CLINICAL_READ, "canReadSensitiveClinical", "canChartNursing", "canManageCarePlans", "canManageAssessments", "canApproveClinicalCorrections", "canResolveCountDiscrepancy", "canApproveControlledAdjustments", "canWitnessControlled", "canManagePharmacy", "canSubmitRegulatory", "canManageInfectionControl", "canEnterOrders", "canInvestigateIncidents", "canReadIncidents", "canRecordCensus", "canBreakGlass", "canReadCompliance", "canReadFindings", "canApproveWorkflows", "canManageWorkflows", "canReadWorkforce"] },
   { id: "seed_role_adon", name: "Assistant Director of Nursing", description: "Supports the DON; charts, plans care and investigates incidents.", permissions: [...STAFF_BASE, ...CLINICAL_READ, "canChartNursing", "canManageCarePlans", "canManageAssessments", "canInvestigateIncidents", "canReadIncidents", "canRecordCensus", "canBreakGlass", "canReadFindings", "canWitnessControlled"] },
   { id: "seed_role_charge_nurse", name: "Charge Nurse (RN/LPN)", description: "Unit nurse: charting, medication pass, census moves on the unit.", permissions: [...STAFF_BASE, ...CLINICAL_READ, "canChartNursing", "canAdministerMeds", "canWitnessControlled", "canEnterOrders", "canChartPointOfCare", "canManageAssessments", "canRecordCensus", "canBreakGlass", "canReadIncidents", "canReadFindings"] },
@@ -5131,6 +5675,8 @@ var STAFF = [
   { id: "seed_user_ferreira_kahn", name: "Martin Ferreira-Kahn", email: "martin.ferreira-kahn@ridgelineseniorcommunities.com", title: "Privacy Officer", roleId: "seed_role_privacy_officer", kind: "staff" },
   { id: "seed_user_brandvold", name: "Dr. Ilse Brandvold", email: "ilse.brandvold@mapleridgeseniorliving.com", title: "Medical Director", roleId: "seed_role_prescriber", kind: "staff" },
   { id: "seed_user_adewale", name: "Dr. Femi Adewale", email: "femi.adewale@mapleridgeseniorliving.com", title: "Consultant Pharmacist", roleId: "seed_role_consultant_pharmacist", kind: "staff" },
+  { id: "seed_user_marchetti", name: "Lucia Marchetti", email: "lucia.marchetti@ridgelineseniorcommunities.com", title: "HR Manager", roleId: "seed_role_hr", kind: "staff" },
+  { id: "seed_user_okafor", name: "Daniel Okafor", email: "daniel.okafor@ridgelineseniorcommunities.com", title: "HR Generalist", roleId: "seed_role_hr", kind: "staff" },
   { id: "seed_user_ferris", name: "Owen Ferris", email: "owen.ferris@ridgelineseniorcommunities.com", title: "Operator Administrator", roleId: "seed_role_operator_admin", kind: "staff" }
 ];
 var APPROVAL_POLICIES = [
@@ -5159,7 +5705,7 @@ var COMMUNITY = {
   country: "US",
   phone: "(614) 471-3800",
   settingsOffered: ["nursing_facility", "assisted_living", "memory_care", "independent_living"],
-  identifiers: { ccn: "366427", npi: "1487296530", stateLicence: "NH-2194", medicaidProviderId: "0318462", nhsnOrgId: "48271" }
+  identifiers: { ccn: "366427", npi: "1487296539", taxId: "31-0000001", taxonomy: "313M00000X", zip4: "432151234", stateLicence: "NH-2194", medicaidProviderId: "0318462", nhsnOrgId: "48271" }
 };
 var NF_UNITS = [
   { id: "seed_unit_birch", name: "Birch", code: "BIR", specialty: "short_stay_rehab", firstRoom: 101, beds: 32, isolationRooms: 0 },
@@ -5186,7 +5732,7 @@ function apartmentTypeFor(unitCode, index) {
   return index % 3 === 0 ? "seed_apt_one_bed" : "seed_apt_studio";
 }
 var PAYERS = [
-  { id: "seed_payer_medicare_a", name: "Medicare Part A", kind: "medicare_a", claimFormat: "837i", dayCountingRule: "count_admit_not_discharge" },
+  { id: "seed_payer_medicare_a", name: "Medicare Part A", kind: "medicare_a", payerId: "15202", claimFormat: "837i", dayCountingRule: "count_admit_not_discharge" },
   { id: "seed_payer_ohio_medicaid", name: "Ohio Medicaid (fee-for-service)", kind: "medicaid_ffs", claimFormat: "837i", dayCountingRule: "count_admit_not_discharge" },
   { id: "seed_payer_buckeye_ma", name: "Buckeye Health Advantage", kind: "medicare_advantage", claimFormat: "837i", dayCountingRule: "count_admit_not_discharge" },
   { id: "seed_payer_ohio_mco", name: "Scioto Care Partners", kind: "medicaid_mco", claimFormat: "837i", dayCountingRule: "count_admit_not_discharge" },
@@ -5306,7 +5852,7 @@ var PACKS = [US_FED_PACK, US_OH_PACK];
 
 // features/keystone/seed/platform.ts
 var UNUSABLE_PASSWORD_HASH = "$2a$10$3dITCbIvf5zFA.1U8KZDhOHC3EEexi3KYy5ysZK1cRF6LHMm0H.ya";
-var day4 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var day7 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 var seedMeta = { metadata: { seed: true } };
 async function seedOperatorPlatform(uow, actor) {
   const { tx } = uow;
@@ -5314,7 +5860,7 @@ async function seedOperatorPlatform(uow, actor) {
   for (const pack of PACKS) {
     let row = await tx.jurisdictionPack.findUnique({ where: { code: pack.code } });
     if (!row) {
-      row = await tx.jurisdictionPack.create({ data: { id: pack.id, code: pack.code, name: pack.name, packVersion: pack.packVersion, effectiveFrom: day4(pack.effectiveFrom), status: "active", rules: pack.rules, sourceNote: pack.sourceNote } });
+      row = await tx.jurisdictionPack.create({ data: { id: pack.id, code: pack.code, name: pack.name, packVersion: pack.packVersion, effectiveFrom: day7(pack.effectiveFrom), status: "active", rules: pack.rules, sourceNote: pack.sourceNote } });
       auditCreate(uow, actor, "JurisdictionPack", row.id, "pack.loaded", { code: pack.code, packVersion: pack.packVersion }, seedMeta);
       created.packs += 1;
     }
@@ -5330,14 +5876,14 @@ async function seedOperatorPlatform(uow, actor) {
   }
   let calendar = await tx.holidayCalendar.findUnique({ where: { code: US_FED.code } });
   if (!calendar) {
-    calendar = await tx.holidayCalendar.create({ data: { id: "seed_calendar_us_fed", code: US_FED.code, name: "US federal holidays (observed)", timeZone: US_FED.timeZone, weekendDays: US_FED.weekendDays, coverageThrough: day4(US_FED.coverageThrough), source: US_FED_SOURCE } });
+    calendar = await tx.holidayCalendar.create({ data: { id: "seed_calendar_us_fed", code: US_FED.code, name: "US federal holidays (observed)", timeZone: US_FED.timeZone, weekendDays: US_FED.weekendDays, coverageThrough: day7(US_FED.coverageThrough), source: US_FED_SOURCE } });
     auditCreate(uow, actor, "HolidayCalendar", calendar.id, "calendar.created", { code: US_FED.code, coverageThrough: US_FED.coverageThrough }, seedMeta);
     created.calendars += 1;
   }
   const haveDays = new Set((await tx.holidayDate.findMany({ where: { calendarId: calendar.id }, select: { date: true } })).map((d) => d.date.toISOString().slice(0, 10)));
   const days = US_FED_HOLIDAYS.filter(([date3]) => !haveDays.has(date3));
   if (days.length) {
-    await tx.holidayDate.createMany({ data: days.map(([date3, name]) => ({ calendarId: calendar.id, date: day4(date3), name })) });
+    await tx.holidayDate.createMany({ data: days.map(([date3, name]) => ({ calendarId: calendar.id, date: day7(date3), name })) });
     created.holidays = days.length;
   }
   if (!await tx.operatorSettings.findUnique({ where: { id: 1 } })) {
@@ -5353,21 +5899,21 @@ async function seedOperatorPlatform(uow, actor) {
     for (const role of newRoles) auditCreate(uow, actor, "Role", role.id, "role.created", { name: role.name, permissions: role.permissions }, seedMeta);
     created.roles = newRoles.length;
   }
-  let community3 = await tx.community.findUnique({ where: { slug: COMMUNITY.slug } });
-  if (!community3) {
+  let community6 = await tx.community.findUnique({ where: { slug: COMMUNITY.slug } });
+  if (!community6) {
     const ohio = await tx.jurisdictionPack.findUnique({ where: { code: US_OH_PACK.code }, select: { id: true } });
-    community3 = await tx.community.create({ data: { ...COMMUNITY, settingsOffered: COMMUNITY.settingsOffered, identifiers: COMMUNITY.identifiers, jurisdictionPackId: ohio?.id ?? null, holidayCalendarId: calendar.id, status: "active", synthetic: true } });
-    auditCreate(uow, actor, "Community", community3.id, "community.created", { name: community3.name, reference: community3.reference }, seedMeta);
+    community6 = await tx.community.create({ data: { ...COMMUNITY, settingsOffered: COMMUNITY.settingsOffered, identifiers: COMMUNITY.identifiers, jurisdictionPackId: ohio?.id ?? null, holidayCalendarId: calendar.id, status: "active", synthetic: true } });
+    auditCreate(uow, actor, "Community", community6.id, "community.created", { name: community6.name, reference: community6.reference }, seedMeta);
     created.communities = 1;
   }
-  if (!community3.bedHoldPolicyId) {
+  if (!community6.bedHoldPolicyId) {
     const rule3 = US_OH_PACK.rules.medicaidBedHold ?? {};
     const policy = await tx.bedHoldPolicy.upsert({
       where: { id: "seed_bed_hold_policy_maple_ridge" },
-      create: { id: "seed_bed_hold_policy_maple_ridge", name: "Maple Ridge bed-hold policy", communityId: community3.id, jurisdictionPackId: "seed_pack_us_oh", medicaidHoldDaysPerYear: rule3.daysPerCalendarYear, medicaidHoldPaid: true, medicaidHoldRateRule: rule3.rateRule, therapeuticLeaveDaysPerYear: rule3.daysPerCalendarYear, privateHoldDailyRateMinor: 31500n, ruleRef: rule3.ruleRef, verifyNote: `${rule3.verifyNote} Private hold charge is the operator's contract rate.`, effectiveFrom: day4("2026-01-01") },
+      create: { id: "seed_bed_hold_policy_maple_ridge", name: "Maple Ridge bed-hold policy", communityId: community6.id, jurisdictionPackId: "seed_pack_us_oh", medicaidHoldDaysPerYear: rule3.daysPerCalendarYear, medicaidHoldPaid: true, medicaidHoldRateRule: rule3.rateRule, therapeuticLeaveDaysPerYear: rule3.daysPerCalendarYear, privateHoldDailyRateMinor: 31500n, ruleRef: rule3.ruleRef, verifyNote: `${rule3.verifyNote} Private hold charge is the operator's contract rate.`, effectiveFrom: day7("2026-01-01") },
       update: {}
     });
-    await tx.community.update({ where: { id: community3.id }, data: { bedHoldPolicyId: policy.id } });
+    await tx.community.update({ where: { id: community6.id }, data: { bedHoldPolicyId: policy.id } });
     auditCreate(uow, actor, "BedHoldPolicy", policy.id, "bed_hold_policy.created", { medicaidHoldDaysPerYear: policy.medicaidHoldDaysPerYear, ruleRef: policy.ruleRef }, seedMeta);
   }
   const buildings = [
@@ -5376,11 +5922,11 @@ async function seedOperatorPlatform(uow, actor) {
   ];
   for (const building of buildings) {
     if (await tx.building.findUnique({ where: { id: building.id } })) continue;
-    await tx.building.create({ data: { ...building, communityId: community3.id } });
+    await tx.building.create({ data: { ...building, communityId: community6.id } });
   }
   for (const unit of NF_UNITS) {
     if (await tx.unit.findUnique({ where: { id: unit.id } })) continue;
-    await tx.unit.create({ data: { id: unit.id, communityId: community3.id, buildingId: "seed_building_health_center", name: unit.name, code: unit.code, setting: "nursing_facility", specialty: unit.specialty, secured: false, status: "active" } });
+    await tx.unit.create({ data: { id: unit.id, communityId: community6.id, buildingId: "seed_building_health_center", name: unit.name, code: unit.code, setting: "nursing_facility", specialty: unit.specialty, secured: false, status: "active" } });
     created.units += 1;
     for (const room of nfRooms(unit)) {
       const roomId = `seed_room_${unit.code.toLowerCase()}_${room.number}`;
@@ -5392,11 +5938,11 @@ async function seedOperatorPlatform(uow, actor) {
   }
   for (const type of APARTMENT_TYPES) {
     if (await tx.apartmentType.findUnique({ where: { id: type.id } })) continue;
-    await tx.apartmentType.create({ data: { ...type, communityId: community3.id } });
+    await tx.apartmentType.create({ data: { ...type, communityId: community6.id } });
   }
   for (const unit of RESIDENTIAL_UNITS) {
     if (await tx.unit.findUnique({ where: { id: unit.id } })) continue;
-    await tx.unit.create({ data: { id: unit.id, communityId: community3.id, buildingId: "seed_building_residences", name: unit.name, code: unit.code, setting: unit.setting, secured: unit.secured, specialty: "none", status: "active" } });
+    await tx.unit.create({ data: { id: unit.id, communityId: community6.id, buildingId: "seed_building_residences", name: unit.name, code: unit.code, setting: unit.setting, secured: unit.secured, specialty: "none", status: "active" } });
     created.units += 1;
     const rows = residentialApartments(unit).map((row) => ({ ...row, unitId: unit.id, allowsUnrelatedCompanion: false, status: "available", occupantCount: 0 }));
     await tx.apartment.createMany({ data: rows });
@@ -5417,10 +5963,10 @@ async function seedOperatorPlatform(uow, actor) {
   const assignees = await tx.user.findMany({ where: { id: { in: STAFF.filter((p) => p.roleId !== "seed_role_operator_admin").map((p) => p.id) } }, select: { id: true } });
   if (actor.kind === "user" && !assignees.some((a) => a.id === actor.userId)) assignees.push({ id: actor.userId });
   for (const user of assignees) {
-    const exists = await tx.staffAssignment.findFirst({ where: { userId: user.id, communityId: community3.id } });
+    const exists = await tx.staffAssignment.findFirst({ where: { userId: user.id, communityId: community6.id } });
     if (exists) continue;
-    const row = await tx.staffAssignment.create({ data: { userId: user.id, communityId: community3.id, effectiveFrom: day4("2026-01-01"), status: "active" } });
-    auditCreate(uow, actor, "StaffAssignment", row.id, "staff_assignment.created", { userId: user.id, communityId: community3.id }, seedMeta);
+    const row = await tx.staffAssignment.create({ data: { userId: user.id, communityId: community6.id, effectiveFrom: day7("2026-01-01"), status: "active" } });
+    auditCreate(uow, actor, "StaffAssignment", row.id, "staff_assignment.created", { userId: user.id, communityId: community6.id }, seedMeta);
     created.assignments += 1;
   }
   const havePolicies = new Set((await tx.approvalPolicy.findMany({ select: { action: true } })).map((p) => p.action));
@@ -5429,7 +5975,7 @@ async function seedOperatorPlatform(uow, actor) {
     auditCreate(uow, actor, "ApprovalPolicy", row.id, "approval_policy.created", { action: policy.action, requiredPermission: policy.requiredPermission }, seedMeta);
     created.approvalPolicies += 1;
   }
-  return { communityId: community3.id, created };
+  return { communityId: community6.id, created };
 }
 
 // features/keystone/seed/census.ts
@@ -5442,13 +5988,13 @@ init_errors();
 init_actor();
 var END_OF_DAY = "23:59";
 async function communityClockContext(tx, communityId) {
-  const community3 = await tx.community.findUnique({ where: { id: communityId }, select: { id: true, timeZone: true, jurisdictionPackId: true, holidayCalendarId: true } });
-  if (!community3) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
+  const community6 = await tx.community.findUnique({ where: { id: communityId }, select: { id: true, timeZone: true, jurisdictionPackId: true, holidayCalendarId: true } });
+  if (!community6) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
   const fed = await tx.jurisdictionPack.findUnique({ where: { code: "US-FED" }, select: { id: true } });
-  const packIds = [fed?.id, community3.jurisdictionPackId].filter((id) => Boolean(id));
+  const packIds = [fed?.id, community6.jurisdictionPackId].filter((id) => Boolean(id));
   let calendar = null;
-  if (community3.holidayCalendarId) {
-    const row = await tx.holidayCalendar.findUnique({ where: { id: community3.holidayCalendarId }, include: { dates: { select: { date: true } } } });
+  if (community6.holidayCalendarId) {
+    const row = await tx.holidayCalendar.findUnique({ where: { id: community6.holidayCalendarId }, include: { dates: { select: { date: true } } } });
     if (row?.coverageThrough) {
       calendar = {
         code: row.code,
@@ -5459,7 +6005,7 @@ async function communityClockContext(tx, communityId) {
       };
     }
   }
-  return { id: community3.id, timeZone: community3.timeZone, calendar, packIds };
+  return { id: community6.id, timeZone: community6.timeZone, calendar, packIds };
 }
 async function computeDueAt(tx, rule3, startedAt, ctx) {
   const startDate = localDate(ctx.timeZone, startedAt);
@@ -5610,12 +6156,12 @@ var fail = (message, details = {}) => {
 function leaveDaysByYear(timeZone, from, to) {
   const out = {};
   if (to.getTime() <= from.getTime()) return out;
-  let day19 = localDate(timeZone, from);
+  let day24 = localDate(timeZone, from);
   const last = localDate(timeZone, to);
-  for (let i = 0; i < 800 && day19 <= last; i += 1) {
-    const midnight = zonedInstant(timeZone, day19, "23:59").getTime();
-    if (midnight >= from.getTime() && midnight < to.getTime()) out[day19.slice(0, 4)] = (out[day19.slice(0, 4)] ?? 0) + 1;
-    day19 = addDays(day19, 1);
+  for (let i = 0; i < 800 && day24 <= last; i += 1) {
+    const midnight = zonedInstant(timeZone, day24, "23:59").getTime();
+    if (midnight >= from.getTime() && midnight < to.getTime()) out[day24.slice(0, 4)] = (out[day24.slice(0, 4)] ?? 0) + 1;
+    day24 = addDays(day24, 1);
   }
   return out;
 }
@@ -5752,9 +6298,9 @@ async function lockStay(tx, stayId, expectedVersion) {
   return stay;
 }
 async function communityTimeZone(tx, communityId) {
-  const community3 = await tx.community.findUnique({ where: { id: communityId }, select: { timeZone: true } });
-  if (!community3) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
-  return community3.timeZone;
+  const community6 = await tx.community.findUnique({ where: { id: communityId }, select: { timeZone: true } });
+  if (!community6) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
+  return community6.timeZone;
 }
 async function loadCensusEvents(tx, stayId) {
   const rows = await tx.censusEvent.findMany({ where: { stayId, voidsEventId: null, kind: { not: "correction" } }, orderBy: [{ effectiveAt: "asc" }, { seq: "asc" }] });
@@ -5953,8 +6499,8 @@ async function closedThrough(tx, communityId) {
 var REPRESENTATIVE_ROLES2 = /* @__PURE__ */ new Set(["self", "healthcare_poa", "financial_responsible", "guardian", "family", "emergency_contact", "hospice_contact", "personal_representative_hipaa"]);
 async function admitResident(uow, actor, input) {
   if (!input.bedId === !input.apartmentId) throw new DomainError(Codes.INVALID_INPUT, "Choose one bed or one apartment.", { field: "bedId" });
-  const community3 = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { id: true, status: true, synthetic: true } });
-  if (!community3 || community3.status === "closed") throw new DomainError(Codes.NOT_FOUND, "Community not found or closed.");
+  const community6 = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { id: true, status: true, synthetic: true } });
+  if (!community6 || community6.status === "closed") throw new DomainError(Codes.NOT_FOUND, "Community not found or closed.");
   const payer = await uow.tx.payer.findUnique({ where: { id: input.payerId } });
   if (!payer) throw new DomainError(Codes.INVALID_INPUT, "Choose the initial payer.", { field: "payerId" });
   let setting;
@@ -5983,7 +6529,7 @@ async function admitResident(uow, actor, input) {
     if (!rep.firstName?.trim() || !rep.roles?.length || rep.roles.some((role) => !REPRESENTATIVE_ROLES2.has(role))) throw new DomainError(Codes.INVALID_INPUT, "Each representative needs a name and known roles.", { field: "representatives" });
   }
   let residentId = input.residentId ?? null;
-  const synthetic = Boolean(input.synthetic ?? community3.synthetic);
+  const synthetic = Boolean(input.synthetic ?? community6.synthetic);
   if (residentId) {
     const resident4 = await lockRow(uow.tx, "Resident", residentId);
     if (resident4.status === "deceased") throw new DomainError(Codes.GUARD_FAILED, "This resident is recorded as deceased.");
@@ -6165,8 +6711,8 @@ async function startLeave(uow, actor, input) {
   return { stayId: stay.id, eventId: result.event.id, presence: result.after.presence, version: result.version };
 }
 async function bedHoldPolicyFor(tx, communityId) {
-  const community3 = await tx.community.findUnique({ where: { id: communityId }, select: { bedHoldPolicyId: true } });
-  return community3?.bedHoldPolicyId ? tx.bedHoldPolicy.findUnique({ where: { id: community3.bedHoldPolicyId } }) : null;
+  const community6 = await tx.community.findUnique({ where: { id: communityId }, select: { bedHoldPolicyId: true } });
+  return community6?.bedHoldPolicyId ? tx.bedHoldPolicy.findUnique({ where: { id: community6.bedHoldPolicyId } }) : null;
 }
 async function releaseBedHold(uow, actor, input) {
   if (!input.reason?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Say why the hold ends (e.g. the resident will not return, or the paid days ran out).", { field: "reason" });
@@ -6314,16 +6860,16 @@ ${canonicalJson(body)}`)) return { ok: false, brokenAtSeq: row.seq };
 init_actor();
 init_errors();
 var DATE2 = /^\d{4}-\d{2}-\d{2}$/;
-var day5 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var day8 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 async function timeZoneOf(tx, communityId) {
-  const community3 = await tx.community.findUnique({ where: { id: communityId }, select: { timeZone: true } });
-  if (!community3) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
-  return community3.timeZone;
+  const community6 = await tx.community.findUnique({ where: { id: communityId }, select: { timeZone: true } });
+  if (!community6) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
+  return community6.timeZone;
 }
 async function deriveCensusDay(tx, communityId, date3) {
   if (!DATE2.test(date3)) throw new DomainError(Codes.INVALID_INPUT, "Date must be YYYY-MM-DD.", { field: "date" });
   const timeZone = await timeZoneOf(tx, communityId);
-  const dayStart = day5(date3);
+  const dayStart = day8(date3);
   const stays = await tx.stay.findMany({
     where: { communityId, admittedAt: { not: null }, OR: [{ dischargedAt: null }, { dischargedAt: { gte: new Date(dayStart.getTime() - 864e5) } }] },
     select: { id: true, setting: true, residentId: true }
@@ -6342,9 +6888,9 @@ async function deriveCensusDay(tx, communityId, date3) {
   const eventsByStay = /* @__PURE__ */ new Map();
   for (const row of eventRows) {
     if (voided.has(row.id) || !row.stayId) continue;
-    const list17 = eventsByStay.get(row.stayId) ?? [];
-    list17.push({ seq: list17.length + 1, kind: row.kind, effectiveAt: row.effectiveAt, toBedId: row.toBedId, toApartmentId: row.toApartmentId, leaveKind: row.leaveKind, holdElected: row.holdElected, holdPaidBy: row.holdPaidBy, dischargeDisposition: row.dischargeDisposition });
-    eventsByStay.set(row.stayId, list17);
+    const list20 = eventsByStay.get(row.stayId) ?? [];
+    list20.push({ seq: list20.length + 1, kind: row.kind, effectiveAt: row.effectiveAt, toBedId: row.toBedId, toApartmentId: row.toApartmentId, leaveKind: row.leaveKind, holdElected: row.holdElected, holdPaidBy: row.holdPaidBy, dischargeDisposition: row.dischargeDisposition });
+    eventsByStay.set(row.stayId, list20);
   }
   const coverageByStay = /* @__PURE__ */ new Map();
   for (const row of coverages) if (row.stayId && !coverageByStay.has(row.stayId)) coverageByStay.set(row.stayId, { id: row.id, payerKind: row.payer?.kind ?? "uncovered" });
@@ -6380,9 +6926,9 @@ async function deriveCensusRange(tx, communityId, dates) {
   const timeZone = await timeZoneOf(tx, communityId);
   const out = /* @__PURE__ */ new Map();
   if (!dates.length) return out;
-  const first = [...dates].sort()[0];
+  const first2 = [...dates].sort()[0];
   const stays = await tx.stay.findMany({
-    where: { communityId, admittedAt: { not: null }, OR: [{ dischargedAt: null }, { dischargedAt: { gte: new Date(day5(first).getTime() - 864e5) } }] },
+    where: { communityId, admittedAt: { not: null }, OR: [{ dischargedAt: null }, { dischargedAt: { gte: new Date(day8(first2).getTime() - 864e5) } }] },
     select: { id: true, setting: true }
   });
   const stayIds = stays.map((stay) => stay.id);
@@ -6399,9 +6945,9 @@ async function deriveCensusRange(tx, communityId, dates) {
   const eventsByStay = /* @__PURE__ */ new Map();
   for (const row of eventRows) {
     if (voided.has(row.id) || !row.stayId) continue;
-    const list17 = eventsByStay.get(row.stayId) ?? [];
-    list17.push({ seq: list17.length + 1, kind: row.kind, effectiveAt: row.effectiveAt, toBedId: row.toBedId, toApartmentId: row.toApartmentId, leaveKind: row.leaveKind, holdElected: row.holdElected, holdPaidBy: row.holdPaidBy, dischargeDisposition: row.dischargeDisposition });
-    eventsByStay.set(row.stayId, list17);
+    const list20 = eventsByStay.get(row.stayId) ?? [];
+    list20.push({ seq: list20.length + 1, kind: row.kind, effectiveAt: row.effectiveAt, toBedId: row.toBedId, toApartmentId: row.toApartmentId, leaveKind: row.leaveKind, holdElected: row.holdElected, holdPaidBy: row.holdPaidBy, dischargeDisposition: row.dischargeDisposition });
+    eventsByStay.set(row.stayId, list20);
   }
   const projectedByDate = /* @__PURE__ */ new Map();
   const bedIds = /* @__PURE__ */ new Set();
@@ -6422,7 +6968,7 @@ async function deriveCensusRange(tx, communityId, dates) {
   const unitOfBed = new Map(beds.map((bed) => [bed.id, bed.room?.unitId ?? null]));
   const unitOfApartment = new Map(apartments.map((apartment) => [apartment.id, apartment.unitId]));
   for (const date3 of dates) {
-    const start = day5(date3).getTime();
+    const start = day8(date3).getTime();
     const rows = [];
     for (const { stay, projection } of projectedByDate.get(date3) ?? []) {
       const bedId2 = projection.presence === "in_house" ? projection.currentBedId : projection.heldBedId;
@@ -6441,11 +6987,11 @@ async function snapshotCensusDay(uow, actor, input) {
   const timeZone = await timeZoneOf(uow.tx, input.communityId);
   if (input.date > localDate(timeZone, uow.now)) throw new DomainError(Codes.INVALID_INPUT, "The census day has not happened yet.", { field: "date" });
   const derived = await deriveCensusDay(uow.tx, input.communityId, input.date);
-  const existing = await uow.tx.censusDay.findMany({ where: { communityId: input.communityId, date: day5(input.date), supersededById: null } });
+  const existing = await uow.tx.censusDay.findMany({ where: { communityId: input.communityId, date: day8(input.date), supersededById: null } });
   const byStay = new Map(existing.map((row) => [row.stayId, row]));
   let written = 0;
   let superseded = 0;
-  const rowData = (row) => ({ communityId: input.communityId, stayId: row.stayId, date: day5(input.date), setting: row.setting, bedId: row.bedId, apartmentId: row.apartmentId, unitId: row.unitId, presence: row.presence, primaryCoverageId: row.coverageId, payerKind: row.payerKind, billableForPayer: row.payerKind !== "uncovered", snapshotRunId: input.runId ?? null });
+  const rowData = (row) => ({ communityId: input.communityId, stayId: row.stayId, date: day8(input.date), setting: row.setting, bedId: row.bedId, apartmentId: row.apartmentId, unitId: row.unitId, presence: row.presence, primaryCoverageId: row.coverageId, payerKind: row.payerKind, billableForPayer: row.payerKind !== "uncovered", snapshotRunId: input.runId ?? null });
   const fresh = derived.rows.filter((row) => !byStay.has(row.stayId));
   if (fresh.length) {
     await uow.tx.censusDay.createMany({ data: fresh.map(rowData) });
@@ -6457,7 +7003,7 @@ async function snapshotCensusDay(uow, actor, input) {
     byStay.delete(row.stayId);
     const same = prior.presence === row.presence && prior.bedId === row.bedId && prior.apartmentId === row.apartmentId && prior.unitId === row.unitId && prior.primaryCoverageId === row.coverageId;
     if (same) continue;
-    const created = await uow.tx.censusDay.create({ data: { communityId: input.communityId, stayId: row.stayId, date: day5(input.date), setting: row.setting, bedId: row.bedId, apartmentId: row.apartmentId, unitId: row.unitId, presence: row.presence, primaryCoverageId: row.coverageId, payerKind: row.payerKind, billableForPayer: row.payerKind !== "uncovered", snapshotRunId: input.runId ?? null } });
+    const created = await uow.tx.censusDay.create({ data: { communityId: input.communityId, stayId: row.stayId, date: day8(input.date), setting: row.setting, bedId: row.bedId, apartmentId: row.apartmentId, unitId: row.unitId, presence: row.presence, primaryCoverageId: row.coverageId, payerKind: row.payerKind, billableForPayer: row.payerKind !== "uncovered", snapshotRunId: input.runId ?? null } });
     written += 1;
     if (prior) {
       await uow.tx.censusDay.update({ where: { id: prior.id }, data: { supersededById: created.id } });
@@ -6465,7 +7011,7 @@ async function snapshotCensusDay(uow, actor, input) {
     }
   }
   for (const stale of byStay.values()) {
-    const tombstone = await uow.tx.censusDay.create({ data: { communityId: input.communityId, stayId: stale.stayId, date: day5(input.date), setting: stale.setting, presence: "absent", payerKind: stale.payerKind, billableForPayer: false, snapshotRunId: input.runId ?? null } });
+    const tombstone = await uow.tx.censusDay.create({ data: { communityId: input.communityId, stayId: stale.stayId, date: day8(input.date), setting: stale.setting, presence: "absent", payerKind: stale.payerKind, billableForPayer: false, snapshotRunId: input.runId ?? null } });
     await uow.tx.censusDay.update({ where: { id: stale.id }, data: { supersededById: tombstone.id } });
     superseded += 1;
   }
@@ -6479,7 +7025,7 @@ async function signOffCensusDay(uow, actor, input) {
   const closed = await closedThrough(uow.tx, input.communityId);
   if (closed && input.date <= closed) throw new DomainError(Codes.GUARD_FAILED, `The census through ${closed} is already signed off.`, { reason: "closed_period" });
   const snapshot = await snapshotCensusDay(uow, actor, { communityId: input.communityId, date: input.date });
-  const signoff = await uow.tx.censusSignoff.create({ data: { communityId: input.communityId, date: day5(input.date), totals: snapshot.totals, signedById: actor.userId, signedAt: uow.now, note: input.note?.trim() ?? "" } });
+  const signoff = await uow.tx.censusSignoff.create({ data: { communityId: input.communityId, date: day8(input.date), totals: snapshot.totals, signedById: actor.userId, signedAt: uow.now, note: input.note?.trim() ?? "" } });
   uow.audit({ eventType: "census.signed_off", entityType: "CensusSignoff", entityId: signoff.id, actorUserId: actor.userId, after: { communityId: input.communityId, date: input.date, totals: snapshot.totals } });
   return { signoffId: signoff.id, date: input.date, totals: snapshot.totals };
 }
@@ -6789,12 +7335,12 @@ var SETTING_VALUES = ["nursing_facility", "assisted_living", "memory_care", "ind
 var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 var clean = (value, max) => typeof value === "string" ? value.trim().slice(0, max) : "";
 async function publishedCommunity(uow, slug2) {
-  const community3 = await uow.tx.community.findUnique({ where: { slug: slug2 }, select: { id: true, status: true, synthetic: true, storefront: { select: { published: true, tourBookingEnabled: true, waitlistEnabled: true } } } });
-  if (!community3 || community3.status !== "active" || !community3.storefront?.published) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
-  return community3;
+  const community6 = await uow.tx.community.findUnique({ where: { slug: slug2 }, select: { id: true, status: true, synthetic: true, storefront: { select: { published: true, tourBookingEnabled: true, waitlistEnabled: true } } } });
+  if (!community6 || community6.status !== "active" || !community6.storefront?.published) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
+  return community6;
 }
 async function submitInquiry(uow, input) {
-  const community3 = await publishedCommunity(uow, input.communitySlug);
+  const community6 = await publishedCommunity(uow, input.communitySlug);
   if (clean(input.website, 200)) return { publicCode: publicCode("INQ") };
   const name = clean(input.contactName, 120);
   const email = clean(input.contactEmail, 200).toLowerCase();
@@ -6804,27 +7350,27 @@ async function submitInquiry(uow, input) {
   if (email && !EMAIL.test(email)) throw new DomainError(Codes.INVALID_INPUT, "That email address does not look right.", { field: "contactEmail" });
   if (!input.consentToContact) throw new DomainError(Codes.INVALID_INPUT, "Tick the box so the community may contact you.", { field: "consentToContact" });
   const [firstName, ...rest] = name.split(/\s+/);
-  const contact = await uow.tx.contact.create({ data: { reference: await nextReference(uow.tx, "CON", uow.now), communityId: community3.id, firstName, lastName: rest.join(" "), email, phone, consentToContact: true, synthetic: community3.synthetic } });
-  const lead = await uow.tx.lead.create({ data: { reference: await nextReference(uow.tx, "LEAD", uow.now), communityId: community3.id, primaryContactId: contact.id, status: "new", nextActionAt: new Date(uow.now.getTime() + 4 * 36e5), synthetic: community3.synthetic } });
+  const contact = await uow.tx.contact.create({ data: { reference: await nextReference(uow.tx, "CON", uow.now), communityId: community6.id, firstName, lastName: rest.join(" "), email, phone, consentToContact: true, synthetic: community6.synthetic } });
+  const lead = await uow.tx.lead.create({ data: { reference: await nextReference(uow.tx, "LEAD", uow.now), communityId: community6.id, primaryContactId: contact.id, status: "new", nextActionAt: new Date(uow.now.getTime() + 4 * 36e5), synthetic: community6.synthetic } });
   const forFirst = clean(input.forWhomFirstName, 80);
   if (forFirst) {
-    await uow.tx.prospect.create({ data: { reference: await nextReference(uow.tx, "PRO", uow.now), communityId: community3.id, leadId: lead.id, firstName: forFirst, lastName: clean(input.forWhomLastName, 80), desiredSetting: SETTING_VALUES.includes(String(input.desiredSetting)) ? input.desiredSetting : null, synthetic: community3.synthetic } });
+    await uow.tx.prospect.create({ data: { reference: await nextReference(uow.tx, "PRO", uow.now), communityId: community6.id, leadId: lead.id, firstName: forFirst, lastName: clean(input.forWhomLastName, 80), desiredSetting: SETTING_VALUES.includes(String(input.desiredSetting)) ? input.desiredSetting : null, synthetic: community6.synthetic } });
   }
   const code = publicCode("INQ");
   const utm = Object.fromEntries(Object.entries(input.utm ?? {}).slice(0, 10).map(([key, value]) => [clean(key, 40), clean(value, 200)]));
-  const inquiry = await uow.tx.inquiry.create({ data: { publicCode: code, communityId: community3.id, source: "website", contactName: name, contactEmail: email, contactPhone: phone, relationship: clean(input.relationship, 80), message: clean(input.message, 4e3), consentToContact: true, utm, leadId: lead.id } });
-  uow.audit({ eventType: "inquiry.received", entityType: "Inquiry", entityId: inquiry.id, actorUserId: null, after: { publicCode: code, leadId: lead.id, communityId: community3.id } });
+  const inquiry = await uow.tx.inquiry.create({ data: { publicCode: code, communityId: community6.id, source: "website", contactName: name, contactEmail: email, contactPhone: phone, relationship: clean(input.relationship, 80), message: clean(input.message, 4e3), consentToContact: true, utm, leadId: lead.id } });
+  uow.audit({ eventType: "inquiry.received", entityType: "Inquiry", entityId: inquiry.id, actorUserId: null, after: { publicCode: code, leadId: lead.id, communityId: community6.id } });
   return { publicCode: code };
 }
 async function recordInquiry(uow, actor, input) {
-  const community3 = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { slug: true, synthetic: true } });
-  if (!community3) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
+  const community6 = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { slug: true, synthetic: true } });
+  if (!community6) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
   const sources = ["phone", "walk_in", "referral_agency", "hospital", "resident_referral", "other"];
   if (!sources.includes(input.source)) throw new DomainError(Codes.INVALID_INPUT, "Choose where the inquiry came from.", { field: "source" });
   const name = clean(input.contactName, 120);
   if (!name) throw new DomainError(Codes.INVALID_INPUT, "Enter the caller's name.", { field: "contactName" });
   const [firstName, ...rest] = name.split(/\s+/);
-  const synthetic = community3.synthetic;
+  const synthetic = community6.synthetic;
   const contact = await uow.tx.contact.create({ data: { reference: await nextReference(uow.tx, "CON", uow.now), communityId: input.communityId, firstName, lastName: rest.join(" "), email: clean(input.contactEmail, 200).toLowerCase(), phone: clean(input.contactPhone, 40), consentToContact: Boolean(input.consentToContact), synthetic } });
   if (input.referralSourceId) {
     const source = await uow.tx.referralSource.findUnique({ where: { id: input.referralSourceId }, select: { communityId: true } });
@@ -6899,16 +7445,16 @@ async function slotHasRoom(uow, slotId) {
   return slot;
 }
 async function requestTour(uow, input) {
-  const community3 = await publishedCommunity(uow, input.communitySlug);
-  if (!community3.storefront?.tourBookingEnabled) throw new DomainError(Codes.GUARD_FAILED, "Tours are booked by phone at this community.");
+  const community6 = await publishedCommunity(uow, input.communitySlug);
+  if (!community6.storefront?.tourBookingEnabled) throw new DomainError(Codes.GUARD_FAILED, "Tours are booked by phone at this community.");
   const slot = await slotHasRoom(uow, input.slotId);
-  if (slot.communityId !== community3.id) throw new DomainError(Codes.NOT_FOUND, "Tour time not found.");
+  if (slot.communityId !== community6.id) throw new DomainError(Codes.NOT_FOUND, "Tour time not found.");
   if (input.kind !== "in_person" && input.kind !== "virtual") throw new DomainError(Codes.INVALID_INPUT, "Choose in person or virtual.", { field: "kind" });
   if (slot.kind !== "either" && slot.kind !== input.kind) throw new DomainError(Codes.INVALID_INPUT, `This time is for ${label(slot.kind).toLowerCase()} tours.`, { field: "kind" });
   const { publicCode: inquiryCode } = await submitInquiry(uow, { communitySlug: input.communitySlug, contactName: input.contactName, contactEmail: input.contactEmail, contactPhone: input.contactPhone, message: input.notes, consentToContact: input.consentToContact });
   const inquiry = await uow.tx.inquiry.findUnique({ where: { publicCode: inquiryCode }, select: { leadId: true } });
   const code = publicCode("TOUR");
-  const tour = await uow.tx.tour.create({ data: { publicCode: code, communityId: community3.id, slotId: slot.id, leadId: inquiry?.leadId ?? null, kind: input.kind, status: "requested", holdExpiresAt: new Date(uow.now.getTime() + TOUR_HOLD_MINUTES * 6e4), notes: clean(input.notes, 2e3) } });
+  const tour = await uow.tx.tour.create({ data: { publicCode: code, communityId: community6.id, slotId: slot.id, leadId: inquiry?.leadId ?? null, kind: input.kind, status: "requested", holdExpiresAt: new Date(uow.now.getTime() + TOUR_HOLD_MINUTES * 6e4), notes: clean(input.notes, 2e3) } });
   const token = createPublicToken("tour-manage", tour.id, slot.startsAt.getTime() + 864e5);
   await uow.tx.tour.update({ where: { id: tour.id }, data: { guestTokenHash: hashPublicToken(token) } });
   uow.audit({ eventType: "tour.requested", entityType: "Tour", entityId: tour.id, actorUserId: null, after: { publicCode: code, slotId: slot.id } });
@@ -6974,8 +7520,8 @@ async function moveReferral(uow, actor, input) {
 }
 var EXPECTED_PAYERS = ["medicare_a", "medicare_advantage", "medicaid", "medicaid_pending", "private_pay", "commercial", "hospice", "other"];
 async function recordReferral(uow, actor, input) {
-  const community3 = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { id: true, synthetic: true } });
-  if (!community3) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
+  const community6 = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { id: true, synthetic: true } });
+  if (!community6) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
   const firstName = clean(input.firstName, 80);
   const lastName = clean(input.lastName, 80);
   if (!firstName || !lastName) throw new DomainError(Codes.INVALID_INPUT, "Enter the person's first and last name.", { field: "firstName" });
@@ -6983,23 +7529,23 @@ async function recordReferral(uow, actor, input) {
   if (input.dateOfBirth && !/^\d{4}-\d{2}-\d{2}$/.test(input.dateOfBirth)) throw new DomainError(Codes.INVALID_INPUT, "Date of birth must be YYYY-MM-DD.", { field: "dateOfBirth" });
   if (input.sourceId) {
     const source = await uow.tx.referralSource.findUnique({ where: { id: input.sourceId }, select: { communityId: true } });
-    if (!source || source.communityId !== community3.id) throw new DomainError(Codes.NOT_FOUND, "Referral source not found.", { field: "sourceId" });
+    if (!source || source.communityId !== community6.id) throw new DomainError(Codes.NOT_FOUND, "Referral source not found.", { field: "sourceId" });
   }
   const receivedAt = input.receivedAt ?? uow.now;
   if (receivedAt.getTime() > uow.now.getTime() + 5 * 6e4) throw new DomainError(Codes.INVALID_INPUT, "The referral cannot be received in the future.", { field: "receivedAt" });
   const hours3 = Math.min(Math.max(input.responseHours ?? 4, 1), 72);
-  const prospect = await uow.tx.prospect.create({ data: { reference: await nextReference(uow.tx, "PRO", uow.now), communityId: community3.id, firstName, lastName, dateOfBirth: input.dateOfBirth ? /* @__PURE__ */ new Date(`${input.dateOfBirth}T00:00:00Z`) : null, desiredSetting: SETTING_VALUES.includes(String(input.desiredSetting)) ? input.desiredSetting : "nursing_facility", synthetic: community3.synthetic } });
+  const prospect = await uow.tx.prospect.create({ data: { reference: await nextReference(uow.tx, "PRO", uow.now), communityId: community6.id, firstName, lastName, dateOfBirth: input.dateOfBirth ? /* @__PURE__ */ new Date(`${input.dateOfBirth}T00:00:00Z`) : null, desiredSetting: SETTING_VALUES.includes(String(input.desiredSetting)) ? input.desiredSetting : "nursing_facility", synthetic: community6.synthetic } });
   let pasrrLevel1Id = null;
   if (input.pasrrLevel1) {
     const completedAt = new Date(input.pasrrLevel1.completedAt);
     if (Number.isNaN(completedAt.getTime()) || completedAt.getTime() > uow.now.getTime() + 5 * 6e4) throw new DomainError(Codes.INVALID_INPUT, "Enter when the Level I screen was completed.", { field: "pasrrLevel1" });
-    const doc = await uow.tx.document.create({ data: { title: "PASRR Level I screen", kind: "pasrr", communityId: community3.id, phiTier: "clin", status: "final" } });
+    const doc = await uow.tx.document.create({ data: { title: "PASRR Level I screen", kind: "pasrr", communityId: community6.id, phiTier: "clin", status: "final" } });
     await uow.tx.preAdmissionScreen.create({ data: { prospectId: prospect.id, kind: "pasrr_level1", result: clean(input.pasrrLevel1.result, 500), completedAt, documentId: doc.id } });
     auditCreate(uow, actor, "Document", doc.id, "pre_admission_screen.received", { kind: "pasrr_level1", prospectId: prospect.id });
     pasrrLevel1Id = doc.id;
   }
   const referral = await uow.tx.referral.create({
-    data: { reference: await nextReference(uow.tx, "REF", uow.now), communityId: community3.id, sourceId: input.sourceId ?? null, receivedAt, prospectId: prospect.id, expectedPayer: input.expectedPayer, pasrrLevel1Id, clinicalSummary: clean(input.clinicalSummary, 8e3), pasrrLevel2Required: Boolean(input.pasrrLevel2Required), status: "received", responseDueAt: new Date(receivedAt.getTime() + hours3 * 36e5) }
+    data: { reference: await nextReference(uow.tx, "REF", uow.now), communityId: community6.id, sourceId: input.sourceId ?? null, receivedAt, prospectId: prospect.id, expectedPayer: input.expectedPayer, pasrrLevel1Id, clinicalSummary: clean(input.clinicalSummary, 8e3), pasrrLevel2Required: Boolean(input.pasrrLevel2Required), status: "received", responseDueAt: new Date(receivedAt.getTime() + hours3 * 36e5) }
   });
   auditCreate(uow, actor, "Referral", referral.id, "referral.received", { reference: referral.reference, sourceId: input.sourceId ?? null, expectedPayer: input.expectedPayer, responseDueAt: referral.responseDueAt });
   return { referralId: referral.id, reference: referral.reference, prospectId: prospect.id, responseDueAt: referral.responseDueAt };
@@ -7057,26 +7603,26 @@ init_errors();
 init_sequence();
 var clean2 = (value, max) => typeof value === "string" ? value.trim().slice(0, max) : "";
 async function publishedSite(tx, slug2) {
-  const community3 = await tx.community.findUnique({
+  const community6 = await tx.community.findUnique({
     where: { slug: slug2 },
     select: { id: true, name: true, slug: true, status: true, addressLine1: true, addressLine2: true, city: true, region: true, postalCode: true, phone: true, settingsOffered: true, timeZone: true, storefront: true }
   });
-  if (!community3 || community3.status !== "active" || !community3.storefront?.published) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
-  return community3;
+  if (!community6 || community6.status !== "active" || !community6.storefront?.published) throw new DomainError(Codes.NOT_FOUND, "Community not found.");
+  return community6;
 }
 async function storefrontCommunity(tx, slug2, now = /* @__PURE__ */ new Date()) {
-  const community3 = await publishedSite(tx, clean2(slug2, 120));
-  const site = community3.storefront;
+  const community6 = await publishedSite(tx, clean2(slug2, 120));
+  const site = community6.storefront;
   const [prices, availability, slots, bios, jobs, types] = await Promise.all([
-    tx.publishedPrice.findMany({ where: { communityId: community3.id, status: "published" }, orderBy: [{ setting: "asc" }, { fromMinor: "asc" }], select: { id: true, label: true, setting: true, apartmentTypeId: true, fromMinor: true, toMinor: true, period: true, communityFeeMinor: true, disclaimer: true } }),
-    tx.availabilitySnapshot.findMany({ where: { communityId: community3.id }, select: { apartmentTypeId: true, setting: true, availableCount: true, waitlistOpen: true, computedAt: true } }),
-    site.tourBookingEnabled ? tx.tourSlot.findMany({ where: { communityId: community3.id, startsAt: { gt: now, lt: new Date(now.getTime() + 21 * 864e5) } }, orderBy: { startsAt: "asc" }, take: 60, select: { id: true, startsAt: true, endsAt: true, kind: true, capacity: true, tours: { where: { OR: [{ status: "confirmed" }, { status: "requested", holdExpiresAt: { gt: now } }] }, select: { id: true } } } }) : Promise.resolve([]),
+    tx.publishedPrice.findMany({ where: { communityId: community6.id, status: "published" }, orderBy: [{ setting: "asc" }, { fromMinor: "asc" }], select: { id: true, label: true, setting: true, apartmentTypeId: true, fromMinor: true, toMinor: true, period: true, communityFeeMinor: true, disclaimer: true } }),
+    tx.availabilitySnapshot.findMany({ where: { communityId: community6.id }, select: { apartmentTypeId: true, setting: true, availableCount: true, waitlistOpen: true, computedAt: true } }),
+    site.tourBookingEnabled ? tx.tourSlot.findMany({ where: { communityId: community6.id, startsAt: { gt: now, lt: new Date(now.getTime() + 21 * 864e5) } }, orderBy: { startsAt: "asc" }, take: 60, select: { id: true, startsAt: true, endsAt: true, kind: true, capacity: true, tours: { where: { OR: [{ status: "confirmed" }, { status: "requested", holdExpiresAt: { gt: now } }] }, select: { id: true } } } }) : Promise.resolve([]),
     tx.staffBio.findMany({ where: { siteId: site.id, consentDocumentId: { not: null } }, orderBy: { sortOrder: "asc" }, select: { name: true, title: true, bio: true } }),
-    tx.jobPosting.findMany({ where: { communityId: community3.id, status: "published" }, select: { id: true, title: true, role: true, employmentType: true, payRange: true, body: true } }),
-    tx.apartmentType.findMany({ where: { communityId: community3.id }, select: { id: true, name: true, setting: true, squareFeet: true, bedrooms: true, description: true } })
+    tx.jobPosting.findMany({ where: { communityId: community6.id, status: "published" }, select: { id: true, title: true, role: true, employmentType: true, payRange: true, body: true } }),
+    tx.apartmentType.findMany({ where: { communityId: community6.id }, select: { id: true, name: true, setting: true, squareFeet: true, bedrooms: true, description: true } })
   ]);
   return {
-    community: { name: community3.name, slug: community3.slug, address: [community3.addressLine1, community3.addressLine2].filter(Boolean).join(", "), city: community3.city, region: community3.region, postalCode: community3.postalCode, phone: community3.phone, settingsOffered: community3.settingsOffered, timeZone: community3.timeZone },
+    community: { name: community6.name, slug: community6.slug, address: [community6.addressLine1, community6.addressLine2].filter(Boolean).join(", "), city: community6.city, region: community6.region, postalCode: community6.postalCode, phone: community6.phone, settingsOffered: community6.settingsOffered, timeZone: community6.timeZone },
     site: { heroTitle: site.heroTitle, heroBody: site.heroBody, amenities: site.amenities, diningCopy: site.diningCopy, activitiesCopy: site.activitiesCopy, careLevelsCopy: site.careLevelsCopy, faq: site.faq, acceptedPayers: site.acceptedPayers, seo: site.seo, tourBookingEnabled: site.tourBookingEnabled, waitlistEnabled: site.waitlistEnabled },
     apartmentTypes: types,
     prices: prices.map((price) => ({ ...price, fromMinor: price.fromMinor.toString(), toMinor: price.toMinor?.toString() ?? null, communityFeeMinor: price.communityFeeMinor?.toString() ?? null })),
@@ -7087,12 +7633,12 @@ async function storefrontCommunity(tx, slug2, now = /* @__PURE__ */ new Date()) 
   };
 }
 async function joinWaitlist(uow, input) {
-  const community3 = await publishedSite(uow.tx, clean2(input.communitySlug, 120));
-  if (!community3.storefront?.waitlistEnabled) throw new DomainError(Codes.GUARD_FAILED, "Call the community to join the waitlist.");
+  const community6 = await publishedSite(uow.tx, clean2(input.communitySlug, 120));
+  if (!community6.storefront?.waitlistEnabled) throw new DomainError(Codes.GUARD_FAILED, "Call the community to join the waitlist.");
   if (!SETTINGS.includes(input.setting)) throw new DomainError(Codes.INVALID_INPUT, "Choose the type of care.", { field: "setting" });
   if (input.apartmentTypeId) {
     const type = await uow.tx.apartmentType.findUnique({ where: { id: input.apartmentTypeId }, select: { communityId: true, setting: true } });
-    if (!type || type.communityId !== community3.id) throw new DomainError(Codes.NOT_FOUND, "Apartment type not found.", { field: "apartmentTypeId" });
+    if (!type || type.communityId !== community6.id) throw new DomainError(Codes.NOT_FOUND, "Apartment type not found.", { field: "apartmentTypeId" });
   }
   if (input.desiredMoveIn && !/^\d{4}-\d{2}-\d{2}$/.test(input.desiredMoveIn)) throw new DomainError(Codes.INVALID_INPUT, "Move-in date must be YYYY-MM-DD.", { field: "desiredMoveIn" });
   if (clean2(input.website, 200)) return { publicCode: publicCode("WL") };
@@ -7101,15 +7647,15 @@ async function joinWaitlist(uow, input) {
   if (!inquiry?.leadId) return { publicCode: inquiryCode };
   const prospect = await uow.tx.prospect.findFirst({ where: { leadId: inquiry.leadId }, select: { id: true } });
   if (prospect && input.desiredMoveIn) await uow.tx.prospect.update({ where: { id: prospect.id }, data: { desiredMoveIn: /* @__PURE__ */ new Date(`${input.desiredMoveIn}T00:00:00Z`) } });
-  const entry = await uow.tx.waitlistEntry.create({ data: { reference: await nextReference(uow.tx, "WL", uow.now), communityId: community3.id, leadId: inquiry.leadId, prospectId: prospect?.id ?? null, apartmentTypeId: input.apartmentTypeId ?? null, setting: input.setting, priority: 100, priorityReason: "date_order", status: "active" } });
+  const entry = await uow.tx.waitlistEntry.create({ data: { reference: await nextReference(uow.tx, "WL", uow.now), communityId: community6.id, leadId: inquiry.leadId, prospectId: prospect?.id ?? null, apartmentTypeId: input.apartmentTypeId ?? null, setting: input.setting, priority: 100, priorityReason: "date_order", status: "active" } });
   uow.audit({ eventType: "waitlist.joined_online", entityType: "WaitlistEntry", entityId: entry.id, actorUserId: null, after: { reference: entry.reference, setting: input.setting, leadId: inquiry.leadId } });
   const lead = await uow.tx.lead.findUnique({ where: { id: inquiry.leadId }, select: { version: true, status: true } });
   if (lead) await casUpdate(uow, { model: "Lead", id: inquiry.leadId, version: lead.version, from: [lead.status], to: "waitlisted", actor: { kind: "system", name: "storefront" }, eventType: "lead.waitlisted", metadata: { waitlistEntryId: entry.id } });
   return { publicCode: inquiryCode };
 }
 async function setStorefrontPublished(uow, actor, input) {
-  const community3 = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { storefront: true } });
-  const site = community3?.storefront;
+  const community6 = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { storefront: true } });
+  const site = community6?.storefront;
   if (!site) throw new DomainError(Codes.NOT_FOUND, "Create the storefront first.");
   if (input.published) {
     if (!site.heroTitle.trim() || !site.heroBody.trim()) throw new DomainError(Codes.GUARD_FAILED, "Add the headline and introduction before publishing.", { field: "heroTitle" });
@@ -7159,7 +7705,7 @@ var GIVEN = [...GIVEN_NAMES, ...MORE_GIVEN];
 var REP_GIVEN = ["Karen", "Michael", "Susan", "David", "Lisa", "Robert", "Julie", "Brian", "Denise", "Mark", "Angela", "Kevin", "Tamara", "Steven", "Rachel", "Gregory", "Monica", "Jeffrey", "Heather", "Scott", "Nicole", "Timothy", "Erin", "Douglas"];
 var FAMILY_MAIL_DOMAINS = ["gmail.com", "yahoo.com", "outlook.com"];
 var slug = (value) => value.toLowerCase().normalize("NFD").replace(/[^a-z]/g, "");
-var familyEmail = (first, last, n2) => `${slug(first)}.${slug(last)}${n2 * 37 % 89 + 11}@${FAMILY_MAIL_DOMAINS[n2 % 3]}`;
+var familyEmail = (first2, last, n2) => `${slug(first2)}.${slug(last)}${n2 * 37 % 89 + 11}@${FAMILY_MAIL_DOMAINS[n2 % 3]}`;
 var FAMILY_AREAS = ["614", "614", "380", "614", "740", "216", "513", "614", "937", "412", "614", "317"];
 var FAMILY_EXCHANGES = ["214", "237", "262", "268", "291", "316", "337", "351", "404", "418", "431", "459", "476", "488", "523", "561", "575", "732", "777", "865", "891", "946"];
 var familyPhone = (n2) => {
@@ -7299,11 +7845,11 @@ function buildCensusPlan(options) {
   const steps = [];
   const acts = [];
   let seq = 0;
-  const schedule = (when9, run) => acts.push({ at: when9, seq: seq++, run });
+  const schedule = (when12, run) => acts.push({ at: when12, seq: seq++, run });
   const key = (kind, id) => `${prefix}:${kind}:${id}`;
-  const emit = (kind, id, actor, when9, input) => {
+  const emit = (kind, id, actor, when12, input) => {
     const k = key(kind, id);
-    steps.push({ key: k, kind, actor, at: when9.toISOString(), input });
+    steps.push({ key: k, kind, actor, at: when12.toISOString(), input });
     return k;
   };
   const ref2 = (stepKey, field) => ({ $ref: stepKey, field });
@@ -7319,17 +7865,17 @@ function buildCensusPlan(options) {
   const usedNames = /* @__PURE__ */ new Set();
   const newPerson = (payer, extra = {}) => {
     let i = personSeq++;
-    let first = "", last = "", g = 0;
+    let first2 = "", last = "", g = 0;
     for (let attempt = 0; ; attempt += 1) {
       g = (i * 17 + attempt) % GIVEN.length;
-      first = GIVEN[g];
+      first2 = GIVEN[g];
       last = FAMILY[(i * 31 + Math.floor(i / FAMILY.length) + attempt * 7) % FAMILY.length];
-      if (!usedNames.has(`${first} ${last}`)) break;
+      if (!usedNames.has(`${first2} ${last}`)) break;
     }
-    usedNames.add(`${first} ${last}`);
+    usedNames.add(`${first2} ${last}`);
     const code = `r${String(i + 1).padStart(3, "0")}`;
     const sex = g % 2 === 0 ? "female" : "male";
-    return { code, firstName: first, lastName: last, sex, dateOfBirth: `${1929 + i * 7 % 22}-${String(i * 5 % 12 + 1).padStart(2, "0")}-${String(i * 11 % 28 + 1).padStart(2, "0")}`, payer, reps: familyReps(last, i), ...extra };
+    return { code, firstName: first2, lastName: last, sex, dateOfBirth: `${1929 + i * 7 % 22}-${String(i * 5 % 12 + 1).padStart(2, "0")}-${String(i * 11 % 28 + 1).padStart(2, "0")}`, payer, reps: familyReps(last, i), ...extra };
   };
   function familyReps(last, i) {
     const a = REP_GIVEN[i * 5 % REP_GIVEN.length];
@@ -7391,38 +7937,38 @@ function buildCensusPlan(options) {
       schedule(plus(effective2, 20 * 60), () => emit("agreement", r.code, PATEL, plus(effective2, 20 * 60), { stay: ref2(key("admit", r.code), "stayId"), resident: ref2(key("admit", r.code), "residentId"), signedAt: plus(effective2, 20 * 60).toISOString(), note: "Signed by the representative at the care conference." }));
     }
   }));
-  const readyLater = (placeId, when9, unit, apartment = false) => schedule(when9, () => {
+  const readyLater = (placeId, when12, unit, apartment = false) => schedule(when12, () => {
     if (apartment) {
       const apt = places.apt(placeId);
       if (apt.status !== "turnover") return;
       apt.status = "available";
-      emit("place_ready", placeId + "_" + when9.getTime(), LINDQVIST, when9, { apartmentId: placeId, note: "Apartment turned over: deep clean, paint touch-up and safety check done." });
+      emit("place_ready", placeId + "_" + when12.getTime(), LINDQVIST, when12, { apartmentId: placeId, note: "Apartment turned over: deep clean, paint touch-up and safety check done." });
     } else {
       const bed = places.bed(placeId);
       if (bed.status !== "cleaning") return;
       bed.status = "available";
-      emit("place_ready", placeId + "_" + when9.getTime(), nurseFor(unit), when9, { bedId: placeId, note: "Terminal clean done; bed made up." });
+      emit("place_ready", placeId + "_" + when12.getTime(), nurseFor(unit), when12, { bedId: placeId, note: "Terminal clean done; bed made up." });
     }
   });
-  const discharge = (code, when9, input) => schedule(when9, () => {
+  const discharge = (code, when12, input) => schedule(when12, () => {
     const place = places.release(code);
     const unit = places.beds.get(place)?.unit;
-    emit("discharge", code, PATEL, when9, { stay: ref2(key("admit", code), "stayId"), disposition: input.disposition, initiatedBy: input.facility ? "facility" : "resident", effectiveAt: when9.toISOString(), noticeException: input.noticeException ?? null });
-    if (!input.keepDirty) readyLater(place, plus(when9, unit ? 180 : 3 * 1440), unit ?? "", !unit);
+    emit("discharge", code, PATEL, when12, { stay: ref2(key("admit", code), "stayId"), disposition: input.disposition, initiatedBy: input.facility ? "facility" : "resident", effectiveAt: when12.toISOString(), noticeException: input.noticeException ?? null });
+    if (!input.keepDirty) readyLater(place, plus(when12, unit ? 180 : 3 * 1440), unit ?? "", !unit);
   });
-  const death = (code, when9, pronouncedBy) => schedule(when9, () => {
+  const death = (code, when12, pronouncedBy) => schedule(when12, () => {
     const place = places.release(code);
     const unit = places.beds.get(place)?.unit ?? "";
-    emit("death", code, RAMOS, when9, { stay: ref2(key("admit", code), "stayId"), effectiveAt: when9.toISOString(), pronouncedBy });
-    readyLater(place, plus(when9, 7 * 60), unit);
+    emit("death", code, RAMOS, when12, { stay: ref2(key("admit", code), "stayId"), effectiveAt: when12.toISOString(), pronouncedBy });
+    readyLater(place, plus(when12, 7 * 60), unit);
   });
-  const roomNotice = (code, when9, note) => emit("notice", `room_change_${code}_${when9.getTime()}`, BROOKS, when9, { stay: ref2(key("admit", code), "stayId"), kind: "room_change", method: "in_person", deliveredAt: when9.toISOString(), acknowledgement: "signed", note });
+  const roomNotice = (code, when12, note) => emit("notice", `room_change_${code}_${when12.getTime()}`, BROOKS, when12, { stay: ref2(key("admit", code), "stayId"), kind: "room_change", method: "in_person", deliveredAt: when12.toISOString(), acknowledgement: "signed", note });
   const movedFrom = /* @__PURE__ */ new Map();
-  const moveRoom = (id, when9, pick2, reason) => schedule(plus(when9, -18 * 60), () => {
+  const moveRoom = (id, when12, pick2, reason) => schedule(plus(when12, -18 * 60), () => {
     const { code, units, prefer } = pick2();
     used.add(code);
-    roomNotice(code, plus(when9, -18 * 60), `Room change discussed with the resident and representative: ${reason.toLowerCase()}`);
-    schedule(when9, () => {
+    roomNotice(code, plus(when12, -18 * 60), `Room change discussed with the resident and representative: ${reason.toLowerCase()}`);
+    schedule(when12, () => {
       const from = places.where.get(code);
       const to = places.freeBed(units, places.sex.get(code) ?? null, { prefer });
       const fromBed = places.bed(from.bed);
@@ -7430,8 +7976,8 @@ function buildCensusPlan(options) {
       fromBed.occupant = null;
       places.where.delete(code);
       places.occupyBed(code, to);
-      emit("room_change", id, nurseFor(fromBed.unit), when9, { stay: ref2(key("admit", code), "stayId"), toBedId: to, effectiveAt: when9.toISOString(), reason });
-      readyLater(fromBed.id, plus(when9, 150), fromBed.unit);
+      emit("room_change", id, nurseFor(fromBed.unit), when12, { stay: ref2(key("admit", code), "stayId"), toBedId: to, effectiveAt: when12.toISOString(), reason });
+      readyLater(fromBed.id, plus(when12, 150), fromBed.unit);
       movedFrom.set(id, fromBed.id);
     });
   });
@@ -7458,8 +8004,8 @@ function buildCensusPlan(options) {
       noticeAtTransfer: { method: "phone_then_mail", deliveredAt: plan.start.toISOString(), acknowledgement: "not_required", note: plan.hold === "none" ? "Bed-hold notice given; the representative declined the hold." : "Bed-hold notice explained by phone; written copy mailed to the representative." }
     });
     if (plan.ombudsmanCopy) {
-      const when9 = plus(plan.start, 2 * 1440 + 120);
-      schedule(when9, () => emit("notice", `ombudsman_${id}`, BROOKS, when9, { stay: ref2(key("admit", plan.code), "stayId"), censusEvent: ref2(startKey, "eventId"), kind: "other", method: "email", deliveredAt: when9.toISOString(), copyToOmbudsmanAt: when9.toISOString(), note: "Transfer notice copy sent to the regional Long-Term Care Ombudsman." }));
+      const when12 = plus(plan.start, 2 * 1440 + 120);
+      schedule(when12, () => emit("notice", `ombudsman_${id}`, BROOKS, when12, { stay: ref2(key("admit", plan.code), "stayId"), censusEvent: ref2(startKey, "eventId"), kind: "other", method: "email", deliveredAt: when12.toISOString(), copyToOmbudsmanAt: when12.toISOString(), note: "Transfer notice copy sent to the regional Long-Term Care Ombudsman." }));
     }
     if (plan.end) {
       const end = plan.end;
@@ -7515,9 +8061,9 @@ function buildCensusPlan(options) {
     b.reps = a.reps;
     if (a.sex === b.sex) b.sex = a.sex === "female" ? "male" : "female";
     places.sex.set(b.code, b.sex);
-    const when9 = at(-(300 + c * 140), "11:00");
-    admit({ r: a, when: when9, place: { aptUnit: "MEA", aptType: "seed_apt_companion" }, source: "community_home", agreement: "same" });
-    admit({ r: b, when: plus(when9, 5), place: { companionOf: a.code }, source: "community_home", agreement: "same" });
+    const when12 = at(-(300 + c * 140), "11:00");
+    admit({ r: a, when: when12, place: { aptUnit: "MEA", aptType: "seed_apt_companion" }, source: "community_home", agreement: "same" });
+    admit({ r: b, when: plus(when12, 5), place: { companionOf: a.code }, source: "community_home", agreement: "same" });
     al.push(a, b);
   }
   for (let i = 0; i < P.alSingles; i += 1) {
@@ -7541,23 +8087,23 @@ function buildCensusPlan(options) {
   }
   const homeDispositions = ["community_home", "community_home", "assisted_living", "community_home"];
   for (let k = 0; k < P.birchBeforeDischarged; k += 1) {
-    const day19 = -58 + Math.round(k * 54 / Math.max(1, P.birchBeforeDischarged - 1));
+    const day24 = -58 + Math.round(k * 54 / Math.max(1, P.birchBeforeDischarged - 1));
     const r = birchBefore[k];
     ending.add(r.code);
-    discharge(r.code, at(day19, `${10 + k % 3}:30`), { disposition: homeDispositions[k % homeDispositions.length] });
+    discharge(r.code, at(day24, `${10 + k % 3}:30`), { disposition: homeDispositions[k % homeDispositions.length] });
   }
   const birchNew = [];
   for (let j = 0; j < P.birchAdmits; j += 1) {
-    const day19 = -57 + Math.round(j * 56 / Math.max(1, P.birchAdmits - 1));
+    const day24 = -57 + Math.round(j * 56 / Math.max(1, P.birchAdmits - 1));
     const r = remember(newPerson(j % 3 === 1 ? "medicare_advantage" : "medicare_a"));
-    birchNew.push({ r, day: day19 });
+    birchNew.push({ r, day: day24 });
     const last = j === P.birchAdmits - 1;
-    admit({ r, when: at(day19, `${15 + j % 4}:${String(j * 17 % 60).padStart(2, "0")}`), place: { units: ["BIR"] }, source: "acute_hospital", agreement: last ? "none" : "later", qualifying: r.payer === "medicare_a" });
+    admit({ r, when: at(day24, `${15 + j % 4}:${String(j * 17 % 60).padStart(2, "0")}`), place: { units: ["BIR"] }, source: "acute_hospital", agreement: last ? "none" : "later", qualifying: r.payer === "medicare_a" });
   }
   for (let j = 0; j < P.birchAdmitsDischarged; j += 1) {
-    const { r, day: day19 } = birchNew[j];
+    const { r, day: day24 } = birchNew[j];
     ending.add(r.code);
-    discharge(r.code, at(day19 + 21, "11:15"), { disposition: "community_home" });
+    discharge(r.code, at(day24 + 21, "11:15"), { disposition: "community_home" });
   }
   const toLongTerm = birchNew.find((entry, j) => j >= P.birchAdmitsDischarged && entry.day <= -29);
   used.add(toLongTerm.r.code);
@@ -7638,21 +8184,21 @@ function buildCensusPlan(options) {
   mc.push(mcNew);
   admit({ r: mcNew, when: at(-15, "10:40"), place: { aptUnit: "HAR" }, source: "assisted_living", agreement: "later" });
   const slot = (id, startsAt, openedAt) => schedule(openedAt, () => emit("tour_slots", id, PATEL, openedAt, { slots: [{ startsAt: startsAt.toISOString(), minutes: 45, capacity: 2, kind: "either" }] }));
-  const phoneLead = (id, when9, input) => {
-    const [first, ...rest] = input.contactName.split(" ");
-    schedule(when9, () => emit("inquiry_phone", id, PATEL, when9, { contactName: input.contactName, contactEmail: familyEmail(first, rest.join(""), input.n), contactPhone: familyPhone(input.n), relationship: input.relationship, message: input.message, forWhomFirstName: input.forWhom[0], forWhomLastName: input.forWhom[1], desiredSetting: input.setting, consentToContact: true, source: input.source ?? "phone", referralSourceId: input.referralSourceId ?? null }));
+  const phoneLead = (id, when12, input) => {
+    const [first2, ...rest] = input.contactName.split(" ");
+    schedule(when12, () => emit("inquiry_phone", id, PATEL, when12, { contactName: input.contactName, contactEmail: familyEmail(first2, rest.join(""), input.n), contactPhone: familyPhone(input.n), relationship: input.relationship, message: input.message, forWhomFirstName: input.forWhom[0], forWhomLastName: input.forWhom[1], desiredSetting: input.setting, consentToContact: true, source: input.source ?? "phone", referralSourceId: input.referralSourceId ?? null }));
     return key("inquiry_phone", id);
   };
-  const activity = (id, lead, when9, kind, summary) => schedule(when9, () => emit("activity", id, PATEL, when9, { lead: ref2(lead, "leadId"), kind, summary, at: when9.toISOString() }));
+  const activity = (id, lead, when12, kind, summary) => schedule(when12, () => emit("activity", id, PATEL, when12, { lead: ref2(lead, "leadId"), kind, summary, at: when12.toISOString() }));
   const tour = (id, lead, startsAt, bookedAt, outcome) => {
     slot(`slot_${id}`, startsAt, plus(bookedAt, -30));
     schedule(bookedAt, () => emit("tour_schedule", id, PATEL, bookedAt, { lead: ref2(lead, "leadId"), slotStartsAt: startsAt.toISOString(), kind: "in_person", notes: "Booked by phone." }));
     if (outcome) {
-      const when9 = outcome === "cancelled" ? plus(startsAt, -1440) : plus(startsAt, 75);
-      schedule(when9, () => emit("tour_move", id, PATEL, when9, { tour: ref2(key("tour_schedule", id), "tourId"), to: outcome, reason: outcome === "cancelled" ? "Family rescheduling after a hospital stay." : null }));
+      const when12 = outcome === "cancelled" ? plus(startsAt, -1440) : plus(startsAt, 75);
+      schedule(when12, () => emit("tour_move", id, PATEL, when12, { tour: ref2(key("tour_schedule", id), "tourId"), to: outcome, reason: outcome === "cancelled" ? "Family rescheduling after a hospital stay." : null }));
     }
   };
-  const leadMove = (id, lead, when9, to, lostReason = null, note = null) => schedule(when9, () => emit("lead_move", id, PATEL, when9, { lead: ref2(lead, "leadId"), to, lostReason, note }));
+  const leadMove = (id, lead, when12, to, lostReason = null, note = null) => schedule(when12, () => emit("lead_move", id, PATEL, when12, { lead: ref2(lead, "leadId"), to, lostReason, note }));
   const agnesLead = phoneLead("agnes", at(-40, "10:15"), { contactName: "Janet Whitfield", relationship: "Daughter", forWhom: ["Agnes", "Whitfield"], setting: "assisted_living", message: "Mother is 86 and no longer safe living alone after a fall; wants a one-bedroom.", n: 61 });
   activity("agnes_call", agnesLead, at(-40, "10:40"), "call", "Discussed care needs, pricing and the one-bedroom waitlist. Tour booked.");
   tour("agnes", agnesLead, at(-35, "14:00"), at(-38, "09:00"), "completed");
@@ -7677,7 +8223,7 @@ function buildCensusPlan(options) {
   const eleanorRef = key("referral", "eleanor");
   const refAt = at(-10, "13:20");
   schedule(refAt, () => emit("referral", "eleanor", PATEL, refAt, { sourceId: "seed_referral_source_scioto_ridge", firstName: "Eleanor", lastName: "Whitcombe", dateOfBirth: "1938-09-21", desiredSetting: "nursing_facility", expectedPayer: "medicare_a", clinicalSummary: "Right hip fracture after a fall at home; ORIF on hospital day 1. Weight bearing as tolerated. Needs PT/OT five days a week, pain management and wound checks.", pasrrLevel1: { completedAt: at(-11, "16:00").toISOString(), result: "Level I negative: Level II not required." }, responseHours: 4, receivedAt: refAt.toISOString() }));
-  const referralMove = (id, refKey, when9, to, extra = {}) => schedule(when9, () => emit("referral_move", id, PATEL, when9, { referral: ref2(refKey, "referralId"), to, ...extra }));
+  const referralMove = (id, refKey, when12, to, extra = {}) => schedule(when12, () => emit("referral_move", id, PATEL, when12, { referral: ref2(refKey, "referralId"), to, ...extra }));
   referralMove("eleanor_review", eleanorRef, at(-10, "13:50"), "clinical_review");
   referralMove("eleanor_payer", eleanorRef, at(-10, "14:30"), "payer_check");
   const eleanorAccept = at(-10, "15:10");
@@ -7732,9 +8278,9 @@ function buildCensusPlan(options) {
       { id: "web_4", day: -1, time: "12:05", name: "Douglas Pellegrino", forWhom: ["Ethel", "Pellegrino"], setting: "memory_care", message: "Mom has dementia and is getting lost. What does memory care cost?" }
     ];
     web.forEach((w, i) => {
-      const when9 = at(w.day, w.time);
-      const [first, ...rest] = w.name.split(" ");
-      schedule(when9, () => emit("inquiry_web", w.id, PUBLIC, when9, { communitySlug: COMMUNITY.slug, contactName: w.name, contactEmail: familyEmail(first, rest.join(""), 70 + i), contactPhone: familyPhone(70 + i), relationship: "Family", message: w.message, forWhomFirstName: w.forWhom[0], forWhomLastName: w.forWhom[1], desiredSetting: w.setting, consentToContact: true, website: "" }));
+      const when12 = at(w.day, w.time);
+      const [first2, ...rest] = w.name.split(" ");
+      schedule(when12, () => emit("inquiry_web", w.id, PUBLIC, when12, { communitySlug: COMMUNITY.slug, contactName: w.name, contactEmail: familyEmail(first2, rest.join(""), 70 + i), contactPhone: familyPhone(70 + i), relationship: "Family", message: w.message, forWhomFirstName: w.forWhom[0], forWhomLastName: w.forWhom[1], desiredSetting: w.setting, consentToContact: true, website: "" }));
     });
     const contacted = [
       ["call_1", -12, "Karen Zielinski", ["Doris", "Zielinski"], "assisted_living", "Asked about respite stays while the family travels."],
@@ -7743,16 +8289,16 @@ function buildCensusPlan(options) {
       ["call_4", -5, "Kevin Dawkins", ["Earl", "Dawkins"], "independent_living", "Couple selling their house in spring; wants a waitlist position."],
       ["call_5", -4, "Denise Fairbanks", ["Virginia", "Fairbanks"], "assisted_living", "Price comparison with two other communities."]
     ];
-    contacted.forEach(([id, day19, name, forWhom, setting, message], i) => {
-      const lead = phoneLead(id, at(day19, "11:20"), { contactName: name, relationship: "Son or daughter", forWhom: [forWhom[0], forWhom[1]], setting, message, n: 80 + i });
-      activity(`${id}_email`, lead, at(day19, "15:05"), "email", "Sent the brochure, pricing sheet and the dining menu.");
+    contacted.forEach(([id, day24, name, forWhom, setting, message], i) => {
+      const lead = phoneLead(id, at(day24, "11:20"), { contactName: name, relationship: "Son or daughter", forWhom: [forWhom[0], forWhom[1]], setting, message, n: 80 + i });
+      activity(`${id}_email`, lead, at(day24, "15:05"), "email", "Sent the brochure, pricing sheet and the dining menu.");
     });
     const futureSlots = [];
     for (let d = 1; d <= 14; d += 1) {
-      const day19 = date3(d);
-      const weekday2 = (/* @__PURE__ */ new Date(`${day19}T12:00:00Z`)).getUTCDay();
+      const day24 = date3(d);
+      const weekday2 = (/* @__PURE__ */ new Date(`${day24}T12:00:00Z`)).getUTCDay();
       if (weekday2 === 0) continue;
-      for (const time2 of weekday2 === 6 ? ["11:00"] : ["10:00", "14:00"]) futureSlots.push({ startsAt: zonedInstant(tz, day19, time2).toISOString(), minutes: 45, capacity: 2, kind: "either" });
+      for (const time2 of weekday2 === 6 ? ["11:00"] : ["10:00", "14:00"]) futureSlots.push({ startsAt: zonedInstant(tz, day24, time2).toISOString(), minutes: 45, capacity: 2, kind: "either" });
     }
     schedule(T, () => emit("tour_slots", "next_two_weeks", PATEL, T, { slots: futureSlots.slice(0, 60) }));
     const upcoming = [
@@ -7760,8 +8306,8 @@ function buildCensusPlan(options) {
       ["tour_2", -4, "Julie Thibodeaux", ["Lorraine", "Thibodeaux"], "memory_care", 3],
       ["tour_3", -3, "Gregory Jessup", ["Raymond", "Jessup"], "independent_living", 6]
     ];
-    upcoming.forEach(([id, day19, name, forWhom, setting, slotIndex], i) => {
-      const lead = phoneLead(id, at(day19, "10:05"), { contactName: name, relationship: "Family", forWhom: [forWhom[0], forWhom[1]], setting, message: "Wants to see the apartments and have lunch in the dining room.", n: 90 + i });
+    upcoming.forEach(([id, day24, name, forWhom, setting, slotIndex], i) => {
+      const lead = phoneLead(id, at(day24, "10:05"), { contactName: name, relationship: "Family", forWhom: [forWhom[0], forWhom[1]], setting, message: "Wants to see the apartments and have lunch in the dining room.", n: 90 + i });
       const s = futureSlots[slotIndex];
       schedule(T, () => emit("tour_schedule", id, PATEL, T, { lead: ref2(lead, "leadId"), slotStartsAt: s.startsAt, kind: "in_person", notes: "Lunch in the bistro after the tour." }));
     });
@@ -7798,22 +8344,22 @@ function buildCensusPlan(options) {
   const portal = portalCandidates.filter((_, i) => i % stride === 0).slice(0, P.portalAccounts);
   portal.forEach((r, i) => {
     const admittedDay = Math.ceil((admittedAt.get(r.code).getTime() - T.getTime()) / 864e5) - 1;
-    let day19 = Math.max(-50 + Math.floor(i * 44 / Math.max(1, portal.length)), admittedDay + 2);
+    let day24 = Math.max(-50 + Math.floor(i * 44 / Math.max(1, portal.length)), admittedDay + 2);
     const pending = i >= portal.length - Math.max(1, Math.round(P.portalAccounts / 8));
-    if (pending || day19 > -2) day19 = -2;
-    const inviteAt = at(day19, "10:00");
+    if (pending || day24 > -2) day24 = -2;
+    const inviteAt = at(day24, "10:00");
     const rep = r.reps[0];
     schedule(inviteAt, () => emit("invite", r.code, BROOKS, inviteAt, { resident: ref2(key("admit", r.code), "residentId"), priority: rep.contactPriority }));
     if (pending) return;
-    const acceptAt2 = at(day19, "20:30");
+    const acceptAt2 = at(day24, "20:30");
     schedule(acceptAt2, () => emit("accept", r.code, PUBLIC, acceptAt2, { account: ref2(key("invite", r.code), "accountId") }));
     const roles = rep.roles;
     const scopes = roles.includes("guardian") ? ["updates", "calendar", "care_summary", "documents", "statements", "trust_balance"] : roles.includes("healthcare_poa") && roles.includes("financial_responsible") ? ["updates", "calendar", "documents", "care_summary", "statements"] : roles.includes("healthcare_poa") ? ["updates", "calendar", "documents", "care_summary"] : ["updates", "calendar", "statements", "payments"];
-    const proposeAt = at(day19 + 1, "09:15");
+    const proposeAt = at(day24 + 1, "09:15");
     schedule(proposeAt, () => emit("scope_propose", r.code, PATEL, proposeAt, { resident: ref2(key("admit", r.code), "residentId"), priority: rep.contactPriority, scopes }));
     const awaiting = i >= portal.length - Math.max(1, Math.round(P.portalAccounts / 10)) - Math.max(1, Math.round(P.portalAccounts / 8));
-    if (!awaiting && day19 + 1 <= -1) {
-      const grantAt = at(day19 + 1, "13:40");
+    if (!awaiting && day24 + 1 <= -1) {
+      const grantAt = at(day24 + 1, "13:40");
       schedule(grantAt, () => emit("scope_grant", r.code, BROOKS, grantAt, { proposals: ref2(key("scope_propose", r.code), "grantIds") }));
     }
   });
@@ -7836,8 +8382,8 @@ function buildCensusPlan(options) {
     schedule(endAt, () => emit("break_glass_end", "rapid_response", LINDQVIST, endAt, { grant: ref2(key("break_glass_open", "rapid_response"), "grantId") }));
   });
   for (let d = -(P.signOffDays + 1); d <= -2; d += 1) {
-    const when9 = at(d + 1, "09:30");
-    schedule(when9, () => emit("sign_off", date3(d), LINDQVIST, when9, { date: date3(d), note: d === -9 ? "Reconciled with the Birch hospital transfer log." : null }));
+    const when12 = at(d + 1, "09:30");
+    schedule(when12, () => emit("sign_off", date3(d), LINDQVIST, when12, { date: date3(d), note: d === -9 ? "Reconciled with the Birch hospital transfer log." : null }));
   }
   schedule(T, () => emit("snapshot", date3(-1), SCHEDULER, T, { date: date3(-1) }));
   schedule(T, () => emit("clock_sweep", "anchor", SCHEDULER, T, {}));
@@ -7972,9 +8518,9 @@ var PRICES = [
   { id: "seed_price_nf_private", apartmentTypeId: null, setting: "nursing_facility", label: "Nursing care, private room", fromMinor: 41500n, toMinor: null, period: "day", communityFeeMinor: null }
 ];
 async function loadStorefront(uow, actor) {
-  const community3 = await uow.tx.community.findUniqueOrThrow({ where: { id: COMMUNITY.id }, select: { storefrontId: true } });
+  const community6 = await uow.tx.community.findUniqueOrThrow({ where: { id: COMMUNITY.id }, select: { storefrontId: true } });
   let created = 0;
-  if (!community3.storefrontId) {
+  if (!community6.storefrontId) {
     await uow.tx.storefrontSite.create({
       data: {
         id: STOREFRONT_ID,
@@ -8160,11 +8706,11 @@ async function runCensusSeed(db, options = {}) {
   const preset = options.preset ?? "full";
   const prefix = planPrefix(preset);
   const started = Date.now();
-  const community3 = await db.community.findUnique({ where: { id: COMMUNITY.id }, select: { id: true, timeZone: true } });
-  if (!community3) throw new DomainError(Codes.GUARD_FAILED, "Load the operator, community and places first.");
+  const community6 = await db.community.findUnique({ where: { id: COMMUNITY.id }, select: { id: true, timeZone: true } });
+  if (!community6) throw new DomainError(Codes.GUARD_FAILED, "Load the operator, community and places first.");
   const anchorRun = await command(db, { name: "seed.census_anchor", actor: systemActor("seed"), idempotencyKey: `${prefix}:anchor`, params: {}, now: options.anchor }, async (uow) => ({ anchor: uow.now.toISOString() }));
   const anchor = new Date(anchorRun.value.anchor);
-  const { steps } = buildCensusPlan({ anchor, preset, timeZone: community3.timeZone });
+  const { steps } = buildCensusPlan({ anchor, preset, timeZone: community6.timeZone });
   const receipts = await db.commandReceipt.findMany({ where: { idempotencyKey: { startsWith: `${prefix}:` } }, select: { idempotencyKey: true, responseBody: true } });
   const results = new Map(receipts.map((r) => [r.idempotencyKey, r.responseBody ?? {}]));
   const created = {};
@@ -8371,7 +8917,7 @@ async function createCarePlan(uow, actor, input) {
         carePlanId: plan.id,
         kind: oneOf(item.kind, ["focus", "goal", "intervention"], "item type"),
         parentId,
-        text: text17(item.text, "Item text"),
+        text: text20(item.text, "Item text"),
         discipline: item.discipline ?? "nursing",
         frequency: item.frequency ? oneOf(item.frequency, FREQUENCIES, "frequency") : "as_needed",
         targetDate: item.targetDate ? /* @__PURE__ */ new Date(`${item.targetDate}T00:00:00Z`) : null,
@@ -8456,13 +9002,13 @@ async function enterOrder(uow, actor, input) {
       communityId: resident3.communityId,
       reference: await ref(uow, "ORD"),
       kind,
-      summary: text17(input.summary, "Order", { max: 500 }),
+      summary: text20(input.summary, "Order", { max: 500 }),
       instructions: input.instructions ?? "",
       source,
       readBack: Boolean(input.readBack),
       status: "active",
-      startAt: when8(input.startAt, "startAt", uow.now),
-      stopAt: input.stopAt ? when8(input.stopAt, "stopAt") : null,
+      startAt: when11(input.startAt, "startAt", uow.now),
+      stopAt: input.stopAt ? when11(input.stopAt, "stopAt") : null,
       enteredById: userOf(actor),
       prescriberId: input.prescriberId ?? null,
       prescriberName: input.prescriberName ?? "",
@@ -8483,9 +9029,9 @@ async function enterOrder(uow, actor, input) {
         communityId: resident3.communityId,
         orderId: order.id,
         referenceId: med.referenceId ?? null,
-        drugName: text17(med.drugName, "Drug"),
+        drugName: text20(med.drugName, "Drug"),
         dose: String(qty(med.dose, "Dose")),
-        doseUnit: text17(med.doseUnit, "Dose unit"),
+        doseUnit: text20(med.doseUnit, "Dose unit"),
         route: med.route ?? null,
         prn: Boolean(med.prn),
         prnReason: med.prnReason ?? "",
@@ -8516,7 +9062,7 @@ async function countersignOrder(uow, actor, input) {
 }
 async function discontinueOrder(uow, actor, input) {
   const order = await lockRow(uow.tx, "Order", input.orderId);
-  const reason = text17(input.reason, "Reason", { min: 3 });
+  const reason = text20(input.reason, "Reason", { min: 3 });
   await casUpdate(uow, { model: "Order", id: order.id, version: order.version, from: ["active"], to: "discontinued", actor, eventType: "order.discontinued", reason, data: { stopAt: uow.now, discontinuedReason: reason } });
   await uow.tx.administrationSlot.updateMany({ where: { orderId: order.id, status: "scheduled", scheduledFor: { gt: uow.now } }, data: { status: "not_given", settledAt: uow.now, version: { increment: 1 } } });
   return { orderId: order.id, status: "discontinued" };
@@ -8548,11 +9094,22 @@ init_errors();
 // features/keystone/lib/separationOfDuties.ts
 init_errors();
 var SELF_APPROVAL_MESSAGE = "You can't approve your own request.";
+var SELF_REVIEW_MESSAGE = "You can't make a compliance decision about your own record.";
 var AGENT_APPROVAL_MESSAGE = "An agent can propose but never approve.";
 function assertCanDecide(actor, requesterUserId, requesterAgentOwnerId, strictAgentOwner = true) {
   if (actor.kind !== "user") throw new DomainError(Codes.AGENT_CANNOT_APPROVE, AGENT_APPROVAL_MESSAGE);
   if (requesterUserId && requesterUserId === actor.userId) throw new DomainError(Codes.SELF_APPROVAL, SELF_APPROVAL_MESSAGE);
   if (strictAgentOwner && requesterAgentOwnerId && requesterAgentOwnerId === actor.userId) throw new DomainError(Codes.SELF_APPROVAL, "You can't approve a proposal made by your own agent.");
+}
+var FAVOURABLE_COMPLIANCE_OUTCOMES = {
+  Timecard: ["approved"],
+  IncidentReport: ["closed", "downgraded"],
+  CredentialRecord: ["verified"]
+};
+function assertIndependentComplianceReview(entityType, subjectId, reviewerId, toStatus) {
+  if (subjectId && subjectId === reviewerId && FAVOURABLE_COMPLIANCE_OUTCOMES[entityType]?.includes(toStatus)) {
+    throw new DomainError(Codes.SELF_APPROVAL, SELF_REVIEW_MESSAGE);
+  }
 }
 
 // features/keystone/lib/approval.ts
@@ -8638,8 +9195,8 @@ async function createIncident(uow, actor, input) {
   const communityId = resident3?.communityId ?? input.communityId;
   if (!communityId) return invalid("Choose a community.", "communityId");
   const kind = oneOf(input.kind, INCIDENT_KINDS, "incident type");
-  const occurredAt = input.occurredAt ? when8(input.occurredAt, "occurredAt") : uow.now;
-  const discoveredAt = input.discoveredAt ? when8(input.discoveredAt, "discoveredAt") : occurredAt;
+  const occurredAt = input.occurredAt ? when11(input.occurredAt, "occurredAt") : uow.now;
+  const discoveredAt = input.discoveredAt ? when11(input.discoveredAt, "discoveredAt") : occurredAt;
   if (occurredAt.getTime() > uow.now.getTime() + 5 * 6e4) invalid("An incident cannot be in the future.", "occurredAt");
   const alleged = kind === "alleged_abuse" || kind === "misappropriation" || kind === "injury_unknown_source" || Boolean(input.allegedAbuseOrSbi);
   const allegedOther = !alleged && (kind === "alleged_neglect" || Boolean(input.allegedOther));
@@ -8649,7 +9206,7 @@ async function createIncident(uow, actor, input) {
       residentId: resident3?.id ?? null,
       reference: await ref(uow, "INC"),
       kind,
-      description: text17(input.description, "Description", { min: 5 }),
+      description: text20(input.description, "Description", { min: 5 }),
       location: input.location ?? "",
       severity: input.severity ? oneOf(input.severity, SEVERITIES, "severity") : "no_injury",
       status: "reported",
@@ -8668,7 +9225,7 @@ async function createIncident(uow, actor, input) {
   });
   auditCreate(uow, actor, "Incident", incident.id, "incident.reported", { kind, residentId: resident3?.id ?? null, alleged, allegedOther, severity: incident.severity });
   for (const p of input.parties ?? []) {
-    await uow.tx.incidentParty.create({ data: { communityId, incidentId: incident.id, residentId: resident3?.id ?? null, role: oneOf(p.role, ["involved_resident", "witness", "staff_involved", "alleged_perpetrator", "family_notified", "physician_notified"], "party role"), name: text17(p.name, "Name") } });
+    await uow.tx.incidentParty.create({ data: { communityId, incidentId: incident.id, residentId: resident3?.id ?? null, role: oneOf(p.role, ["involved_resident", "witness", "staff_involved", "alleged_perpetrator", "family_notified", "physician_notified"], "party role"), name: text20(p.name, "Name") } });
   }
   const setting = resident3?.stay?.setting ?? null;
   const clockBase = { communityId, residentId: resident3?.id ?? null, subjectType: "Incident", subjectId: incident.id, startedAt: discoveredAt, setting };
@@ -8708,7 +9265,7 @@ async function completeInvestigation(uow, actor, input) {
     to: "completed",
     actor,
     eventType: "incident.investigation_completed",
-    data: { findings: text17(input.findings, "Findings", { min: 5 }), rootCause: text17(input.rootCause, "Root cause", { min: 3 }), interventions: text17(input.interventions, "Interventions", { min: 3 }), completedAt: uow.now }
+    data: { findings: text20(input.findings, "Findings", { min: 5 }), rootCause: text20(input.rootCause, "Root cause", { min: 3 }), interventions: text20(input.interventions, "Interventions", { min: 3 }), completedAt: uow.now }
   });
   return { investigationId: inv.id };
 }
@@ -8734,8 +9291,8 @@ async function draftRegulatoryReport(uow, actor, input) {
 async function recordReportSubmission(uow, actor, input) {
   const report = await lockRow(uow.tx, "RegulatoryReport", input.reportId);
   const channel = oneOf(input.channel, ["state_portal", "phone", "fax", "other"], "channel");
-  const confirmation = text17(input.confirmation, "Confirmation", { min: 2 });
-  const at = when8(input.submittedAt, "submittedAt", uow.now);
+  const confirmation = text20(input.confirmation, "Confirmation", { min: 2 });
+  const at = when11(input.submittedAt, "submittedAt", uow.now);
   if (at.getTime() > uow.now.getTime() + 5 * 6e4) invalid("A submission cannot be in the future.", "submittedAt");
   await casUpdate(uow, { model: "RegulatoryReport", id: report.id, version: report.version, from: ["draft"], to: "submitted", actor, eventType: "regulatory_report.submitted", data: { channel, confirmation, submittedAt: at, submittedById: userOf(actor) } });
   const evidence = report.kind === "f609_followup" ? "submission:state_incident_followup" : "submission:state_incident";
@@ -8759,7 +9316,7 @@ async function requestDowngrade(uow, actor, input) {
   const incident = await uow.tx.incident.findUnique({ where: { id: input.incidentId } });
   if (!incident) return notFound("Incident");
   if (incident.reportableDecision !== "reportable") throw new DomainError(Codes.GUARD_FAILED, "This incident is not marked reportable.");
-  const reason = text17(input.reason, "Reason", { min: 10 });
+  const reason = text20(input.reason, "Reason", { min: 10 });
   const request = await requestApproval(uow, actor, { action: "incident.downgrade", targetList: "Incident", targetId: incident.id, payload: { incidentId: incident.id, reason }, requiredPermission: "canApproveIncidentDowngrade", summary: `Downgrade ${incident.reference} to not reportable`, communityId: incident.communityId });
   return { approvalRequestId: request.id };
 }
@@ -8787,15 +9344,15 @@ async function generateAdministrationSlots(uow, communityId, residentId) {
   for (const dd of live) {
     const d = { ...dd, order: dd.order };
     const times = Array.isArray(d.times) ? d.times : [];
-    const first = localDate(tz, new Date(from));
-    for (let day19 = first; (/* @__PURE__ */ new Date(`${day19}T00:00:00Z`)).getTime() <= to + 864e5; day19 = addDays(day19, 1)) {
+    const first2 = localDate(tz, new Date(from));
+    for (let day24 = first2; (/* @__PURE__ */ new Date(`${day24}T00:00:00Z`)).getTime() <= to + 864e5; day24 = addDays(day24, 1)) {
       for (const hhmm of times) {
-        const at = zonedInstant(tz, day19, hhmm);
+        const at = zonedInstant(tz, day24, hhmm);
         const t = at.getTime();
         if (t < from || t > to) continue;
         if (d.order.startAt && t < d.order.startAt.getTime()) continue;
         if (d.order.stopAt && t >= d.order.stopAt.getTime()) continue;
-        const slotKey = `${d.id}:${day19}:${hhmm}`;
+        const slotKey = `${d.id}:${day24}:${hhmm}`;
         const result = await uow.tx.administrationSlot.createMany({
           data: [{ residentId: d.residentId, communityId, detailId: d.id, orderId: d.order.id, drugName: d.drugName, slotKey, scheduledFor: at, status: "scheduled" }],
           skipDuplicates: true
@@ -8811,7 +9368,7 @@ async function latestVital(uow, residentId, kind) {
 }
 function emergencyOf(input) {
   if (!input.emergency) return null;
-  return { reason: text17(input.emergencyReason ?? "", "Why this is an emergency", { min: 10 }) };
+  return { reason: text20(input.emergencyReason ?? "", "Why this is an emergency", { min: 10 }) };
 }
 async function administerDose(uow, actor, input) {
   const slot = await lockRow(uow.tx, "AdministrationSlot", input.slotId);
@@ -8820,7 +9377,7 @@ async function administerDose(uow, actor, input) {
   const detail = await uow.tx.medicationOrderDetail.findUniqueOrThrow({ where: { id: slot.detailId } });
   const order = await uow.tx.order.findUniqueOrThrow({ where: { id: detail.orderId }, select: { status: true } });
   if (order.status !== "active") throw new DomainError(Codes.GUARD_FAILED, "This order is no longer active.");
-  const actual = when8(input.administeredAt, "administeredAt", uow.now);
+  const actual = when11(input.administeredAt, "administeredAt", uow.now);
   const late = uow.now.getTime() - actual.getTime() > 30 * 6e4;
   if (actual.getTime() > uow.now.getTime() + 6e4) invalid("A dose cannot be recorded in the future.", "administeredAt");
   const minutesOff = Math.round((actual.getTime() - slot.scheduledFor.getTime()) / 6e4);
@@ -8898,8 +9455,8 @@ async function administerPrn(uow, actor, input) {
   if (!detail || !detail.prn || !detail.orderId) return notFound("PRN order");
   const order = await lockRow(uow.tx, "Order", detail.orderId);
   if (order.status !== "active") throw new DomainError(Codes.GUARD_FAILED, "This order is no longer active.");
-  const reason = text17(input.reason, "Reason for the PRN dose", { min: 3 });
-  const actual = when8(input.administeredAt, "administeredAt", uow.now);
+  const reason = text20(input.reason, "Reason for the PRN dose", { min: 3 });
+  const actual = when11(input.administeredAt, "administeredAt", uow.now);
   if (detail.prnMinIntervalMinutes) {
     const last = await uow.tx.medicationAdministration.findFirst({ where: { detailId: detail.id, outcome: "given" }, orderBy: { administeredAt: "desc" } });
     if (last?.administeredAt && actual.getTime() - last.administeredAt.getTime() < detail.prnMinIntervalMinutes * 6e4) {
@@ -8966,12 +9523,12 @@ async function receiveSupply(uow, actor, input) {
       residentId: input.residentId ?? null,
       referenceId: input.referenceId ?? null,
       unitLocationId: input.unitLocationId ?? null,
-      label: text17(input.label, "Label"),
+      label: text20(input.label, "Label"),
       kind,
       lot: input.lot ?? "",
       expiresOn: input.expiresOn ? /* @__PURE__ */ new Date(`${input.expiresOn}T00:00:00Z`) : null,
       controlled: Boolean(input.controlled),
-      unit: text17(input.unit, "Unit"),
+      unit: text20(input.unit, "Unit"),
       balance: "0",
       status: "active"
     }
@@ -9016,7 +9573,7 @@ async function destroySupply(uow, actor, input) {
   const q = input.quantity != null && input.quantity !== "" ? qty(input.quantity, "Quantity") : new Decimal(supply.balance.toString());
   if (q.lte(0)) invalid("Nothing to destroy.", "quantity");
   const posted = await postMovement(uow, actor, { supplyId: supply.id, kind: "destroy", quantity: q.negated(), reason: `Destroyed: ${input.method}`, witnessId: input.witnessId });
-  const row = await uow.tx.medicationDestruction.create({ data: { communityId: supply.communityId, supplyId: supply.id, quantity: q.toString(), method: text17(input.method, "Method"), destroyedAt: uow.now, destroyedById: userOf(actor), witnessId: input.witnessId, movementId: posted.movementId } });
+  const row = await uow.tx.medicationDestruction.create({ data: { communityId: supply.communityId, supplyId: supply.id, quantity: q.toString(), method: text20(input.method, "Method"), destroyedAt: uow.now, destroyedById: userOf(actor), witnessId: input.witnessId, movementId: posted.movementId } });
   const fresh = await uow.tx.medicationSupply.findUniqueOrThrow({ where: { id: supply.id } });
   if (new Decimal(fresh.balance.toString()).isZero()) await casUpdate(uow, { model: "MedicationSupply", id: fresh.id, version: fresh.version, from: ["active", "empty", "quarantined"], to: "destroyed", actor, eventType: "supply.destroyed" });
   return { destructionId: row.id };
@@ -9028,7 +9585,7 @@ async function drawFromEkit(uow, actor, input) {
   if (supply.communityId !== resident3.communityId) return notFound("E-kit");
   const q = qty(input.quantity, "Quantity");
   if (q.lte(0)) invalid("Quantity must be more than zero.", "quantity");
-  const posted = await postMovement(uow, actor, { supplyId: supply.id, kind: "administer", quantity: q.negated(), reason: `E-kit for resident: ${text17(input.reason, "Reason")}`, witnessId: input.witnessId ?? null, residentId: resident3.id, emergency: emergencyOf(input) });
+  const posted = await postMovement(uow, actor, { supplyId: supply.id, kind: "administer", quantity: q.negated(), reason: `E-kit for resident: ${text20(input.reason, "Reason")}`, witnessId: input.witnessId ?? null, residentId: resident3.id, emergency: emergencyOf(input) });
   await createTask(uow, actor, { communityId: supply.communityId, residentId: resident3.id, kind: "general", title: `E-kit used: restock and pharmacy verification for ${supply.label}`, ownerRole: ROLE_NAMES.charge, dedupeKey: `ekit:${posted.movementId}`, subjectType: "MedicationSupply", subjectId: supply.id });
   return posted;
 }
@@ -9086,7 +9643,7 @@ async function resolveDiscrepancy(uow, actor, input) {
   const count = await uow.tx.shiftCount.findUniqueOrThrow({ where: { id: d.shiftCountId } });
   if (userOf(actor) === count.outgoingId || userOf(actor) === count.incomingId) throw new DomainError(Codes.SELF_APPROVAL, "A nurse who did the count cannot resolve its discrepancy.");
   const resolution = oneOf(input.resolution, ["recount_matched", "documentation_error", "loss_suspected", "found"], "resolution");
-  const note = text17(input.note, "Note", { min: 10 });
+  const note = text20(input.note, "Note", { min: 10 });
   let adjustmentId = null;
   const expected = new Decimal(d.expected.toString());
   const counted = new Decimal(d.incomingCounted.toString());
@@ -9124,8 +9681,8 @@ var import_zod2 = require("zod");
 init_common();
 var emptyFlow = () => ({ records: [], events: [], candidates: [], resolutions: [], pending: 0 });
 var hours2 = (n2) => n2 * 36e5;
-var day6 = (d) => d.toISOString().slice(0, 10);
-var digestText = (text18) => (0, import_node_crypto8.createHash)("sha256").update(text18).digest("hex");
+var day9 = (d) => d.toISOString().slice(0, 10);
+var digestText = (text21) => (0, import_node_crypto8.createHash)("sha256").update(text21).digest("hex");
 var detector = (code, label2, description, params, find) => ({
   code,
   label: label2,
@@ -9148,7 +9705,7 @@ var lowFluid = detector("low_fluid_intake", "Low fluid intake over 24 hours", "R
     const rows = byResident2.get(r.id) ?? [];
     const total = rows.reduce((sum, row) => sum + Number(row.amountMl ?? 0), 0);
     if (total < threshold) {
-      out.push({ residentId: r.id, key: day6(now), title: `Low fluid intake: ${total} mL in 24 hours`, detail: `Threshold ${threshold} mL. ${rows.length} entries charted.`, severity: total < threshold / 2 ? "urgent" : "warning", ownerRole: ROLE_NAMES.charge, evidence: rows.slice(0, 10).map((row) => ({ recordType: "IntakeRecord", recordId: row.id, quote: `${row.amountMl ?? 0} mL` })) });
+      out.push({ residentId: r.id, key: day9(now), title: `Low fluid intake: ${total} mL in 24 hours`, detail: `Threshold ${threshold} mL. ${rows.length} entries charted.`, severity: total < threshold / 2 ? "urgent" : "warning", ownerRole: ROLE_NAMES.charge, evidence: rows.slice(0, 10).map((row) => ({ recordType: "IntakeRecord", recordId: row.id, quote: `${row.amountMl ?? 0} mL` })) });
     }
   }
   return out;
@@ -9158,15 +9715,15 @@ var weightLoss = detector("weight_loss", "Weight loss over 30 days", "Weight dow
   const days = Number(params.days ?? 30);
   const since = new Date(now.getTime() - days * 864e5);
   const rows = await tx.vitalSign.findMany({ where: { communityId, kind: "weight", takenAt: { gte: since, lte: now }, ...residentId ? { residentId } : {} }, orderBy: { takenAt: "asc" }, select: { id: true, residentId: true, value: true, takenAt: true } });
-  const by8 = /* @__PURE__ */ new Map();
-  for (const row of rows) by8.set(row.residentId, [...by8.get(row.residentId) ?? [], row]);
+  const by11 = /* @__PURE__ */ new Map();
+  for (const row of rows) by11.set(row.residentId, [...by11.get(row.residentId) ?? [], row]);
   const out = [];
-  for (const [rid, list17] of by8) {
-    if (list17.length < 2) continue;
-    const first = list17[0];
-    const last = list17[list17.length - 1];
-    const loss = (Number(first.value) - Number(last.value)) / Number(first.value) * 100;
-    if (loss >= pct) out.push({ residentId: rid, key: day6(last.takenAt), title: `Weight down ${loss.toFixed(1)}% in ${days} days`, detail: `${first.value} kg to ${last.value} kg.`, severity: loss >= pct * 2 ? "urgent" : "warning", ownerRole: ROLE_NAMES.don, evidence: [{ recordType: "VitalSign", recordId: first.id, quote: `${first.value} kg` }, { recordType: "VitalSign", recordId: last.id, quote: `${last.value} kg` }] });
+  for (const [rid, list20] of by11) {
+    if (list20.length < 2) continue;
+    const first2 = list20[0];
+    const last = list20[list20.length - 1];
+    const loss = (Number(first2.value) - Number(last.value)) / Number(first2.value) * 100;
+    if (loss >= pct) out.push({ residentId: rid, key: day9(last.takenAt), title: `Weight down ${loss.toFixed(1)}% in ${days} days`, detail: `${first2.value} kg to ${last.value} kg.`, severity: loss >= pct * 2 ? "urgent" : "warning", ownerRole: ROLE_NAMES.don, evidence: [{ recordType: "VitalSign", recordId: first2.id, quote: `${first2.value} kg` }, { recordType: "VitalSign", recordId: last.id, quote: `${last.value} kg` }] });
   }
   return out;
 });
@@ -9176,23 +9733,23 @@ var woundOverdue = detector("wound_assessment_overdue", "Wound assessment overdu
   for (const w of wounds) {
     const interval = (w.assessmentIntervalDays ?? 7) * 864e5;
     const last = w.lastAssessedAt?.getTime() ?? 0;
-    if (now.getTime() - last > interval) out.push({ residentId: w.residentId, key: `${w.id}:${day6(new Date(last || 0))}`, title: `Wound assessment overdue: ${w.site}`, detail: w.lastAssessedAt ? `Last assessed ${day6(w.lastAssessedAt)}.` : "Never assessed.", severity: "warning", ownerRole: ROLE_NAMES.charge, evidence: [{ recordType: "Wound", recordId: w.id, quote: w.site }] });
+    if (now.getTime() - last > interval) out.push({ residentId: w.residentId, key: `${w.id}:${day9(new Date(last || 0))}`, title: `Wound assessment overdue: ${w.site}`, detail: w.lastAssessedAt ? `Last assessed ${day9(w.lastAssessedAt)}.` : "Never assessed.", severity: "warning", ownerRole: ROLE_NAMES.charge, evidence: [{ recordType: "Wound", recordId: w.id, quote: w.site }] });
   }
   return out;
 });
 var missedDoses = detector("missed_doses", "Repeated missed doses", "A number of missed doses for one resident in 24 hours.", import_zod2.z.object({ count: import_zod2.z.number().int().min(2).max(20).default(2) }), async ({ tx, communityId, now, params, residentId }) => {
   const need = Number(params.count ?? 2);
   const slots = await tx.administrationSlot.findMany({ where: { communityId, status: "missed", scheduledFor: { gte: new Date(now.getTime() - hours2(24)), lte: now }, ...residentId ? { residentId } : {} }, select: { id: true, residentId: true, drugName: true } });
-  const by8 = /* @__PURE__ */ new Map();
-  for (const s of slots) by8.set(s.residentId, [...by8.get(s.residentId) ?? [], s]);
-  return [...by8].filter(([, list17]) => list17.length >= need).map(([rid, list17]) => ({
+  const by11 = /* @__PURE__ */ new Map();
+  for (const s of slots) by11.set(s.residentId, [...by11.get(s.residentId) ?? [], s]);
+  return [...by11].filter(([, list20]) => list20.length >= need).map(([rid, list20]) => ({
     residentId: rid,
-    key: day6(now),
-    title: `${list17.length} missed doses in 24 hours`,
-    detail: [...new Set(list17.map((s) => s.drugName))].join(", "),
+    key: day9(now),
+    title: `${list20.length} missed doses in 24 hours`,
+    detail: [...new Set(list20.map((s) => s.drugName))].join(", "),
     severity: "urgent",
     ownerRole: ROLE_NAMES.don,
-    evidence: list17.slice(0, 10).map((s) => ({ recordType: "AdministrationSlot", recordId: s.id, quote: s.drugName ?? void 0 }))
+    evidence: list20.slice(0, 10).map((s) => ({ recordType: "AdministrationSlot", recordId: s.id, quote: s.drugName ?? void 0 }))
   }));
 });
 var progressNotes = {
@@ -9566,18 +10123,18 @@ async function seedClinical(uow, actor = systemActor("seed")) {
     await tx.medicationReference.create({ data: { ...ref2, genericName: ref2.name, source: "manual", status: "active" } });
     out.references += 1;
   }
-  const community3 = await tx.community.findFirst({ where: { synthetic: true }, orderBy: { createdAt: "asc" } });
-  if (!community3) return out;
-  if (!await tx.pharmacyRelationship.findFirst({ where: { communityId: community3.id } })) {
-    await tx.pharmacyRelationship.create({ data: { communityId: community3.id, name: "Lakeshore Institutional Pharmacy (invented)", adapter: "manual", phone: "555-0140", status: "active" } });
+  const community6 = await tx.community.findFirst({ where: { synthetic: true }, orderBy: { createdAt: "asc" } });
+  if (!community6) return out;
+  if (!await tx.pharmacyRelationship.findFirst({ where: { communityId: community6.id } })) {
+    await tx.pharmacyRelationship.create({ data: { communityId: community6.id, name: "Lakeshore Institutional Pharmacy (invented)", adapter: "manual", phone: "555-0140", status: "active" } });
   }
   for (const version2 of await tx.workflowVersion.findMany({ where: { status: "dry_run_ok", definition: { origin: "library" } } })) {
-    await tx.workflowActivation.create({ data: { communityId: community3.id, workflowVersionId: version2.id, status: "active", activatedAt: uow.now, approvals: { seed: true } } });
+    await tx.workflowActivation.create({ data: { communityId: community6.id, workflowVersionId: version2.id, status: "active", activatedAt: uow.now, approvals: { seed: true } } });
     await tx.workflowVersion.update({ where: { id: version2.id }, data: { status: "active", version: { increment: 1 } } });
     out.activations += 1;
   }
-  const residents = await tx.resident.findMany({ where: { communityId: community3.id, status: "current", synthetic: true }, orderBy: { reference: "asc" }, take: 4, select: { id: true } });
-  const kit = await tx.unit.findFirst({ where: { communityId: community3.id, setting: "nursing_facility" }, orderBy: { code: "asc" } });
+  const residents = await tx.resident.findMany({ where: { communityId: community6.id, status: "current", synthetic: true }, orderBy: { reference: "asc" }, take: 4, select: { id: true } });
+  const kit = await tx.unit.findFirst({ where: { communityId: community6.id, setting: "nursing_facility" }, orderBy: { code: "asc" } });
   for (const [index, resident3] of residents.entries()) {
     if (await tx.order.findFirst({ where: { residentId: resident3.id } })) continue;
     const mine = index % 2 === 0 ? { drugName: "Lisinopril", dose: 10, doseUnit: "mg", times: ["08:00"], holdParameters: { vital: "systolic_bp", op: "lt", value: 100 } } : { drugName: "Metformin", dose: 500, doseUnit: "mg", times: ["08:00", "17:00"] };
@@ -9592,20 +10149,20 @@ async function seedClinical(uow, actor = systemActor("seed")) {
     out.carePlans += 1;
   }
   const witness = await tx.user.findFirst({ where: { role: { name: "Charge Nurse (RN/LPN)" } }, select: { id: true } });
-  if (kit && witness && !await tx.medicationSupply.findFirst({ where: { communityId: community3.id, controlled: true } })) {
-    await receiveSupply(uow, actor, { communityId: community3.id, kind: "house_stock", label: "Lorazepam 0.5 mg (house stock, invented)", unit: "tablet", quantity: 30, unitLocationId: kit.id, controlled: true, witnessId: witness?.id ?? null });
+  if (kit && witness && !await tx.medicationSupply.findFirst({ where: { communityId: community6.id, controlled: true } })) {
+    await receiveSupply(uow, actor, { communityId: community6.id, kind: "house_stock", label: "Lorazepam 0.5 mg (house stock, invented)", unit: "tablet", quantity: 30, unitLocationId: kit.id, controlled: true, witnessId: witness?.id ?? null });
     out.supplies += 1;
   }
-  if (!await tx.medicationSupply.findFirst({ where: { communityId: community3.id, kind: "ekit" } })) {
-    await receiveSupply(uow, actor, { communityId: community3.id, kind: "ekit", label: "Emergency kit A (invented)", unit: "dose", quantity: 12, unitLocationId: kit?.id ?? null });
+  if (!await tx.medicationSupply.findFirst({ where: { communityId: community6.id, kind: "ekit" } })) {
+    await receiveSupply(uow, actor, { communityId: community6.id, kind: "ekit", label: "Emergency kit A (invented)", unit: "dose", quantity: 12, unitLocationId: kit?.id ?? null });
     out.supplies += 1;
   }
   if (!await tx.inferenceProvider.findUnique({ where: { key: "builtin-rules" } })) {
     await tx.inferenceProvider.create({ data: { key: "builtin-rules", name: "Built-in rules engine (runs on this server)", adapter: "builtin_rules", mode: "self_hosted", model: "builtin-rules@1", isDefault: true, status: "active" } });
     out.inferenceProviders = 1;
   }
-  await generateAdministrationSlots(uow, community3.id);
-  auditCreate(uow, actor, "Community", community3.id, "seed.clinical_loaded", out);
+  await generateAdministrationSlots(uow, community6.id);
+  auditCreate(uow, actor, "Community", community6.id, "seed.clinical_loaded", out);
   return out;
 }
 
@@ -9627,8 +10184,8 @@ function minorDigits(currencyCode) {
   return MINOR_DIGITS[currencyCode] ?? 2;
 }
 function toMinor(amount, currencyCode = "USD", rounding = Decimal.ROUND_HALF_EVEN) {
-  const digits = minorDigits(currencyCode);
-  const scaled = dec(amount).times(new Decimal(10).pow(digits)).toDecimalPlaces(0, rounding);
+  const digits2 = minorDigits(currencyCode);
+  const scaled = dec(amount).times(new Decimal(10).pow(digits2)).toDecimalPlaces(0, rounding);
   return BigInt(scaled.toFixed(0));
 }
 function minorOf(value) {
@@ -9710,12 +10267,12 @@ var NURSING_LETTER = Object.fromEntries(NURSING_HIPPS_ORDER.map((g, i) => [g, St
 var NTA_LETTER = Object.fromEntries(Object.keys(NTA_CMI).map((g, i) => [g, String.fromCharCode(65 + i)]));
 var ASSESSMENT_INDICATOR = { ipa: "0", five_day: "1", obra: "6" };
 var HIPPS_SOURCE_NOTE = 'HIPPS letters and the assessment indicator follow the CMS crosswalk (MLN MM11152; Noridian JE "HIPPS Coding for PDPM", example TC/SD/PBC1/NE 5-day = CDXE1).';
-function ptOtVpd(day19) {
-  if (day19 <= 20) return "1.00";
-  const block = Math.floor((day19 - 21) / 7) + 1;
+function ptOtVpd(day24) {
+  if (day24 <= 20) return "1.00";
+  const block = Math.floor((day24 - 21) / 7) + 1;
   return toScale(new Decimal(1).minus(new Decimal("0.02").times(block)), 2);
 }
-var ntaVpd = (day19) => day19 <= 3 ? "3.00" : "1.00";
+var ntaVpd = (day24) => day24 <= 3 ? "3.00" : "1.00";
 var VPD_VERIFY_NOTE = "PT/OT adjustment 1.00 days 1-20, then -0.02 per 7-day block (0.98 on 21-27 ... 0.76 on 98-100); NTA x3 days 1-3. Interrupted-stay window: RAI Manual ch. 2, day of discharge plus the 2 following days; a return on L+4 or later is a new stay.";
 var AIDS_NURSING_ADDON = "1.18";
 var NTA_POINTS = {
@@ -9884,10 +10441,10 @@ function adjustedRate(base2, labor, wageIndex) {
   const l = dec(labor);
   return dec(base2).times(l.times(dec(wageIndex)).plus(dec(1).minus(l)));
 }
-function perDiem(result, rates, day19, options = {}) {
+function perDiem(result, rates, day24, options = {}) {
   const wi = options.wageIndex ?? "1";
   const rate2 = (k) => adjustedRate(rates[k], options.labor?.[k] ?? LABOR_SHARE[k], wi);
-  const ptVpd = ptOtVpd(day19), ntVpd = ntaVpd(day19);
+  const ptVpd = ptOtVpd(day24), ntVpd = ntaVpd(day24);
   let nursing = rate2("nursing").times(result.cmi.nursing);
   if (result.aids) nursing = nursing.times(AIDS_NURSING_ADDON);
   const c = {
@@ -9898,17 +10455,17 @@ function perDiem(result, rates, day19, options = {}) {
     nta: toMinor(rate2("nta").times(result.cmi.nta).times(ntVpd)),
     nonCaseMix: toMinor(rate2("nonCaseMix"))
   };
-  return { day: day19, componentsMinor: c, totalMinor: c.pt + c.ot + c.slp + c.nursing + c.nta + c.nonCaseMix, vpd: { ptOt: ptVpd, nta: ntVpd } };
+  return { day: day24, componentsMinor: c, totalMinor: c.pt + c.ot + c.slp + c.nursing + c.nta + c.nonCaseMix, vpd: { ptOt: ptVpd, nta: ntVpd } };
 }
 var INTERRUPTED_STAY_DAYS = 3;
-function vpdDayNumber(stays, day19) {
+function vpdDayNumber(stays, day24) {
   let count = 0;
   let prevEnd = null;
   for (const s of [...stays].sort((a, b) => a.from < b.from ? -1 : a.from > b.from ? 1 : 0)) {
     if (prevEnd !== null && !isInterruptedStay(prevEnd, s.from)) count = 0;
-    const end = s.to ?? day19;
-    if (day19 >= s.from && day19 <= end) return count + daysBetween2(s.from, day19) + 1;
-    if (day19 < s.from) return null;
+    const end = s.to ?? day24;
+    if (day24 >= s.from && day24 <= end) return count + daysBetween2(s.from, day24) + 1;
+    if (day24 < s.from) return null;
     count += daysBetween2(s.from, end) + 1;
     prevEnd = end;
   }
@@ -9919,10 +10476,10 @@ var daysBetween2 = (a, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.par
 
 // features/keystone/pdpm/mapMds.ts
 function categoryFromIcd(code, override2 = {}) {
-  const clean3 = (code ?? "").replace(".", "").toUpperCase();
+  const clean4 = (code ?? "").replace(".", "").toUpperCase();
   const map = { ...ICD_CATEGORY_STARTER, ...override2 };
   for (const len of [3, 2, 1]) {
-    const hit = map[clean3.slice(0, len)];
+    const hit = map[clean4.slice(0, len)];
     if (hit) return hit;
   }
   return "medical_mgmt";
@@ -10124,12 +10681,12 @@ function unsignedSections(kind, def, signatures) {
 var DATE3 = /^\d{8}$/;
 var validDate = (v) => {
   if (!DATE3.test(v)) return false;
-  const iso10 = `${v.slice(0, 4)}-${v.slice(4, 6)}-${v.slice(6, 8)}`;
-  const d = /* @__PURE__ */ new Date(`${iso10}T00:00:00Z`);
-  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === iso10;
+  const iso12 = `${v.slice(0, 4)}-${v.slice(4, 6)}-${v.slice(6, 8)}`;
+  const d = /* @__PURE__ */ new Date(`${iso12}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === iso12;
 };
 var ICD = /^[A-TV-Z][0-9][0-9A-Z](\.?[0-9A-Z]{1,4})?$/;
-var isoToMds = (iso10) => iso10.replace(/-/g, "");
+var isoToMds = (iso12) => iso12.replace(/-/g, "");
 function runSpecEdits(kind, items, def) {
   const out = { fatal: [], warning: [] };
   const fatal = (item, code, message) => out.fatal.push({ item, code, message });
@@ -10149,8 +10706,8 @@ function runSpecEdits(kind, items, def) {
     } else if (item.values === "text") {
       if (v.length > 200) fatal(item.id, "format", `${item.id} is too long.`);
     } else if (typeof item.values === "string" && item.values.startsWith("int:")) {
-      const [lo, hi] = item.values.slice(4).split("-").map(Number);
-      if (!/^\d+$/.test(v) || Number(v) < lo || Number(v) > hi) fatal(item.id, "range", `${item.id} must be a whole number from ${lo} to ${hi}.`);
+      const [lo, hi2] = item.values.slice(4).split("-").map(Number);
+      if (!/^\d+$/.test(v) || Number(v) < lo || Number(v) > hi2) fatal(item.id, "range", `${item.id} must be a whole number from ${lo} to ${hi2}.`);
     } else if (Array.isArray(item.values) && !item.values.includes(v)) fatal(item.id, "range", `${item.id} has a value outside the allowed codes.`);
   }
   for (const key of Object.keys(items)) if (!def.items.some((i) => i.id === key) && items[key] !== void 0) warn(key, "unknown_item", `${key} is not in this item set and is not exported.`);
@@ -10273,8 +10830,8 @@ function zipStored(files) {
 }
 var sha256Hex = (b) => (0, import_node_crypto10.createHash)("sha256").update(b).digest("hex");
 var FVR_VERIFY_NOTE = "FVR parsing matches each record by FAC_DOC_ID and reads Accepted/Rejected and the edit numbers on that line; confirm against a current iQIES FVR export.";
-function parseFvr(text18, references) {
-  const lines = text18.split(/\r?\n/);
+function parseFvr(text21, references) {
+  const lines = text21.split(/\r?\n/);
   return references.map((reference) => {
     const hit = lines.filter((line) => line.includes(reference));
     if (!hit.length) return { reference, status: "not_found", edits: [] };
@@ -10290,7 +10847,7 @@ function parseFvr(text18, references) {
 var PPS_KINDS = /* @__PURE__ */ new Set(["pps_5day", "ipa"]);
 var OBRA_ASSESSMENTS = /* @__PURE__ */ new Set(["obra_admission", "obra_quarterly", "obra_annual", "obra_significant_change"]);
 var DATE4 = /^\d{4}-\d{2}-\d{2}$/;
-var day7 = (iso10) => /* @__PURE__ */ new Date(`${iso10}T00:00:00Z`);
+var day10 = (iso12) => /* @__PURE__ */ new Date(`${iso12}T00:00:00Z`);
 var iso = (d) => d ? d.toISOString().slice(0, 10) : null;
 var fail2 = (message, field) => {
   throw new DomainError(Codes.INVALID_INPUT, message, field ? { field } : {});
@@ -10318,7 +10875,7 @@ async function loadMdsReference(uow, actor) {
   if (!version2) {
     const tables = { ptCmi: PT_CMI, otCmi: OT_CMI, slpCmi: SLP_CMI, nursingCmi: NURSING_CMI, ntaCmi: NTA_CMI, ntaPoints: NTA_POINTS, icdCategory: ICD_CATEGORY_STARTER, nursingHippsOrder: NURSING_HIPPS_ORDER };
     version2 = await uow.tx.pdpmMappingVersion.create({
-      data: { code: PDPM_VERSION, effectiveFrom: day7(PDPM_EFFECTIVE_FROM), effectiveTo: day7(PDPM_EFFECTIVE_TO), tables, sourceNote: HIPPS_SOURCE_NOTE, verifyNote: [PDPM_VERIFY_NOTE, VPD_VERIFY_NOTE, ICD_VERIFY_NOTE].join(" "), status: "active" }
+      data: { code: PDPM_VERSION, effectiveFrom: day10(PDPM_EFFECTIVE_FROM), effectiveTo: day10(PDPM_EFFECTIVE_TO), tables, sourceNote: HIPPS_SOURCE_NOTE, verifyNote: [PDPM_VERIFY_NOTE, VPD_VERIFY_NOTE, ICD_VERIFY_NOTE].join(" "), status: "active" }
     });
     auditCreate(uow, actor, "PdpmMappingVersion", version2.id, "pdpm.mapping_loaded", { code: PDPM_VERSION });
     versions += 1;
@@ -10329,10 +10886,10 @@ async function loadMdsReference(uow, actor) {
     { component: "wage_index", geography: "cbsa_17460", rate: "1.0000", sourceNote: "Starting CBSA wage index for the community; a person replaces it with the published figure.", verifyNote: "Replace with the FY2026 SNF PPS wage index for the community CBSA." }
   ];
   for (const r of rows) {
-    const exists = await uow.tx.referenceRate.findFirst({ where: { component: r.component, geography: r.geography, effectiveFrom: day7(PDPM_EFFECTIVE_FROM) } });
+    const exists = await uow.tx.referenceRate.findFirst({ where: { component: r.component, geography: r.geography, effectiveFrom: day10(PDPM_EFFECTIVE_FROM) } });
     if (exists) continue;
-    const effectiveTo = r.component === "snf_coinsurance" ? day7("2026-12-31") : day7(PDPM_EFFECTIVE_TO);
-    const row = await uow.tx.referenceRate.create({ data: { mappingVersionId: version2.id, component: r.component, geography: r.geography, rate: r.rate, laborShare: r.laborShare ?? null, effectiveFrom: day7(PDPM_EFFECTIVE_FROM), effectiveTo, sourceNote: r.sourceNote, verifyNote: r.verifyNote } });
+    const effectiveTo = r.component === "snf_coinsurance" ? day10("2026-12-31") : day10(PDPM_EFFECTIVE_TO);
+    const row = await uow.tx.referenceRate.create({ data: { mappingVersionId: version2.id, component: r.component, geography: r.geography, rate: r.rate, laborShare: r.laborShare ?? null, effectiveFrom: day10(PDPM_EFFECTIVE_FROM), effectiveTo, sourceNote: r.sourceNote, verifyNote: r.verifyNote } });
     auditCreate(uow, actor, "ReferenceRate", row.id, "reference_rate.loaded", { component: r.component, geography: r.geography, rate: r.rate });
     rates += 1;
   }
@@ -10355,7 +10912,7 @@ async function openMds(uow, actor, input) {
   const header = A0310[kind];
   const entry = stay.admittedAt ? stay.admittedAt.toISOString().slice(0, 10) : ard;
   if (ard < entry) fail2("The ARD is before the entry date.", "ardDate");
-  const partA = await uow.tx.coveragePeriod.findFirst({ where: { stayId: stay.id, payer: { kind: "medicare_a" }, startDate: { lte: day7(ard) }, OR: [{ endDate: null }, { endDate: { gt: day7(ard) } }] }, select: { startDate: true } });
+  const partA = await uow.tx.coveragePeriod.findFirst({ where: { stayId: stay.id, payer: { kind: "medicare_a" }, startDate: { lte: day10(ard) }, OR: [{ endDate: null }, { endDate: { gt: day10(ard) } }] }, select: { startDate: true } });
   if (PPS_KINDS.has(kind) && !partA) guard("A PPS assessment needs a Medicare Part A coverage on its ARD.", "no_part_a");
   const r = stay.resident;
   const items = {
@@ -10371,10 +10928,10 @@ async function openMds(uow, actor, input) {
     ...kind === "entry" ? { A1700: "1" } : { A2300: isoToMds(ard) },
     ...partA ? { A2400A: "1", A2400B: isoToMds(iso(partA.startDate)) } : OBRA_ASSESSMENTS.has(kind) ? { A2400A: "0" } : {}
   };
-  const existing = await uow.tx.mdsAssessment.findFirst({ where: { residentId: stay.residentId, kind, ardDate: day7(ard), status: { notIn: ["superseded", "entered_in_error"] } }, select: { id: true } });
+  const existing = await uow.tx.mdsAssessment.findFirst({ where: { residentId: stay.residentId, kind, ardDate: day10(ard), status: { notIn: ["superseded", "entered_in_error"] } }, select: { id: true } });
   if (existing) guard("There is already a record of this type on this ARD.", "duplicate", { assessmentId: existing.id });
   const row = await uow.tx.mdsAssessment.create({
-    data: { reference: await nextReference(uow.tx, "MDS", uow.now), residentId: stay.residentId, communityId: stay.communityId, stayId: stay.id, kind, ardDate: day7(ard), itemSetId: set.id, itemSetVersion: set.itemSetVersion, items, signatures: [], status: "in_progress", correctionNumber: 0 }
+    data: { reference: await nextReference(uow.tx, "MDS", uow.now), residentId: stay.residentId, communityId: stay.communityId, stayId: stay.id, kind, ardDate: day10(ard), itemSetId: set.id, itemSetVersion: set.itemSetVersion, items, signatures: [], status: "in_progress", correctionNumber: 0 }
   });
   auditCreate(uow, actor, "MdsAssessment", row.id, "mds.opened", { kind, ardDate: ard, itemSetVersion: set.itemSetVersion });
   return { assessmentId: row.id, reference: row.reference, itemSetVersion: set.itemSetVersion };
@@ -10430,7 +10987,7 @@ async function signMdsSections(uow, actor, input) {
   return { assessmentId: row.id, signed: signature.sections };
 }
 async function tablesOn(tx, date3) {
-  const v = await tx.pdpmMappingVersion.findFirst({ where: { status: "active", effectiveFrom: { lte: day7(date3) }, OR: [{ effectiveTo: null }, { effectiveTo: { gte: day7(date3) } }] }, orderBy: { effectiveFrom: "desc" } });
+  const v = await tx.pdpmMappingVersion.findFirst({ where: { status: "active", effectiveFrom: { lte: day10(date3) }, OR: [{ effectiveTo: null }, { effectiveTo: { gte: day10(date3) } }] }, orderBy: { effectiveFrom: "desc" } });
   if (!v) return { id: null, code: PDPM_VERSION, tables: DEFAULT_TABLES };
   const t = v.tables;
   return { id: v.id, code: v.code, tables: { ptCmi: t.ptCmi, otCmi: t.otCmi, slpCmi: t.slpCmi, nursingCmi: t.nursingCmi, ntaCmi: t.ntaCmi } };
@@ -10489,7 +11046,7 @@ async function writeClassification(uow, actor, row, items, aids) {
       assessmentId: row.id,
       mappingVersionId: tables.id,
       indicator,
-      effectiveFrom: day7(effectiveFrom),
+      effectiveFrom: day10(effectiveFrom),
       hipps: result.hipps,
       cmi: result.cmi,
       groups: { ...result.groups, hippsNta: result.hippsNta, ntaScore: result.ntaScore, aids: result.aids, version: tables.code },
@@ -10550,10 +11107,10 @@ async function exportMds(uow, actor, input) {
   const ids = Array.isArray(input.assessmentIds) ? input.assessmentIds.map(String) : null;
   const rows = await uow.tx.mdsAssessment.findMany({ where: { communityId: input.communityId, status: "completed", submissionId: null, ...ids ? { id: { in: ids } } : {} }, orderBy: [{ ardDate: "asc" }, { reference: "asc" }], take: 500 });
   if (!rows.length) guard("There are no completed records waiting to be exported.", "nothing_to_export");
-  const community3 = await uow.tx.community.findUniqueOrThrow({ where: { id: input.communityId }, select: { identifiers: true, region: true } });
-  const facilityId = String(community3.identifiers?.ccn ?? "");
+  const community6 = await uow.tx.community.findUniqueOrThrow({ where: { id: input.communityId }, select: { identifiers: true, region: true } });
+  const facilityId = String(community6.identifiers?.ccn ?? "");
   if (!facilityId) guard("Record the facility CCN in the community identifiers first.", "no_ccn");
-  const header = { facilityId, stateCode: String(community3.identifiers?.state ?? community3.region ?? "OH").slice(0, 2).toUpperCase(), softwareVendor: "Openfront", softwareName: "Openfront Senior Care", softwareVersion: "4a" };
+  const header = { facilityId, stateCode: String(community6.identifiers?.state ?? community6.region ?? "OH").slice(0, 2).toUpperCase(), softwareVendor: "Openfront", softwareName: "Openfront Senior Care", softwareVersion: "4a" };
   const files = [];
   const failed = [];
   const sets = /* @__PURE__ */ new Map();
@@ -10586,12 +11143,12 @@ async function markUploaded(uow, actor, input) {
   return { submissionId: row.id };
 }
 async function recordFvr(uow, actor, input) {
-  const text18 = String(input.text ?? "");
-  if (text18.trim().length < 10) fail2("Paste the Final Validation Report text.", "text");
-  if (text18.length > 2e6) fail2("The report is too large.", "text");
+  const text21 = String(input.text ?? "");
+  if (text21.trim().length < 10) fail2("Paste the Final Validation Report text.", "text");
+  if (text21.length > 2e6) fail2("The report is too large.", "text");
   const row = await uow.tx.mdsSubmission.findUniqueOrThrow({ where: { id: input.submissionId }, include: { assessments: true } });
   if (!["generated", "uploaded"].includes(row.status)) guard("This submission already has its FVR.", "fvr_recorded");
-  const outcomes = parseFvr(text18, row.assessments.map((a) => a.reference));
+  const outcomes = parseFvr(text21, row.assessments.map((a) => a.reference));
   const accepted = outcomes.filter((o) => o.status === "accepted").length;
   const rejected = outcomes.filter((o) => o.status === "rejected").length;
   for (const a of row.assessments) {
@@ -10600,7 +11157,7 @@ async function recordFvr(uow, actor, input) {
     await casUpdate(uow, { model: "MdsAssessment", id: a.id, version: a.version, from: ["exported"], to: o.status, actor, eventType: `mds.${o.status}`, data: o.status === "accepted" ? { acceptedAt: uow.now } : {}, audit: { edits: o.edits } });
   }
   const status = rejected && !accepted ? "rejected" : rejected || outcomes.some((o) => o.status === "not_found") ? "partially_accepted" : "accepted";
-  await casUpdate(uow, { model: "MdsSubmission", id: row.id, version: row.version, from: [row.status], to: status, actor, eventType: "mds.fvr_recorded", data: { fvr: { text: text18.slice(0, 2e5), outcomes, verifyNote: FVR_VERIFY_NOTE }, fvrSummary: { accepted, rejected, notFound: outcomes.length - accepted - rejected }, fvrParsedAt: uow.now } });
+  await casUpdate(uow, { model: "MdsSubmission", id: row.id, version: row.version, from: [row.status], to: status, actor, eventType: "mds.fvr_recorded", data: { fvr: { text: text21.slice(0, 2e5), outcomes, verifyNote: FVR_VERIFY_NOTE }, fvrSummary: { accepted, rejected, notFound: outcomes.length - accepted - rejected }, fvrParsedAt: uow.now } });
   return { submissionId: row.id, status, accepted, rejected, outcomes };
 }
 
@@ -10691,21 +11248,21 @@ function classificationOn(stay, date3) {
 }
 function medicareDay(stay, counted, rates, date3) {
   if (!rates) return { kind: "problem", code: "missing_rate" };
-  const day19 = counted.get(date3);
-  if (!day19 || day19.bucket === "exhausted") return { kind: "problem", code: "benefit_exhausted" };
+  const day24 = counted.get(date3);
+  if (!day24 || day24.bucket === "exhausted") return { kind: "problem", code: "benefit_exhausted" };
   const cls = classificationOn(stay, date3);
   if (!cls) return { kind: "problem", code: "missing_assessment" };
-  const vpdDay = vpdDayNumber(stay.stretches, date3) ?? day19.n;
+  const vpdDay = vpdDayNumber(stay.stretches, date3) ?? day24.n;
   const labor = { pt: rates.laborShare, ot: rates.laborShare, slp: rates.laborShare, nursing: rates.laborShare, nta: rates.laborShare, nonCaseMix: rates.laborShare };
   const pd = perDiem({ cmi: cls.cmi, aids: cls.aids }, rates.rates, vpdDay, { wageIndex: rates.wageIndex, labor });
-  const coinsuranceMinor = day19.bucket === "coinsurance" ? rates.coinsuranceMinor < pd.totalMinor ? rates.coinsuranceMinor : pd.totalMinor : 0n;
-  return { kind: "billed", benefitDay: day19.n, vpdDay, classification: cls, pdpmMinor: pd.totalMinor, coinsuranceMinor, components: Object.fromEntries(Object.entries(pd.componentsMinor).map(([k, v]) => [k, v.toString()])) };
+  const coinsuranceMinor = day24.bucket === "coinsurance" ? rates.coinsuranceMinor < pd.totalMinor ? rates.coinsuranceMinor : pd.totalMinor : 0n;
+  return { kind: "billed", benefitDay: day24.n, vpdDay, classification: cls, pdpmMinor: pd.totalMinor, coinsuranceMinor, components: Object.fromEntries(Object.entries(pd.componentsMinor).map(([k, v]) => [k, v.toString()])) };
 }
 var hospiceRoomBoard = (dailyMinor, bps) => roundToMinor(dec(dailyMinor).times(bps).div(1e4));
 
 // features/keystone/coverage/service.ts
 var DATE5 = /^\d{4}-\d{2}-\d{2}$/;
-var day8 = (iso10) => /* @__PURE__ */ new Date(`${iso10}T00:00:00Z`);
+var day11 = (iso12) => /* @__PURE__ */ new Date(`${iso12}T00:00:00Z`);
 var iso2 = (d) => d ? d.toISOString().slice(0, 10) : null;
 var fail3 = (message, field) => {
   throw new DomainError(Codes.INVALID_INPUT, message, field ? { field } : {});
@@ -10740,12 +11297,12 @@ async function changePayer(uow, actor, input) {
   if (stay.status !== "admitted") guard2("Only an admitted stay changes payer.", "not_admitted");
   const payer = await uow.tx.payer.findUnique({ where: { id: input.payerId }, select: { id: true, kind: true, name: true } });
   if (!payer) fail3("Choose a payer.", "payerId");
-  const current = await uow.tx.coveragePeriod.findFirst({ where: { stayId: stay.id, rank: "primary", status: { in: ["active", "ending", "pending", "retro_approved"] }, startDate: { lt: day8(from) }, OR: [{ endDate: null }, { endDate: { gt: day8(from) } }] }, include: { payer: { select: { kind: true } } } });
+  const current = await uow.tx.coveragePeriod.findFirst({ where: { stayId: stay.id, rank: "primary", status: { in: ["active", "ending", "pending", "retro_approved"] }, startDate: { lt: day11(from) }, OR: [{ endDate: null }, { endDate: { gt: day11(from) } }] }, include: { payer: { select: { kind: true } } } });
   if (current) {
     if (current.payerId === payer.id) guard2("That payer is already primary.", "same_payer");
     if (current.payer?.kind === "medicare_a") await assertNoticeGiven(uow.tx, current, addDays(from, -1), input.endOverrideReason);
     const reason = String(input.endReason ?? (payer.kind === "hospice_agency" ? "payer_change" : "payer_change"));
-    await casUpdate(uow, { model: "CoveragePeriod", id: current.id, version: current.version, from: [current.status], to: "ended", actor, eventType: "coverage.ended", data: { endDate: day8(from), endReason: reason, endOverrideReason: input.endOverrideReason ? String(input.endOverrideReason) : null, ...current.payer?.kind === "medicare_a" && !current.lastCoveredDay ? { lastCoveredDay: day8(addDays(from, -1)) } : {} } });
+    await casUpdate(uow, { model: "CoveragePeriod", id: current.id, version: current.version, from: [current.status], to: "ended", actor, eventType: "coverage.ended", data: { endDate: day11(from), endReason: reason, endOverrideReason: input.endOverrideReason ? String(input.endOverrideReason) : null, ...current.payer?.kind === "medicare_a" && !current.lastCoveredDay ? { lastCoveredDay: day11(addDays(from, -1)) } : {} } });
   }
   const bps = input.hospiceRoomBoardBps === void 0 || input.hospiceRoomBoardBps === null || input.hospiceRoomBoardBps === "" ? null : Number(input.hospiceRoomBoardBps);
   if (payer.kind === "hospice_agency") {
@@ -10757,13 +11314,13 @@ async function changePayer(uow, actor, input) {
       stayId: stay.id,
       payerId: payer.id,
       rank: "primary",
-      startDate: day8(from),
+      startDate: day11(from),
       status: "active",
       memberReference: textIn(input.memberReference, "memberReference", false),
-      qualifyingStayFrom: input.qualifyingStayFrom ? day8(dateIn2(input.qualifyingStayFrom, "qualifyingStayFrom")) : null,
-      qualifyingStayTo: input.qualifyingStayTo ? day8(dateIn2(input.qualifyingStayTo, "qualifyingStayTo")) : null,
+      qualifyingStayFrom: input.qualifyingStayFrom ? day11(dateIn2(input.qualifyingStayFrom, "qualifyingStayFrom")) : null,
+      qualifyingStayTo: input.qualifyingStayTo ? day11(dateIn2(input.qualifyingStayTo, "qualifyingStayTo")) : null,
       qualifyingStayHospital: textIn(input.qualifyingStayHospital, "qualifyingStayHospital", false),
-      ...payer.kind === "hospice_agency" ? { hospiceAgency: textIn(input.hospiceAgency, "hospiceAgency"), hospiceElectionOn: day8(from), hospiceRoomBoardBps: bps } : {}
+      ...payer.kind === "hospice_agency" ? { hospiceAgency: textIn(input.hospiceAgency, "hospiceAgency"), hospiceElectionOn: day11(from), hospiceRoomBoardBps: bps } : {}
     }
   });
   auditCreate(uow, actor, "CoveragePeriod", created.id, payer.kind === "hospice_agency" ? "coverage.hospice_elected" : "coverage.opened", { payerKind: payer.kind, startDate: from, replaces: current?.id ?? null });
@@ -10788,16 +11345,16 @@ async function recordQualifyingStay(uow, actor, input) {
   const doc = await uow.tx.document.create({ data: { title: textIn(input.documentTitle, "documentTitle", false) || `Hospital record: ${hospital} ${from} to ${to}`, kind: "qualifying_stay", communityId: cov.stay?.communityId ?? null, residentId: cov.stay?.residentId ?? null, phiTier: "clin", status: "final" } });
   auditCreate(uow, actor, "Document", doc.id, "document.filed", { kind: "qualifying_stay" });
   const check = qualifyingStay({ inpatientFrom: from, inpatientTo: to, snfAdmission: iso2(cov.startDate), hasEvidence: true });
-  await casUpdate(uow, { model: "CoveragePeriod", id: cov.id, version: cov.version, from: [cov.status], to: cov.status, actor, eventType: "coverage.qualifying_stay_recorded", data: { qualifyingStayFrom: day8(from), qualifyingStayTo: day8(to), qualifyingStayHospital: hospital, qualifyingStayEvidenceId: doc.id, qualifyingStayEvidenceNote: note || `Document ${doc.id}` }, audit: { from, to, hospital, ok: check.ok, problems: check.problems } });
+  await casUpdate(uow, { model: "CoveragePeriod", id: cov.id, version: cov.version, from: [cov.status], to: cov.status, actor, eventType: "coverage.qualifying_stay_recorded", data: { qualifyingStayFrom: day11(from), qualifyingStayTo: day11(to), qualifyingStayHospital: hospital, qualifyingStayEvidenceId: doc.id, qualifyingStayEvidenceNote: note || `Document ${doc.id}` }, audit: { from, to, hospital, ok: check.ok, problems: check.problems } });
   return { coverageId: cov.id, ok: check.ok, problems: check.problems, documentId: doc.id };
 }
 async function recordSkilledCert(uow, actor, input) {
   const cov = await lockCoverage(uow.tx, input.coverageId);
   if (cov.payer?.kind !== "medicare_a") guard2("The skilled certification is for Medicare Part A coverage.", "not_part_a");
   const signedOn = dateIn2(input.signedOn, "signedOn");
-  const by8 = textIn(input.signedBy, "signedBy");
+  const by11 = textIn(input.signedBy, "signedBy");
   if (signedOn > await today(uow.tx, cov.stay.communityId, uow.now)) fail3("The signing date cannot be in the future.", "signedOn");
-  await casUpdate(uow, { model: "CoveragePeriod", id: cov.id, version: cov.version, from: [cov.status], to: cov.status, actor, eventType: "coverage.skilled_cert_recorded", data: { skilledCertSignedAt: day8(signedOn), skilledCertBy: by8 }, audit: { signedOn, signedBy: by8 } });
+  await casUpdate(uow, { model: "CoveragePeriod", id: cov.id, version: cov.version, from: [cov.status], to: cov.status, actor, eventType: "coverage.skilled_cert_recorded", data: { skilledCertSignedAt: day11(signedOn), skilledCertBy: by11 }, audit: { signedOn, signedBy: by11 } });
   return { coverageId: cov.id };
 }
 async function recordPriorDays(uow, actor, input) {
@@ -10807,7 +11364,7 @@ async function recordPriorDays(uow, actor, input) {
   if (!["hets", "cwf_manual", "hospital_record", "resident_report"].includes(source)) fail3("Choose where the figure came from.", "source");
   const days = Number(input.daysUsed);
   if (!Number.isInteger(days) || days < 0 || days > 100) fail3("Days used is a whole number from 0 to 100.", "daysUsed");
-  const row = await uow.tx.priorSnfDaysObservation.create({ data: { residentId: resident3.id, communityId: resident3.communityId, source, daysUsed: days, asOf: day8(dateIn2(input.asOf, "asOf")), spellStart: input.spellStart ? day8(dateIn2(input.spellStart, "spellStart")) : null, note: textIn(input.note, "note", false), recordedById: actorUserId(actor) } });
+  const row = await uow.tx.priorSnfDaysObservation.create({ data: { residentId: resident3.id, communityId: resident3.communityId, source, daysUsed: days, asOf: day11(dateIn2(input.asOf, "asOf")), spellStart: input.spellStart ? day11(dateIn2(input.spellStart, "spellStart")) : null, note: textIn(input.note, "note", false), recordedById: actorUserId(actor) } });
   auditCreate(uow, actor, "PriorSnfDaysObservation", row.id, "coverage.prior_days_recorded", { source, daysUsed: days });
   return { observationId: row.id };
 }
@@ -10817,7 +11374,7 @@ async function setLastCoveredDay(uow, actor, input) {
   if (!["active", "ending"].includes(cov.status)) guard2("This coverage is not active.", "not_active");
   const lcd = dateIn2(input.lastCoveredDay, "lastCoveredDay");
   if (lcd < iso2(cov.startDate)) fail3("The last covered day is before the coverage starts.", "lastCoveredDay");
-  await casUpdate(uow, { model: "CoveragePeriod", id: cov.id, version: cov.version, from: ["active", "ending"], to: "ending", actor, eventType: "coverage.last_covered_day_set", data: { lastCoveredDay: day8(lcd) }, reason: textIn(input.reason, "reason", false) || null, audit: { lastCoveredDay: lcd, noticeDueBy: addDays(lcd, -2) } });
+  await casUpdate(uow, { model: "CoveragePeriod", id: cov.id, version: cov.version, from: ["active", "ending"], to: "ending", actor, eventType: "coverage.last_covered_day_set", data: { lastCoveredDay: day11(lcd) }, reason: textIn(input.reason, "reason", false) || null, audit: { lastCoveredDay: lcd, noticeDueBy: addDays(lcd, -2) } });
   return { coverageId: cov.id, lastCoveredDay: lcd, noticeDueBy: addDays(lcd, -2) };
 }
 async function recordCoverageNotice(uow, actor, input) {
@@ -10835,7 +11392,7 @@ async function recordCoverageNotice(uow, actor, input) {
     const rep = await uow.tx.representative.findUnique({ where: { id: repId }, select: { residentId: true } });
     if (rep?.residentId !== cov.stay?.residentId) fail3("That representative does not represent this resident.", "recipientRepresentativeId");
   }
-  const notice = await uow.tx.noticeDelivery.create({ data: { kind, subjectType: "CoveragePeriod", subjectId: cov.id, residentId: cov.stay?.residentId ?? null, recipientRepresentativeId: repId, method, deliveredAt: day8(deliveredOn), deliveredById: actorUserId(actor), acknowledgement: ack, note: textIn(input.note, "note", false) } });
+  const notice = await uow.tx.noticeDelivery.create({ data: { kind, subjectType: "CoveragePeriod", subjectId: cov.id, residentId: cov.stay?.residentId ?? null, recipientRepresentativeId: repId, method, deliveredAt: day11(deliveredOn), deliveredById: actorUserId(actor), acknowledgement: ack, note: textIn(input.note, "note", false) } });
   const lcd = iso2(cov.lastCoveredDay);
   const state2 = lcd ? noticeState(lcd, deliveredOn, deliveredOn) : null;
   auditCreate(uow, actor, "NoticeDelivery", notice.id, "notice.delivered", { kind, method, deliveredOn, coverageId: cov.id, clock: state2?.status ?? null });
@@ -10847,10 +11404,10 @@ async function revokeHospice(uow, actor, input) {
   if (!["active", "ending"].includes(cov.status)) guard2("This election is not active.", "not_active");
   const on = dateIn2(input.revokedOn, "revokedOn");
   if (on <= iso2(cov.startDate)) fail3("The revocation is on or before the election.", "revokedOn");
-  const v = await casUpdate(uow, { model: "CoveragePeriod", id: cov.id, version: cov.version, from: [cov.status], to: "ended", actor, eventType: "coverage.hospice_revoked", data: { endDate: day8(on), endReason: "hospice_revoked" } });
+  const v = await casUpdate(uow, { model: "CoveragePeriod", id: cov.id, version: cov.version, from: [cov.status], to: "ended", actor, eventType: "coverage.hospice_revoked", data: { endDate: day11(on), endReason: "hospice_revoked" } });
   const payer = await uow.tx.payer.findUnique({ where: { id: input.nextPayerId }, select: { id: true, kind: true } });
   if (!payer || payer.kind === "hospice_agency") fail3("Choose the payer after the revocation.", "nextPayerId");
-  const created = await uow.tx.coveragePeriod.create({ data: { stayId: cov.stayId, payerId: payer.id, rank: "primary", startDate: day8(on), status: "active", memberReference: textIn(input.memberReference, "memberReference", false) } });
+  const created = await uow.tx.coveragePeriod.create({ data: { stayId: cov.stayId, payerId: payer.id, rank: "primary", startDate: day11(on), status: "active", memberReference: textIn(input.memberReference, "memberReference", false) } });
   auditCreate(uow, actor, "CoveragePeriod", created.id, "coverage.opened", { payerKind: payer.kind, startDate: on, after: "hospice_revoked" });
   return { coverageId: created.id };
 }
@@ -10860,7 +11417,7 @@ async function requestAuthorisation(uow, actor, input) {
   const interval = input.reviewIntervalDays === void 0 || input.reviewIntervalDays === "" ? 7 : Number(input.reviewIntervalDays);
   if (!Number.isInteger(interval) || interval < 1 || interval > 60) fail3("The review interval is 1 to 60 days.", "reviewIntervalDays");
   const row = await uow.tx.authorisation.create({
-    data: { reference: await nextReference(uow.tx, "AUTH", uow.now), residentId: cov.stay?.residentId ?? null, communityId: cov.stay?.communityId ?? null, stayId: cov.stayId, coverageId: cov.id, payerId: cov.payerId, requestedOn: day8(dateIn2(input.requestedOn, "requestedOn")), payerAuthNumber: textIn(input.payerAuthNumber, "payerAuthNumber", false), levelOfCare: textIn(input.levelOfCare, "levelOfCare", false), reviewIntervalDays: interval, status: "requested", note: textIn(input.note, "note", false) }
+    data: { reference: await nextReference(uow.tx, "AUTH", uow.now), residentId: cov.stay?.residentId ?? null, communityId: cov.stay?.communityId ?? null, stayId: cov.stayId, coverageId: cov.id, payerId: cov.payerId, requestedOn: day11(dateIn2(input.requestedOn, "requestedOn")), payerAuthNumber: textIn(input.payerAuthNumber, "payerAuthNumber", false), levelOfCare: textIn(input.levelOfCare, "levelOfCare", false), reviewIntervalDays: interval, status: "requested", note: textIn(input.note, "note", false) }
   });
   auditCreate(uow, actor, "Authorisation", row.id, "authorisation.requested", { coverageId: cov.id });
   return { authorisationId: row.id, reference: row.reference };
@@ -10872,7 +11429,7 @@ async function decideAuthorisation(uow, actor, input) {
   if (decision === "approved") {
     const from = dateIn2(input.authFrom, "authFrom"), to = dateIn2(input.authTo, "authTo");
     if (to < from) fail3("The authorised days end before they start.", "authTo");
-    await casUpdate(uow, { model: "Authorisation", id: row.id, version: row.version, from: ["requested"], to: "approved", actor, eventType: "authorisation.approved", data: { authFrom: day8(from), authTo: day8(to), ...input.payerAuthNumber ? { payerAuthNumber: textIn(input.payerAuthNumber, "payerAuthNumber") } : {} }, audit: { authFrom: from, authTo: to } });
+    await casUpdate(uow, { model: "Authorisation", id: row.id, version: row.version, from: ["requested"], to: "approved", actor, eventType: "authorisation.approved", data: { authFrom: day11(from), authTo: day11(to), ...input.payerAuthNumber ? { payerAuthNumber: textIn(input.payerAuthNumber, "payerAuthNumber") } : {} }, audit: { authFrom: from, authTo: to } });
   } else if (decision === "denied") {
     await casUpdate(uow, { model: "Authorisation", id: row.id, version: row.version, from: ["requested"], to: "denied", actor, eventType: "authorisation.denied" });
   } else fail3("Choose approved or denied.", "decision");
@@ -10887,11 +11444,11 @@ async function recordReview(uow, actor, input) {
   const reviewedOn = dateIn2(input.reviewedOn, "reviewedOn");
   const newTo = outcome === "extended" || outcome === "last_covered_day_set" ? dateIn2(input.newAuthTo, "newAuthTo") : null;
   if (newTo && auth.authFrom && newTo < iso2(auth.authFrom)) fail3("The new date is before the authorisation starts.", "newAuthTo");
-  const review = await uow.tx.concurrentReview.create({ data: { residentId: auth.residentId, communityId: auth.communityId, authorisationId: auth.id, reviewedOn: day8(reviewedOn), outcome, newAuthTo: newTo ? day8(newTo) : null, reviewer: textIn(input.reviewer, "reviewer", false), note: textIn(input.note, "note", false), recordedById: actorUserId(actor) } });
+  const review = await uow.tx.concurrentReview.create({ data: { residentId: auth.residentId, communityId: auth.communityId, authorisationId: auth.id, reviewedOn: day11(reviewedOn), outcome, newAuthTo: newTo ? day11(newTo) : null, reviewer: textIn(input.reviewer, "reviewer", false), note: textIn(input.note, "note", false), recordedById: actorUserId(actor) } });
   auditCreate(uow, actor, "ConcurrentReview", review.id, "authorisation.reviewed", { authorisationId: auth.id, outcome, newAuthTo: newTo });
-  if (outcome === "extended") await casUpdate(uow, { model: "Authorisation", id: auth.id, version: auth.version, from: ["approved"], to: "approved", actor, eventType: "authorisation.extended", data: { authTo: day8(newTo) } });
+  if (outcome === "extended") await casUpdate(uow, { model: "Authorisation", id: auth.id, version: auth.version, from: ["approved"], to: "approved", actor, eventType: "authorisation.extended", data: { authTo: day11(newTo) } });
   if (outcome === "last_covered_day_set" || outcome === "denied") {
-    await casUpdate(uow, { model: "Authorisation", id: auth.id, version: auth.version, from: ["approved"], to: "ended", actor, eventType: "authorisation.ended", data: { authTo: day8(newTo ?? reviewedOn) } });
+    await casUpdate(uow, { model: "Authorisation", id: auth.id, version: auth.version, from: ["approved"], to: "ended", actor, eventType: "authorisation.ended", data: { authTo: day11(newTo ?? reviewedOn) } });
     if (auth.coverageId) await setLastCoveredDay(uow, actor, { coverageId: auth.coverageId, lastCoveredDay: newTo ?? reviewedOn, reason: `Concurrent review ${outcome}` });
   }
   return { reviewId: review.id };
@@ -10904,7 +11461,7 @@ async function recountBenefitPeriod(uow, actor, input) {
   const hash2 = sha256(canonicalJson(summary));
   const existing = await uow.tx.benefitPeriodCounter.findFirst({ where: { residentId: resident3.id }, orderBy: { createdAt: "desc" } });
   if (existing?.derivedFromHash === hash2) return { counterId: existing.id, unchanged: true, ...summary };
-  const row = await uow.tx.benefitPeriodCounter.create({ data: { residentId: resident3.id, communityId: resident3.communityId, spellStart: summary.spellStart ? day8(summary.spellStart) : null, fullDaysUsed: summary.fullDaysUsed, coinsuranceDaysUsed: summary.coinsuranceDaysUsed, priorDaysUsed: summary.priorDaysUsed, lastCoveredDay: summary.lastCountedDate ? day8(summary.lastCountedDate) : null, derivedFromHash: hash2, computedAt: uow.now } });
+  const row = await uow.tx.benefitPeriodCounter.create({ data: { residentId: resident3.id, communityId: resident3.communityId, spellStart: summary.spellStart ? day11(summary.spellStart) : null, fullDaysUsed: summary.fullDaysUsed, coinsuranceDaysUsed: summary.coinsuranceDaysUsed, priorDaysUsed: summary.priorDaysUsed, lastCoveredDay: summary.lastCountedDate ? day11(summary.lastCountedDate) : null, derivedFromHash: hash2, computedAt: uow.now } });
   auditCreate(uow, actor, "BenefitPeriodCounter", row.id, "coverage.benefit_recounted", summary);
   return { counterId: row.id, unchanged: false, ...summary };
 }
@@ -10912,7 +11469,7 @@ async function benefitSummary(tx, residentId, asOf) {
   const covs = await tx.coveragePeriod.findMany({ where: { stay: { residentId }, payer: { kind: "medicare_a" }, status: { in: ["active", "ending", "ended", "retro_approved"] } }, orderBy: { startDate: "asc" }, select: { startDate: true, endDate: true } });
   const stretches = covs.map((c) => ({ from: iso2(c.startDate), to: c.endDate ? addDays(iso2(c.endDate), -1) : null }));
   const firstFrom = stretches[0]?.from ?? asOf;
-  const prior = await tx.priorSnfDaysObservation.findFirst({ where: { residentId, asOf: { lte: day8(firstFrom) } }, orderBy: [{ asOf: "desc" }, { createdAt: "desc" }], select: { daysUsed: true } });
+  const prior = await tx.priorSnfDaysObservation.findFirst({ where: { residentId, asOf: { lte: day11(firstFrom) } }, orderBy: [{ asOf: "desc" }, { createdAt: "desc" }], select: { daysUsed: true } });
   const priorDaysUsed = prior?.daysUsed ?? 0;
   const counted = [...benefitDays({ stayId: "", stretches, priorDaysUsed, classifications: [], qualifyingStayOk: true, skilledCertOk: true }, asOf).values()];
   const s = counterSummary(counted);
@@ -10991,8 +11548,8 @@ var ICD2 = {
 };
 function goldenItems(input) {
   const items = {};
-  const [icd, category] = ICD2[input.clinicalCategory];
-  items.I0020B = icd;
+  const [icd2, category] = ICD2[input.clinicalCategory];
+  items.I0020B = icd2;
   items.I0020 = category;
   for (const key of ["GG0130A1", "GG0130B1", "GG0130C1", "GG0170B1", "GG0170C1", "GG0170D1", "GG0170E1", "GG0170F1", "GG0170J1", "GG0170K1"]) items[key] = input.gg[key] ?? "88";
   items.GG0170I1 = input.cannotWalk ? "88" : input.gg.GG0170J1 ?? "88";
@@ -11040,16 +11597,16 @@ async function runMdsSeed(db, options = {}) {
   const coordinator = seedActor(MDS_COORDINATOR);
   const ref2 = await command(db, { name: "setup.load_mds_reference", actor: coordinator, idempotencyKey: `${prefix}:reference`, params: {}, now }, async (uow) => {
     const loaded = await loadMdsReference(uow, coordinator);
-    const community4 = await uow.tx.community.findUnique({ where: { id: COMMUNITY.id }, select: { identifiers: true } });
-    const ids = community4?.identifiers ?? {};
-    if (community4 && !ids.cbsa) await uow.tx.community.update({ where: { id: COMMUNITY.id }, data: { identifiers: { ...ids, cbsa: "cbsa_17460" } } });
+    const community7 = await uow.tx.community.findUnique({ where: { id: COMMUNITY.id }, select: { identifiers: true } });
+    const ids = community7?.identifiers ?? {};
+    if (community7 && !ids.cbsa) await uow.tx.community.update({ where: { id: COMMUNITY.id }, data: { identifiers: { ...ids, cbsa: "cbsa_17460" } } });
     return loaded;
   });
   created.templates += ref2.value.templates;
   created.rates += ref2.value.rates;
-  const community3 = await db.community.findUnique({ where: { id: COMMUNITY.id }, select: { timeZone: true } });
-  if (!community3) return created;
-  const today2 = localDate(community3.timeZone ?? "America/New_York", now);
+  const community6 = await db.community.findUnique({ where: { id: COMMUNITY.id }, select: { timeZone: true } });
+  if (!community6) return created;
+  const today2 = localDate(community6.timeZone ?? "America/New_York", now);
   for (const [i, c] of SEED_CASES.entries()) {
     const [firstName, lastName] = c.name.split(",")[0].split(" ");
     const result = await command(db, { name: "setup.mds_case", actor: coordinator, idempotencyKey: `${prefix}:case:${i}`, params: { case: c.name }, serializable: true, now }, async (uow) => {
@@ -11097,7 +11654,7 @@ async function runMdsSeed(db, options = {}) {
 
 // features/keystone/seed/billing.ts
 init_cas();
-var day9 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var day12 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 var CARE_LEVELS = [
   { id: "seed_care_al_1", code: "AL1", name: "Level 1 assistance", setting: "assisted_living", minPoints: 0, maxPoints: 9 },
   { id: "seed_care_al_2", code: "AL2", name: "Level 2 assistance", setting: "assisted_living", minPoints: 10, maxPoints: 19 },
@@ -11151,7 +11708,7 @@ async function seedBilling(uow, actor) {
     ["seed_rates_mc_2026", "Memory care 2026", "memory_care", MC_LINES]
   ]) {
     if (await tx.rateSchedule.findUnique({ where: { id }, select: { id: true } })) continue;
-    await tx.rateSchedule.create({ data: { id, communityId, name, setting, effectiveFrom: day9("2026-01-01"), noticeDays: 30, status: "draft" } });
+    await tx.rateSchedule.create({ data: { id, communityId, name, setting, effectiveFrom: day12("2026-01-01"), noticeDays: 30, status: "draft" } });
     auditCreate(uow, actor, "RateSchedule", id, "rate_schedule.seeded", { setting }, seedMeta);
     created.schedules += 1;
     await tx.rateLine.createMany({
@@ -11515,13 +12072,13 @@ async function runDueJobs(db, now = /* @__PURE__ */ new Date()) {
   if (holds) results.tourHolds = await guarded(() => runLeasedJob(db, "tour_hold_expiry", "all", (uow) => expireTourHolds(uow, actor), now));
   if (grants) results.breakGlass = await guarded(() => runLeasedJob(db, "break_glass_expiry", "all", (uow) => expireBreakGlass(uow, actor), now));
   const census2 = {};
-  for (const community3 of communities) {
-    const yesterday = addDays(localDate(community3.timeZone, now), -1);
-    const done = await db.jobRun.count({ where: { kind: "midnight_census", scopeKey: `${community3.id}:${yesterday}`, status: "succeeded" } });
+  for (const community6 of communities) {
+    const yesterday = addDays(localDate(community6.timeZone, now), -1);
+    const done = await db.jobRun.count({ where: { kind: "midnight_census", scopeKey: `${community6.id}:${yesterday}`, status: "succeeded" } });
     if (done) continue;
-    const signed = await db.censusSignoff.count({ where: { communityId: community3.id, unitId: null, date: { gte: /* @__PURE__ */ new Date(`${yesterday}T00:00:00Z`) } } });
+    const signed = await db.censusSignoff.count({ where: { communityId: community6.id, unitId: null, date: { gte: /* @__PURE__ */ new Date(`${yesterday}T00:00:00Z`) } } });
     if (signed) continue;
-    census2[community3.id] = await guarded(() => runLeasedJob(db, "midnight_census", `${community3.id}:${yesterday}`, (uow, runId) => snapshotCensusDay(uow, actor, { communityId: community3.id, date: yesterday, runId }), now));
+    census2[community6.id] = await guarded(() => runLeasedJob(db, "midnight_census", `${community6.id}:${yesterday}`, (uow, runId) => snapshotCensusDay(uow, actor, { communityId: community6.id, date: yesterday, runId }), now));
   }
   results.census = census2;
   const all2 = [...Object.values(results).filter((value) => value !== census2), ...Object.values(census2)];
@@ -11611,7 +12168,7 @@ var date = (value, field) => {
 var optionalDate = (value, field) => value == null || value === "" ? null : date(value, field);
 
 // features/keystone/mutations/census.ts
-var census = (name, community3, permissions2 = ["canRecordCensus", "canAdmitDischarge"]) => ({ name, permissions: permissions2, serializable: true, community: community3 });
+var census = (name, community6, permissions2 = ["canRecordCensus", "canAdmitDischarge"]) => ({ name, permissions: permissions2, serializable: true, community: community6 });
 async function admitResidentMutation(_root, args, context) {
   const input = args.input;
   return runDomain(context, args, { name: "census.admit", permissions: ["canAdmitDischarge"], serializable: true, community: async () => input.communityId }, (uow, actor) => admitResident(uow, actor, { ...input, effectiveAt: date(input.effectiveAt, "effectiveAt"), observedAt: optionalDate(input.observedAt, "observedAt"), idempotencyKey: args.idempotencyKey }).then((result) => ({ ...result })));
@@ -11756,12 +12313,12 @@ async function portalUpdates(tx, principal, residentId) {
 async function portalCalendar(tx, principal, residentId, now = /* @__PURE__ */ new Date()) {
   await requirePortalScope(tx, principal, residentId, "calendar");
   const resident3 = await tx.resident.findUnique({ where: { id: residentId }, select: { community: { select: { id: true, timeZone: true, holidayCalendarId: true } } } });
-  const community3 = resident3?.community;
-  if (!community3) throw new DomainError(Codes.NOT_FOUND, "Not found.");
-  const today2 = localDate(community3.timeZone, now);
-  const holidays = community3.holidayCalendarId ? await tx.holidayDate.findMany({ where: { calendarId: community3.holidayCalendarId, date: { gte: /* @__PURE__ */ new Date(`${today2}T00:00:00Z`), lt: new Date(now.getTime() + 60 * 864e5) } }, orderBy: { date: "asc" }, select: { date: true, name: true } }) : [];
+  const community6 = resident3?.community;
+  if (!community6) throw new DomainError(Codes.NOT_FOUND, "Not found.");
+  const today2 = localDate(community6.timeZone, now);
+  const holidays = community6.holidayCalendarId ? await tx.holidayDate.findMany({ where: { calendarId: community6.holidayCalendarId, date: { gte: /* @__PURE__ */ new Date(`${today2}T00:00:00Z`), lt: new Date(now.getTime() + 60 * 864e5) } }, orderBy: { date: "asc" }, select: { date: true, name: true } }) : [];
   await auditPortalRead(tx, principal, "portalCalendar", residentId, ["Resident.community"], holidays.length);
-  return { timeZone: community3.timeZone, from: today2, holidays: holidays.map((h) => ({ date: h.date.toISOString().slice(0, 10), name: h.name })) };
+  return { timeZone: community6.timeZone, from: today2, holidays: holidays.map((h) => ({ date: h.date.toISOString().slice(0, 10), name: h.name })) };
 }
 async function portalDocuments(tx, principal, residentId) {
   await requirePortalScope(tx, principal, residentId, "documents");
@@ -11851,8 +12408,8 @@ async function stripeCall(path, method, body, idempotencyKey) {
     ...body ? { body: form(body) } : {},
     signal: AbortSignal.timeout(2e4)
   });
-  const json15 = await res.json().catch(() => ({}));
-  return { status: res.status, json: json15 };
+  const json18 = await res.json().catch(() => ({}));
+  return { status: res.status, json: json18 };
 }
 function intentResult(status, j) {
   const ref2 = j.error?.payment_intent?.id ?? j.id ?? null;
@@ -11906,7 +12463,7 @@ var stripeAdapter = {
         const pm = await stripeCall(`/payment_methods/${encodeURIComponent(input.paymentMethod)}`, "GET", null);
         if (pm.status === 200 && typeof pm.json.customer === "string") customer = pm.json.customer;
       }
-      const { status, json: json15 } = await stripeCall("/payment_intents", "POST", {
+      const { status, json: json18 } = await stripeCall("/payment_intents", "POST", {
         amount: input.amountMinor.toString(),
         currency: input.currencyCode.toLowerCase(),
         confirm: "true",
@@ -11917,7 +12474,7 @@ var stripeAdapter = {
         description: input.description,
         ...Object.fromEntries(Object.entries({ ...input.metadata, idempotencyKey: input.idempotencyKey }).map(([k, v]) => [`metadata[${k}]`, v]))
       }, input.idempotencyKey);
-      return intentResult(status, json15);
+      return intentResult(status, json18);
     } catch {
       return { outcome: "unknown", providerRef: null, message: "The card processor did not answer. Check the status in a moment." };
     }
@@ -11936,16 +12493,16 @@ var stripeAdapter = {
   },
   async refund(input) {
     try {
-      const { status, json: json15 } = await stripeCall("/refunds", "POST", {
+      const { status, json: json18 } = await stripeCall("/refunds", "POST", {
         payment_intent: input.providerRef,
         amount: input.amountMinor.toString(),
         "metadata[reason]": input.reason.slice(0, 200)
       }, input.idempotencyKey);
-      if (status >= 500 || status === 429) return { outcome: "unknown", providerRef: json15.id ?? null, message: "The card processor did not answer." };
-      if (status >= 400) return { outcome: "failed", providerRef: null, message: String(json15.error?.message ?? "The refund was refused.") };
-      if (json15.status === "succeeded") return { outcome: "succeeded", providerRef: json15.id, message: "Refunded." };
-      if (json15.status === "pending") return { outcome: "unknown", providerRef: json15.id, message: "The refund is on its way." };
-      return { outcome: "failed", providerRef: json15.id ?? null, message: "The refund did not go through." };
+      if (status >= 500 || status === 429) return { outcome: "unknown", providerRef: json18.id ?? null, message: "The card processor did not answer." };
+      if (status >= 400) return { outcome: "failed", providerRef: null, message: String(json18.error?.message ?? "The refund was refused.") };
+      if (json18.status === "succeeded") return { outcome: "succeeded", providerRef: json18.id, message: "Refunded." };
+      if (json18.status === "pending") return { outcome: "unknown", providerRef: json18.id, message: "The refund is on its way." };
+      return { outcome: "failed", providerRef: json18.id ?? null, message: "The refund did not go through." };
     } catch {
       return { outcome: "unknown", providerRef: null, message: "The card processor did not answer." };
     }
@@ -12113,8 +12670,8 @@ async function applyDeposit(uow, actor, input) {
   return { paymentId: payment.id };
 }
 async function depositRule(uow, communityId, kind) {
-  const community3 = communityId ? await uow.tx.community.findUnique({ where: { id: communityId }, select: { jurisdictionPack: { select: { rules: true } } } }) : null;
-  const rules2 = community3?.jurisdictionPack?.rules ?? {};
+  const community6 = communityId ? await uow.tx.community.findUnique({ where: { id: communityId }, select: { jurisdictionPack: { select: { rules: true } } } }) : null;
+  const rules2 = community6?.jurisdictionPack?.rules ?? {};
   const rule3 = rules2.depositRefund?.value?.[kind];
   if (!rule3) throw new DomainError(Codes.GUARD_FAILED, "The jurisdiction pack has no refund rule for this kind of deposit.", { reason: "no_deposit_rule" });
   return rule3;
@@ -12378,7 +12935,7 @@ function instalmentState(row, today2) {
 }
 
 // features/keystone/billing/plans.ts
-var day10 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var day13 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 var iso3 = (value) => value ? value.toISOString().slice(0, 10) : null;
 async function createPlan(uow, actor, input) {
   const statement = await uow.tx.statement.findUnique({ where: { id: input.statementId } });
@@ -12409,7 +12966,7 @@ async function createPlan(uow, actor, input) {
       createdById: actorUserId(actor)
     }
   });
-  await uow.tx.paymentPlanInstalment.createMany({ data: schedule.map((row) => ({ communityId: fresh.communityId, residentId: fresh.residentId, planId: plan.id, number: row.number, dueOn: day10(row.dueOn), amountMinor: row.amountMinor })) });
+  await uow.tx.paymentPlanInstalment.createMany({ data: schedule.map((row) => ({ communityId: fresh.communityId, residentId: fresh.residentId, planId: plan.id, number: row.number, dueOn: day13(row.dueOn), amountMinor: row.amountMinor })) });
   auditCreate(uow, actor, "PaymentPlan", plan.id, "payment_plan.created", { statement: fresh.number, totalMinor: balance.toString(), instalments: schedule.map((row) => ({ dueOn: row.dueOn, amountMinor: row.amountMinor.toString() })) });
   return { planId: plan.id, reference: plan.reference, totalMinor: balance.toString(), instalments: schedule.length };
 }
@@ -12499,12 +13056,12 @@ function verifiedInternalIdentity(headers, socketAddress, secret2, now) {
   const loopback = /^(?:127\.|::1$|::ffff:127\.)/.test(String(socketAddress || ""));
   if (!loopback || secret2.length < 32) return null;
   const identity = String(headers["x-openfront-client-identity"] || "");
-  const timestamp16 = String(headers["x-openfront-client-timestamp"] || "");
+  const timestamp19 = String(headers["x-openfront-client-timestamp"] || "");
   const signature = String(headers["x-openfront-client-signature"] || "");
-  if (!/^[a-f0-9]{64}$/.test(identity) || !/^\d{10}$/.test(timestamp16) || !/^[a-f0-9]{64}$/.test(signature)) return null;
-  const age = Math.abs(now - Number(timestamp16) * 1e3);
+  if (!/^[a-f0-9]{64}$/.test(identity) || !/^\d{10}$/.test(timestamp19) || !/^[a-f0-9]{64}$/.test(signature)) return null;
+  const age = Math.abs(now - Number(timestamp19) * 1e3);
   if (!Number.isFinite(age) || age > INTERNAL_IDENTITY_MAX_AGE_MS) return null;
-  const expected = (0, import_node_crypto16.createHmac)("sha256", secret2).update(`${timestamp16}:${identity}`).digest("hex");
+  const expected = (0, import_node_crypto16.createHmac)("sha256", secret2).update(`${timestamp19}:${identity}`).digest("hex");
   return safeEqual(signature, expected) ? `forwarded:${identity}` : null;
 }
 
@@ -12665,15 +13222,15 @@ async function censusSummary(_root, args, context) {
   const { actor } = await reader(context, ["canRecordCensus", "canAdmitDischarge", "canReadResidentDemographics", "canManageSales"]);
   return context.prisma.$transaction(async (tx) => {
     await assertCommunityAccess(tx, actor, args.communityId);
-    const community3 = await tx.community.findUnique({ where: { id: args.communityId }, select: { timeZone: true, name: true } });
-    const date3 = args.date ?? localDate(community3.timeZone, /* @__PURE__ */ new Date());
+    const community6 = await tx.community.findUnique({ where: { id: args.communityId }, select: { timeZone: true, name: true } });
+    const date3 = args.date ?? localDate(community6.timeZone, /* @__PURE__ */ new Date());
     const derived = await deriveCensusDay(tx, args.communityId, date3);
     const [beds, apartments] = await Promise.all([
       tx.bed.groupBy({ by: ["status"], where: { licensed: true, room: { unit: { communityId: args.communityId } } }, _count: { _all: true } }),
       tx.apartment.groupBy({ by: ["status"], where: { unit: { communityId: args.communityId } }, _count: { _all: true } })
     ]);
     const counts = (rows) => Object.fromEntries(rows.map((row) => [row.status, row._count._all]));
-    return { community: community3.name, date: date3, timeZone: community3.timeZone, totals: derived.totals, beds: counts(beds), apartments: counts(apartments), closedThrough: await closedThrough(tx, args.communityId) };
+    return { community: community6.name, date: date3, timeZone: community6.timeZone, totals: derived.totals, beds: counts(beds), apartments: counts(apartments), closedThrough: await closedThrough(tx, args.communityId) };
   }, { timeout: 15e3 });
 }
 async function bedBoard(_root, args, context) {
@@ -12777,8 +13334,8 @@ init_common();
 async function createProgressNote(uow, actor, input) {
   const resident3 = await residentFor(uow.tx, input.residentId);
   const kind = oneOf(input.kind, NOTE_KINDS, "note type");
-  const body = text17(input.body, "Note", { min: 3 });
-  const eventAt = when8(input.eventAt, "eventAt", uow.now);
+  const body = text20(input.body, "Note", { min: 3 });
+  const eventAt = when11(input.eventAt, "eventAt", uow.now);
   if (eventAt.getTime() > uow.now.getTime() + 5 * 6e4) invalid("A note cannot describe a future time.", "eventAt");
   const late = kind === "late_entry" || uow.now.getTime() - eventAt.getTime() > 60 * 6e4;
   const note = await uow.tx.progressNote.create({
@@ -12796,8 +13353,8 @@ async function signProgressNote(uow, actor, input) {
 }
 async function amendProgressNote(uow, actor, input) {
   const old = await lockRow(uow.tx, "ProgressNote", input.noteId);
-  const reason = text17(input.reason, "Reason", { min: 3 });
-  const body = text17(input.body, "Amended note", { min: 3 });
+  const reason = text20(input.reason, "Reason", { min: 3 });
+  const body = text20(input.body, "Amended note", { min: 3 });
   const next = await uow.tx.progressNote.create({
     data: { residentId: old.residentId, communityId: old.communityId, kind: old.kind, body: `${body}
 
@@ -12809,7 +13366,7 @@ async function amendProgressNote(uow, actor, input) {
 }
 async function markNoteInError(uow, actor, input) {
   const note = await lockRow(uow.tx, "ProgressNote", input.noteId);
-  const reason = text17(input.reason, "Reason", { min: 5 });
+  const reason = text20(input.reason, "Reason", { min: 5 });
   await casUpdate(uow, { model: "ProgressNote", id: note.id, version: note.version, from: ["draft", "signed", "amended"], to: "entered_in_error", actor, eventType: "progress_note.entered_in_error", reason, data: { errorReason: reason } });
   return { noteId: note.id, status: "entered_in_error" };
 }
@@ -12827,7 +13384,7 @@ var VITAL_UNITS = {
 async function recordVitals(uow, actor, input) {
   const resident3 = await residentFor(uow.tx, input.residentId);
   if (!Array.isArray(input.readings) || !input.readings.length) invalid("Add at least one reading.", "readings");
-  const takenAt = when8(input.takenAt, "takenAt", uow.now);
+  const takenAt = when11(input.takenAt, "takenAt", uow.now);
   const ids = [];
   for (const reading of input.readings) {
     const kind = oneOf(reading.kind, VITAL_KINDS, "vital sign");
@@ -12842,7 +13399,7 @@ async function recordVitals(uow, actor, input) {
 async function recordIntake(uow, actor, input) {
   const resident3 = await residentFor(uow.tx, input.residentId);
   const kind = oneOf(input.kind, ["fluid", "meal", "supplement", "tube_feed"], "intake type");
-  const data = { residentId: resident3.id, communityId: resident3.communityId, kind, at: when8(input.at, "at", uow.now), recordedById: userOf(actor) };
+  const data = { residentId: resident3.id, communityId: resident3.communityId, kind, at: when11(input.at, "at", uow.now), recordedById: userOf(actor) };
   if (input.amountMl != null && input.amountMl !== "") data.amountMl = String(num(input.amountMl, "Amount", { min: 0, max: 5e3 }));
   if (input.percentEaten != null) data.percentEaten = num(input.percentEaten, "Percent eaten", { min: 0, max: 100 });
   if (data.amountMl === void 0 && data.percentEaten === void 0) invalid("Record an amount or a percentage.");
@@ -12853,7 +13410,7 @@ async function recordAdl(uow, actor, input) {
   const resident3 = await residentFor(uow.tx, input.residentId);
   const activity = oneOf(input.activity, ["bed_mobility", "transfer", "walking", "dressing", "eating", "toileting", "bathing", "hygiene", "continence"], "activity");
   const level = oneOf(input.level, ["independent", "supervision", "limited_assist", "extensive_assist", "total_dependence", "did_not_occur"], "level");
-  const at = when8(input.at, "at", uow.now);
+  const at = when11(input.at, "at", uow.now);
   const row = await uow.tx.adlRecord.create({ data: { residentId: resident3.id, communityId: resident3.communityId, activity, level, at, recordedById: userOf(actor), pocTaskSlotId: input.slotId ?? null } });
   if (input.slotId) {
     const slot = await lockRow(uow.tx, "PocTaskSlot", input.slotId);
@@ -12866,7 +13423,7 @@ async function openWound(uow, actor, input) {
   const resident3 = await residentFor(uow.tx, input.residentId);
   const kind = oneOf(input.kind, ["pressure_injury", "skin_tear", "venous", "arterial", "diabetic", "surgical", "other"], "wound type");
   const wound = await uow.tx.wound.create({
-    data: { residentId: resident3.id, communityId: resident3.communityId, site: text17(input.site, "Site"), kind, status: "open", firstNotedAt: uow.now, assessmentIntervalDays: input.intervalDays ?? 7 }
+    data: { residentId: resident3.id, communityId: resident3.communityId, site: text20(input.site, "Site"), kind, status: "open", firstNotedAt: uow.now, assessmentIntervalDays: input.intervalDays ?? 7 }
   });
   auditCreate(uow, actor, "Wound", wound.id, "wound.opened", { kind, residentId: resident3.id });
   await assessWoundRow(uow, actor, wound.id, resident3.id, resident3.communityId, input);
@@ -12910,7 +13467,7 @@ async function recordBehaviour(uow, actor, input) {
       antecedent: input.antecedent ?? "",
       intervention: input.intervention ?? "",
       outcome: input.outcome ?? "",
-      startedAt: when8(input.startedAt, "startedAt", uow.now),
+      startedAt: when11(input.startedAt, "startedAt", uow.now),
       durationMinutes: input.durationMinutes ?? null,
       recordedById: userOf(actor)
     }
@@ -12920,10 +13477,10 @@ async function recordBehaviour(uow, actor, input) {
 async function recordPhysicianVisit(uow, actor, input) {
   const resident3 = await residentFor(uow.tx, input.residentId);
   const kind = oneOf(input.kind, ["physician", "nurse_practitioner", "physician_assistant", "telehealth"], "visit type");
-  const visitedAt = when8(input.visitedAt, "visitedAt");
+  const visitedAt = when11(input.visitedAt, "visitedAt");
   if (visitedAt.getTime() > uow.now.getTime() + 5 * 6e4) invalid("A visit cannot be in the future.", "visitedAt");
   const row = await uow.tx.physicianVisit.create({
-    data: { residentId: resident3.id, communityId: resident3.communityId, kind, physicianName: text17(input.physicianName, "Physician"), visitedAt, summary: input.summary ?? "", recordedById: userOf(actor) }
+    data: { residentId: resident3.id, communityId: resident3.communityId, kind, physicianName: text20(input.physicianName, "Physician"), visitedAt, summary: input.summary ?? "", recordedById: userOf(actor) }
   });
   auditCreate(uow, actor, "PhysicianVisit", row.id, "physician_visit.recorded", { residentId: resident3.id, visitedAt });
   return { visitId: row.id };
@@ -12945,12 +13502,12 @@ async function openInfectionCase(uow, actor, input) {
       communityId: resident3.communityId,
       syndrome,
       status: "suspected",
-      onsetAt: when8(input.onsetAt, "onsetAt", uow.now),
+      onsetAt: when11(input.onsetAt, "onsetAt", uow.now),
       criteria,
       criteriaMet: met,
       criteriaSet: input.criteriaSet ?? "facility checklist (verify the surveillance definition)",
       organism: input.organism ?? "",
-      cultureAt: input.cultureAt ? when8(input.cultureAt, "cultureAt") : null
+      cultureAt: input.cultureAt ? when11(input.cultureAt, "cultureAt") : null
     }
   });
   auditCreate(uow, actor, "InfectionCase", row.id, "infection_case.opened", { syndrome, criteriaMet: met, residentId: resident3.id });
@@ -12985,7 +13542,7 @@ async function startPrecaution(uow, actor, input) {
 }
 async function endPrecaution(uow, actor, input) {
   const row = await lockRow(uow.tx, "PrecautionOrder", input.precautionId);
-  await casUpdate(uow, { model: "PrecautionOrder", id: row.id, version: row.version, from: ["active"], to: "ended", actor, eventType: "precaution.ended", reason: text17(input.reason, "Reason", { min: 3 }), data: { endedAt: uow.now } });
+  await casUpdate(uow, { model: "PrecautionOrder", id: row.id, version: row.version, from: ["active"], to: "ended", actor, eventType: "precaution.ended", reason: text20(input.reason, "Reason", { min: 3 }), data: { endedAt: uow.now } });
   return { precautionId: row.id };
 }
 async function startAntibioticCourse(uow, actor, input) {
@@ -12994,8 +13551,8 @@ async function startAntibioticCourse(uow, actor, input) {
     data: {
       residentId: resident3.id,
       communityId: resident3.communityId,
-      drugName: text17(input.drugName, "Drug"),
-      indication: text17(input.indication, "Indication"),
+      drugName: text20(input.drugName, "Drug"),
+      indication: text20(input.indication, "Indication"),
       orderId: input.orderId ?? null,
       caseId: input.caseId ?? null,
       startedAt: uow.now,
@@ -13020,12 +13577,12 @@ async function recordAntibioticTimeout(uow, actor, input) {
   return { courseId: row.id, outcome };
 }
 async function declareOutbreak(uow, actor, input) {
-  const community3 = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { id: true } });
-  if (!community3) return notFound("Community");
-  const row = await uow.tx.outbreak.create({ data: { communityId: community3.id, name: text17(input.name, "Name"), organism: input.organism ?? "", unitId: input.unitId ?? null, status: "declared", declaredAt: uow.now, declaredById: userOf(actor) } });
-  if (input.caseIds?.length) await uow.tx.infectionCase.updateMany({ where: { id: { in: input.caseIds }, communityId: community3.id }, data: { outbreakId: row.id } });
+  const community6 = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { id: true } });
+  if (!community6) return notFound("Community");
+  const row = await uow.tx.outbreak.create({ data: { communityId: community6.id, name: text20(input.name, "Name"), organism: input.organism ?? "", unitId: input.unitId ?? null, status: "declared", declaredAt: uow.now, declaredById: userOf(actor) } });
+  if (input.caseIds?.length) await uow.tx.infectionCase.updateMany({ where: { id: { in: input.caseIds }, communityId: community6.id }, data: { outbreakId: row.id } });
   auditCreate(uow, actor, "Outbreak", row.id, "outbreak.declared", { name: row.name, cases: input.caseIds?.length ?? 0 });
-  await createTask(uow, actor, { communityId: community3.id, kind: "escalation", title: `Outbreak declared: ${row.name}. Notify the health department (done outside this system).`, ownerRole: ROLE_NAMES.director, dedupeKey: `outbreak:${row.id}`, subjectType: "Outbreak", subjectId: row.id });
+  await createTask(uow, actor, { communityId: community6.id, kind: "escalation", title: `Outbreak declared: ${row.name}. Notify the health department (done outside this system).`, ownerRole: ROLE_NAMES.director, dedupeKey: `outbreak:${row.id}`, subjectType: "Outbreak", subjectId: row.id });
   return { outbreakId: row.id };
 }
 async function closeOutbreak(uow, actor, input) {
@@ -13039,7 +13596,7 @@ async function recordImmunisation(uow, actor, input) {
   const vaccine = oneOf(input.vaccine, ["influenza", "covid19", "pneumococcal", "rsv", "tdap", "hepatitis_b", "other"], "vaccine");
   const status = oneOf(input.status, ["offered", "accepted", "declined", "given", "contraindicated"], "status");
   if (status === "given" && !input.givenAt) invalid("Say when it was given.", "givenAt");
-  const row = await uow.tx.immunisation.create({ data: { residentId: resident3.id, communityId: resident3.communityId, vaccine, status, offeredAt: uow.now, decidedAt: status === "offered" ? null : uow.now, givenAt: input.givenAt ? when8(input.givenAt, "givenAt") : null, lot: input.lot ?? "", recordedById: userOf(actor) } });
+  const row = await uow.tx.immunisation.create({ data: { residentId: resident3.id, communityId: resident3.communityId, vaccine, status, offeredAt: uow.now, decidedAt: status === "offered" ? null : uow.now, givenAt: input.givenAt ? when11(input.givenAt, "givenAt") : null, lot: input.lot ?? "", recordedById: userOf(actor) } });
   return { immunisationId: row.id };
 }
 
@@ -13058,22 +13615,22 @@ init_actor();
 var get = (data, label2) => data.find((d) => d.label === label2)?.text ?? "";
 var FALL = /\b(fell|had a fall|was found on the floor|found (?:her|him|them|the resident)? ?(?:sitting |lying )?on the floor|slid (?:out of|off|from) [^.]{1,40} (?:to|onto) the floor|lowered (?:her|him|them)? ?to the floor)\b/i;
 var NEGATED = /\b(no|denies|without|free of)\s+(?:a\s+)?(?:recent\s+)?falls?\b/i;
-function fallSpans(text18) {
+function fallSpans(text21) {
   const events = [];
   const sentence = /[^.!?\n]+[.!?]?/g;
-  for (let m = sentence.exec(text18); m; m = sentence.exec(text18)) {
+  for (let m = sentence.exec(text21); m; m = sentence.exec(text21)) {
     const raw = m[0];
     const lead = raw.length - raw.trimStart().length;
     const quote = raw.trim();
     if (!quote || !FALL.test(quote) || NEGATED.test(quote)) continue;
-    const injury = /\bno (?:visible )?injur/i.test(text18) ? "none" : /\b(fracture|laceration|head strike|hit (?:her|his|their) head)\b/i.test(text18) ? "major" : /\b(bruise|skin tear|abrasion)\b/i.test(text18) ? "minor" : "unknown";
+    const injury = /\bno (?:visible )?injur/i.test(text21) ? "none" : /\b(fracture|laceration|head strike|hit (?:her|his|their) head)\b/i.test(text21) ? "major" : /\b(bruise|skin tear|abrasion)\b/i.test(text21) ? "minor" : "unknown";
     events.push({ kind: "fall", spanStart: m.index + lead, spanEnd: m.index + lead + quote.length, quote, injury });
     if (events.length >= 5) break;
   }
   return events;
 }
-var num2 = (text18, re, fallback) => {
-  const m = re.exec(text18);
+var num2 = (text21, re, fallback) => {
+  const m = re.exec(text21);
   return m ? Number(m[1]) : fallback;
 };
 function buildWorkflow(request) {
@@ -13168,8 +13725,8 @@ var builtinRules = {
     const rule3 = BUILTIN_RULES[request.task];
     if (!rule3) throw new Error(`The built-in rules engine has no rule for ${request.task}.`);
     const value = rule3(request.data);
-    const text18 = JSON.stringify(value);
-    return { text: text18, model: target.model || "builtin-rules", tokens: { input: request.data.reduce((n2, d) => n2 + Math.ceil(d.text.length / 4), 0), output: Math.ceil(text18.length / 4) } };
+    const text21 = JSON.stringify(value);
+    return { text: text21, model: target.model || "builtin-rules", tokens: { input: request.data.reduce((n2, d) => n2 + Math.ceil(d.text.length / 4), 0), output: Math.ceil(text21.length / 4) } };
   }
 };
 var ADAPTERS2 = {
@@ -13284,7 +13841,7 @@ async function extractForCommunity(db, actor, input) {
   if (!graphs.some((g) => graphUses(g, "extract.fall_from_note"))) return out;
   const now = input.now ?? /* @__PURE__ */ new Date();
   const days = input.days ?? 7;
-  const community3 = await db.community.findUnique({ where: { id: input.communityId }, select: { synthetic: true } });
+  const community6 = await db.community.findUnique({ where: { id: input.communityId }, select: { synthetic: true } });
   const notes = await db.progressNote.findMany({
     where: { communityId: input.communityId, status: { in: ["signed", "amended"] }, eventAt: { gte: new Date(now.getTime() - days * 864e5), lte: now }, ...input.residentId ? { residentId: input.residentId } : {} },
     orderBy: { eventAt: "desc" },
@@ -13304,7 +13861,7 @@ async function extractForCommunity(db, actor, input) {
       output: FallFacts,
       carriesPhi: true,
       dataCategories: ["clinical_notes"],
-      context: { communityId: input.communityId, actor, synthetic: Boolean(community3?.synthetic && note.resident?.synthetic) }
+      context: { communityId: input.communityId, actor, synthetic: Boolean(community6?.synthetic && note.resident?.synthetic) }
     });
     if (!result.ok) {
       if (result.outcome === "refused_policy") out.refused += 1;
@@ -13337,7 +13894,7 @@ var SYSTEM2 = [
 async function prepareBuild(db, actor, input) {
   const request = typeof input.request === "string" ? input.request.trim() : "";
   if (request.length < 10 || request.length > 2e3) throw new DomainError(Codes.INVALID_INPUT, "Describe the job in a sentence or two (10 to 2000 characters).", { field: "request" });
-  const community3 = await db.community.findUnique({ where: { id: input.communityId }, select: { synthetic: true } });
+  const community6 = await db.community.findUnique({ where: { id: input.communityId }, select: { synthetic: true } });
   const result = await infer(db, {
     purpose: "workflow_build",
     task: "workflow.build@1",
@@ -13346,7 +13903,7 @@ async function prepareBuild(db, actor, input) {
     dataCategories: ["clinical_notes"],
     data: [{ label: "catalogue", text: JSON.stringify(catalogue()) }, { label: "request", text: request }],
     output: BuiltWorkflow,
-    context: { communityId: input.communityId, actor, synthetic: Boolean(community3?.synthetic) }
+    context: { communityId: input.communityId, actor, synthetic: Boolean(community6?.synthetic) }
   });
   if (!result.ok) throw new DomainError(result.code, result.reason, { inferenceCallId: result.callId });
   try {
@@ -13482,7 +14039,7 @@ async function acceptProposal(uow, actor, input) {
 }
 async function rejectProposal(uow, actor, input) {
   const p = await lockRow(uow.tx, "Proposal", input.proposalId);
-  const reason = text17(input.reason, "Reason", { min: 3 });
+  const reason = text20(input.reason, "Reason", { min: 3 });
   await casUpdate(uow, { model: "Proposal", id: p.id, version: p.version, from: ["proposed", "accepted"], to: "rejected", actor, eventType: "proposal.rejected", reason, data: { rejectedReason: reason } });
   return { proposalId: p.id, status: "rejected" };
 }
@@ -13695,11 +14252,11 @@ function deriveCharges(input) {
   const problems = [];
   const lines = [];
   const byStay = /* @__PURE__ */ new Map();
-  for (const day19 of input.days) byStay.set(day19.stayId, [...byStay.get(day19.stayId) ?? [], day19]);
+  for (const day24 of input.days) byStay.set(day24.stayId, [...byStay.get(day24.stayId) ?? [], day24]);
   for (const stayId of [...byStay.keys()].sort()) {
     const days = byStay.get(stayId).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
     const residentId = days[0].residentId;
-    const uncovered = days.filter((day19) => day19.payerKind === "uncovered").length;
+    const uncovered = days.filter((day24) => day24.payerKind === "uncovered").length;
     if (uncovered) problems.push({ code: "uncovered_days", stayId, residentId, count: uncovered });
     const groups = /* @__PURE__ */ new Map();
     const add = (rate2, base2, date3) => {
@@ -13716,68 +14273,68 @@ function deriveCharges(input) {
       if (countedCache?.stay !== stay) countedCache = { stay, map: benefitDays(stay, monthEnd(input.month)) };
       return countedCache.map;
     };
-    for (const day19 of days) {
-      if (day19.payerKind === "private_pay") {
-        const setting = day19.setting;
+    for (const day24 of days) {
+      if (day24.payerKind === "private_pay") {
+        const setting = day24.setting;
         if (setting === "nursing_facility") {
-          const rate2 = rateOn(input.rates, day19.date, { setting, kind: day19.presence === "on_leave_hold" ? "bed_hold_daily" : "room_daily" });
+          const rate2 = rateOn(input.rates, day24.date, { setting, kind: day24.presence === "on_leave_hold" ? "bed_hold_daily" : "room_daily" });
           if (!rate2) {
             missingRate += 1;
             continue;
           }
-          const kind = day19.presence === "on_leave_hold" ? "bed_hold" : "room_board";
-          lines.push(finish({ stayId, residentId, date: day19.date, kind, responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf[kind], amountMinor: rate2.amountMinor, derivation: { rateLineId: rate2.id, per: "day" } }));
+          const kind = day24.presence === "on_leave_hold" ? "bed_hold" : "room_board";
+          lines.push(finish({ stayId, residentId, date: day24.date, kind, responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf[kind], amountMinor: rate2.amountMinor, derivation: { rateLineId: rate2.id, per: "day" } }));
           continue;
         }
-        if (day19.occupantRank > 1) {
-          const second = rateOn(input.rates, day19.date, { setting, kind: "second_person" });
+        if (day24.occupantRank > 1) {
+          const second = rateOn(input.rates, day24.date, { setting, kind: "second_person" });
           if (!second) {
             missingRate += 1;
             continue;
           }
-          add(second, { stayId, residentId, kind: "second_person", responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf.second_person }, day19.date);
+          add(second, { stayId, residentId, kind: "second_person", responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf.second_person }, day24.date);
         } else {
-          const rent = rateOn(input.rates, day19.date, { setting, kind: "apartment_rent", apartmentTypeId: day19.apartmentTypeId });
+          const rent = rateOn(input.rates, day24.date, { setting, kind: "apartment_rent", apartmentTypeId: day24.apartmentTypeId });
           if (!rent) {
             missingRate += 1;
             continue;
           }
-          add(rent, { stayId, residentId, kind: "rent", responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf.rent }, day19.date);
+          add(rent, { stayId, residentId, kind: "rent", responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf.rent }, day24.date);
         }
-        if (day19.presence === "in_house") {
-          const care = careOn(input.careAssignments, stayId, day19.date, input.careNoticeDays);
-          const rate2 = care ? rateOn(input.rates, day19.date, { setting, kind: "care_level", careLevelId: care.careLevelId }) : null;
-          if (rate2) add(rate2, { stayId, residentId, kind: "care_level", responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf.care_level }, day19.date);
+        if (day24.presence === "in_house") {
+          const care = careOn(input.careAssignments, stayId, day24.date, input.careNoticeDays);
+          const rate2 = care ? rateOn(input.rates, day24.date, { setting, kind: "care_level", careLevelId: care.careLevelId }) : null;
+          if (rate2) add(rate2, { stayId, residentId, kind: "care_level", responsibility: "resident", payerKey: "resident", payerId: null, description: labelOf.care_level }, day24.date);
         }
-      } else if (day19.payerKind === "medicare_a" && input.medicare) {
+      } else if (day24.payerKind === "medicare_a" && input.medicare) {
         const stay = input.medicare.stays.find((row) => row.stayId === stayId);
-        const cov = day19.coverageId ? input.medicare.coverages[day19.coverageId] : void 0;
+        const cov = day24.coverageId ? input.medicare.coverages[day24.coverageId] : void 0;
         if (!stay || !cov || !cov.qualifyingStayOk || !cov.skilledCertOk) {
           bump("medicare_unqualified");
           continue;
         }
-        if (day19.presence !== "in_house") continue;
+        if (day24.presence !== "in_house") continue;
         const counted = countedOf(stay);
-        const result = medicareDay(stay, counted, input.medicare.rates, day19.date);
+        const result = medicareDay(stay, counted, input.medicare.rates, day24.date);
         if (result.kind === "problem") {
           bump(result.code === "missing_rate" ? "missing_rate" : result.code);
           continue;
         }
         const basis = { hipps: result.classification.hipps, classificationId: result.classification.id, benefitDay: result.benefitDay, vpdDay: result.vpdDay, version: input.medicare.rates.version, components: result.components, pdpmMinor: result.pdpmMinor };
-        if (day19.payerId) lines.push(finish({ stayId, residentId, date: day19.date, kind: "per_diem_claim", responsibility: "payer", payerKey: day19.payerId, payerId: day19.payerId, description: `Medicare Part A ${result.classification.hipps} day ${result.benefitDay}`, amountMinor: result.pdpmMinor - result.coinsuranceMinor, derivation: basis }));
-        if (result.coinsuranceMinor > 0n) lines.push(finish({ stayId, residentId, date: day19.date, kind: "coinsurance", responsibility: "resident", payerKey: "resident", payerId: null, description: `${labelOf.coinsurance} (day ${result.benefitDay})`, amountMinor: result.coinsuranceMinor, derivation: { ...basis, coinsuranceMinor: result.coinsuranceMinor } }));
-      } else if (day19.payerKind === "hospice_agency" && input.hospice) {
-        const share = day19.coverageId ? input.hospice[day19.coverageId] : void 0;
-        const rate2 = rateOn(input.rates, day19.date, { setting: day19.setting, kind: day19.presence === "on_leave_hold" ? "bed_hold_daily" : "room_daily" });
+        if (day24.payerId) lines.push(finish({ stayId, residentId, date: day24.date, kind: "per_diem_claim", responsibility: "payer", payerKey: day24.payerId, payerId: day24.payerId, description: `Medicare Part A ${result.classification.hipps} day ${result.benefitDay}`, amountMinor: result.pdpmMinor - result.coinsuranceMinor, derivation: basis }));
+        if (result.coinsuranceMinor > 0n) lines.push(finish({ stayId, residentId, date: day24.date, kind: "coinsurance", responsibility: "resident", payerKey: "resident", payerId: null, description: `${labelOf.coinsurance} (day ${result.benefitDay})`, amountMinor: result.coinsuranceMinor, derivation: { ...basis, coinsuranceMinor: result.coinsuranceMinor } }));
+      } else if (day24.payerKind === "hospice_agency" && input.hospice) {
+        const share = day24.coverageId ? input.hospice[day24.coverageId] : void 0;
+        const rate2 = rateOn(input.rates, day24.date, { setting: day24.setting, kind: day24.presence === "on_leave_hold" ? "bed_hold_daily" : "room_daily" });
         if (!rate2 || !share) {
           missingRate += 1;
           continue;
         }
-        if (day19.payerId) lines.push(finish({ stayId, residentId, date: day19.date, kind: "room_board", responsibility: "payer", payerKey: day19.payerId, payerId: day19.payerId, description: "Hospice room and board", amountMinor: hospiceRoomBoard(rate2.amountMinor, share.roomBoardBps), derivation: { rateLineId: rate2.id, roomBoardBps: share.roomBoardBps } }));
-      } else if (day19.payerKind === "medicaid_ffs" || day19.payerKind === "medicaid_mco" || day19.payerKind === "medicare_a" || day19.payerKind === "medicare_advantage") {
-        const rate2 = rateOn(input.rates, day19.date, { setting: day19.setting, kind: day19.presence === "on_leave_hold" ? "bed_hold_daily" : "room_daily" });
-        if (rate2 && day19.payerId) {
-          lines.push(finish({ stayId, residentId, date: day19.date, kind: "per_diem_claim", responsibility: "payer", payerKey: day19.payerId, payerId: day19.payerId, description: labelOf.per_diem_claim, amountMinor: rate2.amountMinor, derivation: { rateLineId: rate2.id, per: "day" } }));
+        if (day24.payerId) lines.push(finish({ stayId, residentId, date: day24.date, kind: "room_board", responsibility: "payer", payerKey: day24.payerId, payerId: day24.payerId, description: "Hospice room and board", amountMinor: hospiceRoomBoard(rate2.amountMinor, share.roomBoardBps), derivation: { rateLineId: rate2.id, roomBoardBps: share.roomBoardBps } }));
+      } else if (day24.payerKind === "medicaid_ffs" || day24.payerKind === "medicaid_mco" || day24.payerKind === "medicare_a" || day24.payerKind === "medicare_advantage") {
+        const rate2 = rateOn(input.rates, day24.date, { setting: day24.setting, kind: day24.presence === "on_leave_hold" ? "bed_hold_daily" : "room_daily" });
+        if (rate2 && day24.payerId) {
+          lines.push(finish({ stayId, residentId, date: day24.date, kind: "per_diem_claim", responsibility: "payer", payerKey: day24.payerId, payerId: day24.payerId, description: labelOf.per_diem_claim, amountMinor: rate2.amountMinor, derivation: { rateLineId: rate2.id, per: "day" } }));
         }
       }
     }
@@ -13787,7 +14344,7 @@ function deriveCharges(input) {
       const group = groups.get(id);
       lines.push(...monthly(group.base, group.dates, group.rate.amountMinor, daysInMonth2, { rateLineId: group.rate.id }, group.rate.proration, group.rate.per));
     }
-    const medicaidDays = days.filter((day19) => day19.payerKind === "medicaid_ffs" || day19.payerKind === "medicaid_mco").map((day19) => day19.date);
+    const medicaidDays = days.filter((day24) => day24.payerKind === "medicaid_ffs" || day24.payerKind === "medicaid_mco").map((day24) => day24.date);
     if (medicaidDays.length) {
       const liability = input.liabilities.find((row) => row.stayId === stayId);
       if (!liability) problems.push({ code: "missing_liability", stayId, residentId, count: 1 });
@@ -13824,7 +14381,7 @@ init_cas();
 init_errors();
 var INFO_RESPONSE_DAYS = 10;
 var APPEAL_DAYS = 90;
-var day11 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var day14 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 var iso4 = (value) => value ? value.toISOString().slice(0, 10) : null;
 var assertMonth = (month) => {
   if (!/^\d{4}-\d{2}-01$/.test(month)) throw new DomainError(Codes.INVALID_INPUT, "The month is the first day of the month, like 2026-10-01.", { field: "month" });
@@ -13835,17 +14392,17 @@ async function recordLiability(uow, actor, input) {
   const stay = await uow.tx.stay.findUnique({ where: { id: input.stayId }, select: { id: true, residentId: true, communityId: true } });
   if (!stay) throw new DomainError(Codes.NOT_FOUND, "Stay not found.");
   await lockRow(uow.tx, "Stay", stay.id);
-  const current = await uow.tx.medicaidLiability.findFirst({ where: { stayId: stay.id, month: day11(input.month), status: { not: "superseded" } } });
+  const current = await uow.tx.medicaidLiability.findFirst({ where: { stayId: stay.id, month: day14(input.month), status: { not: "superseded" } } });
   if (current && current.liabilityMinor === input.liabilityMinor && iso4(current.noticeReceivedOn) === (input.noticeReceivedOn ?? null)) return { liabilityId: current.id, unchanged: true };
   const created = await uow.tx.medicaidLiability.create({
     data: {
       communityId: stay.communityId,
       residentId: stay.residentId,
       stayId: stay.id,
-      month: day11(input.month),
+      month: day14(input.month),
       liabilityMinor: input.liabilityMinor,
       status: "determined",
-      noticeReceivedOn: input.noticeReceivedOn ? day11(input.noticeReceivedOn) : null,
+      noticeReceivedOn: input.noticeReceivedOn ? day14(input.noticeReceivedOn) : null,
       note: input.note ?? ""
     }
   });
@@ -13860,7 +14417,7 @@ async function recordInfoRequest(uow, actor, input) {
   const row = await uow.tx.medicaidLiability.findUnique({ where: { id: input.liabilityId } });
   if (!row || row.status === "superseded") throw new DomainError(Codes.NOT_FOUND, "Not found.");
   if (input.kind === "responded" && !row.infoRequestedOn) throw new DomainError(Codes.GUARD_FAILED, "No information request is open.");
-  const data = input.kind === "requested" ? { infoRequestedOn: day11(input.on), infoRespondedOn: null } : { infoRespondedOn: day11(input.on) };
+  const data = input.kind === "requested" ? { infoRequestedOn: day14(input.on), infoRespondedOn: null } : { infoRespondedOn: day14(input.on) };
   await uow.tx.medicaidLiability.update({ where: { id: row.id }, data: { ...data, version: { increment: 1 } } });
   uow.audit({ eventType: `medicaid_liability.info_${input.kind}`, entityType: "MedicaidLiability", entityId: row.id, actorUserId: actorUserId(actor), after: { on: input.on } });
   return { liabilityId: row.id };
@@ -13869,18 +14426,18 @@ async function fileAppeal(uow, actor, input) {
   await lockRow(uow.tx, "MedicaidLiability", input.liabilityId);
   const row = await uow.tx.medicaidLiability.findUnique({ where: { id: input.liabilityId } });
   if (!row) throw new DomainError(Codes.NOT_FOUND, "Not found.");
-  await casUpdate(uow, { model: "MedicaidLiability", id: row.id, version: row.version, from: ["determined", "expected"], to: "appealed", actor, eventType: "medicaid_liability.appealed", data: { appealFiledOn: day11(input.filedOn) } });
+  await casUpdate(uow, { model: "MedicaidLiability", id: row.id, version: row.version, from: ["determined", "expected"], to: "appealed", actor, eventType: "medicaid_liability.appealed", data: { appealFiledOn: day14(input.filedOn) } });
   return { liabilityId: row.id, status: "appealed" };
 }
 
 // features/keystone/billing/medicaidApplication.ts
-var day12 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var day15 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 var iso5 = (value) => value ? value.toISOString().slice(0, 10) : null;
 var DATE6 = /^\d{4}-\d{2}-\d{2}$/;
 var date2 = (value, field) => {
-  const text18 = String(value ?? "").slice(0, 10);
-  if (!DATE6.test(text18)) throw new DomainError(Codes.INVALID_INPUT, `The ${field} is a date, like 2026-10-01.`, { field });
-  return text18;
+  const text21 = String(value ?? "").slice(0, 10);
+  if (!DATE6.test(text21)) throw new DomainError(Codes.INVALID_INPUT, `The ${field} is a date, like 2026-10-01.`, { field });
+  return text21;
 };
 var PENDING_STATUSES = ["preparing", "submitted", "info_requested", "appealed"];
 function scheduleForMonth(rows, month, monthEnd2) {
@@ -13903,7 +14460,7 @@ async function startApplication(uow, actor, input) {
       stayId: stay.id,
       reference: await nextReference(uow.tx, "MCD", uow.now, 5),
       status: "preparing",
-      requestedFrom: day12(requestedFrom),
+      requestedFrom: day15(requestedFrom),
       state: input.state ?? "",
       caseworker: input.caseworker ?? "",
       note: input.note ?? ""
@@ -13934,39 +14491,39 @@ async function advanceApplication(uow, actor, input) {
   switch (step) {
     case "submit":
       to = "submitted";
-      data.submittedOn = day12(on);
+      data.submittedOn = day15(on);
       break;
     case "info_request": {
       to = "info_requested";
       const due = input.dueOn ? date2(input.dueOn, "reply due date") : addDays(on, INFO_RESPONSE_DAYS);
       if (due < on) throw new DomainError(Codes.INVALID_INPUT, "The reply is due on or after the request date.");
-      Object.assign(data, { infoRequestedOn: day12(on), infoDueOn: day12(due), infoRespondedOn: null });
+      Object.assign(data, { infoRequestedOn: day15(on), infoDueOn: day15(due), infoRespondedOn: null });
       break;
     }
     // An information request during an appeal returns to the appeal.
     case "info_response":
       to = row.appealFiledOn ? "appealed" : "submitted";
-      data.infoRespondedOn = day12(on);
+      data.infoRespondedOn = day15(on);
       break;
     case "approve":
     case "appeal_approved":
       to = "approved";
-      Object.assign(data, { decisionOn: day12(on), effectiveOn: day12(input.effectiveOn ? date2(input.effectiveOn, "effective date") : iso5(row.requestedFrom)) });
+      Object.assign(data, { decisionOn: day15(on), effectiveOn: day15(input.effectiveOn ? date2(input.effectiveOn, "effective date") : iso5(row.requestedFrom)) });
       break;
     case "deny":
       to = "denied";
-      Object.assign(data, { decisionOn: day12(on), appealDueOn: day12(addDays(on, APPEAL_DAYS)) });
+      Object.assign(data, { decisionOn: day15(on), appealDueOn: day15(addDays(on, APPEAL_DAYS)) });
       break;
     case "appeal": {
       const due = iso5(row.appealDueOn) ?? addDays(iso5(row.decisionOn), APPEAL_DAYS);
       if (on > due) throw new DomainError(Codes.GUARD_FAILED, `The appeal window closed on ${due}.`, { reason: "appeal_window_closed" });
       to = "appealed";
-      data.appealFiledOn = day12(on);
+      data.appealFiledOn = day15(on);
       break;
     }
     case "appeal_denied":
       to = "denied";
-      data.decisionOn = day12(on);
+      data.decisionOn = day15(on);
       break;
   }
   if (input.note) data.note = input.note;
@@ -13995,7 +14552,7 @@ async function recordSchedule(uow, actor, input) {
       await uow.tx.patientLiabilitySchedule.update({ where: { id: row.id }, data: { status: "superseded", version: { increment: 1 } } });
       superseded.push(row.id);
     } else if (rowFrom < from && (!row.effectiveTo || iso5(row.effectiveTo) >= from)) {
-      await uow.tx.patientLiabilitySchedule.update({ where: { id: row.id }, data: { effectiveTo: day12(addDays(from, -1)), version: { increment: 1 } } });
+      await uow.tx.patientLiabilitySchedule.update({ where: { id: row.id }, data: { effectiveTo: day15(addDays(from, -1)), version: { increment: 1 } } });
       endDated.push({ scheduleId: row.id, effectiveTo: addDays(from, -1) });
     }
   }
@@ -14007,8 +14564,8 @@ async function recordSchedule(uow, actor, input) {
       applicationId: input.applicationId ?? null,
       monthlyAmountMinor: input.monthlyAmountMinor,
       personalNeedsAllowanceMinor: input.personalNeedsAllowanceMinor,
-      effectiveFrom: day12(from),
-      effectiveTo: to ? day12(to) : null,
+      effectiveFrom: day15(from),
+      effectiveTo: to ? day15(to) : null,
       status: "effective",
       note: input.note ?? ""
     }
@@ -14020,7 +14577,7 @@ async function recordSchedule(uow, actor, input) {
 // features/keystone/billing/medicareLoad.ts
 init_decimal();
 var iso6 = (d) => d ? d.toISOString().slice(0, 10) : null;
-var day13 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var day16 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 async function loadMedicareInput(tx, communityId, month, monthEndDate, days) {
   const medicareStays = [...new Set(days.filter((d) => d.payerKind === "medicare_a").map((d) => d.stayId))];
   const hospiceCoverages = [...new Set(days.filter((d) => d.payerKind === "hospice_agency" && d.coverageId).map((d) => d.coverageId))];
@@ -14032,18 +14589,18 @@ async function loadMedicareInput(tx, communityId, month, monthEndDate, days) {
   if (!medicareStays.length) return out;
   const stays = await tx.stay.findMany({ where: { id: { in: medicareStays } }, select: { id: true, residentId: true } });
   const residentIds = [...new Set(stays.map((s) => s.residentId).filter((id) => Boolean(id)))];
-  const [coverages, classifications, prior, rates, community3] = await Promise.all([
+  const [coverages, classifications, prior, rates, community6] = await Promise.all([
     tx.coveragePeriod.findMany({
-      where: { stay: { residentId: { in: residentIds }, communityId }, payer: { kind: "medicare_a" }, status: { in: ["active", "ending", "ended", "retro_approved"] }, startDate: { lte: day13(monthEndDate) } },
+      where: { stay: { residentId: { in: residentIds }, communityId }, payer: { kind: "medicare_a" }, status: { in: ["active", "ending", "ended", "retro_approved"] }, startDate: { lte: day16(monthEndDate) } },
       select: { id: true, stayId: true, startDate: true, endDate: true, qualifyingStayFrom: true, qualifyingStayTo: true, qualifyingStayEvidenceId: true, qualifyingStayEvidenceNote: true, skilledCertSignedAt: true, stay: { select: { residentId: true } } },
       orderBy: { startDate: "asc" }
     }),
-    tx.pdpmClassification.findMany({ where: { residentId: { in: residentIds }, status: "current", effectiveFrom: { lte: day13(monthEndDate) } }, select: { id: true, residentId: true, stayId: true, effectiveFrom: true, hipps: true, cmi: true, groups: true } }),
+    tx.pdpmClassification.findMany({ where: { residentId: { in: residentIds }, status: "current", effectiveFrom: { lte: day16(monthEndDate) } }, select: { id: true, residentId: true, stayId: true, effectiveFrom: true, hipps: true, cmi: true, groups: true } }),
     tx.priorSnfDaysObservation.findMany({ where: { residentId: { in: residentIds } }, orderBy: [{ asOf: "desc" }, { createdAt: "desc" }], select: { residentId: true, daysUsed: true, asOf: true } }),
-    tx.referenceRate.findMany({ where: { effectiveFrom: { lte: day13(month) }, OR: [{ effectiveTo: null }, { effectiveTo: { gte: day13(month) } }] }, orderBy: { effectiveFrom: "desc" }, include: { mappingVersion: { select: { code: true } } } }),
+    tx.referenceRate.findMany({ where: { effectiveFrom: { lte: day16(month) }, OR: [{ effectiveTo: null }, { effectiveTo: { gte: day16(month) } }] }, orderBy: { effectiveFrom: "desc" }, include: { mappingVersion: { select: { code: true } } } }),
     tx.community.findUnique({ where: { id: communityId }, select: { identifiers: true } })
   ]);
-  const ids = community3?.identifiers ?? {};
+  const ids = community6?.identifiers ?? {};
   const geography = ids.pdpmGeography === "rural" ? "rural" : "urban";
   const pick = (component, geo = geography) => rates.find((r) => r.component === component && r.geography === geo);
   const comp = ["pt", "ot", "slp", "nursing", "nta", "non_case_mix"].map((c) => pick(c));
@@ -14083,7 +14640,7 @@ async function loadMedicareInput(tx, communityId, month, monthEndDate, days) {
 
 // features/keystone/billing/period.ts
 var DATE7 = /^\d{4}-01$|^\d{4}-\d{2}-01$/;
-var day14 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var day17 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 var iso7 = (value) => value ? value.toISOString().slice(0, 10) : "";
 var problemText = (p) => p.code === "uncovered_days" ? `${p.count} uncovered day(s)` : p.code === "missing_rate" ? `${p.count} day(s) without a published rate` : p.code === "missing_assessment" ? `${p.count} Part A day(s) without a PDPM assessment` : p.code === "benefit_exhausted" ? `${p.count} day(s) past day 100 of the benefit period still on Medicare Part A` : p.code === "medicare_unqualified" ? `${p.count} Part A day(s) without qualifying-stay evidence and a skilled certification` : "a Medicaid month without a patient liability";
 function assertMonth2(month) {
@@ -14101,11 +14658,11 @@ async function loadDerivationInput(tx, communityId, month) {
     tx.stay.findMany({ where: { id: { in: stayIds } }, select: { id: true, residentId: true, admittedAt: true } }),
     tx.apartment.findMany({ where: { id: { in: apartmentIds } }, select: { id: true, apartmentTypeId: true } }),
     tx.coveragePeriod.findMany({ where: { id: { in: coverageIds } }, select: { id: true, payerId: true } }),
-    tx.rateSchedule.findMany({ where: { communityId, status: "published", effectiveFrom: { lte: day14(monthEnd(month)) } }, select: { setting: true, lines: true } }),
-    tx.careLevelAssignment.findMany({ where: { communityId, effectiveFrom: { lte: day14(monthEnd(month)) } }, select: { stayId: true, careLevelId: true, points: true, effectiveFrom: true, noticeDeliveredOn: true, careLevel: { select: { minPoints: true } } }, orderBy: [{ effectiveFrom: "asc" }, { createdAt: "asc" }, { id: "asc" }] }),
-    tx.medicaidLiability.findMany({ where: { communityId, month: day14(month), status: { not: "superseded" } }, select: { stayId: true, liabilityMinor: true } }),
+    tx.rateSchedule.findMany({ where: { communityId, status: "published", effectiveFrom: { lte: day17(monthEnd(month)) } }, select: { setting: true, lines: true } }),
+    tx.careLevelAssignment.findMany({ where: { communityId, effectiveFrom: { lte: day17(monthEnd(month)) } }, select: { stayId: true, careLevelId: true, points: true, effectiveFrom: true, noticeDeliveredOn: true, careLevel: { select: { minPoints: true } } }, orderBy: [{ effectiveFrom: "asc" }, { createdAt: "asc" }, { id: "asc" }] }),
+    tx.medicaidLiability.findMany({ where: { communityId, month: day17(month), status: { not: "superseded" } }, select: { stayId: true, liabilityMinor: true } }),
     tx.community.findUnique({ where: { id: communityId }, select: { jurisdictionPack: { select: { rules: true } } } }),
-    tx.patientLiabilitySchedule.findMany({ where: { communityId, status: "effective", effectiveFrom: { lte: day14(monthEnd(month)) } }, select: { id: true, residentId: true, stayId: true, monthlyAmountMinor: true, personalNeedsAllowanceMinor: true, effectiveFrom: true, effectiveTo: true, status: true }, orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }] })
+    tx.patientLiabilitySchedule.findMany({ where: { communityId, status: "effective", effectiveFrom: { lte: day17(monthEnd(month)) } }, select: { id: true, residentId: true, stayId: true, monthlyAmountMinor: true, personalNeedsAllowanceMinor: true, effectiveFrom: true, effectiveTo: true, status: true }, orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }] })
   ]);
   const noticeRule = (pack?.jurisdictionPack?.rules ?? {}).careLevelIncreaseNoticeDays?.value;
   const careNoticeDays = Number.isInteger(noticeRule) && noticeRule >= 0 ? noticeRule : 30;
@@ -14138,7 +14695,7 @@ async function loadDerivationInput(tx, communityId, month) {
   }
   const scheduleIds = /* @__PURE__ */ new Map();
   const rates = schedules.length ? await tx.rateLine.findMany({
-    where: { schedule: { communityId, status: "published", effectiveFrom: { lte: day14(monthEnd(month)) } } },
+    where: { schedule: { communityId, status: "published", effectiveFrom: { lte: day17(monthEnd(month)) } } },
     select: { id: true, kind: true, amountMinor: true, per: true, proration: true, apartmentTypeId: true, careLevelId: true, scheduleId: true, schedule: { select: { setting: true, effectiveFrom: true } } }
   }) : [];
   return {
@@ -14186,9 +14743,9 @@ async function deriveForMonth(tx, communityId, month) {
   return deriveCharges(await loadDerivationInput(tx, communityId, month));
 }
 async function getOrCreatePeriod(uow, actor, communityId, month) {
-  const existing = await uow.tx.billingPeriod.findFirst({ where: { communityId, month: day14(month) } });
+  const existing = await uow.tx.billingPeriod.findFirst({ where: { communityId, month: day17(month) } });
   if (existing) return existing;
-  const created = await uow.tx.billingPeriod.create({ data: { communityId, month: day14(month), status: "open" } });
+  const created = await uow.tx.billingPeriod.create({ data: { communityId, month: day17(month), status: "open" } });
   uow.audit({ eventType: "billing.period_opened", entityType: "BillingPeriod", entityId: created.id, actorUserId: actorUserId(actor), after: { month } });
   return created;
 }
@@ -14216,7 +14773,7 @@ async function applyDerivation(uow, communityId, period, derivation, liveStatuse
     residentId: line.residentId,
     stayId: line.stayId,
     periodId: period.id,
-    date: day14(line.date),
+    date: day17(line.date),
     kind: line.kind,
     responsibility: line.responsibility,
     payerKey: line.payerKey,
@@ -14276,7 +14833,7 @@ async function issueStatements(uow, communityId, period, month) {
         number: await nextReference(uow.tx, "STM", uow.now, 6),
         status: total > 0n ? "issued" : "paid",
         issuedAt: uow.now,
-        dueOn: day14(dueOn),
+        dueOn: day17(dueOn),
         totalMinor: total,
         paidMinor: 0n,
         lines: lines.map((line) => ({ ...line, amountMinor: line.amountMinor.toString() })),
@@ -14289,14 +14846,14 @@ async function issueStatements(uow, communityId, period, month) {
 }
 async function closePeriod(uow, actor, input) {
   assertMonth2(input.month);
-  const community3 = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { timeZone: true } });
-  if (!community3) throw new DomainError(Codes.NOT_FOUND, "Not found.");
+  const community6 = await uow.tx.community.findUnique({ where: { id: input.communityId }, select: { timeZone: true } });
+  if (!community6) throw new DomainError(Codes.NOT_FOUND, "Not found.");
   const period = await getOrCreatePeriod(uow, actor, input.communityId, input.month);
   await lockRow(uow.tx, "BillingPeriod", period.id);
   const fresh = await uow.tx.billingPeriod.findUniqueOrThrow({ where: { id: period.id } });
   if (fresh.status === "closed") return { periodId: period.id, status: "closed", alreadyClosed: true, statements: fresh.statementCount ?? 0, hash: fresh.derivationHash };
   const end = monthEnd(input.month);
-  if (localDate(community3.timeZone, uow.now) <= end) throw new DomainError(Codes.GUARD_FAILED, "The month has not ended yet.", { reason: "month_not_ended" });
+  if (localDate(community6.timeZone, uow.now) <= end) throw new DomainError(Codes.GUARD_FAILED, "The month has not ended yet.", { reason: "month_not_ended" });
   const closed = await closedThrough(uow.tx, input.communityId);
   if (!closed || closed < end) throw new DomainError(Codes.GUARD_FAILED, `Sign off the midnight census through ${end} before closing the month.`, { reason: "census_not_signed_off" });
   const derivation = await deriveForMonth(uow.tx, input.communityId, input.month);
@@ -14312,7 +14869,7 @@ async function closePeriod(uow, actor, input) {
 }
 async function adjustClosedPeriod(uow, actor, input) {
   assertMonth2(input.month);
-  const period = await uow.tx.billingPeriod.findFirst({ where: { communityId: input.communityId, month: day14(input.month) } });
+  const period = await uow.tx.billingPeriod.findFirst({ where: { communityId: input.communityId, month: day17(input.month) } });
   if (!period) throw new DomainError(Codes.NOT_FOUND, "Not found.");
   await lockRow(uow.tx, "BillingPeriod", period.id);
   if (period.status !== "closed") throw new DomainError(Codes.GUARD_FAILED, "This month is still open; derive it again instead.", { reason: "period_open" });
@@ -14346,7 +14903,7 @@ async function adjustClosedPeriod(uow, actor, input) {
         residentId,
         stayId: entry.stayId,
         periodId: next.id,
-        date: day14(nextMonthStart),
+        date: day17(nextMonthStart),
         kind: "adjustment",
         responsibility: "resident",
         payerKey,
@@ -14369,10 +14926,10 @@ async function adjustClosedPeriod(uow, actor, input) {
 init_actor();
 init_cas();
 init_errors();
-var day15 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var day18 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 async function createSchedule(uow, actor, input) {
   if (!input.name.trim()) throw new DomainError(Codes.INVALID_INPUT, "Name the schedule.", { field: "name" });
-  const schedule = await uow.tx.rateSchedule.create({ data: { communityId: input.communityId, name: input.name.trim(), setting: input.setting, effectiveFrom: day15(input.effectiveFrom), noticeDays: input.noticeDays ?? 30, status: "draft" } });
+  const schedule = await uow.tx.rateSchedule.create({ data: { communityId: input.communityId, name: input.name.trim(), setting: input.setting, effectiveFrom: day18(input.effectiveFrom), noticeDays: input.noticeDays ?? 30, status: "draft" } });
   auditCreate(uow, actor, "RateSchedule", schedule.id, "rate_schedule.created", { setting: input.setting });
   return { scheduleId: schedule.id };
 }
@@ -14503,7 +15060,7 @@ registerApplier("balance.adjust", async (uow, actor, request) => post(uow, actor
 init_cas();
 init_errors();
 var DATE8 = /^\d{4}-\d{2}-\d{2}$/;
-var day16 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var day19 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 async function assignCareLevel(uow, actor, input) {
   if (!DATE8.test(String(input.effectiveFrom))) throw new DomainError(Codes.INVALID_INPUT, "Give the date the level starts, like 2026-10-01.", { field: "effectiveFrom" });
   if (input.noticeDeliveredOn && !DATE8.test(input.noticeDeliveredOn)) throw new DomainError(Codes.INVALID_INPUT, "The notice date is a date.", { field: "noticeDeliveredOn" });
@@ -14528,7 +15085,7 @@ async function assignCareLevel(uow, actor, input) {
   if (current?.effectiveFrom && current.effectiveFrom.toISOString().slice(0, 10) > input.effectiveFrom) throw new DomainError(Codes.GUARD_FAILED, "A later assignment already exists.", { reason: "later_assignment" });
   if (current) await uow.tx.careLevelAssignment.update({ where: { id: current.id }, data: { status: "superseded", version: { increment: 1 } } });
   const created = await uow.tx.careLevelAssignment.create({
-    data: { communityId: stay.communityId, residentId: stay.residentId, stayId: stay.id, careLevelId: level.id, points, effectiveFrom: day16(input.effectiveFrom), noticeDeliveredOn: input.noticeDeliveredOn ? day16(input.noticeDeliveredOn) : null, source: manual ? "manual" : "points", reason: input.reason?.trim() ?? "", status: "active" }
+    data: { communityId: stay.communityId, residentId: stay.residentId, stayId: stay.id, careLevelId: level.id, points, effectiveFrom: day19(input.effectiveFrom), noticeDeliveredOn: input.noticeDeliveredOn ? day19(input.noticeDeliveredOn) : null, source: manual ? "manual" : "points", reason: input.reason?.trim() ?? "", status: "active" }
   });
   auditCreate(uow, actor, "CareLevelAssignment", created.id, "care_level.assigned", { careLevelId: level.id, points, source: manual ? "manual" : "points", supersedes: current?.id ?? null }, { reason: input.reason?.trim() ?? null });
   return { assignmentId: created.id, careLevelId: level.id, supersedes: current?.id ?? null, unchanged: false };
@@ -14587,18 +15144,18 @@ function assertHistoricalMinimumBalances(existing, proposed) {
   for (const line of [...existing, ...proposed]) {
     if (line.bucket !== "client_liability" || !line.ledgerId) continue;
     const days = byLedger2.get(line.ledgerId) ?? /* @__PURE__ */ new Map();
-    const day19 = days.get(line.effectiveOn) ?? { in: 0n, out: 0n };
-    if (line.side === "credit") day19.in += line.amountMinor;
-    else day19.out += line.amountMinor;
-    days.set(line.effectiveOn, day19);
+    const day24 = days.get(line.effectiveOn) ?? { in: 0n, out: 0n };
+    if (line.side === "credit") day24.in += line.amountMinor;
+    else day24.out += line.amountMinor;
+    days.set(line.effectiveOn, day24);
     byLedger2.set(line.ledgerId, days);
   }
   for (const days of byLedger2.values()) {
     let balance = 0n;
     for (const date3 of [...days.keys()].sort()) {
-      const day19 = days.get(date3);
-      balance += day19.in;
-      balance -= day19.out;
+      const day24 = days.get(date3);
+      balance += day24.in;
+      balance -= day24.out;
       if (balance < 0n) throw new TrustLedgerError(`This would leave the resident's trust ledger short on ${date3}.`, "overdrawn");
     }
   }
@@ -14698,7 +15255,7 @@ function trustRules(rules2) {
 // features/keystone/trust/service.ts
 var CONVEYANCE_DAYS = 30;
 var iso8 = (value) => value ? value.toISOString().slice(0, 10) : "";
-var day17 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var day20 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 var asDomain = (error) => {
   if (error instanceof TrustLedgerError) throw new DomainError(error.reason === "overdrawn" ? Codes.GUARD_FAILED : Codes.INVALID_INPUT, error.message, { reason: error.reason });
   throw error;
@@ -14739,7 +15296,7 @@ async function post2(uow, actor, tx, lines) {
     asDomain(error);
   }
   await uow.tx.trustLedgerLine.createMany({
-    data: lines.map((line) => ({ communityId: tx.communityId, residentId: tx.residentId, transactionId: tx.id, ledgerId: line.ledgerId, accountId: tx.accountId, bucket: line.bucket, side: line.side, amountMinor: line.amountMinor, effectiveOn: day17(line.effectiveOn) }))
+    data: lines.map((line) => ({ communityId: tx.communityId, residentId: tx.residentId, transactionId: tx.id, ledgerId: line.ledgerId, accountId: tx.accountId, bucket: line.bucket, side: line.side, amountMinor: line.amountMinor, effectiveOn: day20(line.effectiveOn) }))
   });
   auditCreate(uow, actor, "TrustTransaction", tx.id, "trust.lines_posted", { lines: lines.length });
 }
@@ -14747,8 +15304,8 @@ function checkAmount(amountMinor) {
   if (typeof amountMinor !== "bigint" || amountMinor <= 0n) throw new DomainError(Codes.INVALID_INPUT, "The amount must be more than zero.", { field: "amount" });
 }
 async function effective(uow, communityId, date3) {
-  const community3 = communityId ? await uow.tx.community.findUnique({ where: { id: communityId }, select: { timeZone: true } }) : null;
-  const today2 = localDate(community3?.timeZone ?? "America/New_York", uow.now);
+  const community6 = communityId ? await uow.tx.community.findUnique({ where: { id: communityId }, select: { timeZone: true } }) : null;
+  const today2 = localDate(community6?.timeZone ?? "America/New_York", uow.now);
   const on = date3 || today2;
   if (on > today2) throw new DomainError(Codes.INVALID_INPUT, "A trust entry cannot be dated in the future.", { field: "effectiveOn" });
   return on;
@@ -14760,7 +15317,7 @@ async function recordDeposit(uow, actor, input) {
   const on = await effective(uow, ledger.communityId, input.effectiveOn);
   const kind = input.kind ?? "deposit";
   const tx = await uow.tx.trustTransaction.create({
-    data: { communityId: ledger.communityId, residentId: ledger.residentId, ledgerId: ledger.id, accountId: ledger.accountId, reference: await nextReference(uow.tx, "TRX", uow.now, 6), kind, amountMinor: input.amountMinor, purpose: input.purpose ?? "", status: "posted", preparedById: actorUserId(actor), effectiveOn: day17(on), postedAt: uow.now }
+    data: { communityId: ledger.communityId, residentId: ledger.residentId, ledgerId: ledger.id, accountId: ledger.accountId, reference: await nextReference(uow.tx, "TRX", uow.now, 6), kind, amountMinor: input.amountMinor, purpose: input.purpose ?? "", status: "posted", preparedById: actorUserId(actor), effectiveOn: day20(on), postedAt: uow.now }
   });
   await post2(uow, actor, { id: tx.id, communityId: ledger.communityId, residentId: ledger.residentId, ledgerId: ledger.id, accountId: ledger.accountId }, linesOf(kind, ledger.id, input.amountMinor, on));
   return { transactionId: tx.id, status: "posted" };
@@ -14794,7 +15351,7 @@ async function prepareWithdrawal(uow, actor, input) {
       purpose: input.purpose.trim(),
       status: needsSecond ? "pending_signature" : "posted",
       preparedById: actorUserId(actor),
-      effectiveOn: day17(on),
+      effectiveOn: day20(on),
       postedAt: needsSecond ? null : uow.now
     }
   });
@@ -14835,7 +15392,7 @@ async function signWithdrawal(uow, actor, input) {
 }
 async function markConveyed(uow, actor, ledgerId, on) {
   const ledger = await uow.tx.residentTrustLedger.findUniqueOrThrow({ where: { id: ledgerId } });
-  await casUpdate(uow, { model: "ResidentTrustLedger", id: ledgerId, version: ledger.version, from: ["closed"], to: "conveyed", actor, eventType: "trust.ledger_conveyed", data: { conveyedOn: day17(on) } });
+  await casUpdate(uow, { model: "ResidentTrustLedger", id: ledgerId, version: ledger.version, from: ["closed"], to: "conveyed", actor, eventType: "trust.ledger_conveyed", data: { conveyedOn: day20(on) } });
 }
 async function rejectWithdrawal(uow, actor, input) {
   await lockRow(uow.tx, "TrustTransaction", input.transactionId);
@@ -14855,7 +15412,7 @@ async function reverseTransaction(uow, actor, input) {
   const ledger = await loadLedger(uow, original.ledgerId);
   const on = await effective(uow, original.communityId, null);
   const reversal = await uow.tx.trustTransaction.create({
-    data: { communityId: original.communityId, residentId: original.residentId, ledgerId: original.ledgerId, accountId: original.accountId, reference: await nextReference(uow.tx, "TRX", uow.now, 6), kind: "reversal", amountMinor: original.amountMinor, purpose: input.reason.trim(), status: "posted", preparedById: actorUserId(actor), reversesId: original.id, effectiveOn: day17(on), postedAt: uow.now }
+    data: { communityId: original.communityId, residentId: original.residentId, ledgerId: original.ledgerId, accountId: original.accountId, reference: await nextReference(uow.tx, "TRX", uow.now, 6), kind: "reversal", amountMinor: original.amountMinor, purpose: input.reason.trim(), status: "posted", preparedById: actorUserId(actor), reversesId: original.id, effectiveOn: day20(on), postedAt: uow.now }
   });
   const mirrored = original.lines.map((line) => ({ ledgerId: line.ledgerId, bucket: line.bucket, side: line.side, amountMinor: line.amountMinor, effectiveOn: iso8(line.effectiveOn) }));
   await post2(uow, actor, { id: reversal.id, communityId: original.communityId, residentId: original.residentId, ledgerId: ledger.id, accountId: ledger.accountId }, reverseLines(mirrored, on));
@@ -14875,12 +15432,12 @@ async function prepareReconciliation(uow, actor, input) {
   if (!account) throw new DomainError(Codes.NOT_FOUND, "Trust account not found.");
   const asOf = addDays(input.month, daysInMonth(input.month) - 1);
   const result = reconcile(await linesOfAccount(uow.tx, account.id), input.bankBalanceMinor, asOf);
-  const prior = await uow.tx.trustReconciliation.findFirst({ where: { accountId: account.id, month: day17(input.month) } });
+  const prior = await uow.tx.trustReconciliation.findFirst({ where: { accountId: account.id, month: day20(input.month) } });
   if (prior?.status === "signed") throw new DomainError(Codes.GUARD_FAILED, "This month is already signed off.");
   const data = {
     communityId: account.communityId,
     accountId: account.id,
-    month: day17(input.month),
+    month: day20(input.month),
     bankBalanceMinor: result.bankBalanceMinor,
     bookBalanceMinor: result.bookBalanceMinor,
     residentTotalMinor: result.residentTotalMinor,
@@ -14911,7 +15468,7 @@ var daysInMonth = (month) => {
 async function closeLedger(uow, actor, input) {
   const ledger = await loadLedger(uow, input.ledgerId);
   const on = await effective(uow, ledger.communityId, input.closedOn);
-  await casUpdate(uow, { model: "ResidentTrustLedger", id: ledger.id, version: ledger.version, from: ["open"], to: "closed", actor, eventType: "trust.ledger_closed", data: { closedOn: day17(on), closedReason: input.reason } });
+  await casUpdate(uow, { model: "ResidentTrustLedger", id: ledger.id, version: ledger.version, from: ["open"], to: "closed", actor, eventType: "trust.ledger_closed", data: { closedOn: day20(on), closedReason: input.reason } });
   return { ledgerId: ledger.id, closedOn: on, dueBy: addDays(on, CONVEYANCE_DAYS) };
 }
 async function conveyBalance(uow, actor, input) {
@@ -14920,7 +15477,7 @@ async function conveyBalance(uow, actor, input) {
   if (!input.conveyedTo.trim()) throw new DomainError(Codes.INVALID_INPUT, "Name who the money was paid to.", { field: "conveyedTo" });
   const balance = await balanceOfLedger(uow.tx, ledger.id);
   if (balance <= 0n) {
-    await casUpdate(uow, { model: "ResidentTrustLedger", id: ledger.id, version: ledger.version, from: ["closed"], to: "conveyed", actor, eventType: "trust.ledger_conveyed", data: { conveyedOn: day17(await effective(uow, ledger.communityId, input.effectiveOn)), conveyedTo: input.conveyedTo.trim() } });
+    await casUpdate(uow, { model: "ResidentTrustLedger", id: ledger.id, version: ledger.version, from: ["closed"], to: "conveyed", actor, eventType: "trust.ledger_conveyed", data: { conveyedOn: day20(await effective(uow, ledger.communityId, input.effectiveOn)), conveyedTo: input.conveyedTo.trim() } });
     return { ledgerId: ledger.id, status: "conveyed", transactionId: null };
   }
   await uow.tx.residentTrustLedger.update({ where: { id: ledger.id }, data: { conveyedTo: input.conveyedTo.trim() } });
@@ -14934,7 +15491,7 @@ init_cas();
 init_errors();
 init_sequence();
 var iso9 = (value) => value ? value.toISOString().slice(0, 10) : "";
-var day18 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
+var day21 = (date3) => /* @__PURE__ */ new Date(`${date3}T00:00:00Z`);
 var DATE10 = /^\d{4}-\d{2}-\d{2}$/;
 var asDomain2 = (error) => {
   if (error instanceof TrustLedgerError) throw new DomainError(error.reason === "overdrawn" ? Codes.GUARD_FAILED : Codes.INVALID_INPUT, error.message, { reason: error.reason });
@@ -14942,8 +15499,8 @@ var asDomain2 = (error) => {
   throw error;
 };
 async function packRules(tx, communityId) {
-  const community3 = communityId ? await tx.community.findUnique({ where: { id: communityId }, select: { timeZone: true, jurisdictionPack: { select: { rules: true } } } }) : null;
-  return { ...trustRules(community3?.jurisdictionPack?.rules), timeZone: community3?.timeZone ?? "America/New_York" };
+  const community6 = communityId ? await tx.community.findUnique({ where: { id: communityId }, select: { timeZone: true, jurisdictionPack: { select: { rules: true } } } }) : null;
+  return { ...trustRules(community6?.jurisdictionPack?.rules), timeZone: community6?.timeZone ?? "America/New_York" };
 }
 var AUTHORISATION_KINDS = ["deposit", "withdrawal_cash", "withdrawal_purchase", "liability_transfer"];
 async function recordAuthorisation(uow, actor, input) {
@@ -14968,7 +15525,7 @@ async function recordAuthorisation(uow, actor, input) {
       residentId: ledger.residentId,
       ledgerId: ledger.id,
       representativeId: input.representativeId ?? null,
-      signedOn: day18(input.signedOn),
+      signedOn: day21(input.signedOn),
       kinds,
       perWithdrawalLimitMinor: limit,
       documentId: input.documentId ?? null,
@@ -15024,7 +15581,7 @@ async function allocateAccountInterest(uow, actor, input) {
   const end = monthEndOf(input.month);
   const today2 = localDate(rules2.timeZone, uow.now);
   if (end >= today2) throw new DomainError(Codes.GUARD_FAILED, "Allocate a month's interest after the month has ended.", { reason: "month_not_over" });
-  if (await uow.tx.interestAllocationRun.findFirst({ where: { accountId: account.id, month: day18(input.month) }, select: { id: true } })) throw new DomainError(Codes.GUARD_FAILED, "Interest for this month was already allocated. Reverse its entries to correct it.", { reason: "already_allocated" });
+  if (await uow.tx.interestAllocationRun.findFirst({ where: { accountId: account.id, month: day21(input.month) }, select: { id: true } })) throw new DomainError(Codes.GUARD_FAILED, "Interest for this month was already allocated. Reverse its entries to correct it.", { reason: "already_allocated" });
   const ledgers = await uow.tx.residentTrustLedger.findMany({ where: { accountId: account.id }, select: { id: true, residentId: true, communityId: true, status: true } });
   const existing = await linesOfAccount(uow.tx, account.id);
   let shares;
@@ -15053,11 +15610,11 @@ async function allocateAccountInterest(uow, actor, input) {
         purpose: `Interest for ${input.month.slice(0, 7)}`,
         status: "posted",
         preparedById: actorUserId(actor),
-        effectiveOn: day18(on),
+        effectiveOn: day21(on),
         postedAt: uow.now
       }
     });
-    await uow.tx.trustLedgerLine.createMany({ data: lines.map((line) => ({ communityId: ledger.communityId, residentId: ledger.residentId, transactionId: tx.id, ledgerId: line.ledgerId, accountId: account.id, bucket: line.bucket, side: line.side, amountMinor: line.amountMinor, effectiveOn: day18(line.effectiveOn) })) });
+    await uow.tx.trustLedgerLine.createMany({ data: lines.map((line) => ({ communityId: ledger.communityId, residentId: ledger.residentId, transactionId: tx.id, ledgerId: line.ledgerId, accountId: account.id, bucket: line.bucket, side: line.side, amountMinor: line.amountMinor, effectiveOn: day21(line.effectiveOn) })) });
     proposed.push(...lines);
     out.push({ ledgerId: ledger.id, amountMinor: share.amountMinor.toString(), transactionId: tx.id, weightMinorDays: share.weightMinorDays.toString() });
   }
@@ -15068,7 +15625,7 @@ async function allocateAccountInterest(uow, actor, input) {
   }
   const total = out.reduce((sum, row) => sum + BigInt(row.amountMinor), 0n);
   if (total !== input.interestMinor) throw new DomainError(Codes.GUARD_FAILED, "Interest shares do not add up to the interest.");
-  const run = await uow.tx.interestAllocationRun.create({ data: { communityId: account.communityId, accountId: account.id, month: day18(input.month), interestMinor: input.interestMinor, method: "average_daily_balance", residualRule: "largest_remainder", allocations: out, postedById: actorUserId(actor) } });
+  const run = await uow.tx.interestAllocationRun.create({ data: { communityId: account.communityId, accountId: account.id, month: day21(input.month), interestMinor: input.interestMinor, method: "average_daily_balance", residualRule: "largest_remainder", allocations: out, postedById: actorUserId(actor) } });
   auditCreate(uow, actor, "InterestAllocationRun", run.id, "trust.interest_allocated", { month: input.month, interestMinor: input.interestMinor.toString(), shares: out.length });
   return { runId: run.id, interestMinor: input.interestMinor.toString(), allocations: out };
 }
@@ -15080,7 +15637,7 @@ async function generateQuarterlyStatement(uow, actor, input) {
   if (!ledger?.accountId) throw new DomainError(Codes.NOT_FOUND, "Trust ledger not found.");
   const rules2 = await packRules(uow.tx, ledger.communityId);
   if (quarterEnd(start) >= localDate(rules2.timeZone, uow.now)) throw new DomainError(Codes.GUARD_FAILED, "A quarterly statement is made after the quarter ends.", { reason: "quarter_not_over" });
-  const existing = await uow.tx.trustStatement.findFirst({ where: { ledgerId: ledger.id, quarter: day18(start) }, select: { id: true } });
+  const existing = await uow.tx.trustStatement.findFirst({ where: { ledgerId: ledger.id, quarter: day21(start) }, select: { id: true } });
   if (existing) return { statementId: existing.id, created: false };
   const txs = await uow.tx.trustTransaction.findMany({ where: { ledgerId: ledger.id, status: "posted" }, select: { reference: true, kind: true, purpose: true, effectiveOn: true, ledgerId: true, lines: { select: { ledgerId: true, bucket: true, side: true, amountMinor: true, effectiveOn: true } } } });
   const mapped = txs.map((tx) => ({
@@ -15093,14 +15650,14 @@ async function generateQuarterlyStatement(uow, actor, input) {
   }));
   const s = quarterStatement(ledger.id, mapped, start);
   const created = await uow.tx.trustStatement.create({
-    data: { communityId: ledger.communityId, residentId: ledger.residentId, ledgerId: ledger.id, quarter: day18(start), openingMinor: s.openingMinor, inMinor: s.inMinor, outMinor: s.outMinor, closingMinor: s.closingMinor, lines: s.lines, generatedById: actorUserId(actor), generatedAt: uow.now }
+    data: { communityId: ledger.communityId, residentId: ledger.residentId, ledgerId: ledger.id, quarter: day21(start), openingMinor: s.openingMinor, inMinor: s.inMinor, outMinor: s.outMinor, closingMinor: s.closingMinor, lines: s.lines, generatedById: actorUserId(actor), generatedAt: uow.now }
   });
   auditCreate(uow, actor, "TrustStatement", created.id, "trust.statement_generated", { quarter: start, closingMinor: s.closingMinor.toString() });
   return { statementId: created.id, created: true };
 }
 async function generateQuarterForAccount(uow, actor, input) {
   const start = quarterStart(String(input.quarter ?? "").slice(0, 10));
-  const ledgers = await uow.tx.residentTrustLedger.findMany({ where: { accountId: input.accountId, OR: [{ status: "open" }, { closedOn: { gte: day18(start) } }] }, select: { id: true }, orderBy: { reference: "asc" } });
+  const ledgers = await uow.tx.residentTrustLedger.findMany({ where: { accountId: input.accountId, OR: [{ status: "open" }, { closedOn: { gte: day21(start) } }] }, select: { id: true }, orderBy: { reference: "asc" } });
   let created = 0;
   for (const ledger of ledgers) if ((await generateQuarterlyStatement(uow, actor, { ledgerId: ledger.id, quarter: start })).created) created += 1;
   return { quarter: start, ledgers: ledgers.length, created };
@@ -15114,15 +15671,1379 @@ async function recordSuretyBond(uow, actor, input) {
   if (!account) throw new DomainError(Codes.NOT_FOUND, "Trust account not found.");
   const prior = await uow.tx.suretyBond.findFirst({ where: { accountId: account.id, status: "active" } });
   if (prior) await casUpdate(uow, { model: "SuretyBond", id: prior.id, version: prior.version, from: ["active"], to: "replaced", actor, eventType: "trust.bond_replaced" });
-  const bond = await uow.tx.suretyBond.create({ data: { communityId: account.communityId, accountId: account.id, carrier: input.carrier.trim(), bondNumber: input.bondNumber.trim(), amountMinor: input.amountMinor, effectiveFrom: day18(input.effectiveFrom), expiresOn: day18(input.expiresOn), status: "active", recordedById: actorUserId(actor) } });
+  const bond = await uow.tx.suretyBond.create({ data: { communityId: account.communityId, accountId: account.id, carrier: input.carrier.trim(), bondNumber: input.bondNumber.trim(), amountMinor: input.amountMinor, effectiveFrom: day21(input.effectiveFrom), expiresOn: day21(input.expiresOn), status: "active", recordedById: actorUserId(actor) } });
   if (prior) await uow.tx.suretyBond.update({ where: { id: prior.id }, data: { replacedById: bond.id, version: { increment: 1 } } });
   auditCreate(uow, actor, "SuretyBond", bond.id, "trust.bond_recorded", { amountMinor: input.amountMinor.toString(), expiresOn: input.expiresOn, replaces: prior?.id ?? null });
   return { bondId: bond.id, replaces: prior?.id ?? null };
 }
 
+// features/keystone/claims/service.ts
+init_actor();
+init_cas();
+init_errors();
+init_sequence();
+
+// features/keystone/claims/x12.ts
+var X12_SEPARATORS = { element: "*", component: ":", repetition: "^", segment: "~" };
+var clean3 = (value, max = 60) => String(value ?? "").replace(/[*:~^\r\n]/g, " ").replace(/\s+/g, " ").trim().toUpperCase().slice(0, max);
+var digits = (value) => String(value ?? "").replace(/\D/g, "");
+function amountText(minor2) {
+  const negative = minor2 < 0n;
+  const abs = negative ? -minor2 : minor2;
+  const whole = abs / 100n;
+  const cents = abs % 100n;
+  const frac = cents === 0n ? "" : `.${cents.toString().padStart(2, "0").replace(/0$/, "")}`;
+  return `${negative ? "-" : ""}${whole}${frac}`;
+}
+function parseAmount(text21) {
+  const m = /^(-)?(\d+)(?:\.(\d{1,2}))?$/.exec(text21.trim());
+  if (!m) throw new Error(`Not an amount: ${text21.slice(0, 20)}`);
+  const value = BigInt(m[2]) * 100n + BigInt((m[3] ?? "").padEnd(2, "0") || "0");
+  return m[1] ? -value : value;
+}
+var ymd = (date3) => date3.replace(/-/g, "");
+var isoFromYmd = (text21) => `${text21.slice(0, 4)}-${text21.slice(4, 6)}-${text21.slice(6, 8)}`;
+function segment(...elements) {
+  const out = elements.map((e) => e === null || e === void 0 ? "" : String(e));
+  while (out.length > 1 && out[out.length - 1] === "") out.pop();
+  return out.join(X12_SEPARATORS.element) + X12_SEPARATORS.segment;
+}
+function parseX12(text21) {
+  const raw = text21.replace(/^\uFEFF/, "").trimStart();
+  if (!raw.startsWith("ISA") || raw.length < 106) throw new Error("This is not an X12 file: it does not start with an ISA segment.");
+  const element = raw[3];
+  const component = raw[104];
+  const seg = raw[105];
+  const body = raw.split(seg).map((s) => s.replace(/^[\r\n\s]+/, "")).filter(Boolean);
+  return { element, component, segment: seg, segments: body.map((s) => {
+    const parts = s.split(element);
+    return { id: parts[0], el: parts.slice(1) };
+  }) };
+}
+
+// features/keystone/claims/edi837.ts
+var icd = (code) => code.replace(/\./g, "").toUpperCase();
+function hi(qualifier, items) {
+  const out = [];
+  const first2 = qualifier === "ABK" || qualifier === "BK";
+  for (let i = 0; i < items.length; i += 12) out.push(segment("HI", ...items.slice(i, i + 12).map((parts) => parts.join(":"))));
+  return out;
+}
+function build837I(input) {
+  const c = input.claim;
+  const b = input.billing;
+  const body = [];
+  const submitterId = clean3(input.submitter.id, 15);
+  body.push(segment("BHT", "0019", "00", clean3(c.reference, 50), ymd(input.sentOn), input.sentAt, "CH"));
+  body.push(segment("NM1", "41", "2", clean3(input.submitter.name, 60), "", "", "", "", "46", submitterId));
+  body.push(segment("PER", "IC", clean3(input.submitter.contact, 60), "TE", digits(input.submitter.phone)));
+  body.push(segment("NM1", "40", "2", clean3(input.receiver.name, 60), "", "", "", "", "46", clean3(input.receiver.id, 15)));
+  body.push(segment("HL", "1", "", "20", "1"));
+  body.push(segment("NM1", "85", "2", clean3(b.name, 60), "", "", "", "", "XX", digits(b.npi)));
+  body.push(segment("N3", clean3(b.line1, 55)));
+  body.push(segment("N4", clean3(b.city, 30), clean3(b.state, 2), digits(b.zip).slice(0, 9)));
+  body.push(segment("REF", "EI", digits(b.taxId)));
+  body.push(segment("HL", "2", "1", "22", "0"));
+  body.push(segment("SBR", "P", "18", "", "", "", "", "", "", "MA"));
+  body.push(segment("NM1", "IL", "1", clean3(input.subscriber.last, 60), clean3(input.subscriber.first, 35), "", "", "", "MI", clean3(input.subscriber.mbi, 20)));
+  body.push(segment("DMG", "D8", ymd(input.subscriber.dob), input.subscriber.sex));
+  body.push(segment("NM1", "PR", "2", clean3(input.payer.name, 60), "", "", "", "", "PI", clean3(input.payer.id, 15)));
+  const tob = c.typeOfBill;
+  body.push(segment("CLM", clean3(c.reference, 38), amountText(c.totalMinor), "", "", `${tob.slice(1, 3)}:A:${tob.slice(3, 4)}`, "", "A", "Y", "Y"));
+  body.push(segment("DTP", "434", "RD8", `${ymd(c.from)}-${ymd(c.to)}`));
+  body.push(segment("DTP", "435", "DT", `${ymd(c.admittedOn)}${c.admittedHour}`));
+  if (c.dischargeHour) body.push(segment("DTP", "096", "TM", c.dischargeHour));
+  body.push(segment("CL1", c.admissionType, c.pointOfOrigin, c.patientStatus));
+  if (c.payerClaimNumber) body.push(segment("REF", "F8", clean3(c.payerClaimNumber, 50)));
+  body.push(...hi("ABK", [["ABK", icd(c.principal)]]));
+  if (c.otherDiagnoses.length) body.push(...hi("ABF", c.otherDiagnoses.map((code) => ["ABF", icd(code)])));
+  if (c.occurrenceCodes.length) body.push(...hi("BH", c.occurrenceCodes.map((o) => ["BH", o.code, "D8", ymd(o.date)])));
+  if (c.occurrenceSpans.length) body.push(...hi("BI", c.occurrenceSpans.map((o) => ["BI", o.code, "RD8", `${ymd(o.from)}-${ymd(o.to)}`])));
+  if (c.valueCodes.length) body.push(...hi("BE", c.valueCodes.map((v) => ["BE", v.code, "", "", v.amountMinor !== void 0 ? amountText(v.amountMinor) : String(v.quantity ?? 0)])));
+  if (c.conditionCodes.length) body.push(...hi("BG", c.conditionCodes.map((code) => ["BG", code])));
+  if (input.attending) body.push(segment("NM1", "71", "1", clean3(input.attending.last, 60), clean3(input.attending.first, 35), "", "", "", "XX", digits(input.attending.npi)));
+  input.lines.forEach((line, index) => {
+    body.push(segment("LX", index + 1));
+    body.push(segment("SV2", line.revenueCode, `HP:${clean3(line.hippsCode, 5)}`, amountText(line.chargeMinor), "DA", line.units));
+    body.push(line.from === line.to ? segment("DTP", "472", "D8", ymd(line.from)) : segment("DTP", "472", "RD8", `${ymd(line.from)}-${ymd(line.to)}`));
+  });
+  const control = digits(input.controlNumber).padStart(9, "0").slice(-9);
+  const isa = ["ISA", "00", " ".repeat(10), "00", " ".repeat(10), "ZZ", clean3(submitterId, 15).padEnd(15), "ZZ", clean3(input.receiver.id, 15).padEnd(15), ymd(input.sentOn).slice(2), input.sentAt, "^", "00501", control, "0", "P", ":"];
+  const stHeader = [segment("ST", "837", "0001", "005010X223A2")];
+  const seCount = stHeader.length + body.length + 1;
+  const lines = [
+    isa.join("*") + "~",
+    segment("GS", "HC", submitterId, clean3(input.receiver.id, 15), ymd(input.sentOn), input.sentAt, "1", "X", "005010X223A2"),
+    ...stHeader,
+    ...body,
+    segment("SE", seCount, "0001"),
+    segment("GE", "1", "1"),
+    segment("IEA", "1", control)
+  ];
+  return { text: lines.join("\n") + "\n", segmentCount: lines.length };
+}
+
+// features/keystone/claims/parsers.ts
+var first = (segments, id) => segments.find((s) => s.id === id);
+function detectKind(text21) {
+  try {
+    const { segments } = parseX12(text21);
+    const st = first(segments, "ST")?.el[0];
+    return st === "999" ? "999" : st === "277" ? "277" : st === "835" ? "835" : "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+function parse999(text21) {
+  const { segments } = parseX12(text21);
+  if (first(segments, "ST")?.el[0] !== "999") throw new Error("This is not a 999 acknowledgement.");
+  const ak9 = first(segments, "AK9");
+  if (!ak9) throw new Error("The 999 has no AK9 summary segment.");
+  const status = ak9.el[0];
+  const errors = segments.filter((s) => s.id === "IK3" || s.id === "IK4").map((s) => `${s.id} ${s.el.join(" ")}`.trim());
+  return { kind: "999", accepted: status === "A", status, errors };
+}
+var ACCEPT = /* @__PURE__ */ new Set(["A0", "A1", "A2", "A5"]);
+function parse277CA(text21) {
+  const { segments, component } = parseX12(text21);
+  if (first(segments, "ST")?.el[0] !== "277") throw new Error("This is not a 277CA acknowledgement.");
+  const claims = [];
+  let current = null;
+  for (const s of segments) {
+    if (s.id === "TRN" && s.el[0] === "2") {
+      current = { claimReference: s.el[1] ?? "", accepted: false, payerClaimNumber: null, category: "", status: "", message: "" };
+      claims.push(current);
+    } else if (s.id === "STC" && current) {
+      const [category, status] = (s.el[0] ?? "").split(component);
+      if (!current.category) {
+        current.category = category;
+        current.status = status ?? "";
+      }
+      current.accepted = ACCEPT.has(category);
+      current.message = s.el[11] ?? current.message;
+    } else if (s.id === "REF" && s.el[0] === "1K" && current) {
+      current.payerClaimNumber = s.el[1] ?? null;
+    }
+  }
+  if (!claims.length) throw new Error("The 277CA names no claims (no TRN*2 segment).");
+  return { kind: "277CA", claims };
+}
+function parse835(text21) {
+  const { segments, component } = parseX12(text21);
+  if (first(segments, "ST")?.el[0] !== "835") throw new Error("This is not an 835 remittance.");
+  const bpr = first(segments, "BPR");
+  const trn = first(segments, "TRN");
+  if (!bpr || !trn?.el[1]) throw new Error("The 835 has no BPR payment or TRN trace number.");
+  const claims = [];
+  let current = null;
+  let plb = 0n;
+  let payerName = "";
+  for (const s of segments) {
+    if (s.id === "N1" && s.el[0] === "PR") payerName = s.el[1] ?? "";
+    if (s.id === "CLP") {
+      current = { claimReference: s.el[0], statusCode: s.el[1], billedMinor: parseAmount(s.el[2] || "0"), paidMinor: parseAmount(s.el[3] || "0"), patientResponsibilityMinor: parseAmount(s.el[4] || "0"), payerClaimNumber: s.el[6] ?? "", adjustments: [], contractualMinor: 0n, prMinor: 0n, otherMinor: 0n };
+      claims.push(current);
+    } else if (s.id === "CAS" && current) {
+      const group = s.el[0];
+      for (let i = 1; i + 1 < s.el.length; i += 3) {
+        if (!s.el[i]) continue;
+        const amountMinor = parseAmount(s.el[i + 1] || "0");
+        current.adjustments.push({ group, reason: s.el[i], amountMinor, quantity: s.el[i + 2] || void 0 });
+        if (group === "CO") current.contractualMinor += amountMinor;
+        else if (group === "PR") current.prMinor += amountMinor;
+        else current.otherMinor += amountMinor;
+      }
+    } else if (s.id === "PLB") {
+      for (let i = 2; i + 1 < s.el.length; i += 2) plb += parseAmount(s.el[i + 1] || "0");
+    } else if (s.id === "SVC") ;
+  }
+  const date3 = bpr.el[15] ? isoFromYmd(bpr.el[15]) : "";
+  if (!date3) throw new Error("The 835 has no payment date (BPR16).");
+  return { kind: "835", traceNumber: trn.el[1], paymentDate: date3, totalPaidMinor: parseAmount(bpr.el[1] || "0"), payerName, claims, plbMinor: plb };
+}
+
+// features/keystone/claims/scrubber.ts
+function validNpi(npi) {
+  if (!/^\d{10}$/.test(npi)) return false;
+  const digits2 = `80840${npi}`.split("").reverse().map(Number);
+  let sum = 0;
+  digits2.forEach((d, i) => {
+    let x = d;
+    if (i % 2 === 1) {
+      x *= 2;
+      if (x > 9) x -= 9;
+    }
+    sum += x;
+  });
+  return sum % 10 === 0;
+}
+var MBI = /^[1-9][AC-HJKMNP-RT-Y][AC-HJKMNP-RT-Y0-9][0-9][AC-HJKMNP-RT-Y][AC-HJKMNP-RT-Y0-9][0-9][AC-HJKMNP-RT-Y]{2}[0-9]{2}$/;
+var validMbi = (mbi) => MBI.test(mbi.replace(/-/g, "").toUpperCase());
+var ICD10 = /^[A-TV-Z][0-9][0-9AB]\.?[0-9A-TV-Z]{0,4}$/;
+var ICD10_EXTERNAL_ONLY = /^[VWXY]/;
+var SNF_TOB = /^021[1-4789]$/;
+var FREQUENCIES2 = /* @__PURE__ */ new Set(["1", "2", "3", "4", "7", "8"]);
+var SNF_REVENUE = /* @__PURE__ */ new Set(["0022"]);
+var ANCILLARY_REVENUE = /^0[2-9]\d\d$/;
+function scrub(input) {
+  const issues = [];
+  const err = (code, message, field) => issues.push({ code, severity: "error", message, field });
+  const warn = (code, message, field) => issues.push({ code, severity: "warning", message, field });
+  if (!validNpi(input.attendingNpi ?? "")) err("attending_npi", "An institutional claim needs the attending provider: a valid NPI and name.", "attendingNpi");
+  if (!validNpi(input.billingNpi)) err("npi_invalid", "The community NPI is missing or fails the check digit.", "npi");
+  if (!/^\d{9}$/.test(input.taxId.replace(/\D/g, ""))) err("tax_id_missing", "The community tax ID (9 digits) is not set in its identifiers.", "taxId");
+  if (!/^\d{9}$/.test(input.zip.replace(/\D/g, ""))) err("zip_plus4", "The billing address needs a nine-digit ZIP (ZIP+4) on a 5010 claim.", "zip");
+  if (!/^[0-9A-Z]{10}$/.test(input.taxonomy)) err("taxonomy_missing", "The community taxonomy code (10 characters, e.g. 314000000X for a skilled nursing facility) is not set.", "taxonomy");
+  if (!/^\d{6}$/.test(input.ccn)) err("ccn_invalid", "The CMS Certification Number must be 6 digits.", "ccn");
+  else if (!["5", "6", "7", "0"].includes(input.ccn.slice(2, 3))) warn("ccn_range", "A skilled nursing facility CCN normally has 5, 6, 7 or 0 as its third digit.", "ccn");
+  if (!input.mbi) err("mbi_missing", "The resident has no Medicare Beneficiary Identifier on file.", "mbi");
+  else if (!validMbi(input.mbi)) err("mbi_invalid", "The Medicare Beneficiary Identifier is not in the MBI format.", "mbi");
+  if (!/^\d{4}$/.test(input.typeOfBill) || !SNF_TOB.test(input.typeOfBill)) err("tob_invalid", `Type of bill ${input.typeOfBill || "(blank)"} is not a skilled nursing facility inpatient bill (021x).`, "typeOfBill");
+  else if (!FREQUENCIES2.has(input.typeOfBill.slice(3))) err("tob_frequency", "The type-of-bill frequency must be 1, 2, 3, 4, 7 or 8.", "typeOfBill");
+  if (input.from > input.to) err("period_order", "The statement period ends before it starts.", "period");
+  if (input.from.slice(0, 7) !== input.to.slice(0, 7)) err("period_month", "A Part A claim covers one calendar month; split the stay by month.", "period");
+  if (!input.principal) err("dx_principal", "A principal diagnosis is required.", "diagnoses");
+  else if (!ICD10.test(input.principal) || ICD10_EXTERNAL_ONLY.test(input.principal)) err("dx_invalid", `Principal diagnosis ${input.principal} is not a valid ICD-10-CM code for a principal diagnosis.`, "diagnoses");
+  for (const code of input.otherDiagnoses) if (!ICD10.test(code)) err("dx_invalid", `Diagnosis ${code} is not a valid ICD-10-CM code.`, "diagnoses");
+  const span70 = input.occurrenceSpans.find((s) => s.code === "70");
+  const admitMonth = input.admittedOn && input.admittedOn.slice(0, 7) === input.from.slice(0, 7);
+  if (admitMonth || input.typeOfBill.slice(3) === "1" || input.typeOfBill.slice(3) === "2") {
+    if (!span70) err("occurrence_70", "Occurrence span code 70 (qualifying hospital stay) is required on the first claim of a Part A stay.", "occurrenceSpans");
+    else {
+      if (daysBetween(span70.from, span70.to) < 2) err("occurrence_70_days", "The qualifying hospital stay must be at least three days (span 70).", "occurrenceSpans");
+      if (input.admittedOn && daysBetween(span70.to, input.admittedOn) > 30) err("occurrence_70_gap", "The qualifying stay ended more than 30 days before admission.", "occurrenceSpans");
+    }
+  }
+  if (span70 && input.qualifyingStay && (span70.from !== input.qualifyingStay.from || span70.to !== input.qualifyingStay.to)) warn("occurrence_70_mismatch", "Span 70 differs from the qualifying stay recorded on coverage.", "occurrenceSpans");
+  if (!input.skilledCertOk) err("cert_missing", "The physician skilled-need certification is not on file for this coverage.", "coverage");
+  if (!input.occurrenceCodes.some((o) => o.code === "22") && input.typeOfBill.slice(3) === "4") warn("occurrence_22", "A last-claim usually carries occurrence code 22 (date active care ended).", "occurrenceCodes");
+  const unitsTotal = input.lines.filter((l) => l.revenueCode === "0022").reduce((n2, l) => n2 + l.units, 0);
+  const v80 = input.valueCodes.find((v) => v.code === "80");
+  if (!v80) err("value_80", "Value code 80 (covered days) is required.", "valueCodes");
+  else if (v80.quantity !== unitsTotal) err("value_80_units", `Value code 80 says ${v80.quantity} covered days but the 0022 lines add up to ${unitsTotal}.`, "valueCodes");
+  if (unitsTotal !== input.coveredDays) err("units_covered_days", `The claim bills ${unitsTotal} covered days but the census shows ${input.coveredDays} in-house covered days.`, "lines");
+  if (!input.lines.length) err("lines_none", "The claim has no lines.", "lines");
+  let sum = 0n;
+  input.lines.forEach((line, i) => {
+    sum += line.chargeMinor;
+    if (!/^\d{4}$/.test(line.revenueCode) || !(SNF_REVENUE.has(line.revenueCode) || ANCILLARY_REVENUE.test(line.revenueCode))) err("revenue_code", `Line ${i + 1}: revenue code ${line.revenueCode || "(blank)"} is not valid.`, "lines");
+    if (SNF_REVENUE.has(line.revenueCode)) {
+      if (!/^[A-Z0-9]{5}$/.test(line.hippsCode)) err("hipps_missing", `Line ${i + 1}: revenue code 0022 needs a 5-character HIPPS code.`, "lines");
+      if (line.units < 1) err("units_zero", `Line ${i + 1}: units must be at least 1.`, "lines");
+      if (daysBetween(line.from, line.to) + 1 !== line.units) err("units_span", `Line ${i + 1}: ${line.units} unit(s) do not match ${line.from} to ${line.to}.`, "lines");
+    }
+    if (line.chargeMinor < 0n) err("charge_negative", `Line ${i + 1}: a charge cannot be negative.`, "lines");
+    if (line.from < input.from || line.to > input.to) err("line_outside_period", `Line ${i + 1}: service dates fall outside the statement period.`, "lines");
+  });
+  if (sum !== input.totalMinor) err("total_mismatch", "The total charges do not equal the sum of the lines.", "totalChargesMinor");
+  if (input.totalMinor <= 0n && input.lines.length) warn("total_zero", "The total charges are zero.", "totalChargesMinor");
+  for (const code of input.conditionCodes) if (!/^[0-9A-Z]{2}$/.test(code)) err("condition_code", `Condition code ${code} is not two characters.`, "conditionCodes");
+  for (const o of input.occurrenceCodes) if (!/^[0-9A-Z]{2}$/.test(o.code)) err("occurrence_code", `Occurrence code ${o.code} is not two characters.`, "occurrenceCodes");
+  if (input.hasPreviousMonth && !["accepted", "paid", "partially_paid", "denied", "appealed", "finalised"].includes(input.previousMonthStatus ?? "")) {
+    warn("previous_claim_open", `The previous month's claim is ${input.previousMonthStatus ?? "missing"}; it must be accepted before this one can be released.`, "previousClaim");
+  }
+  return { ok: !issues.some((i) => i.severity === "error"), issues };
+}
+function frequencyFor(opts2) {
+  if (opts2.firstMonth && opts2.lastMonth) return "1";
+  if (opts2.firstMonth) return "2";
+  return opts2.lastMonth ? "4" : "3";
+}
+
+// features/keystone/claims/service.ts
+var iso10 = (d) => d ? d.toISOString().slice(0, 10) : "";
+var day22 = (s) => /* @__PURE__ */ new Date(`${s}T00:00:00Z`);
+var AFTER_ACCEPT = ["accepted", "paid", "partially_paid", "denied", "appealed", "finalised"];
+var CAN_PAY = ["submitted", "accepted", "partially_paid"];
+var DISCHARGE_STATUS = { community_home: "01", acute_hospital: "02", another_nursing_facility: "03", assisted_living: "04", psychiatric_hospital: "65", irf: "62", ltch: "63", hospice: "51", deceased: "20", other: "01" };
+var idsOf = (v) => v && typeof v === "object" ? v : {};
+async function createClaimsForMonth(uow, actor, input) {
+  if (!/^\d{4}-\d{2}-01$/.test(input.month)) throw new DomainError(Codes.INVALID_INPUT, "Month must be the first day of the month, YYYY-MM-01.", { field: "month" });
+  const from = input.month;
+  const to = monthEnd(input.month);
+  const charges = await uow.tx.charge.findMany({
+    where: { communityId: input.communityId, kind: { in: ["per_diem_claim", "coinsurance"] }, status: { in: ["open", "posted"] }, date: { gte: day22(from), lte: day22(to) }, payer: { kind: "medicare_a" }, OR: [{ responsibility: "payer" }, { kind: "coinsurance" }] },
+    orderBy: [{ stayId: "asc" }, { date: "asc" }]
+  });
+  const stayIds = [...new Set(charges.filter((c) => c.kind === "per_diem_claim").map((c) => c.stayId).filter((s) => Boolean(s)))];
+  const coins = await uow.tx.charge.findMany({ where: { stayId: { in: stayIds }, kind: "coinsurance", status: { in: ["open", "posted"] }, date: { gte: day22(from), lte: day22(to) } } });
+  const created = [];
+  const existing = [];
+  for (const stayId of stayIds) {
+    const perDiems = charges.filter((c) => c.stayId === stayId && c.kind === "per_diem_claim");
+    const stay = await uow.tx.stay.findUniqueOrThrow({ where: { id: stayId } });
+    const payerId = perDiems[0].payerId;
+    const dup = await uow.tx.claim.findFirst({ where: { stayId, payerId, periodFrom: { gte: day22(from), lte: day22(to) }, status: { not: "cancelled" } } });
+    if (dup) {
+      existing.push(dup.reference);
+      continue;
+    }
+    const days = perDiems.map((c) => {
+      const hipps = String(c.derivation?.hipps ?? "");
+      const coin = coins.find((k) => k.stayId === stayId && iso10(k.date) === iso10(c.date));
+      return { date: iso10(c.date), hipps, amount: c.amountMinor + (coin?.amountMinor ?? 0n), ids: [c.id, ...coin ? [coin.id] : []] };
+    });
+    const groups = [];
+    for (const d of days) {
+      const last = groups[groups.length - 1];
+      if (last && last.hipps === d.hipps && addDays(last.to, 1) === d.date) {
+        last.to = d.date;
+        last.units += 1;
+        last.amount += d.amount;
+        last.ids.push(...d.ids);
+      } else groups.push({ hipps: d.hipps, from: d.date, to: d.date, units: 1, amount: d.amount, ids: [...d.ids] });
+    }
+    const total = groups.reduce((n2, g) => n2 + g.amount, 0n);
+    const cov = stay.residentId ? await uow.tx.coveragePeriod.findFirst({ where: { stayId, payerId, status: { in: ["active", "ended"] } }, orderBy: { startDate: "desc" } }) : null;
+    const prior = await uow.tx.claim.findFirst({ where: { stayId, payerId, periodTo: { lt: day22(from) }, status: { not: "cancelled" } }, orderBy: { periodTo: "desc" } });
+    const admitMonth = stay.admittedAt ? iso10(stay.admittedAt).slice(0, 7) === from.slice(0, 7) : false;
+    const lastMonth = Boolean(stay.dischargedAt && iso10(stay.dischargedAt).slice(0, 7) === from.slice(0, 7)) || Boolean(cov?.endDate && iso10(cov.endDate).slice(0, 7) === from.slice(0, 7));
+    const frequency = frequencyFor({ firstMonth: admitMonth || !prior, lastMonth });
+    const dx = await uow.tx.diagnosis.findMany({ where: { residentId: stay.residentId, status: "active" }, orderBy: [{ rank: "asc" }, { onsetDate: "asc" }] });
+    const principal = dx.find((d) => d.rank === "primary") ?? dx[0];
+    const covered2 = days.length;
+    const periodFrom = days[0].date;
+    const periodTo = days[days.length - 1].date;
+    const reference = await nextReference(uow.tx, "CLM", uow.now);
+    const claim = await uow.tx.claim.create({
+      data: {
+        communityId: input.communityId,
+        residentId: stay.residentId,
+        stayId,
+        payerId,
+        coverageId: cov?.id ?? null,
+        reference,
+        periodFrom: day22(periodFrom),
+        periodTo: day22(periodTo),
+        typeOfBill: `021${frequency}`,
+        frequencyCode: frequency,
+        occurrenceCodes: lastMonth && iso10(stay.dischargedAt) ? [{ code: "22", date: iso10(stay.dischargedAt) }] : [],
+        occurrenceSpans: cov?.qualifyingStayFrom && cov.qualifyingStayTo ? [{ code: "70", from: iso10(cov.qualifyingStayFrom), to: iso10(cov.qualifyingStayTo) }] : [],
+        valueCodes: [{ code: "80", quantity: covered2 }],
+        conditionCodes: [],
+        diagnoses: { principal: principal?.icd10 ?? null, other: dx.filter((d) => d !== principal).map((d) => d.icd10) },
+        totalChargesMinor: total,
+        paidMinor: 0n,
+        status: "draft",
+        previousClaimId: prior?.id ?? null,
+        ackStatus: "none",
+        denialStatus: "none",
+        lines: { create: groups.map((g, i) => ({ communityId: input.communityId, residentId: stay.residentId, lineNumber: i + 1, revenueCode: "0022", hippsCode: g.hipps, serviceFrom: day22(g.from), serviceTo: day22(g.to), units: g.units, chargeMinor: g.amount, paidMinor: 0n, chargeIds: g.ids })) }
+      }
+    });
+    auditCreate(uow, actor, "Claim", claim.id, "claim.created", { reference, stayId, period: [periodFrom, periodTo], totalChargesMinor: total.toString(), typeOfBill: claim.typeOfBill });
+    created.push(reference);
+  }
+  return { created, existing, month: input.month };
+}
+async function loadForExport(tx, claimId) {
+  const claim = await tx.claim.findUniqueOrThrow({ where: { id: claimId }, include: { lines: { orderBy: { lineNumber: "asc" } }, payer: true, community: true, resident: true, coverage: true, stay: true } });
+  return claim;
+}
+async function scrubInput(tx, claimId) {
+  const claim = await loadForExport(tx, claimId);
+  const ids = idsOf(claim.community?.identifiers);
+  const dx = claim.diagnoses ?? {};
+  let covered2 = 0;
+  if (claim.stayId && claim.periodFrom && claim.periodTo) {
+    const dates = [];
+    for (let d = iso10(claim.periodFrom); d <= iso10(claim.periodTo); d = addDays(d, 1)) dates.push(d);
+    const byDay = await deriveCensusRange(tx, claim.communityId, dates);
+    for (const rows of byDay.values()) if (rows.some((r) => r.stayId === claim.stayId && r.presence === "in_house" && r.payerKind === "medicare_a")) covered2 += 1;
+  }
+  const prior = claim.previousClaimId ? await tx.claim.findUnique({ where: { id: claim.previousClaimId }, select: { status: true } }) : null;
+  const lines = claim.lines.map((l) => ({ revenueCode: l.revenueCode, hippsCode: l.hippsCode, from: iso10(l.serviceFrom), to: iso10(l.serviceTo), units: l.units, chargeMinor: l.chargeMinor }));
+  const cov = claim.coverage;
+  return {
+    claim,
+    ids,
+    input: {
+      billingNpi: ids.npi ?? "",
+      attendingNpi: claim.attendingName.trim() ? claim.attendingNpi : "",
+      taxonomy: ids.taxonomy ?? "",
+      ccn: ids.ccn ?? "",
+      taxId: ids.taxId ?? "",
+      zip: ids.zip4 ?? claim.community?.postalCode ?? "",
+      mbi: cov?.memberReference || null,
+      typeOfBill: claim.typeOfBill,
+      from: iso10(claim.periodFrom),
+      to: iso10(claim.periodTo),
+      admittedOn: claim.stay?.admittedAt ? iso10(claim.stay.admittedAt) : null,
+      principal: dx.principal ?? null,
+      otherDiagnoses: dx.other ?? [],
+      occurrenceCodes: claim.occurrenceCodes ?? [],
+      occurrenceSpans: claim.occurrenceSpans ?? [],
+      valueCodes: claim.valueCodes ?? [],
+      conditionCodes: claim.conditionCodes ?? [],
+      lines,
+      totalMinor: claim.totalChargesMinor,
+      coveredDays: covered2,
+      previousMonthStatus: prior?.status ?? null,
+      hasPreviousMonth: Boolean(claim.previousClaimId),
+      qualifyingStay: cov?.qualifyingStayFrom && cov.qualifyingStayTo ? { from: iso10(cov.qualifyingStayFrom), to: iso10(cov.qualifyingStayTo) } : null,
+      skilledCertOk: Boolean(cov?.skilledCertSignedAt)
+    }
+  };
+}
+async function validateClaim(uow, actor, input) {
+  await lockRow(uow.tx, "Claim", input.claimId);
+  const { input: sc, claim, ids } = await scrubInput(uow.tx, input.claimId);
+  if (claim.status !== "draft") throw new DomainError(Codes.INVALID_TRANSITION, `A ${claim.status} claim cannot be validated again.`, { currentStatus: claim.status });
+  const payerId = claim.payer?.payerId ?? "";
+  const result = scrub(sc);
+  if (!payerId) result.issues.push({ code: "payer_id_missing", severity: "error", message: "The payer has no electronic payer ID.", field: "payer" });
+  const ok = !result.issues.some((i) => i.severity === "error");
+  if (!ok) {
+    await uow.tx.claim.update({ where: { id: claim.id }, data: { scrubberResult: { ok: false, issues: result.issues, at: uow.now.toISOString() }, version: { increment: 1 } } });
+    auditCreate(uow, actor, "Claim", claim.id, "claim.scrub_failed", { errors: result.issues.filter((i) => i.severity === "error").map((i) => i.code) });
+    return { claimId: claim.id, status: "draft", ok: false, issues: result.issues };
+  }
+  await transition(uow, { model: "Claim", id: claim.id, from: ["draft"], to: "validated", actor, eventType: "claim.validated", data: { scrubberResult: { ok: true, issues: result.issues, at: uow.now.toISOString() }, validatedById: actorUserId(actor) } });
+  return { claimId: claim.id, status: "validated", ok: true, issues: result.issues };
+}
+async function releaseClaim(uow, actor, input) {
+  await transition(uow, {
+    model: "Claim",
+    id: input.claimId,
+    from: ["validated"],
+    to: "released",
+    actor,
+    eventType: "claim.released",
+    data: { releasedById: actorUserId(actor) },
+    guard: async (row) => {
+      assertCanDecide(actor, row.validatedById);
+      if (row.previousClaimId) {
+        const prior = await uow.tx.claim.findUnique({ where: { id: row.previousClaimId }, select: { status: true, reference: true } });
+        if (prior && !AFTER_ACCEPT.includes(prior.status)) throw new DomainError(Codes.GUARD_FAILED, `The previous month's claim ${prior.reference} is ${prior.status}; it must be accepted before this one is released.`, { reason: "previous_claim_not_accepted" });
+      }
+    }
+  });
+  return { claimId: input.claimId, status: "released" };
+}
+async function exportClaim(uow, actor, input) {
+  await lockRow(uow.tx, "Claim", input.claimId);
+  const { input: sc, claim, ids } = await scrubInput(uow.tx, input.claimId);
+  if (!["released", "submitted"].includes(claim.status)) throw new DomainError(Codes.GUARD_FAILED, "Release the claim before exporting the file.", { reason: "not_released" });
+  const again = scrub(sc);
+  if (!again.ok) throw new DomainError(Codes.GUARD_FAILED, "The claim no longer passes the scrubber. Fix it and validate again.", { reason: "scrub_failed", issues: again.issues });
+  const resident3 = claim.resident;
+  const dx = claim.diagnoses ?? {};
+  const control = String((await uow.tx.sequence.upsert({ where: { key: "EDI-ICN" }, create: { key: "EDI-ICN", nextValue: 2 }, update: { nextValue: { increment: 1 } } })).nextValue - 1);
+  const local = uow.now.toISOString();
+  const discharged = claim.stay?.dischargedAt && claim.frequencyCode !== "3" && claim.frequencyCode !== "2" ? claim.stay.dischargedAt : null;
+  const file = build837I({
+    controlNumber: control,
+    sentOn: local.slice(0, 10),
+    sentAt: local.slice(11, 13) + local.slice(14, 16),
+    submitter: { name: claim.community?.name ?? "", id: ids.ccn ?? "", contact: "Business Office", phone: claim.community?.phone ?? "" },
+    receiver: { name: claim.payer?.name ?? "", id: claim.payer?.payerId ?? "" },
+    billing: { name: claim.community?.name ?? "", npi: ids.npi ?? "", taxId: ids.taxId ?? "", taxonomy: ids.taxonomy ?? "", line1: claim.community?.addressLine1 ?? "", city: claim.community?.city ?? "", state: claim.community?.region ?? "", zip: ids.zip4 ?? claim.community?.postalCode ?? "" },
+    subscriber: { last: resident3.lastName, first: resident3.firstName, mbi: sc.mbi ?? "", dob: iso10(resident3.dateOfBirth), sex: resident3.sex === "female" ? "F" : resident3.sex === "male" ? "M" : "U" },
+    payer: { name: claim.payer?.name ?? "", id: claim.payer?.payerId ?? "" },
+    claim: {
+      reference: claim.reference,
+      totalMinor: claim.totalChargesMinor,
+      typeOfBill: claim.typeOfBill,
+      from: iso10(claim.periodFrom),
+      to: iso10(claim.periodTo),
+      admittedOn: iso10(claim.stay?.admittedAt),
+      admittedHour: claim.stay?.admittedAt ? claim.stay.admittedAt.toISOString().slice(11, 13) + "00" : "0000",
+      admissionType: "9",
+      pointOfOrigin: claim.stay?.admissionSource === "acute_hospital" ? "4" : "1",
+      patientStatus: discharged ? DISCHARGE_STATUS[claim.stay?.dischargeDisposition ?? "other"] ?? "01" : "30",
+      dischargeHour: null,
+      payerClaimNumber: claim.payerClaimNumber || null,
+      principal: dx.principal,
+      otherDiagnoses: dx.other ?? [],
+      occurrenceCodes: sc.occurrenceCodes,
+      occurrenceSpans: sc.occurrenceSpans,
+      valueCodes: sc.valueCodes,
+      conditionCodes: sc.conditionCodes
+    },
+    attending: claim.attendingNpi ? { npi: claim.attendingNpi, last: claim.attendingName.split(",")[0] ?? "", first: claim.attendingName.split(",")[1]?.trim() ?? "" } : null,
+    lines: sc.lines
+  });
+  const hash2 = sha256(file.text);
+  await uow.tx.claim.update({ where: { id: claim.id }, data: { exportText: file.text, exportHash: hash2, exportedAt: uow.now, exportedById: actorUserId(actor), version: { increment: 1 } } });
+  auditCreate(uow, actor, "Claim", claim.id, "claim.exported", { exportHash: hash2, segments: file.segmentCount });
+  return { claimId: claim.id, exportHash: hash2, segments: file.segmentCount };
+}
+async function markSubmitted(uow, actor, input) {
+  await transition(uow, {
+    model: "Claim",
+    id: input.claimId,
+    from: ["released"],
+    to: "submitted",
+    actor,
+    eventType: "claim.marked_submitted",
+    data: { uploadedAt: uow.now, uploadedById: actorUserId(actor) },
+    guard: (row) => {
+      if (!row.exportHash) throw new DomainError(Codes.GUARD_FAILED, "Export the file first.", { reason: "not_exported" });
+      if (row.exportHash !== input.exportHash) throw new DomainError(Codes.STALE_STATE, "The file changed since you downloaded it. Download it again.", { reason: "hash_changed" });
+    }
+  });
+  return { claimId: input.claimId, status: "submitted" };
+}
+async function cancelClaim(uow, actor, input) {
+  if (!input.reason?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Say why the claim is cancelled.", { field: "reason" });
+  await transition(uow, { model: "Claim", id: input.claimId, from: ["draft", "validated", "released", "rejected"], to: "cancelled", actor, eventType: "claim.cancelled", reason: input.reason.trim() });
+  return { claimId: input.claimId, status: "cancelled" };
+}
+async function recordAcknowledgement(uow, actor, input) {
+  const kind = detectKind(input.text);
+  if (kind === "999") {
+    if (!input.claimId) throw new DomainError(Codes.INVALID_INPUT, "Choose the claim this 999 answers.", { field: "claimId" });
+    const ack = parse999(input.text);
+    const claim = await uow.tx.claim.findFirst({ where: { id: input.claimId, communityId: input.communityId } });
+    if (!claim) throw new DomainError(Codes.NOT_FOUND, "Claim not found.");
+    if (claim.status !== "submitted") throw new DomainError(Codes.GUARD_FAILED, `The claim is ${claim.status}; a 999 answers a submitted claim.`, { reason: "not_submitted" });
+    if (ack.accepted) {
+      await uow.tx.claim.update({ where: { id: claim.id }, data: { ackStatus: "accepted_999", version: { increment: 1 } } });
+      auditCreate(uow, actor, "Claim", claim.id, "claim.ack_999_accepted", { status: ack.status });
+      return { kind: "999", accepted: true, claimIds: [claim.id], errors: [] };
+    }
+    await uow.tx.claim.update({ where: { id: claim.id }, data: { ackStatus: "rejected_999", version: { increment: 1 } } });
+    await transition(uow, { model: "Claim", id: claim.id, from: ["submitted"], to: "rejected", actor, eventType: "claim.rejected_999", reason: ack.errors.join("; ").slice(0, 400) || `999 status ${ack.status}` });
+    return { kind: "999", accepted: false, claimIds: [claim.id], errors: ack.errors };
+  }
+  if (kind === "277") {
+    const ack = parse277CA(input.text);
+    const moved = [];
+    const unmatched = [];
+    for (const c of ack.claims) {
+      const claim = await uow.tx.claim.findFirst({ where: { communityId: input.communityId, reference: c.claimReference } });
+      if (!claim) {
+        unmatched.push(c.claimReference);
+        continue;
+      }
+      if (claim.status !== "submitted") {
+        unmatched.push(`${c.claimReference} (${claim.status})`);
+        continue;
+      }
+      if (c.accepted) {
+        await uow.tx.claim.update({ where: { id: claim.id }, data: { ackStatus: "accepted_277ca", payerClaimNumber: c.payerClaimNumber ?? claim.payerClaimNumber, version: { increment: 1 } } });
+        await transition(uow, { model: "Claim", id: claim.id, from: ["submitted"], to: "accepted", actor, eventType: "claim.accepted_277ca", metadata: { category: c.category, status: c.status } });
+      } else {
+        await uow.tx.claim.update({ where: { id: claim.id }, data: { ackStatus: "rejected_277ca", version: { increment: 1 } } });
+        await transition(uow, { model: "Claim", id: claim.id, from: ["submitted"], to: "rejected", actor, eventType: "claim.rejected_277ca", reason: (c.message || `${c.category}:${c.status}`).slice(0, 400) });
+      }
+      moved.push(claim.id);
+    }
+    return { kind: "277CA", claimIds: moved, unmatched };
+  }
+  throw new DomainError(Codes.INVALID_INPUT, "This file is not a 999 or 277CA acknowledgement.", { field: "text" });
+}
+async function matchRemittance(tx, communityId, remit) {
+  const exceptions = [];
+  const matches = [];
+  const sum = remit.claims.reduce((n2, c) => n2 + c.paidMinor, 0n) - remit.plbMinor;
+  if (sum !== remit.totalPaidMinor) exceptions.push({ code: "total_mismatch", severity: "blocking", message: "The claim payments in the file do not add up to the payment total." });
+  for (const clp of remit.claims) {
+    const claim = await tx.claim.findFirst({ where: { communityId, reference: clp.claimReference }, include: { lines: { select: { chargeIds: true } } } });
+    if (!claim) {
+      exceptions.push({ code: "claim_not_found", claimReference: clp.claimReference, severity: "blocking", message: `No claim ${clp.claimReference} in this community.` });
+      continue;
+    }
+    if (!CAN_PAY.includes(claim.status)) {
+      exceptions.push({ code: "claim_status", claimReference: clp.claimReference, severity: "blocking", message: `Claim ${clp.claimReference} is ${claim.status}; it cannot take a payment.` });
+      continue;
+    }
+    if (clp.billedMinor !== claim.totalChargesMinor) exceptions.push({ code: "billed_differs", claimReference: clp.claimReference, severity: "blocking", message: `The payer billed amount ${clp.billedMinor} differs from the claim ${claim.totalChargesMinor}.` });
+    const adj = clp.contractualMinor + clp.prMinor + clp.otherMinor;
+    if (clp.paidMinor + adj !== clp.billedMinor) exceptions.push({ code: "claim_unbalanced", claimReference: clp.claimReference, severity: "blocking", message: "Paid plus adjustments do not equal the billed amount." });
+    if (clp.paidMinor > claim.totalChargesMinor - (claim.paidMinor ?? 0n)) exceptions.push({ code: "over_credit", claimReference: clp.claimReference, severity: "blocking", message: "The payment is more than the claim has left to pay." });
+    const coinIds = claim.lines.flatMap((l) => l.chargeIds ?? []);
+    if (coinIds.length) {
+      const coins = await tx.charge.aggregate({ where: { id: { in: coinIds }, kind: "coinsurance", status: { in: ["open", "posted"] } }, _sum: { amountMinor: true } });
+      if ((coins._sum.amountMinor ?? 0n) !== clp.prMinor) exceptions.push({ code: "pr_variance", claimReference: clp.claimReference, severity: "review", message: `Patient responsibility ${clp.prMinor} on the 835 differs from the coinsurance billed to the resident ${coins._sum.amountMinor ?? 0n}.` });
+    }
+    matches.push({ claimId: claim.id, clp });
+  }
+  return { exceptions, matches };
+}
+async function importRemittance(uow, actor, input) {
+  const remit = parse835(input.text);
+  const fileHash = sha256(input.text);
+  const payer = await uow.tx.payer.findUnique({ where: { id: input.payerId } });
+  if (!payer) throw new DomainError(Codes.NOT_FOUND, "Payer not found.");
+  const prior = await uow.tx.remittance.findFirst({ where: { payerId: payer.id, traceNumber: remit.traceNumber } });
+  if (prior) {
+    if (prior.fileHash !== fileHash) throw new DomainError(Codes.GUARD_FAILED, `Trace ${remit.traceNumber} was already imported from a different file.`, { reason: "trace_reused" });
+    return { remittanceId: prior.id, status: prior.status, duplicate: true, exceptions: prior.exceptions ?? [] };
+  }
+  const { exceptions } = await matchRemittance(uow.tx, input.communityId, remit);
+  const reference = remit.traceNumber;
+  const row = await uow.tx.remittance.create({
+    data: { communityId: input.communityId, payerId: payer.id, traceNumber: reference, paymentDate: day22(remit.paymentDate), totalPaidMinor: remit.totalPaidMinor, fileHash, rawText: input.text, status: "imported", exceptions, claimCount: remit.claims.length, importedById: actorUserId(actor) }
+  });
+  auditCreate(uow, actor, "Remittance", row.id, "remittance.imported", { traceNumber: reference, totalPaidMinor: remit.totalPaidMinor.toString(), claims: remit.claims.length });
+  await transition(uow, { model: "Remittance", id: row.id, from: ["imported"], to: "matched", actor, eventType: "remittance.matched", data: { exceptions }, metadata: { blocking: exceptions.filter((e) => e.severity === "blocking").length } });
+  return { remittanceId: row.id, status: "matched", duplicate: false, exceptions };
+}
+async function postRemittance(uow, actor, input) {
+  await lockRow(uow.tx, "Remittance", input.remittanceId);
+  const row = await uow.tx.remittance.findUniqueOrThrow({ where: { id: input.remittanceId } });
+  if (row.status === "posted") return { remittanceId: row.id, status: "posted", posted: 0, replay: true };
+  if (row.status !== "matched") throw new DomainError(Codes.INVALID_TRANSITION, `The remittance is ${row.status}.`, { currentStatus: row.status });
+  const remit = parse835(row.rawText);
+  const { exceptions, matches } = await matchRemittance(uow.tx, row.communityId, remit);
+  const blocking = exceptions.filter((e) => e.severity === "blocking");
+  if (blocking.length) {
+    await uow.tx.remittance.update({ where: { id: row.id }, data: { exceptions, version: { increment: 1 } } });
+    throw new DomainError(Codes.GUARD_FAILED, `The remittance has ${blocking.length} exception(s) and was not posted. Nothing was credited.`, { reason: "exceptions", exceptions });
+  }
+  let posted = 0;
+  for (const { claimId, clp } of matches) {
+    await lockRow(uow.tx, "Claim", claimId);
+    const claim = await uow.tx.claim.findUniqueOrThrow({ where: { id: claimId }, include: { lines: { orderBy: { lineNumber: "asc" } } } });
+    await uow.tx.remittancePosting.create({
+      data: { communityId: claim.communityId, residentId: claim.residentId, remittanceId: row.id, claimId, paidMinor: clp.paidMinor, contractualMinor: clp.contractualMinor, patientResponsibilityMinor: clp.prMinor, otherMinor: clp.otherMinor, adjustments: clp.adjustments.map((a) => ({ group: a.group, reason: a.reason, amountMinor: a.amountMinor.toString() })) }
+    });
+    let left = clp.paidMinor;
+    for (const line of claim.lines) {
+      const room = line.chargeMinor - (line.paidMinor ?? 0n);
+      const take = left < room ? left : room;
+      if (take > 0n) {
+        await uow.tx.claimLine.update({ where: { id: line.id }, data: { paidMinor: (line.paidMinor ?? 0n) + take } });
+        left -= take;
+      }
+    }
+    const paidTotal = (claim.paidMinor ?? 0n) + clp.paidMinor;
+    const denied = clp.statusCode === "4" || paidTotal === 0n;
+    const next = denied ? "denied" : clp.otherMinor > 0n ? "partially_paid" : "paid";
+    const denial = denied ? { carc: clp.adjustments.map((a) => `${a.group}-${a.reason}`), amountMinor: clp.billedMinor.toString(), at: uow.now.toISOString(), remittance: row.traceNumber } : null;
+    await transition(uow, {
+      model: "Claim",
+      id: claimId,
+      from: CAN_PAY,
+      to: next,
+      actor,
+      eventType: `claim.${next}`,
+      metadata: { remittance: row.traceNumber, paidMinor: clp.paidMinor.toString() },
+      data: { paidMinor: paidTotal, denial, denialStatus: denied ? "open" : claim.denialStatus, payerClaimNumber: clp.payerClaimNumber || claim.payerClaimNumber }
+    });
+    posted += 1;
+  }
+  await transition(uow, { model: "Remittance", id: row.id, from: ["matched"], to: "posted", actor, eventType: "remittance.posted", data: { postedById: actorUserId(actor), postedAt: uow.now, exceptions }, metadata: { claims: posted } });
+  return { remittanceId: row.id, status: "posted", posted, replay: false };
+}
+async function workDenial(uow, actor, input) {
+  if (!["working", "appealed", "resolved", "written_off"].includes(input.to)) throw new DomainError(Codes.INVALID_INPUT, "Choose working, appealed, resolved or written_off.", { field: "to" });
+  if (!input.note?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Add a note.", { field: "note" });
+  await lockRow(uow.tx, "Claim", input.claimId);
+  const claim = await uow.tx.claim.findUniqueOrThrow({ where: { id: input.claimId } });
+  const allowed = { open: ["working", "appealed", "written_off"], working: ["appealed", "resolved", "written_off"], appealed: ["resolved", "written_off", "working"] };
+  if (!(allowed[claim.denialStatus] ?? []).includes(input.to)) throw new DomainError(Codes.INVALID_TRANSITION, `A denial that is ${claim.denialStatus} cannot go to ${input.to}.`, { currentStatus: claim.denialStatus });
+  const denial = { ...claim.denial ?? {}, history: [...claim.denial?.history ?? [], { to: input.to, note: input.note.trim().slice(0, 500), by: actorUserId(actor), at: uow.now.toISOString() }] };
+  const status = input.to === "appealed" ? "appealed" : input.to === "written_off" || input.to === "resolved" ? "finalised" : claim.status;
+  await uow.tx.claim.update({ where: { id: claim.id }, data: { denialStatus: input.to, denial, status, version: { increment: 1 } } });
+  auditCreate(uow, actor, "Claim", claim.id, `claim.denial_${input.to}`, { to: input.to }, { reason: input.note.trim().slice(0, 200) });
+  return { claimId: claim.id, denialStatus: input.to, status };
+}
+async function receiveInvoice(uow, actor, input) {
+  if (input.amountMinor <= 0n) throw new DomainError(Codes.INVALID_INPUT, "The amount must be more than zero.", { field: "amountMinor" });
+  const stay = await uow.tx.stay.findFirst({ where: { id: input.stayId, communityId: input.communityId } });
+  if (!stay) throw new DomainError(Codes.NOT_FOUND, "Stay not found.");
+  const dup = await uow.tx.ancillaryInvoice.findFirst({ where: { vendor: input.vendor.trim(), invoiceNumber: input.invoiceNumber.trim() } });
+  if (dup) return { invoiceId: dup.id, duplicate: true, consolidatedBilling: dup.consolidatedBilling };
+  const partA = await uow.tx.coveragePeriod.findFirst({ where: { stayId: stay.id, payer: { kind: "medicare_a" }, startDate: { lte: day22(input.serviceDate) }, OR: [{ endDate: null }, { endDate: { gte: day22(input.serviceDate) } }] } });
+  const row = await uow.tx.ancillaryInvoice.create({
+    data: { communityId: input.communityId, residentId: stay.residentId, stayId: stay.id, vendor: input.vendor.trim(), invoiceNumber: input.invoiceNumber.trim(), invoiceDate: day22(input.invoiceDate), serviceDate: day22(input.serviceDate), category: input.category, description: input.description?.trim() ?? "", amountMinor: input.amountMinor, consolidatedBilling: Boolean(partA), status: "received", receivedById: actorUserId(actor) }
+  });
+  auditCreate(uow, actor, "AncillaryInvoice", row.id, "ancillary.received", { vendor: row.vendor, amountMinor: input.amountMinor.toString(), consolidatedBilling: Boolean(partA) });
+  return { invoiceId: row.id, duplicate: false, consolidatedBilling: Boolean(partA) };
+}
+async function matchInvoice(uow, actor, input) {
+  const inv = await uow.tx.ancillaryInvoice.findUniqueOrThrow({ where: { id: input.invoiceId } });
+  let claimId = null;
+  if (inv.consolidatedBilling) {
+    const claim = await uow.tx.claim.findFirst({ where: { stayId: inv.stayId, status: { not: "cancelled" }, periodFrom: { lte: inv.serviceDate }, periodTo: { gte: inv.serviceDate } } });
+    if (!claim) throw new DomainError(Codes.GUARD_FAILED, "This service falls in a Part A stay but no claim covers its date yet. Create the month's claim first.", { reason: "no_claim" });
+    claimId = claim.id;
+  }
+  await transition(uow, { model: "AncillaryInvoice", id: inv.id, from: ["received"], to: "matched", actor, eventType: "ancillary.matched", data: { claimId } });
+  return { invoiceId: inv.id, claimId };
+}
+async function approveInvoice(uow, actor, input) {
+  await transition(uow, { model: "AncillaryInvoice", id: input.invoiceId, from: ["matched"], to: "approved", actor, eventType: "ancillary.approved", data: { approvedById: actorUserId(actor) }, guard: (row) => assertCanDecide(actor, row.receivedById) });
+  return { invoiceId: input.invoiceId, status: "approved" };
+}
+async function payInvoice(uow, actor, input) {
+  await transition(uow, { model: "AncillaryInvoice", id: input.invoiceId, from: ["approved"], to: "paid", actor, eventType: "ancillary.paid", data: { paidAt: uow.now } });
+  return { invoiceId: input.invoiceId, status: "paid" };
+}
+async function saveBillingProfile(uow, actor, input) {
+  const community6 = await uow.tx.community.findUniqueOrThrow({ where: { id: input.communityId } });
+  const ids = { ...community6.identifiers ?? {} };
+  const changed = [];
+  for (const key of ["npi", "taxId", "taxonomy", "zip4", "ccn"]) {
+    const v = input[key]?.toString().trim();
+    if (!v) continue;
+    if (key === "npi" && !validNpi(v)) throw new DomainError(Codes.INVALID_INPUT, "That NPI fails the check digit.", { field: "npi" });
+    if (key === "zip4" && !/^\d{9}$/.test(v)) throw new DomainError(Codes.INVALID_INPUT, "Enter the 9-digit ZIP+4 without a dash.", { field: "zip4" });
+    if (key === "taxonomy" && !/^[0-9A-Z]{10}$/.test(v)) throw new DomainError(Codes.INVALID_INPUT, "A taxonomy code is 10 letters and digits.", { field: "taxonomy" });
+    if (key === "taxId" && !/^\d{2}-?\d{7}$/.test(v)) throw new DomainError(Codes.INVALID_INPUT, "Enter the 9-digit EIN.", { field: "taxId" });
+    if (ids[key] !== v) {
+      ids[key] = v;
+      changed.push(key);
+    }
+  }
+  if (changed.length) await uow.tx.community.update({ where: { id: community6.id }, data: { identifiers: ids } });
+  if (input.payerId && input.electronicPayerId?.trim()) {
+    await uow.tx.payer.update({ where: { id: input.payerId }, data: { payerId: input.electronicPayerId.trim() } });
+    changed.push("payerId");
+  }
+  if (changed.length) auditCreate(uow, actor, "Community", community6.id, "claims.billing_profile", { changed });
+  return { changed };
+}
+async function setClaimClinical(uow, actor, input) {
+  await lockRow(uow.tx, "Claim", input.claimId);
+  const claim = await uow.tx.claim.findUniqueOrThrow({ where: { id: input.claimId } });
+  if (claim.status !== "draft") throw new DomainError(Codes.INVALID_TRANSITION, `A ${claim.status} claim can no longer be edited; cancel it and make a replacement.`, { currentStatus: claim.status });
+  const data = {};
+  const npi = input.attendingNpi?.trim();
+  if (npi) {
+    if (!validNpi(npi)) throw new DomainError(Codes.INVALID_INPUT, "That attending NPI fails the check digit.", { field: "attendingNpi" });
+    data.attendingNpi = npi;
+  }
+  const name = input.attendingName?.trim();
+  if (name) {
+    if (!/^[^,]+,\s*[^,]+$/.test(name)) throw new DomainError(Codes.INVALID_INPUT, "Write the attending as Last, First.", { field: "attendingName" });
+    data.attendingName = name;
+  }
+  const icd2 = (v) => v.trim().toUpperCase().replace(".", "");
+  const dx = { ...claim.diagnoses ?? {} };
+  const ok = (v) => /^[A-Z][0-9][0-9A-Z]{1,5}$/.test(v);
+  if (input.principal?.trim()) {
+    if (!ok(icd2(input.principal))) throw new DomainError(Codes.INVALID_INPUT, "Enter an ICD-10-CM code such as I63.9.", { field: "principal" });
+    dx.principal = input.principal.trim().toUpperCase();
+  }
+  if (input.other?.trim()) {
+    const list20 = input.other.split(/[\s,;]+/).filter(Boolean);
+    if (list20.some((c) => !ok(icd2(c)))) throw new DomainError(Codes.INVALID_INPUT, "Other diagnoses are ICD-10-CM codes separated by commas.", { field: "other" });
+    dx.other = list20.map((c) => c.toUpperCase());
+  }
+  data.diagnoses = dx;
+  await uow.tx.claim.update({ where: { id: claim.id }, data: { ...data, scrubberResult: null, version: { increment: 1 } } });
+  auditCreate(uow, actor, "Claim", claim.id, "claim.clinical_set", { fields: Object.keys(data) });
+  return { claimId: claim.id };
+}
+
+// features/keystone/pbj/service.ts
+init_actor();
+init_cas();
+init_errors();
+init_sequence();
+
+// features/keystone/pbj/pbj.ts
+var PBJ_SPEC_VERSION = "4.10.0";
+var PBJ_JOB_TITLES = {
+  "1": "Administrator",
+  "2": "Medical Director",
+  "3": "Other Physician",
+  "4": "Physician Assistant",
+  "5": "Registered Nurse Director of Nursing",
+  "6": "Registered Nurse with Administrative Duties",
+  "7": "Registered Nurse",
+  "8": "Licensed Practical/Vocational Nurse with Administrative Duties",
+  "9": "Licensed Practical/Vocational Nurse",
+  "10": "Certified Nurse Aide",
+  "11": "Nurse Aide in Training",
+  "12": "Medication Aide/Technician",
+  "13": "Physician Services",
+  "14": "Clinical Nurse Specialist",
+  "15": "Pharmacist",
+  "16": "Dietitian",
+  "17": "Feeding Assistant",
+  "18": "Occupational Therapist",
+  "19": "Occupational Therapy Assistant",
+  "20": "Occupational Therapy Aide",
+  "21": "Physical Therapist",
+  "22": "Physical Therapy Assistant",
+  "23": "Physical Therapy Aide",
+  "24": "Respiratory Therapist",
+  "25": "Respiratory Therapy Technician",
+  "26": "Speech/Language Pathologist",
+  "27": "Therapeutic Recreation Specialist",
+  "28": "Qualified Activities Professional",
+  "29": "Other Activities Staff",
+  "30": "Qualified Social Worker",
+  "31": "Other Social Worker",
+  "32": "Dentist",
+  "33": "Podiatrist",
+  "34": "Mental Health Service Worker",
+  "35": "Vocational Service Worker",
+  "36": "Clinical Laboratory Service Worker",
+  "37": "Diagnostic X-ray Service Worker",
+  "38": "Blood Service Worker",
+  "39": "Housekeeping Service Worker",
+  "40": "Other Service Worker"
+};
+var PAY_TYPE_CODE = { exempt: "1", non_exempt: "2", contract: "3" };
+var MAX_ENTRY_MINUTES = 22 * 60 + 30;
+var MAX_DAY_MINUTES = 24 * 60;
+function fiscalQuarter(date3) {
+  const [y, m] = date3.split("-").map((n2) => Number.parseInt(n2, 10));
+  const fiscalYear = m >= 10 ? y + 1 : y;
+  const quarter = m >= 10 ? 1 : m <= 3 ? 2 : m <= 6 ? 3 : 4;
+  const startMonth = [10, 1, 4, 7][quarter - 1];
+  const startYear = quarter === 1 ? fiscalYear - 1 : fiscalYear;
+  const start = `${startYear}-${String(startMonth).padStart(2, "0")}-01`;
+  const endMonth = startMonth + 2;
+  const lastDay2 = new Date(Date.UTC(startYear, endMonth, 0)).getUTCDate();
+  const end = `${startYear}-${String(endMonth).padStart(2, "0")}-${String(lastDay2).padStart(2, "0")}`;
+  return { fiscalYear, quarter, start, end, dueOn: addDays(end, 45) };
+}
+function weekStartOf(date3) {
+  const dow = (/* @__PURE__ */ new Date(`${date3}T00:00:00Z`)).getUTCDay();
+  return addDays(date3, -((dow + 6) % 7));
+}
+function workedMinutes(punches, timeZone) {
+  const sorted = [...punches].sort((a, b) => a.observedAt.getTime() - b.observedAt.getTime());
+  const minutes = {};
+  const issues = [];
+  let shiftStart = null;
+  let breakStart = null;
+  const add = (from, to, sign2) => {
+    let cursor = from.getTime();
+    const end = to.getTime();
+    while (cursor < end) {
+      const date3 = localDate(timeZone, cursor);
+      const boundary = zonedInstant(timeZone, addDays(date3, 1), "00:00").getTime();
+      const stop = Math.min(end, boundary);
+      minutes[date3] = (minutes[date3] ?? 0) + sign2 * Math.round((stop - cursor) / 6e4);
+      cursor = stop;
+    }
+  };
+  for (const p of sorted) {
+    if (p.kind === "in") {
+      if (shiftStart) issues.push(`Two clock-ins in a row at ${p.observedAt.toISOString()}.`);
+      shiftStart = p.observedAt;
+      breakStart = null;
+    } else if (p.kind === "out") {
+      if (!shiftStart) {
+        issues.push(`Clock-out at ${p.observedAt.toISOString()} has no clock-in.`);
+        continue;
+      }
+      if (breakStart) {
+        add(breakStart, p.observedAt, -1);
+        issues.push(`Shift ending ${p.observedAt.toISOString()} ended during an unpaid break.`);
+        breakStart = null;
+      }
+      add(shiftStart, p.observedAt, 1);
+      shiftStart = null;
+    } else if (p.kind === "break_start") {
+      if (!shiftStart) issues.push(`Break start at ${p.observedAt.toISOString()} is outside a shift.`);
+      else breakStart = p.observedAt;
+    } else if (p.kind === "break_end") {
+      if (!breakStart) issues.push(`Break end at ${p.observedAt.toISOString()} has no break start.`);
+      else {
+        add(breakStart, p.observedAt, -1);
+        breakStart = null;
+      }
+    }
+  }
+  if (shiftStart) issues.push(`Clock-in at ${shiftStart.toISOString()} has no clock-out.`);
+  for (const [d, m] of Object.entries(minutes)) {
+    if (m < 0) {
+      issues.push(`${d}: break time exceeds the shift.`);
+      minutes[d] = 0;
+    }
+    if (m > MAX_DAY_MINUTES) issues.push(`${d}: more than 24 hours worked.`);
+  }
+  return { minutes, issues };
+}
+function hoursText(totalMinutes) {
+  const hundredths = Math.floor((totalMinutes * 100 + 30) / 60);
+  return `${Math.floor(hundredths / 100)}.${String(hundredths % 100).padStart(2, "0")}`;
+}
+var esc2 = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+function buildPbjXml(file) {
+  const out = ['<?xml version="1.0" encoding="UTF-8"?>', '<nursingHomeData xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="nhpbj_4_10_0.xsd">'];
+  out.push(`  <header fileSpecVersion="${PBJ_SPEC_VERSION}">`);
+  out.push(`    <facilityId>${esc2(file.facilityId)}</facilityId>`, `    <stateCode>${esc2(file.stateCode)}</stateCode>`);
+  out.push(`    <reportQuarter>${file.quarter}</reportQuarter>`, `    <federalFiscalYear>${file.fiscalYear}</federalFiscalYear>`);
+  if (file.vendor) out.push(`    <softwareVendorName>${esc2(file.vendor.name)}</softwareVendorName>`, `    <softwareProductName>${esc2(file.vendor.product)}</softwareProductName>`, `    <softwareProductVersion>${esc2(file.vendor.version)}</softwareProductVersion>`);
+  out.push("  </header>", "  <employees>");
+  for (const e of [...file.employees].sort((a, b) => a.employeeId.localeCompare(b.employeeId))) {
+    out.push("    <employee>", `      <employeeId>${esc2(e.employeeId)}</employeeId>`);
+    if (e.hireDate) out.push(`      <hireDate>${e.hireDate}</hireDate>`);
+    if (e.terminationDate) out.push(`      <terminationDate>${e.terminationDate}</terminationDate>`);
+    out.push("    </employee>");
+  }
+  out.push("  </employees>", '  <staffingHours processType="replace">');
+  const byEmployee = /* @__PURE__ */ new Map();
+  for (const row of file.hours) {
+    const days = byEmployee.get(row.employeeId) ?? /* @__PURE__ */ new Map();
+    days.set(row.date, [...days.get(row.date) ?? [], row]);
+    byEmployee.set(row.employeeId, days);
+  }
+  for (const id of [...byEmployee.keys()].sort()) {
+    out.push("    <staffHours>", `      <employeeId>${esc2(id)}</employeeId>`, "      <workDays>");
+    const days = byEmployee.get(id);
+    for (const date3 of [...days.keys()].sort()) {
+      out.push("        <workDay>", `          <date>${date3}</date>`, "          <hourEntries>");
+      for (const row of days.get(date3)) {
+        out.push("            <hourEntry>", `              <hours>${hoursText(row.minutes)}</hours>`, `              <jobTitleCode>${row.jobTitleCode}</jobTitleCode>`, `              <payTypeCode>${row.payTypeCode}</payTypeCode>`, "            </hourEntry>");
+      }
+      out.push("          </hourEntries>", "        </workDay>");
+    }
+    out.push("      </workDays>", "    </staffHours>");
+  }
+  out.push("  </staffingHours>", "</nursingHomeData>");
+  return out.join("\n") + "\n";
+}
+function validatePbj(file, ctx) {
+  const problems = [];
+  if (!/^[A-Za-z0-9]{1,16}$/.test(file.facilityId)) problems.push({ code: "facility_id", message: "The CMS Certification Number is missing or not 1-16 letters and digits." });
+  if (!/^[A-Z]{2}$/.test(file.stateCode)) problems.push({ code: "state_code", message: "The state code is missing." });
+  for (const code of ctx.unmappedJobCodes) problems.push({ code: "job_code_unmapped", message: `Job code ${code} is not mapped to a CMS job title (1-40).` });
+  for (const name of ctx.agencyWithoutId) problems.push({ code: "agency_no_id", message: `Agency staff ${name} has no employee id; PBJ requires one for contract hours.` });
+  if (ctx.unapprovedTimecards > 0) problems.push({ code: "timecards_unapproved", message: `${ctx.unapprovedTimecards} timecard(s) in the quarter are not approved yet.` });
+  const ids = /* @__PURE__ */ new Set();
+  for (const e of file.employees) {
+    if (!/^[a-zA-Z0-9_,.\-\\ ]{1,30}$/.test(e.employeeId)) problems.push({ code: "employee_id", message: `Employee id "${e.employeeId}" is not allowed (1-30 letters, digits and _ , . - \\ space).`, employeeId: e.employeeId });
+    ids.add(e.employeeId);
+  }
+  const perDay = /* @__PURE__ */ new Map();
+  for (const row of file.hours) {
+    if (!ids.has(row.employeeId)) problems.push({ code: "hours_no_employee", message: `Hours for ${row.employeeId} but the person is not in the employee list.`, employeeId: row.employeeId });
+    if (!PBJ_JOB_TITLES[row.jobTitleCode]) problems.push({ code: "job_title", message: `Job title code ${row.jobTitleCode} is not a CMS code.`, employeeId: row.employeeId, date: row.date });
+    if (row.minutes > MAX_ENTRY_MINUTES) problems.push({ code: "entry_hours", message: "One entry is over 22.5 hours; split it or check the punches.", employeeId: row.employeeId, date: row.date });
+    const key = `${row.employeeId}|${row.date}`;
+    perDay.set(key, (perDay.get(key) ?? 0) + row.minutes);
+  }
+  for (const [key, minutes] of perDay) if (minutes > MAX_DAY_MINUTES) {
+    const [employeeId, date3] = key.split("|");
+    problems.push({ code: "day_hours", message: "More than 24 hours for one person in a day.", employeeId, date: date3 });
+  }
+  if (ctx.censusDates && ctx.hoursDates) {
+    const hours3 = new Set(ctx.hoursDates);
+    const missing = ctx.censusDates.filter((d) => !hours3.has(d));
+    if (missing.length) problems.push({ code: "census_mismatch", message: `${missing.length} day(s) have residents in the census but no staff hours (first: ${missing[0]}).`, date: missing[0] });
+  }
+  return problems;
+}
+
+// features/keystone/nhsn/rpv.ts
+var NHSN_TEMPLATE_NOTE = "Built to the March 2026 (NHSN release 14.1) LTC resident RPV CSV layout. Check the current template on the NHSN site before each upload; NHSN revises it each season.";
+var RPV_SEASON = "2025-2026";
+var RPV_COLUMNS = [
+  "orgid",
+  "survweekstart",
+  "survweekend",
+  "rpvSeason",
+  "numres",
+  "totResUpToDate",
+  "numResFluVacc",
+  "numResRsvVacc",
+  "numResC19PosTest",
+  "numResC19PosUTD",
+  "numResFluPosTest",
+  "numResFLUPosVacc",
+  "numResRsvPosTest",
+  "numResRSVPosVacc",
+  "numResC19HospPos",
+  "numResC19HospUTD",
+  "numResFluHospPos",
+  "numResFluHospVacc",
+  "numResRSVHospPos",
+  "numResRSVHospVacc",
+  "resNonThera",
+  "numResC19Thera",
+  "numResC19TheraNirm",
+  "numResC19TheraRem",
+  "numResC19TheraMol",
+  "numResFluThera",
+  "numResFluTheraOse",
+  "numResFluTheraZan",
+  "numResFluTheraPer",
+  "numResFluTheraBal",
+  "numResRSVThera",
+  "numResRSVTheraRib",
+  "numResRSVTheraPal",
+  "numResRSVTheraNir",
+  "numResRSVTheraCle"
+];
+var mdy = (iso12) => `${iso12.slice(5, 7)}/${iso12.slice(8, 10)}/${iso12.slice(2, 4)}`;
+var weekEnd = (weekStart) => addDays(weekStart, 6);
+var isMonday = (iso12) => (/* @__PURE__ */ new Date(`${iso12}T00:00:00Z`)).getUTCDay() === 1;
+function validateRpv(i) {
+  const p = [];
+  const add = (code, message) => p.push({ code, message });
+  if (!isMonday(i.weekStart)) add("week_start", "The surveillance week must start on a Monday.");
+  if (weekEnd(i.weekStart) > i.today) add("week_future", "The week has not ended yet; NHSN does not accept a week that ends after today.");
+  if (!/^\d{1,10}$/.test(i.orgId)) add("org_id", "The community NHSN facility id is not set (OperatorSettings or the community identifiers: nhsnOrgId).");
+  const whole = (n2) => Number.isInteger(n2) && n2 >= 0;
+  for (const [k, v] of Object.entries(i)) if (typeof v === "number" && !whole(v)) add("whole_number", `${k} must be a whole number.`);
+  if (i.numRes > 3e3) add("numres_max", "numres is limited to 3,000.");
+  const le = (a, b, name, of) => {
+    if (a > b) add("count_exceeds", `${name} (${a}) cannot be more than ${of} (${b}).`);
+  };
+  for (const [name, v] of [["upToDateCovid", i.upToDateCovid], ["fluVaccinated", i.fluVaccinated], ["rsvVaccinated", i.rsvVaccinated], ["covidPositive", i.covidPositive], ["fluPositive", i.fluPositive], ["rsvPositive", i.rsvPositive]]) le(v, i.numRes, name, "numres");
+  le(i.covidPositiveUtd, i.covidPositive, "covidPositiveUtd", "covidPositive");
+  le(i.covidPositiveUtd, i.upToDateCovid, "covidPositiveUtd", "upToDateCovid");
+  le(i.fluPositiveVaccinated, i.fluPositive, "fluPositiveVaccinated", "fluPositive");
+  le(i.fluPositiveVaccinated, i.fluVaccinated, "fluPositiveVaccinated", "fluVaccinated");
+  le(i.rsvPositiveVaccinated, i.rsvPositive, "rsvPositiveVaccinated", "rsvPositive");
+  le(i.rsvPositiveVaccinated, i.rsvVaccinated, "rsvPositiveVaccinated", "rsvVaccinated");
+  return p;
+}
+function rpvRow(i) {
+  return {
+    orgid: i.orgId,
+    survweekstart: mdy(i.weekStart),
+    survweekend: mdy(weekEnd(i.weekStart)),
+    rpvSeason: RPV_SEASON,
+    numres: i.numRes,
+    totResUpToDate: i.upToDateCovid,
+    numResFluVacc: i.fluVaccinated,
+    numResRsvVacc: i.rsvVaccinated,
+    numResC19PosTest: i.covidPositive,
+    numResC19PosUTD: i.covidPositive > 0 ? i.covidPositiveUtd : "",
+    numResFluPosTest: i.fluPositive,
+    numResFLUPosVacc: i.fluPositive > 0 ? i.fluPositiveVaccinated : "",
+    numResRsvPosTest: i.rsvPositive,
+    numResRSVPosVacc: i.rsvPositive > 0 ? i.rsvPositiveVaccinated : "",
+    numResC19HospPos: 0,
+    numResC19HospUTD: "",
+    numResFluHospPos: 0,
+    numResFluHospVacc: "",
+    numResRSVHospPos: 0,
+    numResRSVHospVacc: "",
+    resNonThera: "Y",
+    numResC19Thera: "",
+    numResC19TheraNirm: "",
+    numResC19TheraRem: "",
+    numResC19TheraMol: "",
+    numResFluThera: "",
+    numResFluTheraOse: "",
+    numResFluTheraZan: "",
+    numResFluTheraPer: "",
+    numResFluTheraBal: "",
+    numResRSVThera: "",
+    numResRSVTheraRib: "",
+    numResRSVTheraPal: "",
+    numResRSVTheraNir: "",
+    numResRSVTheraCle: ""
+  };
+}
+var cell = (v) => {
+  const s = String(v);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+var rpvCsv = (row) => `${RPV_COLUMNS.join(",")}\r
+${RPV_COLUMNS.map((c) => cell(row[c])).join(",")}\r
+`;
+function seasonStart(weekStart) {
+  const y = Number.parseInt(weekStart.slice(0, 4), 10);
+  return `${weekStart.slice(5, 7) >= "07" ? y : y - 1}-07-01`;
+}
+function vaccinatedSet(facts, vaccine, weekEnd2, since) {
+  const out = /* @__PURE__ */ new Set();
+  for (const f of facts) {
+    if (f.vaccine !== vaccine || f.status !== "given" || !f.givenAt) continue;
+    const d = f.givenAt.toISOString().slice(0, 10);
+    if (d <= weekEnd2 && (!since || d >= since)) out.add(f.residentId);
+  }
+  return out;
+}
+
+// features/keystone/pbj/service.ts
+var day23 = (s) => /* @__PURE__ */ new Date(`${s}T00:00:00Z`);
+var iso11 = (d) => d ? d.toISOString().slice(0, 10) : "";
+var KINDS = ["in", "out", "break_start", "break_end"];
+async function zoneOf(tx, communityId) {
+  return (await tx.community.findUniqueOrThrow({ where: { id: communityId }, select: { timeZone: true } })).timeZone || "America/New_York";
+}
+async function saveJobCode(uow, actor, input) {
+  const code = input.code.trim();
+  if (!code || !input.title.trim()) throw new DomainError(Codes.INVALID_INPUT, "A job code needs a code and a title.");
+  if (input.pbjJobTitleCode && !PBJ_JOB_TITLES[input.pbjJobTitleCode]) throw new DomainError(Codes.INVALID_INPUT, "The CMS job title code must be 1 to 40.", { field: "pbjJobTitleCode" });
+  const existing = await uow.tx.jobCode.findFirst({ where: { communityId: input.communityId, code } });
+  const data = { title: input.title.trim(), pbjJobTitleCode: input.pbjJobTitleCode ?? "", countsTowardNursing: Boolean(input.countsTowardNursing) };
+  const row = existing ? await uow.tx.jobCode.update({ where: { id: existing.id }, data }) : await uow.tx.jobCode.create({ data: { communityId: input.communityId, code, ...data } });
+  auditCreate(uow, actor, "JobCode", row.id, existing ? "jobcode.updated" : "jobcode.created", { code, ...data });
+  return { jobCodeId: row.id };
+}
+async function saveStaffMember(uow, actor, input) {
+  if (!["exempt", "non_exempt", "contract"].includes(input.payType)) throw new DomainError(Codes.INVALID_INPUT, "Pay type must be exempt, non_exempt or contract.", { field: "payType" });
+  if (!/^[a-zA-Z0-9_,.\-\\ ]{1,30}$/.test(input.employeeId)) throw new DomainError(Codes.INVALID_INPUT, "The employee id may use letters, digits and _ , . - \\ space, up to 30 characters. Never use a Social Security number.", { field: "employeeId" });
+  const job = await uow.tx.jobCode.findFirst({ where: { id: input.jobCodeId, communityId: input.communityId } });
+  if (!job) throw new DomainError(Codes.NOT_FOUND, "Job code not found.");
+  const existing = await uow.tx.staffMember.findFirst({ where: { communityId: input.communityId, employeeId: input.employeeId } });
+  const data = { name: input.name.trim(), jobCodeId: job.id, payType: input.payType, agency: Boolean(input.agency), hireDate: input.hireDate ? day23(input.hireDate) : null, terminationDate: input.terminationDate ? day23(input.terminationDate) : null, userId: input.userId ?? null, status: input.terminationDate ? "terminated" : "active" };
+  const row = existing ? await uow.tx.staffMember.update({ where: { id: existing.id }, data: { ...data, version: { increment: 1 } } }) : await uow.tx.staffMember.create({ data: { communityId: input.communityId, employeeId: input.employeeId, ...data } });
+  auditCreate(uow, actor, "StaffMember", row.id, existing ? "staff.updated" : "staff.created", { employeeId: input.employeeId, jobCode: job.code });
+  return { staffMemberId: row.id };
+}
+async function importPunches(uow, actor, input) {
+  const lines = input.csv.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length < 2 || !/^employeeId\s*,\s*kind\s*,\s*observedAt/i.test(lines[0])) throw new DomainError(Codes.INVALID_INPUT, "The first line must be: employeeId,kind,observedAt,source", { field: "csv" });
+  const staff = new Map((await uow.tx.staffMember.findMany({ where: { communityId: input.communityId } })).map((s) => [s.employeeId, s.id]));
+  const batch = sha256(input.csv).slice(0, 16);
+  let added = 0, repeated = 0;
+  const rejected = [];
+  for (const [i, line] of lines.slice(1).entries()) {
+    const [employeeId, kind, observed, source = "import"] = line.split(",").map((s) => s.trim());
+    const staffMemberId = staff.get(employeeId);
+    const at = new Date(observed);
+    if (!staffMemberId) {
+      rejected.push({ line: i + 2, reason: `Unknown employee id ${employeeId || "(blank)"}.` });
+      continue;
+    }
+    if (!KINDS.includes(kind)) {
+      rejected.push({ line: i + 2, reason: `Kind ${kind} is not in, out, break_start or break_end.` });
+      continue;
+    }
+    if (!/(Z|[+-]\d\d:?\d\d)$/.test(observed) || Number.isNaN(at.getTime())) {
+      rejected.push({ line: i + 2, reason: "The time needs a date, time and zone, e.g. 2026-08-03T07:02:00-04:00." });
+      continue;
+    }
+    if (at.getTime() > uow.now.getTime() + 5 * 6e4) {
+      rejected.push({ line: i + 2, reason: "A punch cannot be in the future." });
+      continue;
+    }
+    const punchHash = sha256(`${input.communityId}|${staffMemberId}|${kind}|${at.toISOString()}`);
+    if (await uow.tx.timePunch.findUnique({ where: { punchHash } })) {
+      repeated += 1;
+      continue;
+    }
+    await uow.tx.timePunch.create({ data: { communityId: input.communityId, staffMemberId, kind, observedAt: at, source: ["kiosk", "mobile", "geofence"].includes(source) ? source : "import", punchHash, batch, recordedById: actorUserId(actor) } });
+    added += 1;
+  }
+  auditCreate(uow, actor, "TimePunch", batch, "timepunch.imported", { added, repeated, rejected: rejected.length });
+  return { added, repeated, rejected, batch };
+}
+async function requestCorrection(uow, actor, input) {
+  if (!KINDS.includes(input.kind)) throw new DomainError(Codes.INVALID_INPUT, "Kind must be in, out, break_start or break_end.", { field: "kind" });
+  if (!input.reason?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Say why the punch is being added.", { field: "reason" });
+  const at = new Date(input.observedAt);
+  if (Number.isNaN(at.getTime()) || !/(Z|[+-]\d\d:?\d\d)$/.test(input.observedAt)) throw new DomainError(Codes.INVALID_INPUT, "The time needs a date, time and zone.", { field: "observedAt" });
+  const staff = await uow.tx.staffMember.findUniqueOrThrow({ where: { id: input.staffMemberId } });
+  const row = await uow.tx.timeCorrection.create({ data: { communityId: staff.communityId, staffMemberId: staff.id, kind: input.kind, observedAt: at, reason: input.reason.trim(), status: "requested", requestedById: actorUserId(actor) } });
+  auditCreate(uow, actor, "TimeCorrection", row.id, "timecorrection.requested", { staff: staff.employeeId, kind: input.kind });
+  return { correctionId: row.id };
+}
+async function decideCorrection(uow, actor, input) {
+  if (!["approved", "rejected"].includes(input.decision)) throw new DomainError(Codes.INVALID_INPUT, "Decide approved or rejected.", { field: "decision" });
+  const row = await transition(uow, {
+    model: "TimeCorrection",
+    id: input.correctionId,
+    from: ["requested"],
+    to: input.decision,
+    actor,
+    eventType: `timecorrection.${input.decision}`,
+    reason: input.note ?? null,
+    data: { decidedById: actorUserId(actor), decidedAt: uow.now, decisionNote: input.note?.trim() ?? "" },
+    guard: (r) => assertCanDecide(actor, r.requestedById)
+  });
+  if (input.decision === "approved") {
+    const c = row;
+    const punchHash = sha256(`${c.communityId}|${c.staffMemberId}|${c.kind}|${c.observedAt.toISOString()}`);
+    if (!await uow.tx.timePunch.findUnique({ where: { punchHash } })) {
+      await uow.tx.timePunch.create({ data: { communityId: c.communityId, staffMemberId: c.staffMemberId, kind: c.kind, observedAt: c.observedAt, source: "correction", punchHash, correctionId: c.id, recordedById: actorUserId(actor) } });
+    }
+    const zone = await zoneOf(uow.tx, c.communityId);
+    const week = weekStartOf(localDate(zone, c.observedAt));
+    const card = await uow.tx.timecard.findFirst({ where: { staffMemberId: c.staffMemberId, weekStart: day23(week) } });
+    if (card && card.status !== "open") throw new DomainError(Codes.GUARD_FAILED, `The week of ${week} is already ${card.status}. Rebuild it after the exported file is superseded.`, { reason: "week_closed" });
+  }
+  return { correctionId: input.correctionId, status: input.decision };
+}
+async function buildTimecard(uow, actor, input) {
+  const week = weekStartOf(input.weekStart);
+  if (week !== input.weekStart) throw new DomainError(Codes.INVALID_INPUT, "A week starts on a Monday.", { field: "weekStart" });
+  const staff = await uow.tx.staffMember.findUniqueOrThrow({ where: { id: input.staffMemberId } });
+  const zone = await zoneOf(uow.tx, staff.communityId);
+  const existing = await uow.tx.timecard.findFirst({ where: { staffMemberId: staff.id, weekStart: day23(week) } });
+  if (existing && existing.status !== "open") throw new DomainError(Codes.GUARD_FAILED, `This week is ${existing.status}.`, { reason: "not_open" });
+  const from = /* @__PURE__ */ new Date(`${addDays(week, -1)}T00:00:00Z`);
+  const to = /* @__PURE__ */ new Date(`${addDays(week, 8)}T00:00:00Z`);
+  const punches = await uow.tx.timePunch.findMany({ where: { staffMemberId: staff.id, observedAt: { gte: from, lt: to } }, orderBy: { observedAt: "asc" } });
+  const result = workedMinutes(punches.map((p) => ({ kind: p.kind, observedAt: p.observedAt })), zone);
+  const dayMinutes = {};
+  for (let i = 0; i < 7; i += 1) {
+    const d = addDays(week, i);
+    if (result.minutes[d]) dayMinutes[d] = result.minutes[d];
+  }
+  const total = Object.values(dayMinutes).reduce((n2, m) => n2 + m, 0);
+  const data = { dayMinutes, totalMinutes: total, issues: result.issues };
+  const card = existing ? await uow.tx.timecard.update({ where: { id: existing.id }, data: { ...data, version: { increment: 1 } } }) : await uow.tx.timecard.create({ data: { communityId: staff.communityId, staffMemberId: staff.id, weekStart: day23(week), status: "open", ...data } });
+  if (!existing) auditCreate(uow, actor, "Timecard", card.id, "timecard.built", { staff: staff.employeeId, week, totalMinutes: total });
+  return { timecardId: card.id, totalMinutes: total, issues: result.issues };
+}
+async function submitTimecard(uow, actor, input) {
+  await transition(uow, {
+    model: "Timecard",
+    id: input.timecardId,
+    from: ["open"],
+    to: "submitted",
+    actor,
+    eventType: "timecard.submitted",
+    data: { submittedById: actorUserId(actor) },
+    guard: (row) => {
+      if ((row.issues ?? []).length) throw new DomainError(Codes.GUARD_FAILED, "Fix the punch problems on this timecard first (add a correction).", { reason: "issues", issues: row.issues });
+    }
+  });
+  return { timecardId: input.timecardId, status: "submitted" };
+}
+async function approveTimecard(uow, actor, input) {
+  await transition(uow, {
+    model: "Timecard",
+    id: input.timecardId,
+    from: ["submitted"],
+    to: "approved",
+    actor,
+    eventType: "timecard.approved",
+    data: { approvedById: actorUserId(actor), approvedAt: uow.now },
+    guard: async (row) => {
+      assertCanDecide(actor, row.submittedById);
+      const staff = await uow.tx.staffMember.findUnique({ where: { id: row.staffMemberId }, select: { userId: true } });
+      assertIndependentComplianceReview("Timecard", staff?.userId, actorUserId(actor) ?? "", "approved");
+    }
+  });
+  return { timecardId: input.timecardId, status: "approved" };
+}
+async function reopenTimecard(uow, actor, input) {
+  if (!input.reason?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Say why the timecard is reopened.", { field: "reason" });
+  const card = await uow.tx.timecard.findUniqueOrThrow({ where: { id: input.timecardId } });
+  if (card.status === "exported") throw new DomainError(Codes.GUARD_FAILED, "This week is in an exported PBJ file. Reopen it only after replacing that file.", { reason: "exported" });
+  await transition(uow, { model: "Timecard", id: input.timecardId, from: ["submitted", "approved"], to: "open", actor, eventType: "timecard.reopened", reason: input.reason.trim(), data: { approvedById: null, approvedAt: null, submittedById: null } });
+  return { timecardId: input.timecardId, status: "open" };
+}
+async function openPbjQuarter(uow, actor, input) {
+  const q = fiscalQuarter(input.date);
+  const existing = await uow.tx.pbjQuarter.findFirst({ where: { communityId: input.communityId, federalFiscalYear: q.fiscalYear, quarter: q.quarter } });
+  if (existing) return { quarterId: existing.id, reference: existing.reference, existing: true };
+  const reference = `PBJ-FY${q.fiscalYear}-Q${q.quarter}`;
+  const row = await uow.tx.pbjQuarter.create({ data: { communityId: input.communityId, reference, federalFiscalYear: q.fiscalYear, quarter: q.quarter, startDate: day23(q.start), endDate: day23(q.end), dueOn: day23(q.dueOn), status: "open" } });
+  auditCreate(uow, actor, "PbjQuarter", row.id, "pbj.opened", { reference, dueOn: q.dueOn });
+  return { quarterId: row.id, reference, existing: false };
+}
+async function pbjFileFor(tx, quarterId) {
+  const quarter = await tx.pbjQuarter.findUniqueOrThrow({ where: { id: quarterId } });
+  const community6 = await tx.community.findUniqueOrThrow({ where: { id: quarter.communityId } });
+  const ids = community6.identifiers ?? {};
+  const start = iso11(quarter.startDate), end = iso11(quarter.endDate);
+  const staff = await tx.staffMember.findMany({ where: { communityId: quarter.communityId }, include: { jobCode: true } });
+  const cards = await tx.timecard.findMany({ where: { communityId: quarter.communityId, weekStart: { gte: day23(addDays(start, -6)), lte: day23(end) } } });
+  const inQuarter = (c) => iso11(c.weekStart) >= addDays(start, -6) && iso11(c.weekStart) <= end;
+  const approved = cards.filter((c) => inQuarter(c) && ["approved", "exported"].includes(c.status));
+  const unapproved = cards.filter((c) => inQuarter(c) && !["approved", "exported"].includes(c.status) && c.totalMinutes > 0).length;
+  const hours3 = [];
+  const unmapped = /* @__PURE__ */ new Set();
+  const agencyNoId = /* @__PURE__ */ new Set();
+  const used = /* @__PURE__ */ new Set();
+  for (const card of approved) {
+    const person = staff.find((s) => s.id === card.staffMemberId);
+    if (!person) continue;
+    const code = person.jobCode?.pbjJobTitleCode ?? "";
+    for (const [date3, minutes] of Object.entries(card.dayMinutes ?? {})) {
+      if (date3 < start || date3 > end || minutes <= 0) continue;
+      if (!PBJ_JOB_TITLES[code]) {
+        unmapped.add(person.jobCode?.code ?? "(no job code)");
+        continue;
+      }
+      if (person.agency && !person.employeeId) agencyNoId.add(person.name);
+      hours3.push({ employeeId: person.employeeId, date: date3, minutes, jobTitleCode: code, payTypeCode: PAY_TYPE_CODE[person.payType] ?? "2" });
+      used.add(person.id);
+    }
+  }
+  const censusRows = await tx.censusDay.groupBy({ by: ["date"], where: { communityId: quarter.communityId, presence: "in_house", date: { gte: quarter.startDate, lte: quarter.endDate }, supersededById: null } });
+  const file = {
+    facilityId: ids.ccn ?? "",
+    stateCode: community6.region || "",
+    fiscalYear: quarter.federalFiscalYear,
+    quarter: quarter.quarter,
+    employees: staff.filter((s) => used.has(s.id)).map((s) => ({ employeeId: s.employeeId, hireDate: s.hireDate ? iso11(s.hireDate) : null, terminationDate: s.terminationDate ? iso11(s.terminationDate) : null })),
+    hours: hours3,
+    vendor: { name: "Openfront", product: "Senior Care", version: "1.0" }
+  };
+  return { quarter, file, ctx: { unmappedJobCodes: [...unmapped], agencyWithoutId: [...agencyNoId], unapprovedTimecards: unapproved, censusDates: censusRows.map((r) => iso11(r.date)), hoursDates: [...new Set(hours3.map((h) => h.date))] } };
+}
+async function validatePbjQuarter(uow, actor, input) {
+  await lockRow(uow.tx, "PbjQuarter", input.quarterId);
+  const current = await uow.tx.pbjQuarter.findUniqueOrThrow({ where: { id: input.quarterId } });
+  if (!["open", "ready"].includes(current.status)) throw new DomainError(Codes.INVALID_TRANSITION, `The quarter is ${current.status}.`, { currentStatus: current.status });
+  const { file, ctx } = await pbjFileFor(uow.tx, input.quarterId);
+  const problems = validatePbj(file, ctx);
+  const blocking = problems.length > 0;
+  const xml = blocking ? "" : buildPbjXml(file);
+  await uow.tx.pbjQuarter.update({
+    where: { id: current.id },
+    data: { status: blocking ? "open" : "ready", validation: { ok: !blocking, problems, at: uow.now.toISOString(), employees: file.employees.length, entries: file.hours.length }, xml, xmlHash: xml ? sha256(xml) : "", version: { increment: 1 } }
+  });
+  auditCreate(uow, actor, "PbjQuarter", current.id, blocking ? "pbj.validation_failed" : "pbj.ready", { problems: problems.length, entries: file.hours.length });
+  return { quarterId: current.id, status: blocking ? "open" : "ready", ok: !blocking, problems, entries: file.hours.length };
+}
+async function markPbjExported(uow, actor, input) {
+  await transition(uow, { model: "PbjQuarter", id: input.quarterId, from: ["ready"], to: "exported", actor, eventType: "pbj.exported", data: { exportedAt: uow.now, exportedById: actorUserId(actor) } });
+  const q = await uow.tx.pbjQuarter.findUniqueOrThrow({ where: { id: input.quarterId } });
+  await uow.tx.timecard.updateMany({ where: { communityId: q.communityId, status: "approved", weekStart: { gte: day23(addDays(iso11(q.startDate), -6)), lte: q.endDate } }, data: { status: "exported" } });
+  return { quarterId: input.quarterId, status: "exported" };
+}
+async function recordPbjOutcome(uow, actor, input) {
+  const from = input.outcome === "submitted" ? ["exported"] : ["submitted"];
+  if (!["submitted", "accepted", "rejected"].includes(input.outcome)) throw new DomainError(Codes.INVALID_INPUT, "Outcome must be submitted, accepted or rejected.", { field: "outcome" });
+  if (input.outcome === "rejected" && !input.note?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Paste the rejection reason from the submission report.", { field: "note" });
+  await transition(uow, { model: "PbjQuarter", id: input.quarterId, from, to: input.outcome, actor, eventType: `pbj.${input.outcome}`, reason: input.note ?? null, data: { reportNote: input.note?.trim() ?? "", ...input.outcome === "submitted" ? { submittedAt: uow.now } : {} } });
+  return { quarterId: input.quarterId, status: input.outcome };
+}
+async function generateNhsnWeek(uow, actor, input) {
+  const community6 = await uow.tx.community.findUniqueOrThrow({ where: { id: input.communityId } });
+  const ids = community6.identifiers ?? {};
+  const zone = community6.timeZone || "America/New_York";
+  const end = weekEnd(input.weekStart);
+  const dates = Array.from({ length: 7 }, (_, n2) => addDays(input.weekStart, n2));
+  const byDay = await deriveCensusRange(uow.tx, input.communityId, dates);
+  const stayIds = [...new Set([...byDay.values()].flat().filter((r) => r.presence === "in_house" || r.presence === "on_leave_hold").map((r) => r.stayId))];
+  const stayRows = stayIds.length ? await uow.tx.stay.findMany({ where: { id: { in: stayIds } }, select: { residentId: true } }) : [];
+  const residents = new Set(stayRows.map((s) => s.residentId).filter((r) => Boolean(r)));
+  const facts = await uow.tx.immunisation.findMany({ where: { communityId: input.communityId, residentId: { in: [...residents] } }, select: { residentId: true, vaccine: true, status: true, givenAt: true, decidedAt: true, offeredAt: true } });
+  const since = seasonStart(input.weekStart);
+  const flu = vaccinatedSet(facts.map((f) => ({ ...f, residentId: f.residentId })), "influenza", end, since);
+  const rsv = vaccinatedSet(facts.map((f) => ({ ...f, residentId: f.residentId })), "rsv", end, null);
+  const cov = vaccinatedSet(facts.map((f) => ({ ...f, residentId: f.residentId })), "covid19", end, since);
+  const cases = await uow.tx.infectionCase.findMany({ where: { communityId: input.communityId, residentId: { in: [...residents] }, status: { in: ["confirmed", "resolved"] }, onsetAt: { gte: /* @__PURE__ */ new Date(`${input.weekStart}T00:00:00Z`), lt: /* @__PURE__ */ new Date(`${addDays(end, 1)}T00:00:00Z`) } }, select: { residentId: true, syndrome: true } });
+  const pos = (s) => new Set(cases.filter((c) => c.syndrome === s).map((c) => c.residentId));
+  const covPos = pos("covid19"), fluPos = pos("influenza"), rsvPos = pos("respiratory");
+  const inter = (a, b) => [...a].filter((x) => b.has(x)).length;
+  const row = {
+    orgId: ids.nhsnOrgId ?? "",
+    weekStart: input.weekStart,
+    numRes: residents.size,
+    upToDateCovid: input.upToDateCovid ?? cov.size,
+    fluVaccinated: flu.size,
+    rsvVaccinated: rsv.size,
+    covidPositive: input.covidPositive ?? covPos.size,
+    covidPositiveUtd: input.covidPositiveUtd ?? inter(covPos, cov),
+    fluPositive: input.fluPositive ?? fluPos.size,
+    fluPositiveVaccinated: input.fluPositiveVaccinated ?? inter(fluPos, flu),
+    rsvPositive: input.rsvPositive ?? 0,
+    rsvPositiveVaccinated: input.rsvPositiveVaccinated ?? 0,
+    today: localDate(zone, uow.now)
+  };
+  const problems = validateRpv(row);
+  const csv = problems.length ? "" : rpvCsv(rpvRow(row));
+  const existing = await uow.tx.nhsnExport.findFirst({ where: { communityId: input.communityId, weekStart: day23(input.weekStart) } });
+  if (existing && existing.status !== "generated") throw new DomainError(Codes.GUARD_FAILED, `The week of ${input.weekStart} is already ${existing.status}.`, { reason: "not_regenerable" });
+  const data = { counts: row, problems, csv, csvHash: csv ? sha256(csv) : "", templateNote: NHSN_TEMPLATE_NOTE, generatedById: actorUserId(actor) };
+  const saved = existing ? await uow.tx.nhsnExport.update({ where: { id: existing.id }, data: { ...data, version: { increment: 1 } } }) : await uow.tx.nhsnExport.create({ data: { communityId: input.communityId, reference: await nextReference(uow.tx, "NHS", uow.now), weekStart: day23(input.weekStart), weekEnd: day23(end), status: "generated", ...data } });
+  auditCreate(uow, actor, "NhsnExport", saved.id, "nhsn.generated", { week: input.weekStart, problems: problems.length, numRes: row.numRes });
+  return { exportId: saved.id, ok: problems.length === 0, problems, counts: row };
+}
+async function recordNhsnUpload(uow, actor, input) {
+  if (input.step === "confirmed" && !input.confirmation?.trim()) throw new DomainError(Codes.INVALID_INPUT, "Enter the confirmation text or number NHSN showed after the upload.", { field: "confirmation" });
+  const row = await uow.tx.nhsnExport.findUniqueOrThrow({ where: { id: input.exportId } });
+  if (!row.csv) throw new DomainError(Codes.GUARD_FAILED, "There is no file for this week; fix the problems and generate it again.", { reason: "no_file" });
+  await transition(uow, { model: "NhsnExport", id: input.exportId, from: input.step === "uploaded" ? ["generated"] : ["uploaded"], to: input.step, actor, eventType: `nhsn.${input.step}`, data: { ...input.step === "uploaded" ? { uploadedAt: uow.now } : { confirmation: input.confirmation.trim() } } });
+  return { exportId: input.exportId, status: input.step };
+}
+
 // features/keystone/mutations/billing.ts
 init_cas();
-var money2 = (value, field) => {
+var money4 = (value, field) => {
   try {
     return minorOf(value);
   } catch {
@@ -15147,6 +17068,14 @@ var TRUST_SIGN = ["canApproveTrust"];
 var MDS = ["canManageAssessments"];
 var MDS_SUBMIT = ["canSubmitRegulatory"];
 var COVERAGE = ["canManageBilling", "canManageAssessments"];
+var CLAIMS = ["canManageClaims"];
+var CLAIM_RELEASE = ["canReleaseClaims"];
+var POSTING = ["canPostPayments"];
+var TIME = ["canManageTimecards"];
+var TIME_APPROVE = ["canApproveTimecards"];
+var PEOPLE = ["canManagePeople"];
+var REGULATORY = ["canSubmitRegulatory"];
+var bigint = (v, f) => money4(v, f);
 var byMds = byRecord2("MdsAssessment", "assessmentId");
 var byCoverage = async (tx, i) => {
   const id = i.coverageId;
@@ -15161,16 +17090,16 @@ var HANDLERS2 = {
   "billing.adjust_closed": { permissions: BILLING, community: byCommunity2, serializable: true, run: (u, a, i) => adjustClosedPeriod(u, a, { communityId: i.communityId, month: i.month }) },
   // Rates
   "rate.create": { permissions: RATES, community: byCommunity2, run: (u, a, i) => createSchedule(u, a, i) },
-  "rate.add_line": { permissions: RATES, community: byRecord2("RateSchedule", "scheduleId"), run: (u, a, i) => addRateLine(u, a, { scheduleId: i.scheduleId, kind: i.kind, per: i.per, proration: i.proration, apartmentTypeId: i.apartmentTypeId, careLevelId: i.careLevelId, amountMinor: money2(i.amountMinor, "rate") }) },
+  "rate.add_line": { permissions: RATES, community: byRecord2("RateSchedule", "scheduleId"), run: (u, a, i) => addRateLine(u, a, { scheduleId: i.scheduleId, kind: i.kind, per: i.per, proration: i.proration, apartmentTypeId: i.apartmentTypeId, careLevelId: i.careLevelId, amountMinor: money4(i.amountMinor, "rate") }) },
   "rate.request_publish": { permissions: RATES, community: byRecord2("RateSchedule", "scheduleId"), run: (u, a, i) => requestPublish(u, a, { scheduleId: i.scheduleId }) },
   "rate.notice_delivered": { permissions: RATES, community: byRecord2("RateSchedule", "scheduleId"), run: (u, a, i) => recordRateNoticeDelivery(u, a, { scheduleId: i.scheduleId, residentId: i.residentId, method: i.method, deliveredAt: new Date(i.deliveredAt) }) },
   // Payments recorded by hand, deposits and refunds
-  "payment.record": { permissions: PAYMENTS, community: byStatement, serializable: true, run: (u, a, i) => recordHandPayment(u, a, { statementId: i.statementId, method: i.method, amountMinor: money2(i.amountMinor, "amount"), reference: i.reference }) },
+  "payment.record": { permissions: PAYMENTS, community: byStatement, serializable: true, run: (u, a, i) => recordHandPayment(u, a, { statementId: i.statementId, method: i.method, amountMinor: money4(i.amountMinor, "amount"), reference: i.reference }) },
   "deposit.receive": {
     permissions: PAYMENTS,
     community: byCommunity2,
     run: async (u, a, i) => {
-      const amount = money2(i.amountMinor, "amount");
+      const amount = money4(i.amountMinor, "amount");
       if (amount <= 0n) throw new DomainError(Codes.INVALID_INPUT, "The deposit must be more than zero.", { field: "amount" });
       const created = await u.tx.deposit.create({ data: { communityId: i.communityId, residentId: i.residentId, kind: i.kind, amountMinor: amount, method: i.method, status: "held", receivedOn: /* @__PURE__ */ new Date(`${String(i.receivedOn).slice(0, 10)}T00:00:00Z`), note: i.note ?? "" } });
       u.audit({ eventType: "deposit.received", entityType: "Deposit", entityId: created.id, after: { kind: i.kind, amountMinor: amount.toString() } });
@@ -15180,16 +17109,16 @@ var HANDLERS2 = {
   "deposit.apply": { permissions: PAYMENTS, community: byRecord2("Deposit", "depositId"), serializable: true, run: (u, a, i) => applyDeposit(u, a, { depositId: i.depositId, statementId: i.statementId }) },
   "deposit.forfeit": { permissions: ["canIssueRefunds"], community: byRecord2("Deposit", "depositId"), serializable: true, run: (u, a, i) => requestForfeit(u, a, { depositId: i.depositId, reason: String(i.reason ?? "") }) },
   "credit.apply": { permissions: PAYMENTS, community: byRecord2("ResidentCredit", "creditId"), serializable: true, run: (u, a, i) => applyCredit(u, a, { creditId: i.creditId, statementId: i.statementId }) },
-  "adjustment.create": { permissions: ADJUST, community: byStatement, serializable: true, run: (u, a, i) => requestBalanceChange(u, a, { kind: "adjustment", statementId: i.statementId, amountMinor: money2(i.amountMinor, "amount"), reason: String(i.reason ?? ""), supersedesId: i.supersedesId }) },
-  "writeoff.create": { permissions: ADJUST, community: byStatement, serializable: true, run: (u, a, i) => requestBalanceChange(u, a, { kind: "write_off", statementId: i.statementId, amountMinor: money2(i.amountMinor, "amount"), reason: String(i.reason ?? ""), supersedesId: i.supersedesId }) },
+  "adjustment.create": { permissions: ADJUST, community: byStatement, serializable: true, run: (u, a, i) => requestBalanceChange(u, a, { kind: "adjustment", statementId: i.statementId, amountMinor: money4(i.amountMinor, "amount"), reason: String(i.reason ?? ""), supersedesId: i.supersedesId }) },
+  "writeoff.create": { permissions: ADJUST, community: byStatement, serializable: true, run: (u, a, i) => requestBalanceChange(u, a, { kind: "write_off", statementId: i.statementId, amountMinor: money4(i.amountMinor, "amount"), reason: String(i.reason ?? ""), supersedesId: i.supersedesId }) },
   "care_level.assign": { permissions: BILLING, community: byRecord2("Stay", "stayId"), serializable: true, run: (u, a, i) => assignCareLevel(u, a, { stayId: i.stayId, points: i.points === void 0 || i.points === null ? null : Number(i.points), careLevelId: i.careLevelId, effectiveFrom: i.effectiveFrom, noticeDeliveredOn: i.noticeDeliveredOn, reason: i.reason }) },
-  "refund.request": { permissions: ["canIssueRefunds", "canManagePayments"], community: async (tx, i) => i.paymentId ? byRecord2("Payment", "paymentId")(tx, i) : i.creditId ? byRecord2("ResidentCredit", "creditId")(tx, i) : byRecord2("Deposit", "depositId")(tx, i), serializable: true, run: (u, a, i) => requestRefund(u, a, { paymentId: i.paymentId, depositId: i.depositId, creditId: i.creditId, amountMinor: money2(i.amountMinor, "amount"), reason: String(i.reason ?? "") }) },
+  "refund.request": { permissions: ["canIssueRefunds", "canManagePayments"], community: async (tx, i) => i.paymentId ? byRecord2("Payment", "paymentId")(tx, i) : i.creditId ? byRecord2("ResidentCredit", "creditId")(tx, i) : byRecord2("Deposit", "depositId")(tx, i), serializable: true, run: (u, a, i) => requestRefund(u, a, { paymentId: i.paymentId, depositId: i.depositId, creditId: i.creditId, amountMinor: money4(i.amountMinor, "amount"), reason: String(i.reason ?? "") }) },
   // Card and ACH (Stripe test), each running its own committed steps
   "payment.charge": {
     permissions: ["canManagePayments"],
     community: byStatement,
     run: async () => ({}),
-    external: (db, a, i) => chargeStatement(db, a, { statementId: i.statementId, method: i.method === "ach" ? "ach" : "card", amountMinor: money2(i.amountMinor, "amount"), tokenId: i.tokenId, idempotencyKey: String(i.__key) })
+    external: (db, a, i) => chargeStatement(db, a, { statementId: i.statementId, method: i.method === "ach" ? "ach" : "card", amountMinor: money4(i.amountMinor, "amount"), tokenId: i.tokenId, idempotencyKey: String(i.__key) })
   },
   // Keep a card on file for a resident: card.setup makes the Stripe customer + SetupIntent, the browser confirms it with Stripe Elements,
   // card.save reads it back from Stripe and stores the payment method id (never the number)
@@ -15234,7 +17163,7 @@ var HANDLERS2 = {
   "plan.retry_instalment": { permissions: ["canManagePayments"], community: byRecord2("PaymentPlanInstalment", "instalmentId"), run: async () => ({}), external: (db, a, i) => chargeInstalment(db, a, { instalmentId: i.instalmentId, tokenId: i.tokenId ?? null, retry: true, idempotencyKey: String(i.__key) }) },
   "billing.autopay": { permissions: ["canManagePayments"], community: byRecord2("BillingPeriod", "periodId"), run: async () => ({}), external: (db, a, i) => chargeAutopayForPeriod(db, a, { periodId: i.periodId }) },
   // Medicaid liability
-  "medicaid.record": { permissions: BILLING, community: byRecord2("Stay", "stayId"), run: (u, a, i) => recordLiability(u, a, { stayId: i.stayId, month: i.month, liabilityMinor: money2(i.liabilityMinor, "liability"), noticeReceivedOn: i.noticeReceivedOn, note: i.note }) },
+  "medicaid.record": { permissions: BILLING, community: byRecord2("Stay", "stayId"), run: (u, a, i) => recordLiability(u, a, { stayId: i.stayId, month: i.month, liabilityMinor: money4(i.liabilityMinor, "liability"), noticeReceivedOn: i.noticeReceivedOn, note: i.note }) },
   "medicaid.info_request": { permissions: BILLING, community: byRecord2("MedicaidLiability", "liabilityId"), run: (u, a, i) => recordInfoRequest(u, a, { liabilityId: i.liabilityId, kind: i.kind, on: i.on }) },
   "medicaid.appeal": { permissions: BILLING, community: byRecord2("MedicaidLiability", "liabilityId"), run: (u, a, i) => fileAppeal(u, a, { liabilityId: i.liabilityId, filedOn: i.filedOn }) },
   // Medicaid applications and the patient liability schedule (with the personal needs allowance)
@@ -15244,7 +17173,7 @@ var HANDLERS2 = {
     permissions: BILLING,
     community: byRecord2("Resident", "residentId"),
     serializable: true,
-    run: (u, a, i) => recordSchedule(u, a, { residentId: i.residentId, stayId: i.stayId || null, applicationId: i.applicationId || null, monthlyAmountMinor: money2(i.monthlyAmountMinor, "liability"), personalNeedsAllowanceMinor: money2(i.personalNeedsAllowanceMinor ?? 0, "personal needs allowance"), effectiveFrom: i.effectiveFrom, note: i.note })
+    run: (u, a, i) => recordSchedule(u, a, { residentId: i.residentId, stayId: i.stayId || null, applicationId: i.applicationId || null, monthlyAmountMinor: money4(i.monthlyAmountMinor, "liability"), personalNeedsAllowanceMinor: money4(i.personalNeedsAllowanceMinor ?? 0, "personal needs allowance"), effectiveFrom: i.effectiveFrom, note: i.note })
   },
   // Phase 4a: MDS 3.0 and PDPM (STATE-MACHINES §6.1-§6.4)
   "mds.load_reference": { permissions: MDS, community: async () => null, run: (u, a) => loadMdsReference(u, a) },
@@ -15273,22 +17202,55 @@ var HANDLERS2 = {
   "trust.authorisation_record": {
     permissions: TRUST_OP,
     community: byLedger,
-    run: (u, a, i) => recordAuthorisation(u, a, { ledgerId: i.ledgerId, representativeId: i.representativeId || null, signedOn: i.signedOn, kinds: Array.isArray(i.kinds) ? i.kinds : String(i.kinds ?? "").split(",").map((k) => k.trim()).filter(Boolean), perWithdrawalLimitMinor: i.perWithdrawalLimitMinor === void 0 || i.perWithdrawalLimitMinor === null || i.perWithdrawalLimitMinor === "" ? null : money2(i.perWithdrawalLimitMinor, "limit"), documentId: i.documentId || null })
+    run: (u, a, i) => recordAuthorisation(u, a, { ledgerId: i.ledgerId, representativeId: i.representativeId || null, signedOn: i.signedOn, kinds: Array.isArray(i.kinds) ? i.kinds : String(i.kinds ?? "").split(",").map((k) => k.trim()).filter(Boolean), perWithdrawalLimitMinor: i.perWithdrawalLimitMinor === void 0 || i.perWithdrawalLimitMinor === null || i.perWithdrawalLimitMinor === "" ? null : money4(i.perWithdrawalLimitMinor, "limit"), documentId: i.documentId || null })
   },
   "trust.authorisation_revoke": { permissions: TRUST_OP, community: byRecord2("TrustAuthorisation", "authorisationId"), run: (u, a, i) => revokeAuthorisation(u, a, { authorisationId: i.authorisationId, reason: String(i.reason ?? "") }) },
-  "trust.allocate_interest": { permissions: TRUST_OP, community: byRecord2("TrustAccount", "accountId"), serializable: true, run: (u, a, i) => allocateAccountInterest(u, a, { accountId: i.accountId, month: i.month, interestMinor: money2(i.interestMinor, "interest") }) },
+  "trust.allocate_interest": { permissions: TRUST_OP, community: byRecord2("TrustAccount", "accountId"), serializable: true, run: (u, a, i) => allocateAccountInterest(u, a, { accountId: i.accountId, month: i.month, interestMinor: money4(i.interestMinor, "interest") }) },
   "trust.quarterly_statements": { permissions: TRUST_OP, community: byRecord2("TrustAccount", "accountId"), run: (u, a, i) => generateQuarterForAccount(u, a, { accountId: i.accountId, quarter: i.quarter }) },
-  "trust.record_bond": { permissions: TRUST_SIGN, community: byRecord2("TrustAccount", "accountId"), run: (u, a, i) => recordSuretyBond(u, a, { accountId: i.accountId, carrier: String(i.carrier ?? ""), bondNumber: String(i.bondNumber ?? ""), amountMinor: money2(i.amountMinor, "bond amount"), effectiveFrom: i.effectiveFrom, expiresOn: i.expiresOn }) },
+  "trust.record_bond": { permissions: TRUST_SIGN, community: byRecord2("TrustAccount", "accountId"), run: (u, a, i) => recordSuretyBond(u, a, { accountId: i.accountId, carrier: String(i.carrier ?? ""), bondNumber: String(i.bondNumber ?? ""), amountMinor: money4(i.amountMinor, "bond amount"), effectiveFrom: i.effectiveFrom, expiresOn: i.expiresOn }) },
   "trust.open_ledger": { permissions: TRUST_OP, community: byCommunity2, run: (u, a, i) => openLedger(u, a, { communityId: i.communityId, residentId: i.residentId, accountId: i.accountId, consentOnFile: i.consentOnFile === true }) },
-  "trust.deposit": { permissions: TRUST_OP, community: byLedger, serializable: true, run: (u, a, i) => recordDeposit(u, a, { ledgerId: i.ledgerId, amountMinor: money2(i.amountMinor, "amount"), purpose: i.purpose, effectiveOn: i.effectiveOn }) },
-  "trust.withdraw": { permissions: TRUST_OP, community: byLedger, serializable: true, run: (u, a, i) => prepareWithdrawal(u, a, { ledgerId: i.ledgerId, amountMinor: money2(i.amountMinor, "amount"), purpose: String(i.purpose ?? ""), effectiveOn: i.effectiveOn }) },
+  "trust.deposit": { permissions: TRUST_OP, community: byLedger, serializable: true, run: (u, a, i) => recordDeposit(u, a, { ledgerId: i.ledgerId, amountMinor: money4(i.amountMinor, "amount"), purpose: i.purpose, effectiveOn: i.effectiveOn }) },
+  "trust.withdraw": { permissions: TRUST_OP, community: byLedger, serializable: true, run: (u, a, i) => prepareWithdrawal(u, a, { ledgerId: i.ledgerId, amountMinor: money4(i.amountMinor, "amount"), purpose: String(i.purpose ?? ""), effectiveOn: i.effectiveOn }) },
   "trust.sign": { permissions: TRUST_SIGN, community: byRecord2("TrustTransaction", "transactionId"), serializable: true, run: (u, a, i) => signWithdrawal(u, a, { transactionId: i.transactionId }) },
   "trust.reject": { permissions: TRUST_SIGN, community: byRecord2("TrustTransaction", "transactionId"), run: (u, a, i) => rejectWithdrawal(u, a, { transactionId: i.transactionId, reason: String(i.reason ?? "") }) },
   "trust.reverse": { permissions: TRUST_OP, community: byRecord2("TrustTransaction", "transactionId"), serializable: true, run: (u, a, i) => reverseTransaction(u, a, { transactionId: i.transactionId, reason: String(i.reason ?? "") }) },
   "trust.close_ledger": { permissions: TRUST_OP, community: byLedger, serializable: true, run: (u, a, i) => closeLedger(u, a, { ledgerId: i.ledgerId, reason: i.reason, closedOn: i.closedOn }) },
   "trust.convey": { permissions: TRUST_OP, community: byLedger, serializable: true, run: (u, a, i) => conveyBalance(u, a, { ledgerId: i.ledgerId, conveyedTo: String(i.conveyedTo ?? ""), effectiveOn: i.effectiveOn }) },
-  "trust.reconcile": { permissions: TRUST_OP, community: byRecord2("TrustAccount", "accountId"), serializable: true, run: (u, a, i) => prepareReconciliation(u, a, { accountId: i.accountId, month: i.month, bankBalanceMinor: money2(i.bankBalanceMinor, "bank balance") }) },
-  "trust.sign_reconciliation": { permissions: TRUST_SIGN, community: byRecord2("TrustReconciliation", "reconciliationId"), run: (u, a, i) => signReconciliation(u, a, { reconciliationId: i.reconciliationId }) }
+  "trust.reconcile": { permissions: TRUST_OP, community: byRecord2("TrustAccount", "accountId"), serializable: true, run: (u, a, i) => prepareReconciliation(u, a, { accountId: i.accountId, month: i.month, bankBalanceMinor: money4(i.bankBalanceMinor, "bank balance") }) },
+  "trust.sign_reconciliation": { permissions: TRUST_SIGN, community: byRecord2("TrustReconciliation", "reconciliationId"), run: (u, a, i) => signReconciliation(u, a, { reconciliationId: i.reconciliationId }) },
+  // Claims (Phase 4b). Nothing is transmitted: the 837I is a file a person uploads, and every response is a file a person uploads back.
+  "claim.billing_profile": { permissions: CLAIMS, community: byCommunity2, run: (u, a, i) => saveBillingProfile(u, a, { communityId: i.communityId, npi: i.npi, taxId: i.taxId, taxonomy: i.taxonomy, zip4: i.zip4, ccn: i.ccn, payerId: i.payerId, electronicPayerId: i.electronicPayerId }) },
+  "claim.create_month": { permissions: CLAIMS, community: byCommunity2, serializable: true, run: (u, a, i) => createClaimsForMonth(u, a, { communityId: i.communityId, month: String(i.month ?? "") }) },
+  "claim.set_clinical": { permissions: CLAIMS, community: byRecord2("Claim", "claimId"), run: (u, a, i) => setClaimClinical(u, a, { claimId: i.claimId, attendingNpi: i.attendingNpi, attendingName: i.attendingName, principal: i.principal, other: i.other }) },
+  "claim.validate": { permissions: CLAIMS, community: byRecord2("Claim", "claimId"), run: (u, a, i) => validateClaim(u, a, { claimId: i.claimId }) },
+  "claim.release": { permissions: CLAIM_RELEASE, community: byRecord2("Claim", "claimId"), run: (u, a, i) => releaseClaim(u, a, { claimId: i.claimId }) },
+  "claim.export": { permissions: CLAIMS, community: byRecord2("Claim", "claimId"), run: (u, a, i) => exportClaim(u, a, { claimId: i.claimId }) },
+  "claim.mark_submitted": { permissions: CLAIMS, community: byRecord2("Claim", "claimId"), run: (u, a, i) => markSubmitted(u, a, { claimId: i.claimId, exportHash: String(i.exportHash ?? "") }) },
+  "claim.cancel": { permissions: CLAIMS, community: byRecord2("Claim", "claimId"), run: (u, a, i) => cancelClaim(u, a, { claimId: i.claimId, reason: String(i.reason ?? "") }) },
+  "claim.upload_ack": { permissions: CLAIMS, community: byCommunity2, run: (u, a, i) => recordAcknowledgement(u, a, { communityId: i.communityId, text: String(i.text ?? ""), claimId: i.claimId || null }) },
+  "claim.work_denial": { permissions: CLAIMS, community: byRecord2("Claim", "claimId"), run: (u, a, i) => workDenial(u, a, { claimId: i.claimId, to: String(i.to ?? ""), note: String(i.note ?? "") }) },
+  "remittance.import": { permissions: POSTING, community: byCommunity2, serializable: true, run: (u, a, i) => importRemittance(u, a, { communityId: i.communityId, payerId: String(i.payerId ?? ""), text: String(i.text ?? "") }) },
+  "remittance.post": { permissions: POSTING, community: byRecord2("Remittance", "remittanceId"), serializable: true, run: (u, a, i) => postRemittance(u, a, { remittanceId: i.remittanceId }) },
+  "ancillary.receive": { permissions: CLAIMS, community: byCommunity2, run: (u, a, i) => receiveInvoice(u, a, { communityId: i.communityId, stayId: i.stayId, vendor: String(i.vendor ?? ""), invoiceNumber: String(i.invoiceNumber ?? ""), invoiceDate: i.invoiceDate, serviceDate: i.serviceDate, category: String(i.category ?? "other"), description: i.description, amountMinor: bigint(i.amountMinor, "amount") }) },
+  "ancillary.match": { permissions: CLAIMS, community: byRecord2("AncillaryInvoice", "invoiceId"), run: (u, a, i) => matchInvoice(u, a, { invoiceId: i.invoiceId }) },
+  "ancillary.approve": { permissions: CLAIM_RELEASE, community: byRecord2("AncillaryInvoice", "invoiceId"), run: (u, a, i) => approveInvoice(u, a, { invoiceId: i.invoiceId }) },
+  "ancillary.pay": { permissions: POSTING, community: byRecord2("AncillaryInvoice", "invoiceId"), run: (u, a, i) => payInvoice(u, a, { invoiceId: i.invoiceId }) },
+  // Workforce, PBJ and NHSN (Phase 4b)
+  "workforce.job_code": { permissions: PEOPLE, community: byCommunity2, run: (u, a, i) => saveJobCode(u, a, { communityId: i.communityId, code: String(i.code ?? ""), title: String(i.title ?? ""), pbjJobTitleCode: i.pbjJobTitleCode || null, countsTowardNursing: Boolean(i.countsTowardNursing) }) },
+  "workforce.staff": { permissions: PEOPLE, community: byCommunity2, run: (u, a, i) => saveStaffMember(u, a, { communityId: i.communityId, employeeId: String(i.employeeId ?? ""), name: String(i.name ?? ""), jobCodeId: i.jobCodeId, payType: String(i.payType ?? ""), agency: Boolean(i.agency), hireDate: i.hireDate || null, terminationDate: i.terminationDate || null, userId: i.userId || null }) },
+  "workforce.import_punches": { permissions: TIME, community: byCommunity2, run: (u, a, i) => importPunches(u, a, { communityId: i.communityId, csv: String(i.csv ?? "") }) },
+  "workforce.request_correction": { permissions: TIME, community: byRecord2("StaffMember", "staffMemberId"), run: (u, a, i) => requestCorrection(u, a, { staffMemberId: i.staffMemberId, kind: String(i.kind ?? ""), observedAt: String(i.observedAt ?? ""), reason: String(i.reason ?? "") }) },
+  "workforce.decide_correction": { permissions: TIME_APPROVE, community: byRecord2("TimeCorrection", "correctionId"), run: (u, a, i) => decideCorrection(u, a, { correctionId: i.correctionId, decision: i.decision, note: i.note }) },
+  "timecard.build": { permissions: TIME, community: byRecord2("StaffMember", "staffMemberId"), run: (u, a, i) => buildTimecard(u, a, { staffMemberId: i.staffMemberId, weekStart: String(i.weekStart ?? "") }) },
+  "timecard.submit": { permissions: TIME, community: byRecord2("Timecard", "timecardId"), run: (u, a, i) => submitTimecard(u, a, { timecardId: i.timecardId }) },
+  "timecard.approve": { permissions: TIME_APPROVE, community: byRecord2("Timecard", "timecardId"), run: (u, a, i) => approveTimecard(u, a, { timecardId: i.timecardId }) },
+  "timecard.reopen": { permissions: TIME_APPROVE, community: byRecord2("Timecard", "timecardId"), run: (u, a, i) => reopenTimecard(u, a, { timecardId: i.timecardId, reason: String(i.reason ?? "") }) },
+  "pbj.open_quarter": { permissions: REGULATORY, community: byCommunity2, run: (u, a, i) => openPbjQuarter(u, a, { communityId: i.communityId, date: String(i.date ?? "") }) },
+  "pbj.validate": { permissions: REGULATORY, community: byRecord2("PbjQuarter", "quarterId"), run: (u, a, i) => validatePbjQuarter(u, a, { quarterId: i.quarterId }) },
+  "pbj.mark_exported": { permissions: REGULATORY, community: byRecord2("PbjQuarter", "quarterId"), run: (u, a, i) => markPbjExported(u, a, { quarterId: i.quarterId }) },
+  "pbj.record_outcome": { permissions: REGULATORY, community: byRecord2("PbjQuarter", "quarterId"), run: (u, a, i) => recordPbjOutcome(u, a, { quarterId: i.quarterId, outcome: i.outcome, note: i.note }) },
+  "nhsn.generate": { permissions: REGULATORY, community: byCommunity2, run: (u, a, i) => generateNhsnWeek(u, a, { communityId: i.communityId, weekStart: String(i.weekStart ?? ""), covidPositive: i.covidPositive === void 0 || i.covidPositive === "" ? void 0 : Number(i.covidPositive), fluPositive: i.fluPositive === void 0 || i.fluPositive === "" ? void 0 : Number(i.fluPositive) }) },
+  "nhsn.record": { permissions: REGULATORY, community: byRecord2("NhsnExport", "exportId"), run: (u, a, i) => recordNhsnUpload(u, a, { exportId: i.exportId, step: i.step, confirmation: i.confirmation }) }
 };
 async function billingCommand(_root, args, context) {
   const handler = HANDLERS2[args.op];
@@ -15762,7 +17724,7 @@ var { withAuth } = (0, import_auth.createAuth)({
   `
 });
 var keystone_default = withAuth(
-  (0, import_core20.config)({
+  (0, import_core23.config)({
     db: {
       provider: "postgresql",
       url: databaseURL,

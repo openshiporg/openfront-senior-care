@@ -10,7 +10,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url)
   const headers = { 'cache-control': 'no-store' }
   const kind = url.searchParams.get('kind') as ExportKind
-  if (!['claim', 'pbj', 'nhsn'].includes(kind)) return new Response('Unknown export.', { status: 400, headers })
+  if (!['claim', 'pbj', 'nhsn', 'payroll'].includes(kind)) return new Response('Unknown export.', { status: 400, headers })
   const context = await keystoneContext.withRequest({ headers: { cookie: req.headers.get('cookie') || '' }, method: 'GET', url: '/api/exports' } as unknown as IncomingMessage)
   if (!context.session?.itemId) return new Response('Sign in first.', { status: 401, headers })
   try {

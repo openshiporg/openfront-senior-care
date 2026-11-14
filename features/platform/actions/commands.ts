@@ -11,6 +11,7 @@ const OPS: Record<string, Record<string, string>> = {
   refreshTimedStates: {},
   loadClinicalSetup: {},
   loadBillingSetup: {},
+  loadWorkforceSetup: {},
   loadMdsSetup: {},
   decideApprovalRequest: { requestId: 'ID!', decision: 'String!', reason: 'String', expectedVersion: 'Int!' },
   cancelApprovalRequest: { requestId: 'ID!', expectedVersion: 'Int!', reason: 'String' },

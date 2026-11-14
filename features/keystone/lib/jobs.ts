@@ -7,6 +7,7 @@ import { runInTransaction, type UnitOfWork } from './unitOfWork'
 import { sweepClocks } from './clocks'
 import { expireReservations } from './places'
 import { expireBreakGlass } from './privacy'
+import { sweepCredentialExpiry } from '../scheduling/service'
 import { expireTourHolds, expireWaitlistOffers } from './sales'
 import { snapshotCensusDay } from './censusDay'
 
@@ -57,19 +58,22 @@ export async function runDueJobs(db: Db, now = new Date()) {
   const results: Record<string, unknown> = {}
   // One cheap read per job first: the leased job (lease, JobRun row, transaction) only runs when
   // something is actually due, so a page read that finds nothing due costs a handful of counts.
-  const [clocks, reservations, offers, holds, grants, communities] = await Promise.all([
+  const today = new Date(`${now.toISOString().slice(0, 10)}T00:00:00Z`)
+  const [clocks, reservations, offers, holds, grants, communities, credentials] = await Promise.all([
     db.complianceClock.count({ where: { current: true, status: 'open', dueAt: { lt: now } } }),
     db.placeReservation.count({ where: { status: 'active', expiresAt: { lt: now } } }),
     db.waitlistEntry.count({ where: { status: 'offered', offerExpiresAt: { lt: now } } }),
     db.tour.count({ where: { status: 'requested', holdExpiresAt: { lt: now } } }),
     db.breakGlassGrant.count({ where: { status: 'active', expiresAt: { lte: now } } }),
     db.community.findMany({ where: { status: 'active' }, select: { id: true, timeZone: true } }),
+    db.credential.count({ where: { OR: [{ status: { in: ['verified', 'expiring'] }, expiresAt: { lt: today } }, { status: 'verified', expiresAt: { gte: today, lt: new Date(today.getTime() + 30 * 86_400_000) } }] } }),
   ])
   if (clocks) results.clocks = await guarded(() => runLeasedJob(db, 'clock_sweep', 'all', uow => sweepClocks(uow, actor), now))
   if (reservations) results.reservations = await guarded(() => runLeasedJob(db, 'reservation_expiry', 'all', uow => expireReservations(uow, actor), now))
   if (offers) results.waitlistOffers = await guarded(() => runLeasedJob(db, 'waitlist_offer_expiry', 'all', uow => expireWaitlistOffers(uow, actor), now))
   if (holds) results.tourHolds = await guarded(() => runLeasedJob(db, 'tour_hold_expiry', 'all', uow => expireTourHolds(uow, actor), now))
   if (grants) results.breakGlass = await guarded(() => runLeasedJob(db, 'break_glass_expiry', 'all', uow => expireBreakGlass(uow, actor), now))
+  if (credentials) results.credentials = await guarded(() => runLeasedJob(db, 'credential_expiry', 'all', uow => sweepCredentialExpiry(uow, actor), now))
   const census: Record<string, unknown> = {}
   for (const community of communities) {
     const yesterday = addDays(localDate(community.timeZone, now), -1)

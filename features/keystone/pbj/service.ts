@@ -21,24 +21,27 @@ async function zoneOf(tx: Tx, communityId: string) {
 
 /* ---- Staff and job codes ----------------------------------------------------------------------------------------- */
 
-export async function saveJobCode(uow: UnitOfWork, actor: Actor, input: { communityId: string; code: string; title: string; pbjJobTitleCode?: string | null; countsTowardNursing?: boolean }) {
+export async function saveJobCode(uow: UnitOfWork, actor: Actor, input: { communityId: string; code: string; title: string; pbjJobTitleCode?: string | null; countsTowardNursing?: boolean; category?: string | null }) {
   const code = input.code.trim()
   if (!code || !input.title.trim()) throw new DomainError(Codes.INVALID_INPUT, 'A job code needs a code and a title.')
   if (input.pbjJobTitleCode && !PBJ_JOB_TITLES[input.pbjJobTitleCode]) throw new DomainError(Codes.INVALID_INPUT, 'The CMS job title code must be 1 to 40.', { field: 'pbjJobTitleCode' })
+  const category = input.category || 'other'
+  if (!['rn', 'lpn', 'cna', 'med_aide', 'other'].includes(category)) throw new DomainError(Codes.INVALID_INPUT, 'Category must be rn, lpn, cna, med_aide or other.', { field: 'category' })
   const existing = await uow.tx.jobCode.findFirst({ where: { communityId: input.communityId, code } })
-  const data = { title: input.title.trim(), pbjJobTitleCode: input.pbjJobTitleCode ?? '', countsTowardNursing: Boolean(input.countsTowardNursing) }
+  const data = { title: input.title.trim(), pbjJobTitleCode: input.pbjJobTitleCode ?? '', countsTowardNursing: Boolean(input.countsTowardNursing), category }
   const row = existing ? await uow.tx.jobCode.update({ where: { id: existing.id }, data }) : await uow.tx.jobCode.create({ data: { communityId: input.communityId, code, ...data } })
   auditCreate(uow, actor, 'JobCode', row.id, existing ? 'jobcode.updated' : 'jobcode.created', { code, ...data })
   return { jobCodeId: row.id }
 }
 
-export async function saveStaffMember(uow: UnitOfWork, actor: Actor, input: { communityId: string; employeeId: string; name: string; jobCodeId: string; payType: string; agency?: boolean; hireDate?: string | null; terminationDate?: string | null; userId?: string | null }) {
+export async function saveStaffMember(uow: UnitOfWork, actor: Actor, input: { communityId: string; employeeId: string; name: string; jobCodeId: string; payType: string; agency?: boolean; agencyVendorId?: string | null; hireDate?: string | null; terminationDate?: string | null; userId?: string | null }) {
   if (!['exempt', 'non_exempt', 'contract'].includes(input.payType)) throw new DomainError(Codes.INVALID_INPUT, 'Pay type must be exempt, non_exempt or contract.', { field: 'payType' })
   if (!/^[a-zA-Z0-9_,.\-\\ ]{1,30}$/.test(input.employeeId)) throw new DomainError(Codes.INVALID_INPUT, 'The employee id may use letters, digits and _ , . - \\ space, up to 30 characters. Never use a Social Security number.', { field: 'employeeId' })
   const job = await uow.tx.jobCode.findFirst({ where: { id: input.jobCodeId, communityId: input.communityId } })
   if (!job) throw new DomainError(Codes.NOT_FOUND, 'Job code not found.')
+  if (input.agencyVendorId && !(await uow.tx.agencyVendor.findFirst({ where: { id: input.agencyVendorId, communityId: input.communityId } }))) throw new DomainError(Codes.NOT_FOUND, 'Agency vendor not found.')
   const existing = await uow.tx.staffMember.findFirst({ where: { communityId: input.communityId, employeeId: input.employeeId } })
-  const data = { name: input.name.trim(), jobCodeId: job.id, payType: input.payType, agency: Boolean(input.agency), hireDate: input.hireDate ? day(input.hireDate) : null, terminationDate: input.terminationDate ? day(input.terminationDate) : null, userId: input.userId ?? null, status: input.terminationDate ? 'terminated' : 'active' }
+  const data = { name: input.name.trim(), jobCodeId: job.id, payType: input.payType, agency: Boolean(input.agency || input.agencyVendorId), agencyVendorId: input.agencyVendorId || null, hireDate: input.hireDate ? day(input.hireDate) : null, terminationDate: input.terminationDate ? day(input.terminationDate) : null, userId: input.userId ?? null, status: input.terminationDate ? 'terminated' : 'active' }
   const row = existing ? await uow.tx.staffMember.update({ where: { id: existing.id }, data: { ...data, version: { increment: 1 } } }) : await uow.tx.staffMember.create({ data: { communityId: input.communityId, employeeId: input.employeeId, ...data } })
   auditCreate(uow, actor, 'StaffMember', row.id, existing ? 'staff.updated' : 'staff.created', { employeeId: input.employeeId, jobCode: job.code })
   return { staffMemberId: row.id }
@@ -154,7 +157,9 @@ export async function approveTimecard(uow: UnitOfWork, actor: Actor, input: { ti
 export async function reopenTimecard(uow: UnitOfWork, actor: Actor, input: { timecardId: string; reason: string }) {
   if (!input.reason?.trim()) throw new DomainError(Codes.INVALID_INPUT, 'Say why the timecard is reopened.', { field: 'reason' })
   const card = await uow.tx.timecard.findUniqueOrThrow({ where: { id: input.timecardId } })
-  if (card.status === 'exported') throw new DomainError(Codes.GUARD_FAILED, 'This week is in an exported PBJ file. Reopen it only after replacing that file.', { reason: 'exported' })
+  if (card.status === 'exported') throw new DomainError(Codes.GUARD_FAILED, 'This week is in an exported PBJ file or a locked payroll period. Reopen it only after replacing that file.', { reason: 'exported' })
+  const weekEnd = new Date(card.weekStart!.getTime() + 6 * 86_400_000)
+  if (await uow.tx.payrollExport.findFirst({ where: { communityId: card.communityId, periodStart: { lte: weekEnd }, periodEnd: { gte: card.weekStart! } }, select: { id: true } })) throw new DomainError(Codes.GUARD_FAILED, 'This week is in a locked payroll period and cannot be reopened.', { reason: 'payroll_locked' })
   await transition(uow, { model: 'Timecard', id: input.timecardId, from: ['submitted', 'approved'], to: 'open', actor, eventType: 'timecard.reopened', reason: input.reason.trim(), data: { approvedById: null, approvedAt: null, submittedById: null } })
   return { timecardId: input.timecardId, status: 'open' }
 }

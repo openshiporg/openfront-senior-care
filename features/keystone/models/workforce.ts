@@ -29,6 +29,8 @@ export const JobCode = list({
     /** CMS PBJ jobTitleCode 1-40; blank means unmapped and blocks the quarter. */
     pbjJobTitleCode: systemText(),
     countsTowardNursing: checkbox({ defaultValue: false, ...ro }),
+    /** The shift role this job fills: rn, lpn, cna, med_aide or other (Phase 5). */
+    category: lifecycle(['rn', 'lpn', 'cna', 'med_aide', 'other'], 'other'),
     status: lifecycle(['active', 'retired'], 'active'),
     ...trackingFields,
   },
@@ -46,6 +48,7 @@ export const StaffMember = list({
     jobCode: relationship({ ref: 'JobCode', ...ro }),
     payType: fixedChoice(['exempt', 'non_exempt', 'contract']),
     agency: checkbox({ defaultValue: false, ...ro }),
+    agencyVendor: relationship({ ref: 'AgencyVendor', ...ro }),
     hireDate: day(),
     terminationDate: day(),
     status: lifecycle(['active', 'on_leave', 'terminated'], 'active'),

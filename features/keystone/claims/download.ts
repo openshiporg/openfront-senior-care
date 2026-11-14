@@ -4,12 +4,13 @@ import { DomainError, Codes } from '../lib/errors'
 import { assertCommunityAccess } from '../mutations/run'
 import { auditRead } from '../mutations/reads'
 import { pbjExportFile } from '../pbj/service'
+import { payrollFile } from '../scheduling/service'
 
 /**
  * Export buttons (manual export, nothing is transmitted from here). Each download checks the permission and the community,
  * and a file that names a resident writes a PhiReadAudit row before any byte leaves.
  */
-export type ExportKind = 'claim' | 'pbj' | 'nhsn'
+export type ExportKind = 'claim' | 'pbj' | 'nhsn' | 'payroll'
 export type ExportFile = { body: string; fileName: string; contentType: string }
 
 function staff(session: unknown, permission: string): Actor & { kind: 'user' } {
@@ -28,6 +29,12 @@ export async function exportDownload(db: Db, session: unknown, kind: ExportKind,
     if (!row.exportText) throw new DomainError(Codes.GUARD_FAILED, 'Export the claim first; there is no file yet.', { reason: 'not_exported' })
     await auditRead({ prisma: db, session } as never, actor, 'claimExportDownload', row.residentId ? [row.residentId] : [])
     return { body: row.exportText, fileName: `${row.reference}.837`, contentType: 'application/edi-x12' }
+  }
+  if (kind === 'payroll') {
+    const actor = staff(session, 'canApproveTimecards')
+    const file = await payrollFile(db as never, id)
+    await assertCommunityAccess(db as never, actor, file.communityId)
+    return { body: file.csv, fileName: file.fileName, contentType: 'text/csv; charset=utf-8' }
   }
   if (kind === 'pbj') {
     const actor = staff(session, 'canSubmitRegulatory')
