@@ -580,7 +580,9 @@ export async function computeStaffingDay(uow: UnitOfWork, actor: Actor, input: {
   const dedupeKey = `staffing:${input.communityId}:${input.date}`
   if (input.raise && breaches.length) {
     const detail = breaches.map(b => `${label(b.metric)}: ${b.actual} against ${b.target} (${b.source === 'jurisdiction_pack' ? 'Ohio' : 'operator policy'}${b.ruleRef ? `, ${b.ruleRef}` : ''})`).join('; ')
-    const title = `Staffing below target on ${input.date}`
+    const worst = breaches.find(b => b.source === 'jurisdiction_pack') ?? breaches[0]
+    const title = `Staffing below target on ${input.date}: ${label(worst.metric)} ${worst.actual} against ${worst.target} (${worst.source === 'jurisdiction_pack' ? 'Ohio' : 'operator policy'}), census ${census}`
+    const taskDetail = `Date ${input.date}. Census ${census} residents. ${detail}. Add or fill shifts for that day, then recompute on the Schedule page.`
     let finding = await uow.tx.finding.findUnique({ where: { dedupeKey } })
     if (!finding) {
       finding = await uow.tx.finding.create({ data: { communityId: input.communityId, workflowCode: 'STAFFING_BELOW_TARGET', dedupeKey, title, detail, severity: 'warning', status: 'open' } })
@@ -589,7 +591,8 @@ export async function computeStaffingDay(uow: UnitOfWork, actor: Actor, input: {
     } else if (finding.status !== 'open' || finding.detail !== detail) {
       finding = await uow.tx.finding.update({ where: { id: finding.id }, data: { status: 'open', detail, resolvedAt: null, version: { increment: 1 } } })
     }
-    const { task } = await createTask(uow, actor, { communityId: input.communityId, kind: 'finding', title, detail, dedupeKey: `finding:${dedupeKey}`, ownerRole: ROLES.scheduler, dueAt: new Date(Math.min(from.getTime() - 2 * HOUR, uow.now.getTime() + 8 * HOUR) > uow.now.getTime() ? Math.min(from.getTime() - 2 * HOUR, uow.now.getTime() + 8 * HOUR) : uow.now.getTime() + 2 * HOUR), subjectType: 'Finding', subjectId: finding.id, createdByWorkflow: 'STAFFING_BELOW_TARGET' })
+    const { task } = await createTask(uow, actor, { communityId: input.communityId, kind: 'finding', title, detail: taskDetail, dedupeKey: `finding:${dedupeKey}`, ownerRole: ROLES.scheduler, dueAt: new Date(Math.min(from.getTime() - 2 * HOUR, uow.now.getTime() + 8 * HOUR) > uow.now.getTime() ? Math.min(from.getTime() - 2 * HOUR, uow.now.getTime() + 8 * HOUR) : uow.now.getTime() + 2 * HOUR), subjectType: 'Finding', subjectId: finding.id, createdByWorkflow: 'STAFFING_BELOW_TARGET' })
+    if (task.status === 'open' && (task.title !== title || task.detail !== taskDetail)) await uow.tx.task.update({ where: { id: task.id }, data: { title, detail: taskDetail } })
     if (finding.taskId !== task.id) await uow.tx.finding.update({ where: { id: finding.id }, data: { taskId: task.id } })
   } else if (!breaches.length) {
     const open = await uow.tx.finding.findUnique({ where: { dedupeKey } })

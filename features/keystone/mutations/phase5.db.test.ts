@@ -135,6 +135,11 @@ describe.skipIf(!hasTestDatabase)('workforce depth (database)', { timeout: 240_0
     expect(finding.status).toBe('open')
     const task = await prisma.task.findFirstOrThrow({ where: { subjectType: 'Finding', subjectId: finding.id } })
     expect(task.ownerRole).toBe('Scheduler')
+    // The Scheduler cannot open the Finding, so the task carries the facts itself.
+    expect(task.title).toContain(date)
+    expect(task.title).toMatch(/Direct care HPRD \d\.\d\d against 2\.50 \(Ohio\), census 1\b/)
+    expect(task.detail).toMatch(/Census 1 residents/)
+    expect(task.detail).toMatch(/operator policy/)
     expect(finding.taskId).toBe(task.id)
     expect(JSON.stringify(day.breaches)).toMatch(/jurisdiction_pack/)
     // The repealed federal rule never raises a breach.
