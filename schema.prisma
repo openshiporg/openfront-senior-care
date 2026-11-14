@@ -1886,6 +1886,9 @@ model PortalAccount {
   invitationExpiresAt DateTime?
   acceptedAt          DateTime?
   mfaEnrolled         Boolean            @default(false)
+  mfaSecretSealed     String             @default("")
+  mfaEnrolledAt       DateTime?
+  mfaLastStep         Int?
   sessionEpoch        Int?               @default(0)
   grants              PortalScopeGrant[] @relation("PortalScopeGrant_account")
   version             Int                @default(0)

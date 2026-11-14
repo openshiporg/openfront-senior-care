@@ -4,7 +4,8 @@ import { hasTestDatabase, resetDatabase, testPrisma, uniqueKey } from '../../../
 import { ALL_DEFAULT, ctx, type Ctx } from '../../../tests/helpers/sessions'
 import { verifyAuditChain } from '../lib/audit'
 import { runInTransaction } from '../lib/unitOfWork'
-import { inviteRepresentative, acceptPortalInvitation } from '../lib/portal'
+import { acceptPortalInvitation } from '../lib/portal'
+import { totpCode } from '../lib/totp'
 import { portalCalendar, portalDocuments, portalResidents, portalUpdates } from '../lib/portalReads'
 import { ROLES, COMMUNITY } from '../seed/operator'
 import type { Permission } from '../access'
@@ -12,7 +13,7 @@ import { loadOperatorSetup } from './setup'
 import { admitResidentMutation } from './census'
 import {
   joinWaitlistMutation, moveLeadMutation, moveTourMutation, movePublishedPriceMutation, offerWaitlistPlaceMutation, openTourSlotsMutation,
-  proposePortalScopeMutation, grantPortalScopeMutation, requestTourMutation, resolveWaitlistOfferMutation, setStorefrontPublishedMutation,
+  proposePortalScopeMutation, grantPortalScopeMutation, requestTourMutation, tourByTokenQuery, invitePortalRepresentative, portalMfaStartMutation, portalMfaConfirmMutation, resolveWaitlistOfferMutation, setStorefrontPublishedMutation,
   storefrontCommunityQuery, submitInquiryMutation,
 } from './frontOfHouse'
 
@@ -93,6 +94,19 @@ describe.skipIf(!hasTestDatabase)('storefront to admission (database)', () => {
     const tourRow = await prisma.tour.findUniqueOrThrow({ where: { publicCode: tour.publicCode } })
     expect(tourRow.status).toBe('requested')
     expect(tourRow.guestTokenHash).not.toContain(tour.manageToken)
+    // (a) The visitor is told what happens and until when; later the by-link page says it lapsed.
+    expect(tour).toMatchObject({ status: 'requested', lapsed: false, holdMinutes: 30 })
+    expect(tour.message).toMatch(/holding .* until .*30 minutes.*lapses on its own.*will not send a message/s)
+    const viewed = await tourByTokenQuery(null, { token: tour.manageToken }, anonymous(prisma)) as any
+    expect(viewed).toMatchObject({ status: 'requested', lapsed: false })
+    await expect(tourByTokenQuery(null, { token: tour.manageToken + 'x' }, anonymous(prisma))).rejects.toMatchObject({ code: 'GUARD_FAILED' })
+    await prisma.tour.update({ where: { id: tourRow.id }, data: { holdExpiresAt: new Date(Date.now() - 60_000) } })
+    const lapsedView = await tourByTokenQuery(null, { token: tour.manageToken }, anonymous(prisma)) as any
+    expect(lapsedView).toMatchObject({ status: 'lapsed', lapsed: true })
+    expect(lapsedView.message).toMatch(/lapsed.*no tour is booked/s)
+    // The visitor sees 'lapsed' whether or not the sweep has cancelled the row yet. Put the hold back for the rest of this test.
+    await prisma.tour.update({ where: { id: tourRow.id }, data: { status: 'requested', holdExpiresAt: new Date(Date.now() + 600_000) } })
+    await prisma.tour.update({ where: { id: tourRow.id }, data: { status: 'requested', holdExpiresAt: new Date(Date.now() + 600_000) } })
     // The slot holds one: a second family can't take it while the request is held.
     await expect(requestTourMutation(null, { input: { communitySlug: slug, slotId: slot.id, kind: 'in_person', contactName: 'Other Family', contactEmail: 'other.family@yahoo.com', consentToContact: true } }, anonymous(prisma, '198.51.100.4'))).rejects.toMatchObject({ code: 'PLACE_UNAVAILABLE' })
 
@@ -159,10 +173,13 @@ describe.skipIf(!hasTestDatabase)('storefront to admission (database)', () => {
     const resident = await prisma.resident.findFirstOrThrow({ where: { firstName: 'Agnes', lastName: 'Whitfield' } })
     const rep = await prisma.representative.findFirstOrThrow({ where: { residentId: resident.id, self: false } })
     // Invitation and acceptance (the token is handed to the test, never stored or mailed).
-    let token = ''
-    await runInTransaction(prisma as never, async uow => {
-      await inviteRepresentative(uow, { kind: 'user', userId: 'seed_user_brooks', name: 'Brooks', permissions: new Set(roleOf('seed_role_social_services')) }, { representativeId: rep.id, onToken: value => { token = value } })
-    })
+    // (c) Staff get a copyable link once; the receipt never holds the token and only the hash is stored.
+    const invited = await invitePortalRepresentative(null, { representativeId: rep.id, idempotencyKey: uniqueKey('invite') }, social) as any
+    expect(invited.inviteLink).toMatch(/^\/[a-z0-9-]+\/family\/invite\?token=/)
+    const token = decodeURIComponent(invited.inviteLink.split('token=')[1])
+    const receipt = await prisma.commandReceipt.findFirstOrThrow({ where: { command: 'portal.invite' } })
+    expect(JSON.stringify(receipt.responseBody)).not.toContain(token)
+    expect((await prisma.portalAccount.findFirstOrThrow({ where: { representatives: { some: { id: rep.id } } } })).invitationTokenHash).not.toContain(token)
     await runInTransaction(prisma as never, uow => acceptPortalInvitation(uow, { token, passwordHash: '$2a$10$' + 'x'.repeat(53) }))
     await expect(runInTransaction(prisma as never, uow => acceptPortalInvitation(uow, { token, passwordHash: '$2a$10$' + 'x'.repeat(53) }))).rejects.toMatchObject({ code: 'GUARD_FAILED' })
     const account = await prisma.portalAccount.findFirstOrThrow({ where: { representatives: { some: { id: rep.id } } } })
@@ -195,7 +212,17 @@ describe.skipIf(!hasTestDatabase)('storefront to admission (database)', () => {
     await grantPortalScopeMutation(null, { grantId: docs.grantId, idempotencyKey: uniqueKey('grant') }, ferreira)
     // Documents need two-step sign-in on the account.
     await expect(read(tx => portalDocuments(tx, principal, resident.id))).rejects.toMatchObject({ code: 'GUARD_FAILED', details: { reason: 'mfa_required' } })
-    await prisma.portalAccount.update({ where: { id: account.id }, data: { mfaEnrolled: true } })
+    // (b) Real enrolment: start, confirm with a code from the secret, and the same read now works.
+    const family = { prisma, req: { headers: {}, socket: { remoteAddress: '203.0.113.9' } }, session: { itemId: account.userId, data: { kind: 'portal' } } } as never
+    await expect(portalMfaConfirmMutation(null, { code: '123456' }, family)).rejects.toMatchObject({ code: 'GUARD_FAILED', details: { reason: 'mfa_not_started' } })
+    const started = await portalMfaStartMutation(null, null, family) as any
+    expect(started.otpauthUri).toContain(started.secret)
+    expect((await prisma.portalAccount.findUniqueOrThrow({ where: { id: account.id } })).mfaSecretSealed).not.toContain(started.secret)
+    await expect(portalMfaConfirmMutation(null, { code: '000000' }, family)).rejects.toMatchObject({ code: 'GUARD_FAILED', details: { reason: 'mfa_code' } })
+    const code = totpCode(started.secret, Math.floor(Date.now() / 30_000))
+    expect(await portalMfaConfirmMutation(null, { code }, family)).toEqual({ mfaEnrolled: true })
+    expect(await prisma.portalAccount.findUniqueOrThrow({ where: { id: account.id } })).toMatchObject({ mfaEnrolled: true })
+    await expect(portalMfaStartMutation(null, null, family)).rejects.toMatchObject({ code: 'GUARD_FAILED' })
     const documents = await read(tx => portalDocuments(tx, principal, resident.id))
     expect(documents.notices.map((n: any) => n.kind)).toContain('privacy_practices')
     // Every portal read is audited with family_access.

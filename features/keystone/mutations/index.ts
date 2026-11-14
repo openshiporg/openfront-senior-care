@@ -35,6 +35,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         residentRoster(communityId: ID!, status: String): JSON
         storefrontCommunity(slug: String!): JSON
         portalMe: JSON
+        tourByToken(token: String!): JSON
         shiftOffer(token: String!): JSON
         portalUpdates(residentId: ID!): JSON
         portalCalendar(residentId: ID!): JSON
@@ -104,6 +105,8 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         resolveWaitlistOffer(waitlistEntryId: ID!, to: String!, expectedVersion: Int!, idempotencyKey: String!): JSON
 
         invitePortalRepresentative(representativeId: ID!, idempotencyKey: String!): JSON
+        portalMfaStart: JSON
+        portalMfaConfirm(code: String!): JSON
         proposePortalScope(representativeId: ID!, scope: String!, consentDocumentId: ID, idempotencyKey: String!): JSON
         grantPortalScope(grantId: ID!, expectedVersion: Int, idempotencyKey: String!): JSON
         revokePortalScope(grantId: ID!, reason: String!, expectedVersion: Int, idempotencyKey: String!): JSON
@@ -129,6 +132,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         residentRoster: op(reads.residentRoster),
         storefrontCommunity: op(front.storefrontCommunityQuery),
         portalMe: op(front.portalMeQuery),
+        tourByToken: op(front.tourByTokenQuery),
         shiftOffer: op(shiftOffer.shiftOfferQuery),
         portalUpdates: op(front.portalUpdatesQuery),
         portalCalendar: op(front.portalCalendarQuery),
@@ -197,6 +201,8 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         resolveWaitlistOffer: op(front.resolveWaitlistOfferMutation),
 
         invitePortalRepresentative: op(front.invitePortalRepresentative),
+        portalMfaStart: op(front.portalMfaStartMutation),
+        portalMfaConfirm: op(front.portalMfaConfirmMutation),
         proposePortalScope: op(front.proposePortalScopeMutation),
         grantPortalScope: op(front.grantPortalScopeMutation),
         revokePortalScope: op(front.revokePortalScopeMutation),

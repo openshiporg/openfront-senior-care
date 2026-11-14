@@ -173,7 +173,36 @@ export async function requestTour(uow: UnitOfWork, input: { communitySlug: strin
   const token = createPublicToken('tour-manage', tour.id, slot.startsAt.getTime() + 86_400_000)
   await uow.tx.tour.update({ where: { id: tour.id }, data: { guestTokenHash: hashPublicToken(token) } })
   uow.audit({ eventType: 'tour.requested', entityType: 'Tour', entityId: tour.id, actorUserId: null, after: { publicCode: code, slotId: slot.id } })
-  return { publicCode: code, manageToken: token, holdExpiresAt: tour.holdExpiresAt }
+  const zone = (await uow.tx.community.findUnique({ where: { id: community.id }, select: { timeZone: true } }))?.timeZone ?? 'America/New_York'
+  return { publicCode: code, manageToken: token, holdExpiresAt: tour.holdExpiresAt, status: 'requested', lapsed: false, holdMinutes: TOUR_HOLD_MINUTES, message: tourMessage({ status: 'requested', lapsed: false, holdExpiresAt: tour.holdExpiresAt, startsAt: slot.startsAt, zone }) }
+}
+
+const whenText = (at: Date, zone: string) => new Intl.DateTimeFormat('en-US', { timeZone: zone, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }).format(at)
+
+/** Plain words for the visitor: what happens to the request and until when. Nothing is sent; they come back to this link. */
+export function tourMessage(t: { status: string; lapsed: boolean; holdExpiresAt: Date | null; startsAt: Date | null; zone: string }) {
+  const at = t.startsAt ? whenText(t.startsAt, t.zone) : 'the time you chose'
+  if (t.lapsed) return `This tour request lapsed. It was not confirmed within ${TOUR_HOLD_MINUTES} minutes, so the time was released and no tour is booked. To book again, choose a time on the tours page or call the community.`
+  if (t.status === 'requested') return `We are holding ${at} for you until ${t.holdExpiresAt ? whenText(t.holdExpiresAt, t.zone) : `${TOUR_HOLD_MINUTES} minutes after you asked`} (${TOUR_HOLD_MINUTES} minutes). The team confirms tours by phone or in person. If it is not confirmed by then the request lapses on its own, the time is released, and we will not send a message. Keep this link and check back here for the status.`
+  if (t.status === 'confirmed') return `Your tour is confirmed for ${at}. Use this link to cancel it if your plans change.`
+  if (t.status === 'cancelled') return 'This tour was cancelled. To book again, choose a time on the tours page or call the community.'
+  if (t.status === 'completed') return 'This tour is done. Thank you for visiting.'
+  return 'This tour was marked as missed. Call the community to book another.'
+}
+
+/** Public: the tour behind a manage link. Reveals nothing without a valid token whose hash matches. */
+export async function viewTourByToken(uow: UnitOfWork, input: { token: string }) {
+  const payload = verifyPublicToken(input.token, 'tour-manage', undefined, uow.now.getTime())
+  const bad = new DomainError(Codes.GUARD_FAILED, 'This link is invalid or has expired.')
+  if (!payload) throw bad
+  const tour = await uow.tx.tour.findUnique({ where: { id: payload.subjectId }, select: { id: true, publicCode: true, status: true, kind: true, guestTokenHash: true, holdExpiresAt: true, slot: { select: { startsAt: true } }, community: { select: { name: true, timeZone: true, phone: true } } } })
+  if (!tour || !publicTokenMatches(input.token, tour.guestTokenHash)) throw bad
+  const expired = tour.status === 'cancelled' ? (await uow.tx.auditEvent.count({ where: { entityType: 'Tour', entityId: tour.id, eventType: 'tour.hold_expired' } })) > 0 : false
+  const lapsed = expired || (tour.status === 'requested' && !!tour.holdExpiresAt && tour.holdExpiresAt.getTime() < uow.now.getTime())
+  const startsAt = tour.slot?.startsAt ?? null
+  const zone = tour.community?.timeZone ?? 'America/New_York'
+  const status = lapsed ? 'lapsed' : tour.status
+  return { publicCode: tour.publicCode, status, lapsed, kind: tour.kind, startsAt, holdExpiresAt: lapsed ? null : tour.holdExpiresAt, community: tour.community?.name ?? null, phone: tour.community?.phone ?? null, message: tourMessage({ status: tour.status, lapsed, holdExpiresAt: tour.holdExpiresAt, startsAt, zone }) }
 }
 
 /** Staff: book a tour for a lead (by phone or in person). Confirmed at once; the lead moves to tour_scheduled. */

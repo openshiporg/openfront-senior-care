@@ -1,14 +1,14 @@
 import { endReservation, markPlaceReady, recomputeAvailability, reservePlace, setPlaceService, type ReserveInput } from '../lib/places'
-import { addToWaitlist, cancelTourWithToken, logSalesActivity, moveLead, moveReferral, moveTour, offerWaitlistPlace, recordInquiry, recordReferral, requestTour, scheduleTour, resolveWaitlistOffer, submitInquiry, type InquiryInput } from '../lib/sales'
+import { addToWaitlist, cancelTourWithToken, viewTourByToken, logSalesActivity, moveLead, moveReferral, moveTour, offerWaitlistPlace, recordInquiry, recordReferral, requestTour, scheduleTour, resolveWaitlistOffer, submitInquiry, type InquiryInput } from '../lib/sales'
 import { joinWaitlist, movePublishedPrice, openTourSlots, setStorefrontPublished, storefrontCommunity } from '../lib/storefront'
 import { portalCalendar, portalDocuments, portalPayments, portalResidents, portalStatements, portalTrustBalance, portalUpdates } from '../lib/portalReads'
 import { portalPay } from '../billing/portalPay'
 import { minorOf } from '../lib/money'
 import { date } from './run'
-import { acceptPortalInvitation, grantPortalScope, inviteRepresentative, proposePortalScope, revokePortalScope, setPortalAccountStatus } from '../lib/portal'
+import { confirmMfaEnrol, startMfaEnrol, acceptPortalInvitation, grantPortalScope, inviteRepresentative, proposePortalScope, revokePortalScope, setPortalAccountStatus } from '../lib/portal'
 import { endBreakGlass, openBreakGlass, reviewBreakGlass } from '../lib/privacy'
 import { enforceRateLimit } from '../lib/publicRateLimit'
-import { runInTransaction } from '../lib/unitOfWork'
+import { runInTransaction, type UnitOfWork } from '../lib/unitOfWork'
 import { DomainError, Codes } from '../lib/errors'
 import { communityOf, runDomain } from './run'
 import { actorFor } from './actorFor'
@@ -62,6 +62,13 @@ export const storefrontCommunityQuery = async (_: unknown, args: { slug: string 
   await enforceRateLimit(context, 'storefront-read', 300, 60 * 60_000)
   await advanceTimedStates(context.prisma)
   return storefrontCommunity(context.prisma, args.slug)
+}
+
+/** Public read for the by-link tour page: status, plain words about what happens next, and whether the hold lapsed. */
+export const tourByTokenQuery = async (_: unknown, args: { token: string }, context: Ctx) => {
+  await enforceRateLimit(context, 'tour-manage-read', 60, 60 * 60_000)
+  await advanceTimedStates(context.prisma)
+  return runInTransaction(context.prisma, uow => viewTourByToken(uow, args))
 }
 
 export const cancelTourByToken = (_: unknown, args: { token: string; reason?: string | null }, context: Ctx) =>
@@ -118,8 +125,30 @@ export const resolveWaitlistOfferMutation = (_: unknown, args: { waitlistEntryId
 
 /* ---------------------------------------------------------------- portal */
 
-export const invitePortalRepresentative = (_: unknown, args: { representativeId: string; idempotencyKey: string }, context: Ctx) =>
-  runDomain(context, args, { name: 'portal.invite', permissions: ['canManageRepresentatives'], humanOnly: true, community: tx => communityOf.representative(tx, args.representativeId) }, (uow, actor) => inviteRepresentative(uow, actor, args))
+/**
+ * Staff invite a family member. The link is shown to the staff member once and copied by hand; nothing is sent. Only the token's
+ * hash is stored, and the link is added after the command so it never enters the stored receipt (a replay returns no link: invite again).
+ */
+export const invitePortalRepresentative = async (_: unknown, args: { representativeId: string; idempotencyKey: string }, context: Ctx) => {
+  let token: string | null = null
+  let slug: string | null = null
+  const out = await runDomain<Awaited<ReturnType<typeof inviteRepresentative>>>(context, args, { name: 'portal.invite', permissions: ['canManageRepresentatives'], humanOnly: true, community: tx => communityOf.representative(tx, args.representativeId) }, async (uow, actor) => {
+    const done = await inviteRepresentative(uow, actor, { representativeId: args.representativeId, onToken: value => { token = value } })
+    const rep = await uow.tx.representative.findUnique({ where: { id: args.representativeId }, select: { resident: { select: { community: { select: { slug: true } } } } } })
+    slug = rep?.resident?.community?.slug ?? null
+    return done
+  })
+  return { ...out, inviteLink: token ? `/${slug ?? ''}/family/invite?token=${token}` : null, linkNote: token ? 'Copy this link and give it to the family member. It is shown once and nothing is sent.' : 'This request was already done, so the link is not shown again. Invite again to make a new link.' }
+}
+
+const portalWrite = async <T>(context: Ctx, bucket: string, work: (uow: UnitOfWork, userId: string) => Promise<T>) => {
+  const userId = portalPrincipal(context).userId
+  if ((context.session as { data?: { kind?: string | null } } | null)?.data?.kind !== 'portal') throw new DomainError(Codes.NOT_AUTHORIZED, 'Sign in to the family portal.')
+  await enforceRateLimit(context, bucket, 12, 15 * 60_000)
+  return runInTransaction(context.prisma, uow => work(uow, userId))
+}
+export const portalMfaStartMutation = (_: unknown, __: unknown, context: Ctx) => portalWrite(context, 'portal-mfa-start', (uow, userId) => startMfaEnrol(uow, { userId }))
+export const portalMfaConfirmMutation = (_: unknown, args: { code: string }, context: Ctx) => portalWrite(context, 'portal-mfa-confirm', (uow, userId) => confirmMfaEnrol(uow, { userId, code: args.code }))
 
 export const proposePortalScopeMutation = (_: unknown, args: { representativeId: string; scope: any; consentDocumentId?: string | null; idempotencyKey: string }, context: Ctx) =>
   runDomain(context, args, { name: 'portal.scope_propose', permissions: ['canManageRepresentatives'], humanOnly: true, community: tx => communityOf.representative(tx, args.representativeId) }, (uow, actor) => proposePortalScope(uow, actor, args))

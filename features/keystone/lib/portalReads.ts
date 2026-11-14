@@ -45,7 +45,7 @@ export async function requirePortalScope(tx: Tx, principal: PortalPrincipal, res
   const grant = await tx.portalScopeGrant.findFirst({ where: { accountId: account.id, residentId, scope, status: 'granted' }, select: { id: true } })
   // Not granted and not found look the same: a portal user can't probe for residents.
   if (!grant) throw new DomainError(Codes.NOT_FOUND, 'Not found.')
-  if (MFA_SCOPES.has(scope) && !account.mfaEnrolled) throw new DomainError(Codes.GUARD_FAILED, 'Turn on two-step sign-in to see this.', { reason: 'mfa_required' })
+  if (MFA_SCOPES.has(scope) && !account.mfaEnrolled) throw new DomainError(Codes.GUARD_FAILED, 'Turn on two-step sign-in to see this. Set it up on your account page: start with portalMfaStart, then confirm the 6-digit code with portalMfaConfirm.', { reason: 'mfa_required' })
   return account
 }
 

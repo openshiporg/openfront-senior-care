@@ -2,6 +2,7 @@ import { auditCreate, casUpdate, lockRow } from './cas'
 import { actorUserId, type Actor } from './actor'
 import { DomainError, Codes } from './errors'
 import { nextReference } from './sequence'
+import { matchTotp, newTotpSecret, openSecret, sealSecret } from './totp'
 import { createPublicToken, hashPublicToken, publicTokenMatches, verifyPublicToken } from './publicToken'
 import { AUTHORITY_BASES, MFA_SCOPES, PORTAL_SCOPES, SCOPE_AUTHORITY } from '../models/sales'
 import type { UnitOfWork } from './unitOfWork'
@@ -124,4 +125,35 @@ export async function setPortalAccountStatus(uow: UnitOfWork, actor: Actor, inpu
     for (const grant of grants) await casUpdate(uow, { model: 'PortalScopeGrant', id: grant.id, version: grant.version, from: [grant.status], to: 'revoked', actor, eventType: 'portal.scope_revoked', reason: 'account revoked', data: { revokedAt: uow.now, revokeReason: 'account revoked' } })
   }
   return { accountId: account.id, status: input.to }
+}
+
+/* ------------------------------------------------------------------ two-step sign-in (TOTP) */
+
+const ISSUER = 'Family portal'
+
+/** Start (or restart) enrolment: a fresh secret is sealed on the account and shown once for the authenticator app. Not enrolled until a code is confirmed. */
+export async function startMfaEnrol(uow: UnitOfWork, input: { userId: string }) {
+  const account = await uow.tx.portalAccount.findFirst({ where: { userId: input.userId }, select: { id: true, status: true, mfaEnrolled: true, contact: { select: { email: true } } } })
+  if (!account || account.status !== 'active') throw new DomainError(Codes.NOT_AUTHORIZED, 'This portal account is not active.')
+  if (account.mfaEnrolled) throw new DomainError(Codes.GUARD_FAILED, 'Two-step sign-in is already on for this account.')
+  const secret = newTotpSecret()
+  await uow.tx.portalAccount.update({ where: { id: account.id }, data: { mfaSecretSealed: sealSecret(secret) } })
+  uow.audit({ eventType: 'portal.mfa_enrol_started', entityType: 'PortalAccount', entityId: account.id, actorUserId: input.userId })
+  const name = encodeURIComponent(account.contact?.email ?? 'family')
+  return { secret, otpauthUri: `otpauth://totp/${encodeURIComponent(ISSUER)}:${name}?secret=${secret}&issuer=${encodeURIComponent(ISSUER)}&algorithm=SHA1&digits=6&period=30` }
+}
+
+/** Confirm with a code from the authenticator app. A code is accepted once: its time step is remembered. */
+export async function confirmMfaEnrol(uow: UnitOfWork, input: { userId: string; code: string }) {
+  const found = await uow.tx.portalAccount.findFirst({ where: { userId: input.userId }, select: { id: true } })
+  if (!found) throw new DomainError(Codes.NOT_AUTHORIZED, 'This portal account is not active.')
+  const account = await lockRow<{ id: string; status: string; version: number; mfaEnrolled: boolean; mfaSecretSealed: string | null; mfaLastStep: number | null }>(uow.tx, 'PortalAccount', found.id)
+  if (account.status !== 'active') throw new DomainError(Codes.NOT_AUTHORIZED, 'This portal account is not active.')
+  if (account.mfaEnrolled) throw new DomainError(Codes.GUARD_FAILED, 'Two-step sign-in is already on for this account.')
+  if (!account.mfaSecretSealed) throw new DomainError(Codes.GUARD_FAILED, 'Start two-step setup first.', { reason: 'mfa_not_started' })
+  const step = matchTotp(openSecret(account.mfaSecretSealed), input.code, uow.now.getTime())
+  if (step === null || (account.mfaLastStep !== null && step <= account.mfaLastStep)) throw new DomainError(Codes.GUARD_FAILED, 'That code did not match. Check the code in your authenticator app and try again.', { reason: 'mfa_code' })
+  await uow.tx.portalAccount.updateMany({ where: { id: account.id, version: account.version }, data: { mfaEnrolled: true, mfaEnrolledAt: uow.now, mfaLastStep: step, version: { increment: 1 } } })
+  uow.audit({ eventType: 'portal.mfa_enrolled', entityType: 'PortalAccount', entityId: account.id, actorUserId: input.userId, before: { mfaEnrolled: false }, after: { mfaEnrolled: true } })
+  return { mfaEnrolled: true }
 }

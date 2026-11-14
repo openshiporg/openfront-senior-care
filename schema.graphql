@@ -6794,6 +6794,8 @@ type PortalAccount {
   invitationExpiresAt: DateTime
   acceptedAt: DateTime
   mfaEnrolled: Boolean
+  mfaEnrolledAt: DateTime
+  mfaLastStep: Int
   sessionEpoch: Int
   grants(where: PortalScopeGrantWhereInput! = {}, orderBy: [PortalScopeGrantOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PortalScopeGrantWhereUniqueInput): [PortalScopeGrant!]
   grantsCount(where: PortalScopeGrantWhereInput! = {}): Int
@@ -6823,6 +6825,8 @@ input PortalAccountWhereInput {
   invitationExpiresAt: DateTimeNullableFilter
   acceptedAt: DateTimeNullableFilter
   mfaEnrolled: BooleanFilter
+  mfaEnrolledAt: DateTimeNullableFilter
+  mfaLastStep: IntNullableFilter
   sessionEpoch: IntNullableFilter
   grants: PortalScopeGrantManyRelationFilter
   version: IntFilter
@@ -6843,6 +6847,8 @@ input PortalAccountOrderByInput {
   invitationExpiresAt: OrderDirection
   acceptedAt: OrderDirection
   mfaEnrolled: OrderDirection
+  mfaEnrolledAt: OrderDirection
+  mfaLastStep: OrderDirection
   sessionEpoch: OrderDirection
   version: OrderDirection
   createdAt: OrderDirection
@@ -6860,6 +6866,8 @@ input PortalAccountUpdateInput {
   invitationExpiresAt: DateTime
   acceptedAt: DateTime
   mfaEnrolled: Boolean
+  mfaEnrolledAt: DateTime
+  mfaLastStep: Int
   sessionEpoch: Int
   grants: PortalScopeGrantRelateToManyForUpdateInput
   version: Int
@@ -6890,6 +6898,8 @@ input PortalAccountCreateInput {
   invitationExpiresAt: DateTime
   acceptedAt: DateTime
   mfaEnrolled: Boolean
+  mfaEnrolledAt: DateTime
+  mfaLastStep: Int
   sessionEpoch: Int
   grants: PortalScopeGrantRelateToManyForCreateInput
   version: Int
@@ -19907,6 +19917,7 @@ type Mutation {
   loadCensusSetup(idempotencyKey: String!): JSON
   loadClinicalSetup(idempotencyKey: String!): JSON
   loadBillingSetup(idempotencyKey: String!): JSON
+  loadWorkforceSetup(idempotencyKey: String!): JSON
   loadMdsSetup(idempotencyKey: String!): JSON
   refreshTimedStates(idempotencyKey: String!): JSON
   decideApprovalRequest(requestId: ID!, decision: String!, reason: String, expectedVersion: Int!, idempotencyKey: String!): JSON
@@ -19939,6 +19950,7 @@ type Mutation {
   movePublishedPrice(priceId: ID!, to: String!, expectedVersion: Int!, idempotencyKey: String!): JSON
   cancelTourByToken(token: String!, reason: String): JSON
   acceptPortalInvitation(token: String!, password: String!): JSON
+  answerShiftOffer(token: String!, answer: String!): JSON
   recordInquiry(input: JSON!, idempotencyKey: String!): JSON
   moveLead(leadId: ID!, to: String!, lostReason: String, note: String, expectedVersion: Int!, idempotencyKey: String!): JSON
   logSalesActivity(leadId: ID!, kind: String!, summary: String!, idempotencyKey: String!): JSON
@@ -19948,6 +19960,8 @@ type Mutation {
   offerWaitlistPlace(waitlistEntryId: ID!, apartmentId: ID, bedId: ID, hours: Int!, expectedVersion: Int!, idempotencyKey: String!): JSON
   resolveWaitlistOffer(waitlistEntryId: ID!, to: String!, expectedVersion: Int!, idempotencyKey: String!): JSON
   invitePortalRepresentative(representativeId: ID!, idempotencyKey: String!): JSON
+  portalMfaStart: JSON
+  portalMfaConfirm(code: String!): JSON
   proposePortalScope(representativeId: ID!, scope: String!, consentDocumentId: ID, idempotencyKey: String!): JSON
   grantPortalScope(grantId: ID!, expectedVersion: Int, idempotencyKey: String!): JSON
   revokePortalScope(grantId: ID!, reason: String!, expectedVersion: Int, idempotencyKey: String!): JSON
@@ -20529,6 +20543,8 @@ type Query {
   residentRoster(communityId: ID!, status: String): JSON
   storefrontCommunity(slug: String!): JSON
   portalMe: JSON
+  tourByToken(token: String!): JSON
+  shiftOffer(token: String!): JSON
   portalUpdates(residentId: ID!): JSON
   portalCalendar(residentId: ID!): JSON
   portalDocuments(residentId: ID!): JSON
