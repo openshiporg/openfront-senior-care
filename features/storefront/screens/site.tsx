@@ -56,12 +56,11 @@ export function HomeScreen({ site }: { site: Site }) {
   const base = `/${community.slug}`
   const tel = telHref(community.phone)
   const lead = leadPrice(site)
-  const long = site.site.heroTitle.length > 42
   return (
     <>
       <section className="sf-hero">
         <div className="sf-hero-copy">
-          <h1 className={long ? 'is-long' : ''}>{site.site.heroTitle}</h1>
+          <h1>Come see what a good day looks like.</h1>
           <Swoosh className="sf-swoosh" />
         </div>
         <div className="sf-hero-photo">
@@ -78,6 +77,7 @@ export function HomeScreen({ site }: { site: Site }) {
       <section className="sf-band sf-band-sage">
         <div className="sf-wrap sf-intro">
           <div>
+            {site.site.heroTitle ? <p className="sf-eyebrow">{site.site.heroTitle}</p> : null}
             <h2>Welcome to {community.name}</h2>
             <p className="sf-lede">{site.site.heroBody}</p>
             <Link className="sf-arrow" href={`${base}/care`}>How we care</Link>
