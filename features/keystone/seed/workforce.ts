@@ -54,23 +54,26 @@ export async function seedWorkforce(uow: UnitOfWork, actor: Actor) {
   const communityId = COMMUNITY.id
   if (!(await tx.community.findUnique({ where: { id: communityId }, select: { id: true } }))) return created
 
+  // Job codes already loaded in Phase 4b keep their own ids: resolve by community and code, and only set the shift role.
+  const jobIds = new Map<string, string>()
   for (const [id, code, title, pbj, category, nursing] of JOBS) {
-    const have = await tx.jobCode.findUnique({ where: { id }, select: { id: true } })
-    if (have) { await tx.jobCode.update({ where: { id }, data: { category } }); continue }
-    if (await tx.jobCode.findFirst({ where: { communityId, code } })) continue
+    const have = await tx.jobCode.findFirst({ where: { communityId, OR: [{ id }, { code }] }, select: { id: true } })
+    if (have) { await tx.jobCode.update({ where: { id: have.id }, data: { category } }); jobIds.set(id, have.id); continue }
     await tx.jobCode.create({ data: { id, communityId, code, title, pbjJobTitleCode: pbj, countsTowardNursing: nursing, category, status: 'active' } })
     auditCreate(uow, actor, 'JobCode', id, 'jobcode.created', { code }, seedMeta)
+    jobIds.set(id, id)
     created.jobCodes += 1
   }
 
-  for (const [id, name, jobCodeId, payType, credentialed] of ROSTER) {
+  for (const [id, name, jobKey, payType, credentialed] of ROSTER) {
+    const jobCodeId = jobIds.get(jobKey)!
     if (await tx.staffMember.findUnique({ where: { id }, select: { id: true } })) continue
     const employeeId = id.replace('seed_staff_', 'E-').toUpperCase().slice(0, 28)
     await tx.staffMember.create({ data: { id, communityId, name, employeeId, jobCodeId, payType, hireDate: day('2024-03-04'), status: 'active' } })
     auditCreate(uow, actor, 'StaffMember', id, 'staff.created', { employeeId }, seedMeta)
     created.staff += 1
     if (!credentialed) continue
-    const category = JOBS.find(j => j[0] === jobCodeId)![4]
+    const category = JOBS.find(j => j[0] === jobKey)![4]
     const kinds: [string, string | null][] = [
       [{ rn: 'rn_licence', lpn: 'lpn_licence', cna: 'cna_registry', med_aide: 'med_aide_cert', other: 'cpr' }[category]!, '2027-09-30'],
       ['cpr', '2027-03-31'],
