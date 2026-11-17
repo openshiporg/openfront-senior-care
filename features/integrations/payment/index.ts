@@ -14,7 +14,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 export type Outcome = 'succeeded' | 'failed' | 'requires_action' | 'processing' | 'unknown'
 
 export type ChargeInput = { amountMinor: bigint; currencyCode: string; idempotencyKey: string; description: string; metadata: Record<string, string>; paymentMethod?: string; customer?: string }
-export type ChargeResult = { outcome: Outcome; providerRef: string | null; message: string }
+export type ChargeResult = { outcome: Outcome; providerRef: string | null; message: string; /** The processor answered and has no such charge. */ missing?: boolean }
 export type RefundInput = { providerRef: string; amountMinor: bigint; idempotencyKey: string; reason: string }
 export type RefundResult = { outcome: 'succeeded' | 'failed' | 'unknown'; providerRef: string | null; message: string }
 export type WebhookEvent = { id: string; type: string; objectRef: string; outcome: 'succeeded' | 'failed' | 'refunded' | 'ignored' }
@@ -93,7 +93,7 @@ async function findIntent(input: ChargeInput): Promise<ChargeResult> {
     if (listed.status === 200 && Array.isArray(listed.json.data)) found = (listed.json.data as Record<string, any>[]).filter(ours)
   }
   if (!found) return { outcome: 'unknown', providerRef: null, message: 'The card processor did not answer. Check the status in a moment.' }
-  if (found.length === 0) return { outcome: 'unknown', providerRef: null, message: 'The card processor has no record of this payment yet. Check again in a minute, or look it up in the Stripe dashboard.' }
+  if (found.length === 0) return { outcome: 'unknown', providerRef: null, missing: true, message: 'The card processor has no record of this payment yet. Check again in a minute, or look it up in the Stripe dashboard.' }
   if (found.length > 1) return { outcome: 'unknown', providerRef: null, message: 'More than one card charge matches this payment. Look it up in the Stripe dashboard.' }
   return intentResult(200, found[0])
 }
