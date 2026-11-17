@@ -212,7 +212,13 @@ async function issueStatements(uow: UnitOfWork, communityId: string, period: { i
   let issued = 0
   for (const residentId of [...byResident.keys()].sort()) {
     const rows = byResident.get(residentId)!
-    const total = rows.reduce((sum, row) => sum + (row.amountMinor ?? 0n), 0n)
+    const net = rows.reduce((sum, row) => sum + (row.amountMinor ?? 0n), 0n)
+    // A month that nets below zero (a correction for an earlier month) is a statement at 0 and the rest a resident credit.
+    const total = net > 0n ? net : 0n
+    if (net < 0n) {
+      const credit = await uow.tx.residentCredit.create({ data: { communityId, residentId, paymentId: null, amountMinor: -net, remainingMinor: -net, status: 'open' } })
+      uow.audit({ eventType: 'credit.created', entityType: 'ResidentCredit', entityId: credit.id, after: { month, amountMinor: (-net).toString(), reason: 'correction' } })
+    }
     const lines = statementLines(rows.map(row => ({ kind: row.kind, description: row.description, date: iso(row.date), amountMinor: row.amountMinor ?? 0n })))
     await uow.tx.statement.create({
       data: {
