@@ -166,7 +166,14 @@ export async function applyCredit(uow: UnitOfWork, actor: Actor, input: { credit
   const statement = await uow.tx.statement.findUnique({ where: { id: input.statementId }, select: { residentId: true, totalMinor: true, paidMinor: true, adjustedMinor: true } })
   if (!statement || statement.residentId !== credit.residentId) throw new DomainError(Codes.NOT_FOUND, 'Statement not found for this resident.')
   const pending = await uow.tx.refund.aggregate({ where: { creditId: credit.id, status: { in: ['requested', 'pending_approval'] } }, _sum: { amountMinor: true } })
-  const available = credit.remainingMinor - (pending._sum.amountMinor ?? 0n)
+  let available = credit.remainingMinor - (pending._sum.amountMinor ?? 0n)
+  if (credit.paymentId) {
+    // A credit from a payment that was then refunded straight off the card is not money on account any more.
+    const payment = await uow.tx.payment.findUniqueOrThrow({ where: { id: credit.paymentId }, select: { amountMinor: true } })
+    const direct = await uow.tx.refund.aggregate({ where: { paymentId: credit.paymentId, creditId: null, status: { in: ['requested', 'pending_approval', 'issued'] } }, _sum: { amountMinor: true } })
+    const left = payment.amountMinor - (direct._sum.amountMinor ?? 0n) - (credit.amountMinor - credit.remainingMinor)
+    if (left < available) available = left
+  }
   const balance = balanceOf(statement)
   const amount = available < balance ? available : balance
   if (amount <= 0n) throw new DomainError(Codes.GUARD_FAILED, 'There is nothing to apply the credit to.')
@@ -255,8 +262,13 @@ export async function checkPaymentStatus(db: Db, actor: Actor, paymentId: string
   const payment = await db.payment.findUnique({ where: { id: paymentId } })
   if (!payment) throw new DomainError(Codes.NOT_FOUND, 'Payment not found.')
   if (!['pending', 'unknown'].includes(payment.status) || !['card', 'ach'].includes(payment.method)) return { paymentId, status: payment.status, message: 'Nothing to check.' }
-  const result = await adapter().resolve({ amountMinor: payment.amountMinor, currencyCode: payment.currency || CURRENCY, idempotencyKey: payment.idempotencyKey, description: `Statement payment ${payment.reference}`, metadata: { payment: payment.id }, providerRef: payment.providerRef || null })
-  return recordOutcome(db, actor, payment.id, result, `resolve:${payment.id}:${result.outcome}:${result.providerRef ?? ''}`)
+  let result = await adapter().resolve({ amountMinor: payment.amountMinor, currencyCode: payment.currency || CURRENCY, idempotencyKey: payment.idempotencyKey, description: `Statement payment ${payment.reference}`, metadata: { payment: payment.id }, providerRef: payment.providerRef || null })
+  // The processor has no record of a charge started more than 10 minutes ago (the call never reached it): it was not made.
+  if (result.missing && !payment.providerRef && payment.initiatedAt && Date.now() - new Date(payment.initiatedAt).getTime() > 10 * 60_000) {
+    result = { outcome: 'failed', providerRef: null, message: 'The card processor has no record of this charge, so it was not made. Charge again.' }
+  }
+  // The key names who checked: a second person asking about the same open payment is a new check, not a replay of mine.
+  return recordOutcome(db, actor, payment.id, result, `resolve:${payment.id}:${result.outcome}:${result.providerRef ?? ''}:${actorUserId(actor) ?? 'system'}`)
 }
 
 /** A processor event. Recorded once by its own id; a replay changes nothing. */
@@ -298,8 +310,10 @@ export async function requestRefund(uow: UnitOfWork, actor: Actor, input: { paym
     await lockRow(uow.tx, 'Payment', input.paymentId)
     const payment = await uow.tx.payment.findUnique({ where: { id: input.paymentId } })
     if (!payment || payment.status !== 'succeeded') throw new DomainError(Codes.GUARD_FAILED, 'Only a settled payment can be refunded.')
-    const refunded = await uow.tx.refund.aggregate({ where: { paymentId: payment.id, status: { in: ['requested', 'pending_approval', 'issued'] } }, _sum: { amountMinor: true } })
-    if (amount + (refunded._sum.amountMinor ?? 0n) > payment.amountMinor) throw new DomainError(Codes.GUARD_FAILED, 'That is more than was paid, counting earlier refunds.', { reason: 'over_refund' })
+    // Refunds straight off the payment, plus whatever of it became a resident credit (refunded or applied from the credit itself).
+    const refunded = await uow.tx.refund.aggregate({ where: { paymentId: payment.id, creditId: null, status: { in: ['requested', 'pending_approval', 'issued'] } }, _sum: { amountMinor: true } })
+    const credited = await uow.tx.residentCredit.aggregate({ where: { paymentId: payment.id }, _sum: { amountMinor: true } })
+    if (amount + (refunded._sum.amountMinor ?? 0n) + (credited._sum.amountMinor ?? 0n) > payment.amountMinor) throw new DomainError(Codes.GUARD_FAILED, 'That is more than was paid, counting earlier refunds.', { reason: 'over_refund' })
     residentId = payment.residentId
     communityId = payment.communityId
   } else {
@@ -326,6 +340,15 @@ export async function requestRefund(uow: UnitOfWork, actor: Actor, input: { paym
   return { refundId: refund.id, status: 'pending_approval', approvalRequestId: approval.id }
 }
 
+/** A refund whose approval was rejected, withdrawn or expired is closed, so it stops holding the payment, deposit or credit. */
+export async function rejectRefund(uow: UnitOfWork, actor: Actor, refundId: string) {
+  await lockRow(uow.tx, 'Refund', refundId)
+  const row = await uow.tx.refund.findUnique({ where: { id: refundId } })
+  if (!row || row.status !== 'pending_approval') return { refundId, status: row?.status ?? null }
+  await casUpdate(uow, { model: 'Refund', id: row.id, version: row.version, from: ['pending_approval'], to: 'rejected', actor, eventType: 'refund.rejected' })
+  return { refundId, status: 'rejected' }
+}
+
 /**
  * Pays a refund out. A card payment goes back through the processor (idempotent by refund id); the statement's paid total is
  * NOT reduced: a refund never reopens a paid statement.
@@ -334,6 +357,17 @@ export async function issueRefund(db: Db, actor: Actor, refundId: string) {
   const refund = await db.refund.findUnique({ where: { id: refundId }, include: { payment: true } })
   if (!refund) throw new DomainError(Codes.NOT_FOUND, 'Refund not found.')
   if (refund.status === 'issued') return { refundId, status: 'issued', refundRef: refund.refundRef }
+  if (refund.status === 'rejected') throw new DomainError(Codes.GUARD_FAILED, 'This refund was rejected.')
+  // Nothing goes to the processor before the second person has approved it.
+  if (refund.status === 'pending_approval') {
+    const approval = refund.approvalId ? await db.approvalRequest.findUnique({ where: { id: refund.approvalId }, select: { status: true, consumedAt: true, expiresAt: true } }) : null
+    const expired = approval?.expiresAt && new Date(approval.expiresAt).getTime() <= Date.now()
+    if (approval && (['rejected', 'cancelled', 'expired'].includes(approval.status) || (approval.status === 'pending' && expired))) {
+      await command(db, { name: 'refund.reject', actor, idempotencyKey: `refund-reject:${refund.id}`, params: { refundId } }, uow => rejectRefund(uow, actor, refund.id))
+      throw new DomainError(Codes.GUARD_FAILED, 'The approval for this refund was not given, so the refund was closed.')
+    }
+    if (!approval || approval.status !== 'approved' || approval.consumedAt) throw new DomainError(Codes.APPROVAL_REQUIRED, 'This refund needs a second person to approve it.')
+  }
   let ref = `manual-${refund.id.slice(-10)}`
   if (refund.payment && ['card', 'ach'].includes(refund.payment.method)) {
     const result = await adapter().refund({ providerRef: refund.payment.providerRef, amountMinor: refund.amountMinor, idempotencyKey: `sc-refund-${refund.id}`, reason: refund.reason })

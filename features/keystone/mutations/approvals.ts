@@ -6,6 +6,7 @@ import { transition } from '../lib/cas'
 import { DomainError, Codes } from '../lib/errors'
 import { mcpSessionMarker } from '../mcp-oauth/session'
 import { requestOperatorControlsChange, type OperatorControls } from '../lib/operatorControls'
+import { rejectRefund } from '../billing/payments'
 
 type Ctx = { session: any; prisma: any }
 
@@ -26,6 +27,8 @@ export async function decideApprovalRequest(_root: unknown, args: { requestId: s
       await consumeApproval(uow, { requestId: request.id, action: request.action, targetList: request.targetList, targetId: request.targetId, payload: request.payload })
       applied = await registration.apply(uow, actor, request)
     }
+    // A rejected refund is closed with it, so it stops holding the payment, deposit or credit.
+    if (args.decision === 'reject' && decided.action === 'refund.issue') await rejectRefund(uow, actor, String(decided.targetId))
     return { id: decided.id, status: decided.status, applied }
   })
   return { replay: result.replay, ...result.value }
@@ -36,13 +39,14 @@ export async function cancelApprovalRequest(_root: unknown, args: { requestId: s
   const actor = actorFromSession(context.session)
   requirePermission(actor, 'canAccessDashboard')
   const result = await command(context.prisma, { name: 'approval.cancel', actor, idempotencyKey: args.idempotencyKey, params: args }, async uow => {
-    const row = await transition<{ id: string; status: string; requestedById: string | null }>(uow, {
+    const row = await transition<{ id: string; status: string; requestedById: string | null; action: string; targetId: string }>(uow, {
       model: 'ApprovalRequest', id: args.requestId, from: ['pending'], to: 'cancelled', expectedVersion: args.expectedVersion, actor,
       eventType: 'approval.cancelled', reason: args.reason ?? null,
       guard: request => {
         if (actor.kind !== 'user' || request.requestedById !== actor.userId) throw new DomainError(Codes.NOT_AUTHORIZED, 'Only the person who asked can withdraw a request.')
       },
     })
+    if (row.action === 'refund.issue') await rejectRefund(uow, actor, row.targetId)
     return { id: row.id, status: row.status }
   })
   return { replay: result.replay, ...result.value }

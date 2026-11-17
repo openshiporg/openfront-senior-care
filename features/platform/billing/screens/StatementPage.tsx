@@ -36,6 +36,8 @@ export default async function StatementPage({ params }: { params: Promise<{ id: 
   const s = data.statement;
   // Money on account for this resident that no statement took (an overpayment); it is applied or refunded from here.
   const credits = s.resident ? (await q<{ residentCredits: Credit[] }>(`query C($r: ID!) { residentCredits(where: { resident: { id: { equals: $r } }, status: { equals: "open" } }, take: 20) { id amountMinor remainingMinor status } }`, { r: s.resident.id }).catch(() => ({ residentCredits: [] as Credit[] }))).residentCredits : [];
+  // Refunds asked for and not yet paid out, for this resident; issued from here once any approval is given.
+  const refunds = s.resident ? (await q<{ refunds: { id: string; amountMinor: string; reason: string; status: string; approval: { status: string } | null }[] }>(`query R($r: ID!) { refunds(where: { resident: { id: { equals: $r } }, status: { in: ["requested", "pending_approval"] } }, orderBy: { createdAt: desc }, take: 20) { id amountMinor reason status approval { status } } }`, { r: s.resident.id }).catch(() => ({ refunds: [] }))).refunds : [];
   // Cards on file for this resident (Stripe customer + payment method); read with payments access, otherwise the buttons are not shown.
   const cards = s.resident ? (await q<{ paymentMethodTokens: Card[] }>(`query T($r: ID!) { paymentMethodTokens(where: { resident: { id: { equals: $r } }, status: { equals: "active" } }, take: 10) { id provider brand last4 autopay } }`, { r: s.resident.id }).catch(() => null))?.paymentMethodTokens ?? null : null;
   const tz = community?.timeZone ?? 'America/New_York';
@@ -112,6 +114,22 @@ export default async function StatementPage({ params }: { params: Promise<{ id: 
               <span className="flex flex-wrap items-center gap-2 text-sm">
                 {balance > 0n ? <BillingAction op="credit.apply" input={{ creditId: c.id, statementId: s.id }}>Apply here</BillingAction> : null}
                 <BillingAction op="refund.request" input={{ creditId: c.id }} fields={[{ name: 'amountMinor', label: 'Refund amount', type: 'money', required: true, defaultValue: (Number(c.remainingMinor) / 100).toFixed(2) }, { name: 'reason', label: 'Why', required: true }]}>Refund</BillingAction>
+              </span>
+            </Row>
+          ))}
+        </Section>
+      ) : null}
+      {refunds.length ? (
+        <Section title="Refunds to pay out">
+          {refunds.map(r => (
+            <Row key={r.id}>
+              <div className="min-w-0 flex-1 basis-60 space-y-0.5">
+                <Title status={r.status}>{r.status === 'pending_approval' ? (r.approval?.status === 'approved' ? 'Approved' : 'Waiting for approval') : 'Requested'}</Title>
+                <Meta>{r.reason}</Meta>
+              </div>
+              <span className="flex flex-wrap items-center gap-2 text-sm tabular-nums">
+                {money(r.amountMinor)}
+                {r.status === 'requested' || r.approval?.status === 'approved' ? <BillingAction op="refund.issue" input={{ refundId: r.id }} confirm={`Pay out this refund of ${money(r.amountMinor)} now?`}>Issue refund</BillingAction> : null}
               </span>
             </Row>
           ))}
