@@ -195,6 +195,11 @@ export async function reverseTransaction(uow: UnitOfWork, actor: Actor, input: {
   })
   const mirrored = original.lines.map(line => ({ ledgerId: line.ledgerId, bucket: line.bucket as TrustLine['bucket'], side: line.side as TrustLine['side'], amountMinor: line.amountMinor, effectiveOn: iso(line.effectiveOn) }))
   await post(uow, actor, { id: reversal.id, communityId: original.communityId, residentId: original.residentId, ledgerId: ledger.id, accountId: ledger.accountId! }, reverseLines(mirrored, on))
+  // A reversed conveyance puts the money back on a closed ledger, so it can be conveyed again.
+  if (original.kind === 'conveyance' && ledger.status === 'conveyed') {
+    const row = await uow.tx.residentTrustLedger.findUniqueOrThrow({ where: { id: ledger.id } })
+    await casUpdate(uow, { model: 'ResidentTrustLedger', id: ledger.id, version: row.version, from: ['conveyed'], to: 'closed', actor, eventType: 'trust.conveyance_reversed', data: { conveyedOn: null, conveyedTo: '' } })
+  }
   return { transactionId: reversal.id, reverses: original.id }
 }
 
