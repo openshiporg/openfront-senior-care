@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import { q, currentCommunity } from '../../lib/server';
 import { label, when } from '../../lib/format';
 import { Page, Section, Row, Empty, Meta, Title, Stat } from '../../components/ui';
+import { BillingAction } from '../../components/BillingAction';
+import { money } from '../../lib/format';
 
 const ordinal = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
 
@@ -68,6 +70,12 @@ export default async function ResidentPage({ params, searchParams }: { params: P
   const primary = stay?.coverage.find(c => c.rank === 'primary' && !c.endDate);
   const openClocks = data.complianceClocks.filter(c => c.status === 'open' || c.status === 'overdue');
   const slug = community?.slug ?? '';
+  // Billing set-up for this resident: each read needs its own permission; without it that part is not shown.
+  const residentCommunity = community?.id ?? null;
+  const deposits = (await q<{ deposits: { id: string; kind: string; amountMinor: string; status: string; receivedOn: string | null }[] }>(`query D($id: ID!) { deposits(where: { resident: { id: { equals: $id } } }, orderBy: { createdAt: desc }, take: 20) { id kind amountMinor status receivedOn } }`, { id }).catch(() => null))?.deposits ?? null;
+  const openStatements = deposits ? (await q<{ statements: { id: string; number: string }[] }>(`query S($id: ID!) { statements(where: { resident: { id: { equals: $id } }, status: { equals: "issued" } }, orderBy: { issuedAt: desc }, take: 12) { id number } }`, { id }).catch(() => ({ statements: [] }))).statements : [];
+  const careLevels = stay && (stay.setting === 'assisted_living' || stay.setting === 'memory_care') ? (await q<{ careLevels: { id: string; name: string }[] }>(`query L($s: String!) { careLevels(where: { setting: { equals: $s }, status: { equals: "active" } }, orderBy: { minPoints: asc }) { id name } }`, { s: stay.setting }).catch(() => null))?.careLevels ?? null : null;
+  const funds = (await q<{ trustAccounts: { id: string; name: string; status: string }[]; residentTrustLedgers: { id: string; reference: string; status: string }[] }>(`query F($id: ID!) { trustAccounts(where: { status: { equals: "active" } }, take: 5) { id name status } residentTrustLedgers(where: { resident: { id: { equals: $id } } }, take: 5) { id reference status } }`, { id }).catch(() => null));
   return (
     <Page title={name} crumbs={[{ label: 'Census', href: `/dashboard/platform/census?community=${slug}` }, { label: 'Residents', href: `/dashboard/platform/census/residents?community=${slug}` }]}>
       <div className="space-y-1">
@@ -131,6 +139,64 @@ export default async function ResidentPage({ params, searchParams }: { params: P
           ))}
         </Section>
       ))}
+      {deposits ? (
+        <Section title="Deposits" aside={residentCommunity ? <BillingAction op="deposit.receive" input={{ communityId: residentCommunity, residentId: r.id }} fields={[
+          { name: 'kind', label: 'Kind', type: 'select', required: true, options: [['security', 'Security'], ['pet', 'Pet'], ['reservation', 'Reservation'], ['community_fee', 'Community fee'], ['other', 'Other']].map(([value, text]) => ({ value, label: text })) },
+          { name: 'amountMinor', label: 'Amount', type: 'money', required: true },
+          { name: 'method', label: 'How it was paid', type: 'select', required: true, options: [['check', 'Check'], ['cash', 'Cash'], ['card', 'Card'], ['ach', 'Bank transfer'], ['other', 'Other']].map(([value, text]) => ({ value, label: text })) },
+          { name: 'receivedOn', label: 'Received on', type: 'date', required: true },
+          { name: 'note', label: 'Note' },
+        ]}>Record a deposit</BillingAction> : null}>
+          {deposits.length ? deposits.map(d => (
+            <Row key={d.id}>
+              <div className="min-w-0 flex-1 basis-60 space-y-0.5">
+                <Title status={d.status}>{label(d.kind)} deposit · {label(d.status)}</Title>
+                <Meta>{d.receivedOn ? `Received ${when(d.receivedOn, tz, 'date')}` : ''}</Meta>
+              </div>
+              <span className="flex flex-wrap items-center gap-2 text-sm tabular-nums">
+                {money(d.amountMinor)}
+                {d.status === 'held' && openStatements.length ? <BillingAction op="deposit.apply" input={{ depositId: d.id }} fields={[{ name: 'statementId', label: 'Statement', type: 'select', required: true, options: openStatements.map(st => ({ value: st.id, label: st.number })) }]}>Apply to a statement</BillingAction> : null}
+                {d.status === 'held' ? <BillingAction op="refund.request" input={{ depositId: d.id, amountMinor: d.amountMinor }} fields={[{ name: 'reason', label: 'Why', required: true }]}>Refund</BillingAction> : null}
+                {d.status === 'held' ? <BillingAction op="deposit.forfeit" input={{ depositId: d.id }} fields={[{ name: 'reason', label: 'Why the deposit is kept', required: true }]}>Keep deposit</BillingAction> : null}
+              </span>
+            </Row>
+          )) : <Empty>No deposit on file.</Empty>}
+        </Section>
+      ) : null}
+      {stay && careLevels ? (
+        <Section title="Care level">
+          <div className="flex flex-wrap items-start gap-3">
+            <BillingAction op="care_level.assign" input={{ stayId: stay.id }} fields={[
+              { name: 'careLevelId', label: 'Care level', type: 'select', required: true, options: careLevels.map(l => ({ value: l.id, label: l.name })) },
+              { name: 'effectiveFrom', label: 'Starts on', type: 'date', required: true },
+              { name: 'noticeDeliveredOn', label: 'Notice given on', type: 'date' },
+              { name: 'reason', label: 'Why' },
+            ]}>Set the care level</BillingAction>
+          </div>
+        </Section>
+      ) : null}
+      {stay && deposits && stay.coverage.some(c => c.payer?.kind === 'medicaid') ? (
+        <Section title="Medicaid patient liability">
+          <div className="flex flex-wrap items-start gap-3">
+            <BillingAction op="medicaid.record" input={{ stayId: stay.id }} fields={[
+              { name: 'month', label: 'Month (first day)', type: 'date', required: true },
+              { name: 'liabilityMinor', label: 'Liability for the month', type: 'money', required: true },
+              { name: 'noticeReceivedOn', label: 'Notice received on', type: 'date' },
+              { name: 'note', label: 'Note' },
+            ]}>Record one month</BillingAction>
+          </div>
+        </Section>
+      ) : null}
+      {funds && residentCommunity && funds.trustAccounts.length && !funds.residentTrustLedgers.some(l => l.status === 'open') ? (
+        <Section title="Resident funds">
+          <div className="flex flex-wrap items-start gap-3">
+            <BillingAction op="trust.open_ledger" input={{ communityId: residentCommunity, residentId: r.id }} fields={[
+              { name: 'accountId', label: 'Bank account', type: 'select', required: true, defaultValue: funds.trustAccounts[0].id, options: funds.trustAccounts.map(a => ({ value: a.id, label: a.name })) },
+              { name: 'consentOnFile', label: 'Written consent is on file', type: 'checkbox', required: true },
+            ]}>Open a funds ledger</BillingAction>
+          </div>
+        </Section>
+      ) : null}
       <Section title="Notices">
         {data.noticeDeliveries.length ? data.noticeDeliveries.map(n => (
           <Row key={n.id}>
