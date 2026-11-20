@@ -155,6 +155,9 @@ export async function portalPayAction(_: ActionState<Paid>, form: FormData): Pro
   if (!result.ok) return { ok: false, error: result.error }
   if (SLUG.test(slug)) revalidatePath(`/${slug}/family/${residentId}`)
   if (result.data?.status === 'failed') return { ok: false, error: result.data.message || 'The payment was declined. Please call the business office.' }
+  // The paid statement no longer shows a pay form, so the thank-you is shown by the page itself.
+  const number = field(form, 'statementNumber', 40)
+  if (SLUG.test(slug) && /^[A-Za-z0-9_-]{1,80}$/.test(residentId)) redirect(`/${slug}/family/${residentId}?view=statements&paid=${encodeURIComponent(number || 'statement')}`)
   return { ok: true, data: result.data }
 }
 
@@ -173,6 +176,7 @@ export async function confirmMfaAction(_: ActionState, form: FormData): Promise<
   if (!/^\d{6}$/.test(code)) return { ok: false, error: 'Enter the 6-digit code from your authenticator app.' }
   const result = await mutate<{ mfaEnrolled: boolean }>(`mutation Confirm($code: String!) { portalMfaConfirm(code: $code) }`, { code }, 'portalMfaConfirm')
   if (!result.ok) return { ok: false, error: result.error }
-  if (SLUG.test(slug)) revalidatePath(`/${slug}/family/${residentId}`)
+  const view = field(form, 'view', 40)
+  if (SLUG.test(slug) && /^[A-Za-z0-9_-]{1,80}$/.test(residentId)) redirect(`/${slug}/family/${residentId}?${/^[a-z_]{1,40}$/.test(view) ? `view=${view}&` : ''}mfa=on`)
   return { ok: true }
 }

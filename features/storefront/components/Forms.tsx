@@ -198,6 +198,7 @@ export function PayStatementForm({ slug, residentId, statementId, statementNumbe
       <input type="hidden" name="community" value={slug} />
       <input type="hidden" name="residentId" value={residentId} />
       <input type="hidden" name="statementId" value={statementId} />
+      <input type="hidden" name="statementNumber" value={statementNumber} />
       <input type="hidden" name="idempotencyKey" value={`${payKey}-${statementId}`.slice(0, 120)} />
       <label className="sf-field"><span>Pay with</span>
         <select name="tokenId" value={method} onChange={event => setMethod(event.target.value)} required>{methods.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}</select>
@@ -212,11 +213,10 @@ export function PayStatementForm({ slug, residentId, statementId, statementNumbe
 }
 
 /** Turns on two-step sign-in: shows a new authenticator key, then takes the first 6-digit code. */
-export function MfaSetupForm({ slug, residentId }: { slug: string; residentId: string }) {
+export function MfaSetupForm({ slug, residentId, view }: { slug: string; residentId: string; view?: string }) {
   const [started, start, starting] = useActionState<ActionState<MfaStarted>, FormData>(startMfaAction, null)
   const [confirmed, confirm, confirming] = useActionState<ActionState, FormData>(confirmMfaAction, null)
   const code = useText()
-  if (confirmed?.ok) return <p className="sf-ok" role="status">Two-step sign-in is on. <a href={`/${slug}/family/${residentId}`}>Open the page again</a> to see it.</p>
   if (!started?.ok || !started.data) {
     return (
       <form className="sf-pay" action={start}>
@@ -231,6 +231,7 @@ export function MfaSetupForm({ slug, residentId }: { slug: string; residentId: s
     <form className="sf-pay" action={confirm}>
       <input type="hidden" name="community" value={slug} />
       <input type="hidden" name="residentId" value={residentId} />
+      <input type="hidden" name="view" value={view ?? ''} />
       <p className="sf-small">In your authenticator app, add an account and type this key (or, on this phone, <a href={started.data.otpauthUri}>open it in the app</a>):</p>
       <p><code className="sf-key" style={{ overflowWrap: 'anywhere', fontSize: 18, letterSpacing: '0.04em' }}>{key}</code></p>
       <label className="sf-field"><span>6-digit code from the app</span><input name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={8} required {...code} /></label>

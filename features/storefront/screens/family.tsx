@@ -135,17 +135,17 @@ export async function FamilyHomeScreen({ site }: { site: Site }) {
   )
 }
 
-function Refused({ message, site, reason, residentId }: { message: string; site: Site; reason?: string | null; residentId?: string }) {
+function Refused({ message, site, reason, residentId, view }: { message: string; site: Site; reason?: string | null; residentId?: string; view?: string }) {
   return (
     <div className="sf-card">
       <p className="sf-error" role="alert">{message}</p>
-      {reason === 'mfa_required' && residentId ? <MfaSetupForm slug={site.community.slug} residentId={residentId} /> : null}
+      {reason === 'mfa_required' && residentId ? <MfaSetupForm slug={site.community.slug} residentId={residentId} view={view} /> : null}
       <Office site={site} lead="Need a hand?" />
     </div>
   )
 }
 
-export async function FamilyResidentScreen({ site, residentId, view }: { site: Site; residentId: string; view: string }) {
+export async function FamilyResidentScreen({ site, residentId, view, paid = '', mfa = false }: { site: Site; residentId: string; view: string; paid?: string; mfa?: boolean }) {
   const me = await requireFamily(site)
   if (!me) return <NotAFamilyAccount site={site} />
   const base = `/${site.community.slug}/family`
@@ -168,6 +168,8 @@ export async function FamilyResidentScreen({ site, residentId, view }: { site: S
               {views.map(item => <Link key={item.scope} href={`${base}/${residentId}?view=${item.scope}`} className={item.scope === current ? 'is-on' : ''} aria-current={item.scope === current ? 'page' : undefined}>{item.title}</Link>)}
             </nav>
           ) : null}
+          {mfa && me.mfaEnrolled ? <p className="sf-ok" role="status">Two-step sign-in is on. Keep the authenticator app on your phone.</p> : null}
+          {paid && current === 'statements' ? <p className="sf-ok" role="status">Thank you. Your payment{/^[A-Z]{3}-\d{4}-\d{6}$/.test(paid) ? ` on statement ${paid}` : ''} went through. It is listed under Payments.</p> : null}
           {current === null ? (
             <div className="sf-card">
               <p>Nothing has been shared with your account for {resident.name} yet.</p>
@@ -190,7 +192,7 @@ type ViewProps = { site: Site; residentId: string }
 
 async function UpdatesView({ site, residentId }: ViewProps) {
   const read = await portalUpdates(residentId)
-  if (!read.ok) return <Refused message={read.error} reason={read.reason} residentId={residentId} site={site} />
+  if (!read.ok) return <Refused message={read.error} reason={read.reason} residentId={residentId} view="updates" site={site} />
   const data = read.data
   return (
     <div className="sf-card">
@@ -207,7 +209,7 @@ async function UpdatesView({ site, residentId }: ViewProps) {
 
 async function CalendarView({ site, residentId }: ViewProps) {
   const read = await portalCalendar(residentId)
-  if (!read.ok) return <Refused message={read.error} reason={read.reason} residentId={residentId} site={site} />
+  if (!read.ok) return <Refused message={read.error} reason={read.reason} residentId={residentId} view="calendar" site={site} />
   return (
     <div className="sf-card">
       <h2>Coming up</h2>
@@ -221,7 +223,7 @@ async function CalendarView({ site, residentId }: ViewProps) {
 
 async function StatementsView({ site, residentId, canPay }: ViewProps & { canPay: boolean }) {
   const read = await portalStatements(residentId)
-  if (!read.ok) return <Refused message={read.error} reason={read.reason} residentId={residentId} site={site} />
+  if (!read.ok) return <Refused message={read.error} reason={read.reason} residentId={residentId} view="statements" site={site} />
   const statements = read.data.statements
   const owing = statements.some(row => row.status === 'issued' && BigInt(row.balanceMinor) > 0n)
   const paying = canPay && owing ? await portalPayments(residentId) : null
@@ -231,7 +233,7 @@ async function StatementsView({ site, residentId, canPay }: ViewProps & { canPay
   if (!statements.length) return <div className="sf-card"><p>No statements yet.</p></div>
   return (
     <div className="sf-stack">
-      {paying && !paying.ok ? <Refused message={paying.error} reason={paying.reason} residentId={residentId} site={site} /> : null}
+      {paying && !paying.ok ? <Refused message={paying.error} reason={paying.reason} residentId={residentId} view="statements" site={site} /> : null}
       {statements.map(row => {
         const balance = BigInt(row.balanceMinor)
         const due = row.status === 'issued' && balance > 0n
@@ -270,7 +272,7 @@ async function StatementsView({ site, residentId, canPay }: ViewProps & { canPay
 
 async function PaymentsView({ site, residentId }: ViewProps) {
   const read = await portalPayments(residentId)
-  if (!read.ok) return <Refused message={read.error} reason={read.reason} residentId={residentId} site={site} />
+  if (!read.ok) return <Refused message={read.error} reason={read.reason} residentId={residentId} view="payments" site={site} />
   const { payments, methods, plans } = read.data
   return (
     <div className="sf-stack">
@@ -305,7 +307,7 @@ async function PaymentsView({ site, residentId }: ViewProps) {
 
 async function FundsView({ site, residentId }: ViewProps) {
   const read = await portalTrustBalance(residentId)
-  if (!read.ok) return <Refused message={read.error} reason={read.reason} residentId={residentId} site={site} />
+  if (!read.ok) return <Refused message={read.error} reason={read.reason} residentId={residentId} view="trust_balance" site={site} />
   return (
     <div className="sf-card">
       <h2>Resident funds</h2>
@@ -322,7 +324,7 @@ async function FundsView({ site, residentId }: ViewProps) {
 
 async function DocumentsView({ site, residentId }: ViewProps) {
   const read = await portalDocuments(residentId)
-  if (!read.ok) return <Refused message={read.error} reason={read.reason} residentId={residentId} site={site} />
+  if (!read.ok) return <Refused message={read.error} reason={read.reason} residentId={residentId} view="documents" site={site} />
   const { documents, notices } = read.data
   return (
     <div className="sf-stack">
