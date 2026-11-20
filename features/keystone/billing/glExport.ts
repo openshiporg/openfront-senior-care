@@ -12,7 +12,7 @@ import { monthEnd, nextMonth } from './derive'
  * Read only; the export is audited.
  */
 export async function glExport(db: Db, session: unknown, input: { communityId: string; month: string }) {
-  if (!/^\d{4}-\d{2}-01$/.test(input.month)) throw new DomainError(Codes.INVALID_INPUT, 'The month is the first day of the month, like 2026-10-01.')
+  if (!/^\d{4}-(0[1-9]|1[0-2])-01$/.test(input.month)) throw new DomainError(Codes.INVALID_INPUT, 'The month is the first day of the month, like 2026-10-01.')
   const actor = actorFromSession(session as never)
   if (actor.kind !== 'user' || !actor.permissions.has('canReadBilling') || !(actor.permissions.has('canManageBilling') || actor.permissions.has('canManagePayments'))) throw new DomainError(Codes.NOT_AUTHORIZED, 'This needs billing access.')
   if ((session as { data?: { kind?: string } })?.data?.kind === 'portal') throw new DomainError(Codes.NOT_AUTHORIZED, 'This needs billing access.')

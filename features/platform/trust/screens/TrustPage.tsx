@@ -124,7 +124,7 @@ export default async function TrustPage({ searchParams }: { searchParams?: Promi
               { name: 'month', label: 'Month (first day)', type: 'date', required: true, defaultValue: lastMonth },
               { name: 'interestMinor', label: 'Interest on the bank statement', type: 'money', required: true },
             ]}>Allocate interest</BillingAction>
-            <BillingAction op="trust.quarterly_statements" input={{ accountId: account.id, quarter: lastQuarter }} confirm={`Make the ${quarterLabel(lastQuarter)} statements for every resident? Statements already made are kept as they are.`}>Make {quarterLabel(lastQuarter)} statements</BillingAction>
+            {more.trustStatements.some(st => st.quarter.slice(0, 10) === lastQuarter) ? <Meta>{quarterLabel(lastQuarter)} statements are made.</Meta> : <BillingAction op="trust.quarterly_statements" input={{ accountId: account.id, quarter: lastQuarter }} confirm={`Make the ${quarterLabel(lastQuarter)} statements for every resident? Statements already made are kept as they are.`}>Make {quarterLabel(lastQuarter)} statements</BillingAction>}
           </div>
           <Meta>Interest is shared by each resident&apos;s average daily balance, to the cent, and posted as balanced entries on the month&apos;s last day. Each month is allocated once; a correction is a reversal.</Meta>
           {more.interestAllocationRuns.map(r => (

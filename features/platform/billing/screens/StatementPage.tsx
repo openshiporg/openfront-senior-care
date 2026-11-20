@@ -23,10 +23,11 @@ const kindLabel: Record<string, string> = { rent: 'Apartment rent', second_perso
 export default async function StatementPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { community } = await currentCommunity(null);
-  const data = await q<{ statement: Statement | null; payments: Payment[]; adjustments: Adjustment[]; credits: Credit[]; paymentPlans?: Plan[] }>(`query S($id: ID!) {
+  const data = await q<{ statement: Statement | null; payments: Payment[]; paidBack?: { id: string; amountMinor: string; issuedAt: string | null; payment: { id: string } | null }[] | null; adjustments: Adjustment[]; credits: Credit[]; paymentPlans?: Plan[] }>(`query S($id: ID!) {
     statement(where: { id: $id }) { id number status totalMinor paidMinor adjustedMinor dueOn issuedAt lines resident { id firstName lastName } period { month } }
     adjustments: balanceAdjustments(where: { statement: { id: { equals: $id } } }, orderBy: { createdAt: desc }, take: 50) { id kind amountMinor reason status }
     payments(where: { statement: { id: { equals: $id } } }, orderBy: { initiatedAt: desc }, take: 50) { id method status amountMinor settledAt initiatedAt failureCode autopay }
+    paidBack: refunds(where: { payment: { statement: { id: { equals: $id } } }, status: { equals: "issued" } }, orderBy: { issuedAt: asc }, take: 50) { id amountMinor issuedAt payment { id } }
   }`, { id }).catch(() => null);
   if (!data?.statement) notFound();
   // Payment plans are read with payments access; without it the section is simply not shown.
@@ -165,6 +166,7 @@ export default async function StatementPage({ params }: { params: Promise<{ id: 
             <div className="min-w-0 flex-1 basis-60 space-y-0.5">
               <Title status={p.status}>{label(p.method)}{p.autopay ? ' · autopay' : ''}</Title>
               <Meta>{p.settledAt ? when(p.settledAt, tz) : p.initiatedAt ? `Started ${when(p.initiatedAt, tz)}` : ''}{p.failureCode ? ` · ${label(p.failureCode)}` : ''}</Meta>
+              {(data.paidBack ?? []).filter(r => r.payment?.id === p.id).map(r => <Meta key={r.id}>Refunded {money(r.amountMinor)}{r.issuedAt ? ` on ${when(r.issuedAt, tz)}` : ''}</Meta>)}
             </div>
             <span className="flex flex-wrap items-center gap-2 text-sm tabular-nums">
               {money(p.amountMinor)}
