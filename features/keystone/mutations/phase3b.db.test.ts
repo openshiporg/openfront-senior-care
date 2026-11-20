@@ -104,6 +104,15 @@ describe.skipIf(!hasTestDatabase)('phase 3b money (database)', () => {
     expect((await prisma.statement.findUniqueOrThrow({ where: { id: statement.id } })).paidMinor).toBe(33_334n)
   }, 120_000)
 
+  it('backlog: a plan ends when its statement is paid in full another way', async () => {
+    const { statement } = await newStatement(300_00n)
+    const plan = await bc(office, 'plan.create', { statementId: statement.id, instalments: 3, firstDueOn: '2026-11-01' })
+    await bc(office, 'payment.record', { statementId: statement.id, method: 'check', amountMinor: '30000', reference: 'CHK 4410' })
+    const row = await prisma.paymentPlan.findUniqueOrThrow({ where: { id: plan.planId } })
+    expect(row.status).toBe('cancelled')
+    expect(row.cancelledReason).toMatch(/paid in full/)
+  }, 120_000)
+
   it('r1 backlog: a plan cancelled with a declined instalment is not then charged in full by autopay', async () => {
     const { statement, token } = await newStatement(600_00n)
     await prisma.paymentMethodToken.update({ where: { id: token.id }, data: { autopay: true } })
@@ -202,6 +211,8 @@ describe.skipIf(!hasTestDatabase)('phase 3b money (database)', () => {
     await bc(office, 'medicaid_app.advance', { applicationId: app.applicationId, step: 'appeal_approved', on: '2026-11-01', effectiveOn: '2026-09-01' })
     expect((await prisma.medicaidApplication.findUniqueOrThrow({ where: { id: app.applicationId } })).status).toBe('approved')
 
+    const other = await newStatement(1n)
+    await expect(bc(office, 'liability_schedule.record', { residentId: other.resident.id, applicationId: app.applicationId, monthlyAmountMinor: 1, personalNeedsAllowanceMinor: 0, effectiveFrom: '2026-09-01' })).rejects.toMatchObject({ code: 'INVALID_INPUT', details: { field: 'applicationId' } })
     const first = await bc(office, 'liability_schedule.record', { residentId: resident.id, stayId: stay.id, applicationId: app.applicationId, monthlyAmountMinor: 120_000, personalNeedsAllowanceMinor: 5_000, effectiveFrom: '2026-09-01' })
     const second = await bc(office, 'liability_schedule.record', { residentId: resident.id, stayId: stay.id, applicationId: app.applicationId, monthlyAmountMinor: 135_000, personalNeedsAllowanceMinor: 5_000, effectiveFrom: '2026-11-01' })
     const rows = await prisma.patientLiabilitySchedule.findMany({ where: { residentId: resident.id }, orderBy: { effectiveFrom: 'asc' } })
@@ -304,7 +315,14 @@ describe.skipIf(!hasTestDatabase)('phase 3b money (database)', () => {
     const { resident } = await newStatement(1n)
     const { ledgerId } = await bc(trustOfficer, 'trust.open_ledger', { communityId: COMMUNITY.id, residentId: resident.id, accountId: account.id, consentOnFile: true })
     await bc(trustOfficer, 'trust.deposit', { ledgerId, amountMinor: 185_000, purpose: 'Savings', effectiveOn: '2026-07-01' })
+    // Backlog: a withdrawal waiting for a signature, dated into a quarter stated meanwhile, says to prepare it again today.
+    await prisma.operatorSettings.update({ where: { id: 1 }, data: { trustApprovalThresholdMinor: 0n } })
+    await bc(trustOfficer, 'trust.authorisation_record', { ledgerId, signedOn: '2026-07-01', kinds: ['withdrawal_purchase'], perWithdrawalLimitMinor: 5_000 })
+    const waiting = await bc(trustOfficer, 'trust.withdraw', { ledgerId, amountMinor: 1_000, purpose: 'Salon', effectiveOn: '2026-08-02' })
+    expect(waiting.status).toBe('pending_signature')
     await bc(trustOfficer, 'trust.quarterly_statements', { accountId: account.id, quarter: '2026-07-01' })
+    await expect(bc(trustApprover, 'trust.sign', { transactionId: waiting.transactionId })).rejects.toMatchObject({ details: { reason: 'quarter_stated' } })
+    await bc(trustApprover, 'trust.reject', { transactionId: waiting.transactionId, reason: 'Prepare again dated today' })
     const q3 = await prisma.trustStatement.findFirstOrThrow({ where: { ledgerId, quarter: new Date('2026-07-01') } })
     expect(q3.closingMinor).toBe(185_000n)
     // A deposit or withdrawal dated into the stated quarter is refused.

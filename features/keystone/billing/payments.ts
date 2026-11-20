@@ -60,7 +60,17 @@ async function settle(uow: UnitOfWork, actor: Actor, paymentId: string, provider
     if (apply > 0n) {
       await uow.tx.paymentAllocation.create({ data: { communityId: payment.communityId, residentId: payment.residentId, paymentId: payment.id, statementId: statement.id, amountMinor: apply, appliedAt: uow.now } })
       const paid = (statement.paidMinor ?? 0n) + apply
-      await uow.tx.statement.update({ where: { id: statement.id }, data: { paidMinor: paid, status: paid + (statement.adjustedMinor ?? 0n) >= (statement.totalMinor ?? 0n) ? 'paid' : statement.status, version: { increment: 1 } } })
+      const nowPaid = paid + (statement.adjustedMinor ?? 0n) >= (statement.totalMinor ?? 0n)
+      await uow.tx.statement.update({ where: { id: statement.id }, data: { paidMinor: paid, status: nowPaid ? 'paid' : statement.status, version: { increment: 1 } } })
+      // Paid in full some other way (a check, a credit, a one-off charge): the plan has nothing left to collect, so it ends.
+      if (nowPaid) {
+        const plan = await uow.tx.paymentPlan.findFirst({ where: { statementId: statement.id, status: 'active' }, select: { id: true } })
+        const viaPlan = plan ? await uow.tx.paymentPlanInstalment.findFirst({ where: { planId: plan.id, paymentId: payment.id }, select: { id: true } }) : null
+        if (plan && !viaPlan) {
+          const row = await lockRow<{ id: string; version: number }>(uow.tx, 'PaymentPlan', plan.id)
+          await casUpdate(uow, { model: 'PaymentPlan', id: plan.id, version: row.version, from: ['active'], to: 'cancelled', actor, eventType: 'payment_plan.cancelled', reason: 'The statement was paid in full another way.', data: { cancelledReason: 'The statement was paid in full another way.' } })
+        }
+      }
     }
   }
   return { settled: true, paymentId }

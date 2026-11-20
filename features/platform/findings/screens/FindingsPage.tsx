@@ -21,7 +21,13 @@ export default async function FindingsPage({ searchParams }: { searchParams?: Pr
   const { community, communities } = await currentCommunity(params.community);
   if (!community) return <Page title="Findings"><Empty>No community is assigned to you yet.</Empty></Page>;
   const ran = await keystoneClient(`mutation L($c: ID!, $k: String!) { runWorkflowsOnLoad(communityId: $c, idempotencyKey: $k) }`, { c: community.id, k: `workflow.page_load:${crypto.randomUUID()}` });
-  if (!ran.success) return <Page title="Findings"><Empty>{NOT_FOR_ROLE('workflow findings')}</Empty></Page>;
+  // Only a role without findings is told "not your role"; any other failure (a busy database, a timeout) says so, so it is not hidden.
+  if (!ran.success) {
+    const who = await keystoneClient<{ authenticatedItem: { role: { canReadFindings: boolean; canManageWorkflows: boolean } | null } | null }>(`query { authenticatedItem { ... on User { role { canReadFindings canManageWorkflows } } } }`);
+    const role = who.success ? who.data.authenticatedItem?.role : null;
+    const mayRead = Boolean(role?.canReadFindings || role?.canManageWorkflows);
+    return <Page title="Findings"><Empty>{mayRead || !who.success ? 'Findings could not be loaded just now. Reload the page to try again.' : NOT_FOR_ROLE('workflow findings')}</Empty></Page>;
+  }
   const data = await q<{ findings: Finding[]; workflowRuns: { id: string; windowKey: string; findingsOpened: number; startedAt: string; summary: { pendingExtraction?: number } | null }[]; workflowVersions: Version[]; authenticatedItem: { id: string; role: { canManageWorkflows: boolean; canManageCarePlans: boolean } | null } | null }>(`query F($c: ID!) {
     findings(where: { community: { id: { equals: $c } }, status: { equals: "open" } }, orderBy: { createdAt: desc }, take: 100) { id workflowCode title detail severity status createdAt resident { id firstName lastName } evidence { id recordType recordId quote role spanStart spanEnd } task { id kind status dueAt ownerRole } proposal { id status } }
     workflowRuns(where: { community: { id: { equals: $c } } }, orderBy: { startedAt: desc }, take: 1) { id windowKey findingsOpened startedAt summary }

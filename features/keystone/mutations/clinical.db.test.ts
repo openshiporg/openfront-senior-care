@@ -201,6 +201,9 @@ describe.skipIf(!hasTestDatabase)('clinical core (database)', () => {
     await expect(run(nurse, 'count.resolve', { discrepancyId: d.id, resolution: 'loss_suspected', note: 'Recount differs by one tablet' })).rejects.toMatchObject({ code: 'NOT_AUTHORIZED' })
     const resolved = await run(don, 'count.resolve', { discrepancyId: d.id, resolution: 'loss_suspected', note: 'Recount differs by one tablet, investigating', witnessId: nurse2Id })
     expect(resolved.incidentId).toBeTruthy()
+    // A suspected loss is suspected misappropriation (SM §9.5): it starts the F609 clocks.
+    expect((await prisma.incident.findUniqueOrThrow({ where: { id: resolved.incidentId! } })).kind).toBe('misappropriation')
+    expect((await prisma.complianceClock.findMany({ where: { subjectId: resolved.incidentId!, current: true } })).map(c => c.obligationCode).sort()).toEqual(['F609_INITIAL_2H', 'F609_INVESTIGATION_5WD'])
     expect(await verifyLedger({ tx: prisma }, supply.supplyId)).toMatchObject({ ok: true, balance: '14' })
     expect((await prisma.shiftCount.findUniqueOrThrow({ where: { id: start.shiftCountId } })).status).toBe('resolved')
   }, SLOW)

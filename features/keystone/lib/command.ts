@@ -38,7 +38,10 @@ export async function command<T>(db: Db, spec: CommandSpec, work: (uow: UnitOfWo
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       const code = (error as { code?: string })?.code ?? ''
-      if (attempt < (spec.serializable ? 6 : 4) && (RETRYABLE.test(message) || RETRYABLE.test(code))) continue
+      // A Serializable snapshot can predate another transaction's audit append, so its next audit seq is taken: same as a conflict, retry.
+      const meta = (error as { meta?: { modelName?: string; target?: unknown } })?.meta
+      const auditSeqTaken = code === 'P2002' && (meta?.modelName === 'AuditEvent' || /AuditEvent/.test(message)) && /seq/.test(`${String(meta?.target ?? '')} ${message}`)
+      if (attempt < (spec.serializable ? 6 : 4) && (RETRYABLE.test(message) || RETRYABLE.test(code) || auditSeqTaken)) continue
       throw error
     }
   }

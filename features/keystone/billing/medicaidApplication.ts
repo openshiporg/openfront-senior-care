@@ -152,6 +152,10 @@ export async function recordSchedule(uow: UnitOfWork, actor: Actor, input: { res
     const stay = await uow.tx.stay.findUnique({ where: { id: input.stayId }, select: { residentId: true } })
     if (stay?.residentId !== resident.id) throw new DomainError(Codes.INVALID_INPUT, 'That stay is not this resident\'s.')
   }
+  if (input.applicationId) {
+    const app = await uow.tx.medicaidApplication.findUnique({ where: { id: input.applicationId }, select: { residentId: true } })
+    if (app?.residentId !== resident.id) throw new DomainError(Codes.INVALID_INPUT, 'That Medicaid application is not this resident\'s.', { field: 'applicationId' })
+  }
   const live = await uow.tx.patientLiabilitySchedule.findMany({ where: { residentId: resident.id, status: 'effective' }, orderBy: { effectiveFrom: 'asc' } })
   const superseded: string[] = []
   const endDated: { scheduleId: string; effectiveTo: string }[] = []

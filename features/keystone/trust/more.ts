@@ -53,6 +53,10 @@ export async function recordAuthorisation(uow: UnitOfWork, actor: Actor, input: 
     const rep = await uow.tx.representative.findUnique({ where: { id: input.representativeId }, select: { residentId: true } })
     if (rep?.residentId !== ledger.residentId) throw new DomainError(Codes.INVALID_INPUT, 'That representative is not this resident\'s.', { field: 'representativeId' })
   }
+  if (input.documentId) {
+    const doc = await uow.tx.document.findUnique({ where: { id: input.documentId }, select: { residentId: true } })
+    if (doc?.residentId !== ledger.residentId) throw new DomainError(Codes.INVALID_INPUT, 'That document is not this resident\'s.', { field: 'documentId' })
+  }
   const rules = await packRules(uow.tx, ledger.communityId)
   const needsSecond = limit === null || limit > rules.authorisationOverMinor
   // One active authorisation per ledger (a partial unique index): the older one is revoked first, in the same transaction.

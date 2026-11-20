@@ -158,6 +158,10 @@ export async function signWithdrawal(uow: UnitOfWork, actor: Actor, input: { tra
   if (!tx.approvalId) throw new DomainError(Codes.APPROVAL_REQUIRED, 'This withdrawal has no approval request.')
   const ledger = await loadLedger(uow, tx.ledgerId)
   const on = iso(tx.effectiveOn)
+  // The resident's authorisation may have been revoked or narrowed since this was prepared; the signature relies on it now.
+  if (tx.kind !== 'conveyance') await assertAuthorised(uow.tx, ledger.id, tx.amountMinor)
+  const through = await statedThrough(uow.tx, ledger.id)
+  if (through && on <= through) throw new DomainError(Codes.GUARD_FAILED, `This withdrawal is dated ${on}, inside a quarter whose statement was made since (through ${through}). Reject it and prepare it again dated today.`, { reason: 'quarter_stated' })
   const approved = await consumeApproval(uow, { requestId: tx.approvalId, action: 'trust.withdraw', targetList: 'TrustTransaction', targetId: tx.id, payload: { transactionId: tx.id, ledgerId: ledger.id, amountMinor: tx.amountMinor.toString(), effectiveOn: on } })
   if (approved.approverId && approved.approverId === tx.preparedById) throw new DomainError(Codes.SELF_APPROVAL, 'The person who prepared a withdrawal cannot approve it.', { reason: 'preparer_is_signer' })
   await casUpdate(uow, { model: 'TrustTransaction', id: tx.id, version: tx.version, from: ['pending_signature'], to: 'posted', actor, eventType: 'trust.withdrawal_signed', approverId: approved.approverId, data: { signedById: actor.userId, postedAt: uow.now } })

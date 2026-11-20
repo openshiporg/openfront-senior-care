@@ -379,7 +379,8 @@ export async function resolveDiscrepancy(uow: UnitOfWork, actor: Actor, input: {
   let incidentId: string | null = null
   if (resolution === 'loss_suspected' || resolution === 'documentation_error') {
     const supply = await uow.tx.medicationSupply.findUniqueOrThrow({ where: { id: d.supplyId }, select: { label: true } })
-    const incident = await createIncident(uow, actor, { communityId: d.communityId, residentId: null, kind: 'controlled_substance_discrepancy', description: `Controlled count discrepancy for ${supply.label}. Expected ${expected}, counted ${d.outgoingCounted} and ${d.incomingCounted}. Resolution: ${resolution}. ${note}`, occurredAt: count.completedAt ?? uow.now })
+    // A suspected loss is suspected misappropriation (SM §9.5), which starts the F609 clocks; a paperwork error stays a count discrepancy.
+    const incident = await createIncident(uow, actor, { communityId: d.communityId, residentId: null, kind: resolution === 'loss_suspected' ? 'misappropriation' : 'controlled_substance_discrepancy', description: `Controlled count discrepancy for ${supply.label}. Expected ${expected}, counted ${d.outgoingCounted} and ${d.incomingCounted}. Resolution: ${resolution}. ${note}`, occurredAt: count.completedAt ?? uow.now })
     incidentId = incident.incidentId
   }
   await casUpdate(uow, { model: 'CountDiscrepancy', id: d.id, version: d.version, from: ['open'], to: 'resolved', actor, eventType: 'count_discrepancy.resolved', reason: note, data: { resolution, resolutionNote: note, resolvedById: userOf(actor), resolvedAt: uow.now, adjustmentId, incidentId } })

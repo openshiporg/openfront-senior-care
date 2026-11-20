@@ -105,6 +105,10 @@ export const HANDLERS: Record<string, Handler> = {
     run: async (u, a, i) => {
       const amount = money(i.amountMinor, 'amount')
       if (amount <= 0n) throw new DomainError(Codes.INVALID_INPUT, 'The deposit must be more than zero.', { field: 'amount' })
+      // Only a kind the jurisdiction pack has a refund rule for, so every deposit can later be refunded or kept by that rule.
+      const pack = await u.tx.community.findUnique({ where: { id: String(i.communityId ?? '') }, select: { jurisdictionPack: { select: { rules: true } } } })
+      const kinds = Object.keys(((pack?.jurisdictionPack?.rules ?? {}) as { depositRefund?: { value?: Record<string, unknown> } }).depositRefund?.value ?? {})
+      if (!kinds.includes(String(i.kind))) throw new DomainError(Codes.INVALID_INPUT, kinds.length ? `Choose a deposit kind: ${kinds.join(', ')}.` : 'This community\'s jurisdiction pack has no deposit rules, so a deposit cannot be recorded yet.', { field: 'kind' })
       const created = await u.tx.deposit.create({ data: { communityId: i.communityId, residentId: i.residentId, kind: i.kind, amountMinor: amount, method: i.method, status: 'held', receivedOn: new Date(`${String(i.receivedOn).slice(0, 10)}T00:00:00Z`), note: i.note ?? '' } })
       u.audit({ eventType: 'deposit.received', entityType: 'Deposit', entityId: created.id, after: { kind: i.kind, amountMinor: amount.toString() } })
       return { depositId: created.id }
