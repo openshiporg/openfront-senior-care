@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useActionState, useState } from 'react'
-import { acceptInvitationAction, cancelTourAction, familySignInAction, joinWaitlistAction, portalPayAction, submitInquiryAction, type ActionState, type Paid } from '../actions'
+import { acceptInvitationAction, cancelTourAction, confirmMfaAction, familySignInAction, joinWaitlistAction, portalPayAction, startMfaAction, submitInquiryAction, type ActionState, type MfaStarted, type Paid } from '../actions'
 
 type Option = { value: string; label: string }
 
@@ -207,6 +207,35 @@ export function PayStatementForm({ slug, residentId, statementId, statementNumbe
       )}
       {state && !state.ok ? <p className="sf-error" role="alert">{state.error}</p> : null}
       <button type="submit" className="sf-btn" disabled={pending || !method}>{pending ? 'Paying…' : instalment ? `Pay ${instalment}` : 'Pay now'}</button>
+    </form>
+  )
+}
+
+/** Turns on two-step sign-in: shows a new authenticator key, then takes the first 6-digit code. */
+export function MfaSetupForm({ slug, residentId }: { slug: string; residentId: string }) {
+  const [started, start, starting] = useActionState<ActionState<MfaStarted>, FormData>(startMfaAction, null)
+  const [confirmed, confirm, confirming] = useActionState<ActionState, FormData>(confirmMfaAction, null)
+  const code = useText()
+  if (confirmed?.ok) return <p className="sf-ok" role="status">Two-step sign-in is on. <a href={`/${slug}/family/${residentId}`}>Open the page again</a> to see it.</p>
+  if (!started?.ok || !started.data) {
+    return (
+      <form className="sf-pay" action={start}>
+        <p className="sf-small">Statements, payments and documents need a second step when you sign in: a 6-digit code from an authenticator app on your phone (Google Authenticator, Microsoft Authenticator, 1Password and others).</p>
+        {started && !started.ok ? <p className="sf-error" role="alert">{started.error}</p> : null}
+        <button type="submit" className="sf-btn" disabled={starting}>{starting ? 'One moment…' : 'Set up two-step sign-in'}</button>
+      </form>
+    )
+  }
+  const key = started.data.secret.replace(/(.{4})/g, '$1 ').trim()
+  return (
+    <form className="sf-pay" action={confirm}>
+      <input type="hidden" name="community" value={slug} />
+      <input type="hidden" name="residentId" value={residentId} />
+      <p className="sf-small">In your authenticator app, add an account and type this key (or, on this phone, <a href={started.data.otpauthUri}>open it in the app</a>):</p>
+      <p><code className="sf-key" style={{ overflowWrap: 'anywhere', fontSize: 18, letterSpacing: '0.04em' }}>{key}</code></p>
+      <label className="sf-field"><span>6-digit code from the app</span><input name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={8} required {...code} /></label>
+      {confirmed && !confirmed.ok ? <p className="sf-error" role="alert">{confirmed.error}</p> : null}
+      <button type="submit" className="sf-btn" disabled={confirming}>{confirming ? 'Checking…' : 'Turn on two-step sign-in'}</button>
     </form>
   )
 }

@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { isSignedIn, portalCalendar, portalDocuments, portalMe, portalPayments, portalStatements, portalTrustBalance, portalUpdates, type PortalResident, type Site } from '../lib/data'
 import { dollarsExact, plainDate, plainLabel, settingName, telHref } from '../lib/format'
 import { PageTitle } from '../components/Chrome'
-import { AcceptInvitationForm, FamilySignInForm, PayStatementForm } from '../components/Forms'
+import { AcceptInvitationForm, FamilySignInForm, MfaSetupForm, PayStatementForm } from '../components/Forms'
 import { familySignOutAction } from '../actions'
 
 /** What each granted permission opens. Permissions without a page yet are simply not listed. */
@@ -135,10 +135,11 @@ export async function FamilyHomeScreen({ site }: { site: Site }) {
   )
 }
 
-function Refused({ message, site }: { message: string; site: Site }) {
+function Refused({ message, site, reason, residentId }: { message: string; site: Site; reason?: string | null; residentId?: string }) {
   return (
     <div className="sf-card">
       <p className="sf-error" role="alert">{message}</p>
+      {reason === 'mfa_required' && residentId ? <MfaSetupForm slug={site.community.slug} residentId={residentId} /> : null}
       <Office site={site} lead="Need a hand?" />
     </div>
   )
@@ -189,7 +190,7 @@ type ViewProps = { site: Site; residentId: string }
 
 async function UpdatesView({ site, residentId }: ViewProps) {
   const read = await portalUpdates(residentId)
-  if (!read.ok) return <Refused message={read.error} site={site} />
+  if (!read.ok) return <Refused message={read.error} reason={read.reason} residentId={residentId} site={site} />
   const data = read.data
   return (
     <div className="sf-card">
@@ -206,7 +207,7 @@ async function UpdatesView({ site, residentId }: ViewProps) {
 
 async function CalendarView({ site, residentId }: ViewProps) {
   const read = await portalCalendar(residentId)
-  if (!read.ok) return <Refused message={read.error} site={site} />
+  if (!read.ok) return <Refused message={read.error} reason={read.reason} residentId={residentId} site={site} />
   return (
     <div className="sf-card">
       <h2>Coming up</h2>
@@ -220,7 +221,7 @@ async function CalendarView({ site, residentId }: ViewProps) {
 
 async function StatementsView({ site, residentId, canPay }: ViewProps & { canPay: boolean }) {
   const read = await portalStatements(residentId)
-  if (!read.ok) return <Refused message={read.error} site={site} />
+  if (!read.ok) return <Refused message={read.error} reason={read.reason} residentId={residentId} site={site} />
   const statements = read.data.statements
   const owing = statements.some(row => row.status === 'issued' && BigInt(row.balanceMinor) > 0n)
   const paying = canPay && owing ? await portalPayments(residentId) : null
@@ -230,7 +231,7 @@ async function StatementsView({ site, residentId, canPay }: ViewProps & { canPay
   if (!statements.length) return <div className="sf-card"><p>No statements yet.</p></div>
   return (
     <div className="sf-stack">
-      {paying && !paying.ok ? <Refused message={paying.error} site={site} /> : null}
+      {paying && !paying.ok ? <Refused message={paying.error} reason={paying.reason} residentId={residentId} site={site} /> : null}
       {statements.map(row => {
         const balance = BigInt(row.balanceMinor)
         const due = row.status === 'issued' && balance > 0n
@@ -269,7 +270,7 @@ async function StatementsView({ site, residentId, canPay }: ViewProps & { canPay
 
 async function PaymentsView({ site, residentId }: ViewProps) {
   const read = await portalPayments(residentId)
-  if (!read.ok) return <Refused message={read.error} site={site} />
+  if (!read.ok) return <Refused message={read.error} reason={read.reason} residentId={residentId} site={site} />
   const { payments, methods, plans } = read.data
   return (
     <div className="sf-stack">
@@ -304,7 +305,7 @@ async function PaymentsView({ site, residentId }: ViewProps) {
 
 async function FundsView({ site, residentId }: ViewProps) {
   const read = await portalTrustBalance(residentId)
-  if (!read.ok) return <Refused message={read.error} site={site} />
+  if (!read.ok) return <Refused message={read.error} reason={read.reason} residentId={residentId} site={site} />
   return (
     <div className="sf-card">
       <h2>Resident funds</h2>
@@ -321,7 +322,7 @@ async function FundsView({ site, residentId }: ViewProps) {
 
 async function DocumentsView({ site, residentId }: ViewProps) {
   const read = await portalDocuments(residentId)
-  if (!read.ok) return <Refused message={read.error} site={site} />
+  if (!read.ok) return <Refused message={read.error} reason={read.reason} residentId={residentId} site={site} />
   const { documents, notices } = read.data
   return (
     <div className="sf-stack">

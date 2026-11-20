@@ -157,3 +157,22 @@ export async function portalPayAction(_: ActionState<Paid>, form: FormData): Pro
   if (result.data?.status === 'failed') return { ok: false, error: result.data.message || 'The payment was declined. Please call the business office.' }
   return { ok: true, data: result.data }
 }
+
+export type MfaStarted = { secret: string; otpauthUri: string }
+
+/** Two-step sign-in for the family portal, step 1: a new authenticator key for this account. */
+export async function startMfaAction(): Promise<ActionState<MfaStarted>> {
+  return mutate<MfaStarted>(`mutation { portalMfaStart }`, {}, 'portalMfaStart').then(r => (r.ok ? { ok: true, data: r.data } : { ok: false, error: r.error }))
+}
+
+/** Step 2: the 6-digit code from the authenticator app turns two-step sign-in on. */
+export async function confirmMfaAction(_: ActionState, form: FormData): Promise<ActionState> {
+  const slug = field(form, 'community', 120)
+  const residentId = field(form, 'residentId', 80)
+  const code = field(form, 'code', 12).replace(/\s/g, '')
+  if (!/^\d{6}$/.test(code)) return { ok: false, error: 'Enter the 6-digit code from your authenticator app.' }
+  const result = await mutate<{ mfaEnrolled: boolean }>(`mutation Confirm($code: String!) { portalMfaConfirm(code: $code) }`, { code }, 'portalMfaConfirm')
+  if (!result.ok) return { ok: false, error: result.error }
+  if (SLUG.test(slug)) revalidatePath(`/${slug}/family/${residentId}`)
+  return { ok: true }
+}

@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Next x Keystone Starter",
-  description: "Next, Keystone, and Tailwind Starter Template",
+  title: "Openfront Senior Care",
+  description: "Senior living operations: census, care, billing and the family portal",
 };
 
 export default function RootLayout({
